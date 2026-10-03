@@ -1,8 +1,8 @@
 # Third-party notices（第三方组件声明）
 
 Stronghold Protocol's own code is licensed under **GPL-3.0-or-later** (see [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md)).
-The components below are **not** part of that grant: each stays under its own licence, reproduced at the end of this
-file. Nothing here is committed to the repository except `tools/local-extract/aklz4.py`; the client libraries are
+The components below are **not** part of that grant: each stays under its own licence, reproduced below or included
+at the stated path in the release bundle. Nothing here is committed to the repository except `tools/local-extract/aklz4.py`; the client libraries are
 installed by npm and copied into `public/vendor/` by `tools/vendor.mjs` (postinstall), and the release bundle carries
 them (with `node_modules/`, which keeps each package's own licence file).
 
@@ -12,15 +12,32 @@ them (with `node_modules/`, which keeps each package's own licence file).
 
 | Component | Version | Licence | Where it is used | In the repository | In the release bundle |
 |---|---|---|---|---|---|
+| [Node.js](https://nodejs.org/) | 24.x (exact version: bundled `runtime/node/node.exe --version`) | MIT for Node.js itself; bundled components retain their respective licences | Windows x64 portable server runtime — `runtime/node/node.exe` | no (official distribution) | yes, in the Rhine Windows x64 portable bundle; full official notices at `runtime/node/LICENSE` |
 | [PixiJS](https://github.com/pixijs/pixijs) | 7.4.2 | MIT | browser renderer — `public/vendor/pixi.min.js` | no (npm) | yes |
 | [pixi-spine](https://github.com/pixijs/spine) | 4.0.6 | MIT banner; contains the **Spine Runtimes**, under the **Spine Runtimes License Agreement** (package licence "SEE SPINE-LICENSE") | Spine model playback — `public/vendor/pixi-spine.js` | no (npm) | yes |
 | [Preact](https://github.com/preactjs/preact) | 10.29.8 | MIT | UI — `public/vendor/preact.module.js`, `hooks.module.js` | no (npm) | yes |
 | [htm](https://github.com/developit/htm) | 3.1.1 | Apache-2.0 | UI templates — `public/vendor/htm.module.js` | no (npm) | yes |
 | [three.js](https://github.com/mrdoob/three.js) | 0.186.1 | MIT | official 3D board — `public/vendor/three.core.js`, `three.module.js` | no (npm) | yes |
 | [ws](https://github.com/websockets/ws) | 8.22.0 | MIT | WebSocket server (`server/`) | no (npm) | yes (`node_modules/`) |
-| [puppeteer-core](https://github.com/puppeteer/puppeteer) | 25.12.0 | Apache-2.0 | optional browser tests (dev dependency) | no (npm) | no |
+| [puppeteer-core](https://github.com/puppeteer/puppeteer) | 25.12.0 | Apache-2.0 | optional browser tests (dev dependency) | no (npm) | yes in the Rhine Windows bundle, with development dependencies and their licences; no browser executable is bundled |
 | [Ark-Unpacker](https://github.com/isHarryh/Ark-Unpacker) LZ4AK decoder | — | BSD-3-Clause | `tools/local-extract/aklz4.py` (optional local extraction) | **yes** — keeps its notice; full text also in `tools/local-extract/LICENSE-Ark-Unpacker.txt` | yes |
 | [UnityPy](https://github.com/K0lb3/UnityPy) (via MooncellWiki/UnityPy), [lz4](https://github.com/python-lz4/python-lz4), [Pillow](https://github.com/python-pillow/Pillow) | see `tools/local-extract/requirements.txt` | MIT / BSD-3-Clause / MIT-CMU | optional local extraction; installed by pip into `.venv-extract` only when the host opts in | no | no |
+
+### Node.js runtime in the Rhine portable bundle
+
+The Rhine Windows x64 portable bundle includes the unmodified official Node.js 24 executable and the complete
+`LICENSE` from that same official distribution under `runtime/node/`. The licence begins with the Node.js
+contributors' copyright notice and MIT terms, and includes the notices for its bundled dependencies; those parts
+must not be reduced to an MIT-only label or replaced with this project's GPL. Official source and release
+information: [nodejs/node](https://github.com/nodejs/node), [Node.js downloads](https://nodejs.org/dist/).
+
+莱茵便携包附带 Node.js 官方运行时；Node.js 本身及其内置组件的完整版权、许可和免责文字保留在
+`runtime/node/LICENSE`。再分发该运行时时请一并保留该文件。其他 npm 依赖的许可证仍随
+`node_modules/` 各包保留，项目自身的 GPL 源码和许可文件也随整合包提供。源码仓库不收录
+`runtime/node/` 二进制；完整包包含运行时不改变游戏素材、数据及标识在 [NOTICE.md](NOTICE.md)
+中的权属说明，也不表示 Node.js 项目对本同人扩展的认可。
+
+### Spine Runtimes
 
 The Spine Runtimes License requires, among other things, that redistributions include its licence and copyright notice
 (reproduced below) and that "each user of the Products must obtain their own Spine Editor license" unless the

@@ -11,7 +11,7 @@
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
 - 装置放置预览、选中圆形范围和突破后范围变化；联机同步、机器人选择及相关测试。
 
-完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。请按下方**从源码运行**步骤安装扩展；上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
+完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。Windows 玩家可直接下载 [莱茵版免安装整合包](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest)，完整解压后双击 **`启动莱茵科研版.bat`**；无需安装 Node.js 或 Git。上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
 
 以下保留原项目介绍、声明与致谢，并对本 fork 的安装方式作相应说明。
 
@@ -42,7 +42,7 @@ English summary: [below](#english).
 ## 目录
 
 - [声明](#声明) · [简介](#简介) · [功能一览](#功能一览)
-- [快速开始](#快速开始)：[本扩展源码](#本扩展从源码运行) · [上游原版整合包](#上游原版整合包不包含本扩展) · [系统要求](#系统要求) · [端口与配置](#端口与配置) · [局域网联机](#和朋友一起玩局域网)
+- [快速开始](#快速开始)：[莱茵整合包](#本扩展windows-免安装整合包推荐) · [本扩展源码](#本扩展从源码运行) · [上游原版整合包](#上游原版整合包不包含本扩展) · [系统要求](#系统要求) · [端口与配置](#端口与配置) · [局域网联机](#和朋友一起玩局域网)
 - [联机方式](#联机方式) · [操作](#操作) · [文档](#文档) · [开发与测试](#开发与测试) · [项目结构](#项目结构)
 - [许可证](#许可证) · [致谢与数据来源](#致谢与数据来源) · [贡献](#贡献)
 
@@ -77,6 +77,14 @@ English summary: [below](#english).
 
 ## 快速开始
 
+### 本扩展：Windows 免安装整合包（推荐）
+
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.1-rhine.1-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
+3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
+
+适用于 Windows x64。它是完整安装包，不是覆盖补丁；不要覆盖旧目录。若旧版正在使用 3000 端口，启动器会提示先结束旧版对局并关闭旧服务，或选择其他端口。关闭启动窗口会结束服务及当前全部对局。更多联机、端口和使用说明见 [整合包说明](docs/RHINE-BUNDLE.md)。素材和第三方组件的许可及声明随包保留，详见 [NOTICE.md](NOTICE.md) 与 [第三方声明](THIRD-PARTY-NOTICES.md)。
+
 ### 本扩展：从源码运行
 
 安装 Node.js 22 或 24（LTS）与 Git 后运行：
@@ -89,7 +97,7 @@ npm run setup      # 检查环境，下载原版及莱茵干员资源，可中�
 npm start          # 启动服务器：http://localhost:3000
 ```
 
-`npm run setup` 使用已接入莱茵资源计划的 `tools/fetch-assets.mjs`。已有原版资源时，可单独运行 `node tools/fetch-rhine-assets.mjs` 补全莱茵干员头像、技能图标、模型和召唤物，并更新素材清单。`public/art/rhine/` 的扩展贴图随源码提供；下载的官方资源仍保存在被 Git 排除的 `public/assets/`，不要提交或打包上传。
+`npm run setup` 使用已接入莱茵资源计划的 `tools/fetch-assets.mjs`。已有原版资源时，可单独运行 `node tools/fetch-rhine-assets.mjs` 补全莱茵干员头像、技能图标、模型和召唤物，并更新素材清单。`public/art/rhine/` 的扩展贴图随源码提供；下载的官方资源仍保存在被 Git 排除的 `public/assets/`，不要提交到 Git。Release 整合包另行收集运行所需素材，并随包保留原有权属声明。
 
 源码已包含生成的数据，正常运行不需要先执行 `build-data`。修改扩展规则后按 [docs/RHINE.md](docs/RHINE.md) 的开发步骤重新生成并验证数据。
 
