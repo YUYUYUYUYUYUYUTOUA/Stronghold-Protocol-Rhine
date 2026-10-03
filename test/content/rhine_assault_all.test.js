@@ -29,6 +29,23 @@ function advancedRecord(name, module, patch) {
   resolved.status.equipLevel = 0; patch(resolved); return resolved;
 }
 
+test('Ifrit resistance aura respects hidden/untargetable enemies and stealth until reveal or blocking', () => {
+  const h = run('ifrit', { skill: 0, enemyDefs: { e: dummy('e', { res: 50 }) } }), u = ready(h);
+  const concealed = enemy(h, [10, 5]), untargetable = enemy(h, [10, 6]), hidden = enemy(h, [10, 7]);
+  h.b.addBuff(concealed, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.b.addBuff(untargetable, { key: 'test:untargetable', flags: { untargetable: true }, persist: true });
+  hidden.hidden = true;
+  h.run(0.2);
+  for (const e of [concealed, untargetable, hidden]) close(e.s.res, 50);
+  h.b.addBuff(concealed, { key: 'test:reveal', flags: { reveal: true }, persist: true });
+  h.run(0.2); assert.ok(concealed.s.res < 50);
+  h.b.removeBuff(concealed, 'test:reveal'); h.run(0.2); close(concealed.s.res, 50);
+  h.b.addBuff(u, { key: 'test:block', mods: { blockCnt: 1 }, persist: true });
+  concealed.x = u.x; concealed.y = u.y; h.b._checkBlock(concealed);
+  assert.equal(concealed.blockedBy, u); h.run(0.2); assert.ok(concealed.s.res < 50);
+  done(h);
+});
+
 test('all real normal / elite skills and modules use authored specs and preserve the selected loadout', () => {
   let choices = 0;
   for (const name of ['eunectes', 'ifrit']) for (const gold of [false, true]) {

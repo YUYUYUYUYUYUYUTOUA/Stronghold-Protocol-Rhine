@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeMatch, give, giveItem, DATA } from './harness.js';
-import { equipItems, rhineItemSynergy } from '../../server/match/bot.js';
+import { equipItems, itemTarget, rhineItemSynergy } from '../../server/match/bot.js';
 import { RHINE_BOND, RHINE_CHARACTERS as C, RHINE_EQUIPMENT as E } from '../../shared/rhineResearch.js';
 
 const chess = (charId) => Object.values(DATA.chess).find((c) => c.visible && !c.isGolden && c.charId === charId).chessId;
@@ -38,4 +38,36 @@ test('Rhine equipment bot uses an existing partner and never treats a full carri
   assert.ok(rhineItemSynergy(m, ps, `${E.mainframe.key}_a`) < paired);
   assert.equal(rhineItemSynergy(m, ps, 'chess_item_1_01_e_a'), 0);
   m.dispose();
+});
+
+test('Rhine equipment bot leaves a full transformed carrier intact and chooses a free deployed Rhine member', () => {
+  const { h, m, ps } = prep();
+  const transformed = give(m, ps, chess('char_416_zumama'), 'board', [10, 5]);
+  const morphId = Object.values(DATA.items).find((it) => it.canGiveBond && !it.isGolden).id;
+  for (const id of [morphId, `${E.terminal.key}_a`]) {
+    const it = giveItem(m, ps, id);
+    assert.equal(ps.equip(it.uid, transformed.uid).ok, true);
+  }
+  const original = transformed.items.map((it) => it.id);
+  const rhine = give(m, ps, chess(C.saria), 'board', [10, 4]);
+  const item = giveItem(m, ps, `${E.mainframe.key}_a`);
+  assert.equal(itemTarget(m, ps, item), rhine);
+  equipItems(m, ps);
+  assert.deepEqual(transformed.items.map((it) => it.id), original);
+  assert.ok(rhine.items.some((it) => it.id === item.id));
+  assert.deepEqual(h.logs.error, []); m.dispose();
+});
+
+test('Rhine equipment bot ignores benched partners and retains generic fallback with no available Rhine carrier', () => {
+  const { h, m, ps } = prep();
+  const bench = give(m, ps, chess(C.saria));
+  const partner = giveItem(m, ps, `${E.terminal.key}_a`);
+  assert.equal(ps.equip(partner.uid, bench.uid).ok, true);
+  const outsider = give(m, ps, chess('char_416_zumama'), 'board', [10, 5]);
+  const item = giveItem(m, ps, `${E.mainframe.key}_a`);
+  assert.equal(itemTarget(m, ps, item), outsider);
+  equipItems(m, ps);
+  assert.deepEqual(bench.items.map((it) => it.id), [partner.id]);
+  assert.ok(outsider.items.some((it) => it.id === item.id));
+  assert.deepEqual(h.logs.error, []); m.dispose();
 });

@@ -1,12 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {applyRhineData,validateRhineData,RHINE_ADDITIONS} from '../tools/rhine-data.mjs';
 import { bondMembers } from '../public/js/ui/gameLogic.js';
 import { makeMatch, give } from './match/harness.js';
 import { MetaRegistry } from '../server/match/effectsMeta.js';
 import { registerMeta } from '../server/sim/content/rhineMeta.js';
-import { RHINE_BALANCE } from '../shared/rhineResearch.js';
+import { RHINE_BALANCE, RHINE_DEVICES } from '../shared/rhineResearch.js';
 import { DataSource } from '../server/sim/simdata.js';
 import { loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
 const names=['chess','bonds','garrisons','tokens','effects','config','items'];
@@ -23,6 +24,10 @@ test('Rhine data: exactly seven distinct visible members; existing IDs remain st
   assert.equal(new Set(files.bonds.rhineShip.visibleMembers.map(id=>files.chess[id].charId)).size,7);
   for(const id of ['chess_char_4_21_a','chess_char_5_11_a'])assert.equal(files.chess[id].tier,3);
   assert.ok(Object.values(files.chess).filter(c=>c.name==='溯光星源').every(c=>c.bonds.includes('rhineShip')));
+});
+test('Rhine summons do not inherit the upstream tactical-point owner-range restriction',()=>{
+  for(const id of ['token_10004_otter_motter',...RHINE_DEVICES.map(d=>d.tokenId)])assert.equal(files.tokens[id].ownerRange,false,id);
+  for(const id of ['token_10028_vigil_wolf','token_10030_mlyss_wtrman'])assert.equal(files.tokens[id].ownerRange,true,id);
 });
 test('Rhine data: Astgenne alter receives only the extra bond on normal and elite records',async()=>{
   const input=structuredClone(files), ids=['chess_char_6_16_a','chess_char_6_16_b'];
@@ -142,11 +147,17 @@ test('Rhine data: both Mayer skills keep deployable otters with correct module v
     }
   }
 });
-test('Rhine data: every selectable skill has a nonempty local icon',async()=>{
+test('Rhine data: every selectable skill has a manifest entry',async()=>{
   const assets=JSON.parse(await readFile(new URL('../data/assets.json',import.meta.url),'utf8'));
   for(const spec of RHINE_ADDITIONS)for(const s of files.chess[`chess_rhine_${spec.key}_a`].skills){
     const path=assets.skills[assets.skillsById[s.skillId]];
     assert.equal(typeof path,'string',s.skillId);
+  }
+});
+test('Rhine data: installed selectable skill icons are nonempty',{skip:!existsSync(new URL('../public/assets/',import.meta.url))},async()=>{
+  const assets=JSON.parse(await readFile(new URL('../data/assets.json',import.meta.url),'utf8'));
+  for(const spec of RHINE_ADDITIONS)for(const s of files.chess[`chess_rhine_${spec.key}_a`].skills){
+    const path=assets.skills[assets.skillsById[s.skillId]];
     const image=await readFile(new URL(`../public${path}`,import.meta.url));assert.ok(image.length>100,s.skillId);
   }
 });

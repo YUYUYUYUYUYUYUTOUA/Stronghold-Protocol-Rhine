@@ -5,16 +5,60 @@ import { presetCamera } from '../../public/js/render/projection.js';
 import { researchPose, RHINE_LOOK } from '../../public/js/render/rhineDevices.js';
 import { FxSystem } from '../../public/js/render/fx.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
+import { createAssets } from '../../public/js/assets.js';
 
-let fake, UnitView, unitSpriteTexture;
+let fake, UnitView, unitSpriteTexture, renderInfo;
 before(async () => {
   fake = installFakePixi();
   ({ UnitView } = await import('../../public/js/render/units.js'));
   ({ unitSpriteTexture } = await import('../../public/js/render/textures.js'));
+  ({ renderInfo } = await import('../../public/js/render/app.js'));
 });
 after(() => fake.restore());
 const cam = presetCamera('prep', { width: 1280, height: 720 });
 const tick = () => new Promise(r => setImmediate(r));
+
+test('a late battle view preserves breakthrough lamps before any research effect is replayed', async () => {
+  const info = renderInfo({ id: 200, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, researchStage: 2 });
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
+  const v = new UnitView(ctx, info);
+  await tick(); await tick(); v.update(1 / 60, cam, 0);
+  assert.equal(v.researchActor.stage, 2);
+  assert.equal(v.researchActor.lights.filter(light => light.visible).length, 3,
+    'watching or reconnecting must not show prototype lamps until the next device activation');
+  assert.equal(v.researchActor.pulse, 0);
+  assert.equal(renderInfo({ id: 201, researchStage: '2' }).researchStage, undefined);
+  assert.equal(renderInfo({ id: 201, researchStage: 99 }).researchStage, undefined);
+  assert.equal(renderInfo({ id: 201, form: 'husk' }).form, 'husk', 'upstream model forms are still preserved');
+  v.destroy();
+});
+
+test('late asset recovery retries device images without requesting a fictional Spine model', async () => {
+  let ready = false, imageRequests = 0, spineRequests = 0;
+  const assets = createAssets({ manifest: {},
+    loadImage: async () => { imageRequests++; return ready ? { width: 100, height: 140 } : null; },
+  });
+  const spineEntry = assets.spineEntry;
+  assets.spineEntry = (...args) => { spineRequests++; return spineEntry(...args); };
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets });
+  const v = new UnitView(ctx, { id: 202, kind: 'token', defId: 'token_rhine_medical', side: 'ally', x: 5, y: 12 });
+  await tick(); await tick();
+  assert.equal(v._pic.state, 'none');
+  const failedRequests = imageRequests;
+  ready = true;
+  v.retryAssets();
+  await tick(); await tick(); v.update(1 / 60, cam, 0);
+  assert.ok(imageRequests > failedRequests);
+  assert.equal(v._pic.state, 'img');
+  assert.equal(v._pic.shown, 'img');
+  assert.ok(v.researchActor);
+  assert.equal(spineRequests, 0);
+  const recoveredRequests = imageRequests;
+  v.retryAssets();
+  await tick();
+  assert.equal(imageRequests, recoveredRequests, 'a recovered device is not downloaded on every tab return');
+  v.destroy();
+});
 
 test('PNG texture trims transparent export margins, preserves aspect and caches the result', () => {
   const create = globalThis.document.createElement;

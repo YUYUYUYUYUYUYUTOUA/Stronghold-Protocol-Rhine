@@ -138,6 +138,66 @@ test('Rhine ecology: zone is periodic, slow scales to cap, stage I binds only at
   }
 });
 
+test('Rhine energy: concealed and untargetable enemies cannot be primary targets; reveal enables the next pulse', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy')])]);
+  const concealed = h.spawn('dummy', { pos: [10, 6] }), untargetable = h.spawn('dummy', { pos: [11, 6] });
+  h.b.addBuff(concealed, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.b.addBuff(untargetable, { key: 'test:untargetable', flags: { untargetable: true }, persist: true });
+  for (const id of ['a', 'b', 'c']) cast(h, id);
+  close(concealed.hp, concealed.s.maxHp); close(untargetable.hp, untargetable.s.maxHp);
+  h.b.addBuff(concealed, { key: 'test:reveal', flags: { reveal: true }, persist: true });
+  h.run(3.1);
+  for (const id of ['a', 'b', 'c']) cast(h, id);
+  close(concealed.s.maxHp - concealed.hp, 300 * B.energyPulseScale);
+  close(untargetable.hp, untargetable.s.maxHp);
+  checkInvariants(h.b);
+});
+
+test('Rhine energy splash: hidden enemies are skipped, while blocked stealth enemies remain selectable', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy', 10, 5, 1)])]);
+  const primary = h.spawn('dummy', { pos: [10, 5] }), concealed = h.spawn('dummy', { pos: [10, 6] });
+  const blocked = h.spawn('dummy', { pos: [10, 4] }), hidden = h.spawn('dummy', { pos: [11, 5] });
+  for (const e of [concealed, blocked]) h.b.addBuff(e, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.b.addBuff(h.unit('a'), { key: 'test:block', mods: { blockCnt: 1 }, persist: true });
+  h.b._checkBlock(blocked);
+  assert.equal(blocked.blockedBy, h.unit('a'));
+  hidden.hidden = true;
+  for (const id of ['a', 'b', 'c']) cast(h, id);
+  const damage = 300 * B.energyPulseScale;
+  close(primary.s.maxHp - primary.hp, damage); close(blocked.s.maxHp - blocked.hp, damage);
+  close(concealed.hp, concealed.s.maxHp); close(hidden.hp, hidden.s.maxHp);
+  checkInvariants(h.b);
+});
+
+test('Rhine ecology: stealth prevents bind and slow; revealing inside an active zone enables only slow', () => {
+  const h = battle([player('p1', [device('ecology', 10, 5, 2)])]);
+  const concealed = h.spawn('dummy', { pos: [10, 7] }), visible = h.spawn('dummy', { pos: [10, 8] });
+  h.b.addBuff(concealed, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.run(8.1);
+  assert.equal(concealed.findBuff('slow'), null); assert.equal(!!concealed.s.flags.bind, false);
+  assert.ok(visible.findBuff('slow')); assert.ok(visible.s.flags.bind);
+  h.b.addBuff(concealed, { key: 'test:reveal', flags: { reveal: true }, persist: true });
+  h.step(2);
+  assert.ok(concealed.findBuff('slow')); assert.equal(!!concealed.s.flags.bind, false);
+  h.b.removeBuff(concealed, 'test:reveal'); h.step(4);
+  assert.equal(concealed.findBuff('slow'), null);
+  checkInvariants(h.b);
+});
+
+test('Rhine medical: isolation removes an ally from healing and shield selection until it ends', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4), op('b', 'test', 11, 5), device('medical', 10, 5, 2)])]);
+  const isolated = h.unit('a'), patient = h.unit('b');
+  isolated.hp = 1; patient.hp = 100;
+  h.b.addBuff(isolated, { key: 'test:isolation', flags: { isolated: true }, persist: true });
+  h.run(3.1);
+  close(isolated.hp, 1); close(isolated.s.shield, 0); close(patient.hp, 250);
+  h.b.removeBuff(isolated, 'test:isolation'); h.run(3);
+  close(isolated.hp, 151); close(patient.hp, 400);
+  checkInvariants(h.b);
+});
+
 test('Rhine: real automatic casts charge, passive and carried starts do not', () => {
   const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true, auto: true }), op('b', 'test', 11, 5, { cast: true, auto: true }),
     op('c', 'test', 9, 5, { cast: true, auto: true }), op('passive', 'test', 11, 4, { cast: true, passive: true }), device('energy')])]);

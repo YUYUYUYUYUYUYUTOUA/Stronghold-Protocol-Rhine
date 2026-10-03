@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeBattle, enemyRec, chessRec, checkInvariants } from '../helpers/battleHarness.js';
+import { makeBattle, enemyRec, chessRec, checkInvariants, flatStage } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { RHINE_SUPPORT_KITS, OTTER, liveOtters } from '../../server/sim/content/kits/rhineSupport.js';
 const ds = getDefaultSource();
@@ -119,6 +119,20 @@ test('Mayer automatic placement respects a full pre-placed roster and no-otter S
   for (const t of liveOtters(h.b, h.owner)) h.b.retreat(t, { permanent: true });
   h.owner.skill.gainSp(999, 'test'); const charges = h.owner.skill.charges;
   assert.equal(h.owner.skill.activate('test'), false); assert.equal(h.owner.skill.charges, charges);
+  done(h);
+});
+
+test('Mayer automatic otters avoid deep water and a knocked-out operator awaiting redeployment', () => {
+  const stage = flatStage();
+  stage.rows[10] = `${stage.rows[10].slice(0, 5)}d${stage.rows[10].slice(6)}`;
+  const h = run('mayer', { stage, units: [{ chessId: 'patient', uid: 'body', row: 11, col: 5 }],
+    setup(b) { b.on('battleStart', () => b.kill(b.allyUnits.find(u => u.uid === 'body'))); } });
+  const body = h.unit('body'), otters = liveOtters(h.b, h.owner);
+  assert.equal(h.b.isDown(body), true); assert.equal(h.b.downOn(11, 5), body);
+  assert.equal(h.b.grid.canStand(10, 5), false);
+  assert.equal(otters.length, 1);
+  assert.ok(otters.every(t => (t.tileR !== 10 || t.tileC !== 5) && (t.tileR !== 11 || t.tileC !== 5)));
+  assert.equal(h.b.redeploy(body), true, 'the reserved tile is still free for its original operator');
   done(h);
 });
 

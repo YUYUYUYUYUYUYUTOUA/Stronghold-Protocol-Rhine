@@ -212,12 +212,12 @@ export async function applyRhineData(files, source = null) {
   }
   const initial = variants[owners[0]];
   tokens[TOKEN] = { tokenId: TOKEN, kind: 'summon', name: t.name, appellation: t.appellation, desc: t.description, descRaw: t.description,
-    profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true,
+    profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
     owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'phys', attackKind: 'melee', projectile: 'none', canHitFly: false,
     skill: null, deployLimit: 5, count: 4, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
   for (const d of RHINE_DEVICES) tokens[d.tokenId] = { tokenId: d.tokenId, kind: 'summon', name: d.name, appellation: d.name,
     desc: d.description, descRaw: d.description, profession: 'TOKEN', subProfessionId: 'notchar1', position: 'ALL', displayType: 'DEFAULT',
-    placeable: false, owners: [], stats: { ...BASE_STATS, atk: RHINE_BALANCE.baseAttack },
+    placeable: false, ownerRange: false, owners: [], stats: { ...BASE_STATS, atk: RHINE_BALANCE.baseAttack },
     rangeGrid: [[0,0]], dmgType: 'none', attackKind: 'ranged', projectile: 'none', canHitFly: false, skill: null,
     deployLimit: 1, count: 1, abnormal: [], variants: {}, assets: { avatar: d.tokenId, spine: null, icon: d.icon, sprite: d.sprite } };
   applyEquipment(files);

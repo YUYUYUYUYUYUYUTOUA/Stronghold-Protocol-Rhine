@@ -1,6 +1,6 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.0** 提交 [`e9e032f`](https://github.com/sganggs/Stronghold-Protocol/commit/e9e032f)，本次扩展修改日期为 **2026-10-03**，尚未合入上游 v0.1.1。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-research`。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.1**，包含提交 [`8b10625`](https://github.com/sganggs/Stronghold-Protocol/commit/8b10625) 及其之前的修复，本次扩展修改日期为 **2026-10-03**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-011`。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
@@ -11,13 +11,13 @@
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
 - 装置放置预览、选中圆形范围和突破后范围变化；联机同步、机器人选择及相关测试。
 
-完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。请按下方**从源码运行**步骤安装扩展；上游 v0.1.0 整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
+完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。请按下方**从源码运行**步骤安装扩展；上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
 
 以下保留原项目介绍、声明与致谢，并对本 fork 的安装方式作相应说明。
 
 《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–4 人联机合作。
 
-![version](https://img.shields.io/badge/version-0.1.0-2ea44f)
+![version](https://img.shields.io/badge/version-0.1.1-2ea44f)
 ![license](https://img.shields.io/badge/code%20license-GPL--3.0--or--later-blue)
 ![node](https://img.shields.io/badge/node-22%20%7C%2024-339933)
 
@@ -52,11 +52,11 @@ English summary: [below](#english).
 
 - **独立模拟**（单人）与**同盟模拟**（1–4 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
-- 上游基础版本为 0.1.0；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
+- 上游基础版本为 0.1.1，其修复记录见 [CHANGELOG.md](CHANGELOG.md)；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
 
 ## 原版功能一览
 
-以下数量为上游 v0.1.0 介绍口径，本 fork 在此基础上加入上述莱茵扩展。
+以下数量为上游 v0.1.1 介绍口径，本 fork 在此基础上加入上述莱茵扩展。
 
 - **完整的一局**：确认本局信息 → 策略轮选（40 名策略）→ 14 回合 → 结算称号；险境及以上满足条件时进入第 15 回合「隐秘核心」。
 - **4 种难度**：标准 / 险境 / 绝境 / 终极，独立与同盟各一套参数，均取自官方数据。
@@ -82,7 +82,7 @@ English summary: [below](#english).
 安装 Node.js 22 或 24（LTS）与 Git 后运行：
 
 ```bash
-git clone --branch codex/rhine-research https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git
+git clone --branch codex/rhine-upstream-011 https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git
 cd Stronghold-Protocol-Rhine
 npm ci             # 按锁文件安装依赖，postinstall 会准备浏览器依赖
 npm run setup      # 检查环境，下载原版及莱茵干员资源，可中断后续传
@@ -101,7 +101,7 @@ npm start          # 启动服务器：http://localhost:3000
    - Windows：在 PowerShell 里运行 `winget install OpenJS.NodeJS.LTS`，或到 <https://nodejs.org/zh-cn/download> 下载安装包。
    - macOS：`brew install node@22`，或到官网下载安装包。
    - Linux：发行版的包管理器、nvm 或 fnm。
-2. **下载**：在 [上游 Releases](https://github.com/sganggs/Stronghold-Protocol/releases/latest) 页面下载 v0.1.0 的原版整合包（zip），解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。
+2. **下载**：在 [上游 Releases](https://github.com/sganggs/Stronghold-Protocol/releases/latest) 页面下载所需版本的原版整合包（zip），解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。
 3. **启动**
    - Windows：双击 **`scripts\start-windows.bat`**。如果弹出「安全警告」，点「运行」；Windows 防火墙弹窗请勾选「专用网络」并允许。
    - macOS / Linux：在解压出的文件夹里运行 `./scripts/start.sh`（或 `bash scripts/start.sh`）。
@@ -189,6 +189,7 @@ npm start          # 启动服务器：http://localhost:3000
 
 | 文档 | 内容 |
 |---|---|
+| [CHANGELOG.md](CHANGELOG.md) | 上游版本更新记录 |
 | [docs/RHINE.md](docs/RHINE.md) | 莱茵扩展：干员、盟约、科研装置、装备、开发与运行 |
 | [docs/RHINE-CHANGES.md](docs/RHINE-CHANGES.md) | 扩展修改范围、上游关系与测试边界 |
 | [docs/PLAYING.md](docs/PLAYING.md) | 玩法指南：流程、经济、招募与晋升、摆阵、联防、盟约、最终攻势、结算称号 |
@@ -213,7 +214,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 - 游戏数据由 `npm run build-data`（`tools/build-data.mjs`）从官方数据表生成，不要手工修改 `data/*.json`。
 - GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）在 Ubuntu 与 Windows、Node 22 / 24 上运行 `npm ci`、`node --test` 和服务器冒烟测试。
-- 2026-10-03 本地全量测试记录：3017 项，3009 通过、0 失败、8 项条件跳过（2 项缺少原始数据缓存，6 项未启用可选浏览器环境）。此记录不等同于每种技能／装备组合的完整人工实机验收，也不预先代表 GitHub Actions 已运行通过。
+- 2026-10-03 本地全量测试记录：3488 项，3479 通过、0 失败、9 项条件跳过（原始数据缓存或可选浏览器环境）。独立本机 HTTP／WebSocket 与开发场景检查通过；此记录不等同于完整人工多人实机验收，也不预先代表 GitHub Actions 已运行通过。
 
 ## 项目结构
 
@@ -260,7 +261,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Covenant*, played in the browser: solo, or 1–4 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) at `e9e032f`. Modified on 2026-10-03. It is not an upstream or official game release; report expansion issues to this fork.
+- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.1.1 plus fixes through `8b10625`. Modified on 2026-10-03. It is not an upstream or official game release; report expansion issues to this fork.
 - **Run this expansion:** clone this fork, install Node.js 22 or 24, then run `npm ci`, `npm run setup`, and `npm start`. Setup includes the Rhine resource plan; `node tools/fetch-rhine-assets.mjs` can supplement an existing asset download. The [upstream all-in-one bundle](https://github.com/sganggs/Stronghold-Protocol/releases/latest) contains the original game only, not this expansion. The official 3D board needs a local Arknights client to extract; otherwise the 2D board is used.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.

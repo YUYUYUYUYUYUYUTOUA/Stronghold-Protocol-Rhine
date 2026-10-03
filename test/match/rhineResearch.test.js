@@ -91,6 +91,22 @@ test('research cards never consume ordinary reserve slots, cannot be sold/equipp
   assert.notEqual(validateC2S({ t: 'g.move', uid, to: { area: 'research', idx: 3 } }), null);
 });
 
+test('research devices obey upstream water and forbidden-tile legality without requiring a summoner', () => {
+  const h = setup(), ps = h.ps('p_0');
+  h.setStage('act2autochess_m04');
+  member(h, ps, 0); member(h, ps, 1); member(h, ps, 2);
+  const uid = device(ps, 'medical').uid;
+  for (const row of [10, 11, 12]) assert.equal(ps.move(uid, { area: 'board', row, col: 6 }).error, ERR.BAD_TILE);
+  ps.tileOverrides['12,10'] = 'none';
+  assert.equal(ps.move(uid, { area: 'board', row: 12, col: 10 }).error, ERR.BAD_TILE);
+  assert.equal(ps.find(uid).piece.ownerUid, null);
+  assert.deepEqual(deploy(h, ps, 'medical'), { ok: true });
+  ps.recompute();
+  assert.equal(ps.find(uid).area, 'board');
+  checkInvariants(h.m);
+  h.m.dispose();
+});
+
 test('dropping 6→3→inactive recalls excess devices without losing points, duplicates or normal hand overflow', () => {
   const h = setup(), ps = h.ps('p_0');
   const pieces = IDS.map((_, i) => member(h, ps, i));

@@ -485,11 +485,37 @@ describe('createAssets store', () => {
     assert.equal(a.audio.sfx('battle', 'deploy'), '/sfx/dep.mp3');
     const warn = console.warn; console.warn = () => {};
     try {
+      // a failure resolves ready() (fallbacks meanwhile) but is not kept as the manifest (public issue #8 item 5;
+      // test/render/issue8-placeholders.test.js covers the retries)
       const b = createAssets({ fetch: async () => ({ ok: false, status: 404 }) });
-      await b.ready();
+      assert.deepEqual(await b.ready(), {});
       assert.equal(b.avatar('char_002_amiya'), null);
-      assert.deepEqual(b.manifest, {});
+      assert.equal(b.manifest, null);
+      assert.equal(b.loaded, false);
     } finally { console.warn = warn; }
+  });
+
+  test('explicit image retries replace only failed cache entries and share any in-flight retry', async () => {
+    let loads = 0, available = false, finish;
+    const loadedImage = { src: '/art/rhine/medical-unit.png' };
+    const a = createAssets({ manifest: M, loadImage: async () => {
+      loads++;
+      if (!available) throw new Error('temporary image failure');
+      return await new Promise(resolve => { finish = resolve; });
+    } });
+    const url = loadedImage.src;
+    assert.equal(await a.image(url), null);
+    assert.equal(await a.image(url), null);
+    assert.equal(loads, 1, 'ordinary reads still cache failures instead of spinning');
+    available = true;
+    const retry = a.image(url, { retry: true });
+    assert.equal(a.image(url, { retry: true }), retry, 'simultaneous views share one load');
+    await Promise.resolve();
+    finish(loadedImage);
+    assert.equal(await retry, loadedImage);
+    assert.equal(await a.image(url, { retry: true }), loadedImage);
+    assert.equal(a.imageNow(url), loadedImage);
+    assert.equal(loads, 2, 'a successful cached image is never discarded by retry');
   });
 
   test('image cache + preload progress (failures resolve to null)', async () => {

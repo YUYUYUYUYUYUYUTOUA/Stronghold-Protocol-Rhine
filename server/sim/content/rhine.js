@@ -73,7 +73,8 @@ export function install(battle) {
     }
   }
   const enabled = (s) => alive(s.unit) && selectedDevices(s.ps).some((d) => d.unit === s.unit);
-  const targets = (s, radius = B.radius) => battle.enemies.filter((u) => alive(u) && !u.s.flags.untargetable && bodyInRadius(u, s.unit.x, s.unit.y, radius));
+  // Use the engine's ally-side selector: unrevealed, unblocked stealth enemies cannot be selected by a device.
+  const targets = (s, radius = B.radius) => battle.foesInRadius(s.unit.x, s.unit.y, radius);
 
   const refresh = () => {
     for (const s of states) {
@@ -104,7 +105,7 @@ export function install(battle) {
   const medical = (s) => {
     if (!enabled(s)) return;
     refresh();
-    const eligible = s.ps.units.filter((u) => alive(u) && !rhineDevice(u.defId) && !u.bossPool && !u.s.flags.noHeal && !u.profile?.noHeal
+    const eligible = s.ps.units.filter((u) => alive(u) && battle.allySelectable(u, s.unit) && !rhineDevice(u.defId) && !u.bossPool && !u.s.flags.noHeal && !u.profile?.noHeal
       && bodyInRadius(u, s.unit.x, s.unit.y, B.radius) && (s.stage >= 1 || u.hp < u.s.maxHp));
     eligible.sort((a, b) => a.hp / a.s.maxHp - b.hp / b.s.maxHp || a.id - b.id);
     for (const target of eligible.slice(0, s.stage >= 2 ? 2 : 1)) {
@@ -126,8 +127,7 @@ export function install(battle) {
     const enemies = targets(s).sort((a, b) => bodyDist(a, s.unit.x, s.unit.y) - bodyDist(b, s.unit.x, s.unit.y) || a.id - b.id);
     if (!enemies.length) return;
     const primary = enemies[0];
-    const hit = s.stage >= 1 ? battle.enemies.filter((u) => alive(u) && !u.s.flags.untargetable
-      && Math.hypot(u.x - primary.x, u.y - primary.y) <= (B.energySpreadRadius ?? 1) + 1e-9) : [primary];
+    const hit = s.stage >= 1 ? battle.foesInRadius(primary.x, primary.y, B.energySpreadRadius ?? 1, true) : [primary];
     const amount = deviceBaseAttack(battle, s.unit) * B.energyPulseScale * (s.stage >= 2 ? (B.energyStage2Scale ?? 1.5) : 1);
     for (const target of hit) battle.dealDamage(s.unit, target, { type: 'arts', amount, canDodge: false, tags: ['rhinePulse'] });
     battle.fx('rhinePulse', { x: primary.x, y: primary.y, source: s.unit.id, stage: s.stage });

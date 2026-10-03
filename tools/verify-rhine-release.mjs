@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { TestClient } from '../test/helpers/wsClient.js';
+import { APP_VERSION } from '../shared/constants.js';
 
 // Pass one or more base URLs as CLI arguments to also verify an external deployment.
 // Example: node tools/verify-rhine-release.mjs http://127.0.0.1:3000 https://your-host.example
@@ -22,6 +23,7 @@ for (const base of bases) {
   assert.match((await get('/')).toString('utf8'), /STRONGHOLD PROTOCOL/);
   const health = JSON.parse(await get('/healthz'));
   assert.equal(health.ok, true);
+  assert.equal(health.app, APP_VERSION, 'served release version mismatch');
   const artifacts = {};
   const fetched = {};
   for (const name of ['chess', 'items', 'assets', 'tokens']) {

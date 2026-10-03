@@ -4,6 +4,7 @@
 import { num, talentBb, traitBb, moduleBb, skillBbOf, up, toggleBuff, giveSp, batMod } from './tier1.js';
 import { bodyInKeys, bodyDist } from '../../body.js';
 import { hasHp } from '../../damage.js';
+import { canTargetEnemy } from '../../targeting.js';
 
 const E1 = 'skchr_zumama_1', E2 = 'skchr_zumama_2', E3 = 'skchr_zumama_3';
 const I1 = 'skchr_ifrit_1', I2 = 'skchr_ifrit_2', I3 = 'skchr_ifrit_3';
@@ -103,11 +104,11 @@ export function ifrit(_bb, chess) {
           u.skill.end('interrupted');
         }
       }, { owner: u });
-      // 精神融解 applies to all enemies in her straight range, including flyers during S3.
+      // The aura reaches flyers and sleeping enemies even during S3, but respects the engine's hidden/stealth selectors.
       b.every(0.1, () => {
         for (const e of b.enemies) {
           const key = `ifrit:res:${u.id}`;
-          if (up(u) && hasHp(e) && bodyInKeys(e, u.rangeKeySet)) b.addBuff(e, {
+          if (up(u) && canTargetEnemy(u, e, { canHitFly: true, hitSleep: true }) && bodyInKeys(e, u.rangeKeySet)) b.addBuff(e, {
             key, duration: 0.15, mods: { resMul: 1 + num(t0.magic_resistance) }, source: u,
           });
           else b.removeBuff(e, key);

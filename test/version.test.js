@@ -22,6 +22,17 @@ test('one release version: package.json, package-lock.json and APP_VERSION', () 
   assert.equal(pkg.private, true, 'never published to npm');
 });
 
+test('CHANGELOG.md opens with the release version, and the README links it', () => {
+  const log = read('CHANGELOG.md');
+  const first = log.match(/^## (\d+\.\d+\.\d+) — (\d{4}-\d{2}-\d{2})/m);
+  assert.ok(first, 'a "## x.y.z — date" heading');
+  assert.equal(first[1], APP_VERSION, 'the newest entry is the current version');
+  assert.match(log, /^## 0\.1\.0 — 2026-10-02/m, 'the first public release stays listed');
+  const readme = read('README.md');
+  assert.match(readme, /\[CHANGELOG\.md\]\(CHANGELOG\.md\)/);
+  assert.match(readme, new RegExp(`badge/version-${APP_VERSION.replace(/\./g, '\\.')}-`), 'the README badge');
+});
+
 test('the release version is what players see', () => {
   assert.match(read('public/js/screens/title.js'), /v\$\{APP_VERSION\}/, 'title screen footer');
   assert.ok(!/PROTOCOL v1/.test(read('public/js/screens/title.js')), 'no protocol number posing as a version');
@@ -36,7 +47,8 @@ test('GPL-3.0-or-later: LICENSE, package metadata and notices', () => {
   assert.match(license, /END OF TERMS AND CONDITIONS/);
   assert.equal(pkg.license, 'GPL-3.0-or-later');
   assert.equal(lock.packages[''].license, 'GPL-3.0-or-later');
-  assert.match(pkg.repository.url, /github\.com\/sganggs\/Stronghold-Protocol/);
+  assert.match(pkg.repository.url, /github\.com\/YUYUYUYUYUYUYUTOUA\/Stronghold-Protocol-Rhine/);
+  assert.match(read('README.md'), /github\.com\/sganggs\/Stronghold-Protocol/, 'retain upstream attribution');
   for (const f of ['NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'tools/local-extract/LICENSE-Ark-Unpacker.txt']) {
     assert.ok(existsSync(join(ROOT, f)), f);
   }
