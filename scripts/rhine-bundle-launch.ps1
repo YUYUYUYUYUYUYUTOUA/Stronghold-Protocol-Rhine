@@ -171,7 +171,9 @@ function Invoke-RhineBundle {
         $launchArgs = @((Join-Path $Root 'scripts\launch.mjs'), '--port', [string]$options.Port,
             '--host', $options.ListenHost, '--no-setup')
         if ($options.NoOpen) { $launchArgs += '--no-open' }
-        & $nodePath @launchArgs
+        # Stream native stdout to the host immediately. The caller collects this function's
+        # success stream for its exit code; letting native stdout enter it buffers every log.
+        & $nodePath @launchArgs | Out-Host
         return $LASTEXITCODE
     } finally { Pop-Location }
 }

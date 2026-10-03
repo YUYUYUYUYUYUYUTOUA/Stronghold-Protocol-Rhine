@@ -1,5 +1,7 @@
 # --- dependencies & generated client libs -------------------------------------------------------
 node_modules/
+# official runtime is shipped as a Release asset, never as Git source
+/runtime/node/
 # copied from node_modules by tools/vendor.mjs (postinstall); never commit third-party builds
 public/vendor/
 

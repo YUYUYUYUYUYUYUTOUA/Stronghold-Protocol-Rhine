@@ -1,9 +1,9 @@
 // Portable-launcher logic only: no HTTP listener, browser, or game process is started here.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -151,6 +151,68 @@ test('PowerShell file entry accepts help without starting a service', windows, (
     cwd: path.parse(root).root, timeout: 15000, env: { ...process.env, PORT: '', HOST: '', SP_NO_BROWSER: '' },
   });
   assert.equal(result.status, 0, result.stderr?.toString());
+});
+
+test('native launcher stdout streams before process exit and preserves a nonzero exit code', windows, async () => {
+  const fixture = mkdtempSync(path.join(tmpdir(), '莱茵 日志启动 '));
+  let child;
+  try {
+    for (const relative of ['scripts/launch.mjs', 'server/index.js', 'node_modules/ws/package.json', 'public/vendor/preact.module.js', 'data/bonds.json']) {
+      const file = path.join(fixture, relative);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, '');
+    }
+    const acknowledgement = path.join(fixture, 'stdout-received');
+    // This native process opens no listener. It can only complete successfully when the test
+    // receives its first output while it is still running, then acknowledges that output.
+    writeFileSync(path.join(fixture, 'scripts/launch.mjs'), `
+      import { existsSync } from 'node:fs';
+      const deadline = setTimeout(() => { console.log('STDOUT_WAS_BUFFERED'); process.exit(97); }, 5000);
+      console.log('NATIVE_LOG_READY');
+      const poll = setInterval(() => {
+        if (!existsSync(process.env.RHINE_TEST_ACK)) return;
+        clearTimeout(deadline); clearInterval(poll);
+        console.log('NATIVE_LOG_ACKNOWLEDGED');
+        process.exit(23);
+      }, 20);
+    `);
+    const code = `$ErrorActionPreference='Stop'
+      [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+      . (Join-Path $env:RHINE_TEST_ROOT 'scripts\\rhine-bundle-launch.ps1')
+      function Find-RhineNode { param($Root) return $env:RHINE_TEST_NODE }
+      function Get-RhinePortState { param($Port,$Root) [pscustomobject]@{Occupied=$false;SameDirectory=$false} }
+      exit (Invoke-RhineBundle $env:RHINE_TEST_FIXTURE @('--no-open'))`;
+    child = spawn(ps, ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(code, 'utf16le').toString('base64')], {
+      cwd: path.parse(root).root,
+      env: { ...process.env, RHINE_TEST_ROOT: root, RHINE_TEST_FIXTURE: fixture, RHINE_TEST_NODE: process.execPath,
+        RHINE_TEST_ACK: acknowledgement, PORT: '', HOST: '', SP_NO_BROWSER: '' },
+    });
+    let stdout = '', stderr = '', sawLiveOutput = false;
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', chunk => {
+      stdout += chunk;
+      if (!sawLiveOutput && stdout.includes('NATIVE_LOG_READY')) {
+        sawLiveOutput = child.exitCode === null;
+        writeFileSync(acknowledgement, 'received while the native process was running');
+      }
+    });
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    const exitCode = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => { child.kill(); reject(new Error(`launcher probe timed out: ${stdout}\n${stderr}`)); }, 15000);
+      child.once('error', error => { clearTimeout(timeout); reject(error); });
+      child.once('close', code => { clearTimeout(timeout); resolve(code); });
+    });
+    assert.equal(exitCode, 23, `${stdout}\n${stderr}`);
+    assert.equal(sawLiveOutput, true);
+    assert.match(stdout, /NATIVE_LOG_ACKNOWLEDGED/);
+    assert.doesNotMatch(stdout, /STDOUT_WAS_BUFFERED/);
+  } finally {
+    if (child && child.exitCode === null) child.kill();
+    assert.equal(path.dirname(fixture), path.resolve(tmpdir()));
+    assert.ok(path.basename(fixture).startsWith('莱茵 日志启动 '));
+    rmSync(fixture, { recursive: true, force: true });
+  }
 });
 
 test('root batch works from another cwd in a Chinese/space path with Windows-only PATH', windows, () => {
