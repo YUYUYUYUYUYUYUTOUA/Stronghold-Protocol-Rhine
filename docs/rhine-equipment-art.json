@@ -1,0 +1,19 @@
+{
+  "tool": "built-in image_gen",
+  "transparent_background": true,
+  "referenceRole": "Existing equipment icons used only for visual style",
+  "references": [
+    "public/assets/item/trap_1103_acarm103.png",
+    "public/assets/item/trap_1079_acarm079.png"
+  ],
+  "assets": [
+    {
+      "path": "public/art/rhine/terminal.png",
+      "prompt": "Create one production-ready transparent PNG equipment inventory icon for a tactical auto-chess game. Match the visual language of the reference game item icons: sharply readable chunky silhouette, stylized 2.5D three-quarter view, restrained cel-painted shading, dark ink-like outlines, hard mechanical planes, visually economical small-icon detail. No text, no letters, no numerals, no caption, no background panel, no framing border, no ground plane, no watermark. One object only, centered, fully in frame, fills about 85% of a square canvas, true transparent alpha. Reference images are style references only; create an original new object, not those objects. Subject: Rhine Lab portable experimental terminal, a compact rugged ivory-and-graphite handheld scientific computer angled slightly left, short thick body with handle, one luminous mint-green inset screen showing three simple connected nodes (no text), a small specimen cartridge and one amber physical switch. Tier-three equipment: portable, compact, functional. Off-white enamel plates, dark grey ribs, small mint screen, tiny amber accent. Bold overall shape readable at 48 pixels."
+    },
+    {
+      "path": "public/art/rhine/mainframe.png",
+      "prompt": "Create one production-ready transparent PNG equipment inventory icon for a tactical auto-chess game. Match the visual language of the reference game item icons: sharply readable chunky silhouette, stylized 2.5D three-quarter view, restrained cel-painted shading, dark ink-like outlines, hard mechanical planes, visually economical small-icon detail. No text, no letters, no numerals, no caption, no background panel, no framing border, no ground plane, no watermark. One object only, centered, fully in frame, fills about 85% of a square canvas, true transparent alpha. Reference images are style references only; create an original new object, not those objects. Subject: Rhine Lab joint research mainframe, a heavy compact triangular-footprint scientific computing core angled slightly right, three ivory armored ribs surround a single mint-green vertical hexagonal translucent reactor cartridge, broad graphite base with three short mechanical feet, restrained brass connectors and amber indicator. Tier-six equipment: more substantial and sophisticated than a handheld terminal, yet portable inventory object. Ivory enamel and graphite with mint luminous core and restrained warm brass accents. Bold overall shape readable at 48 pixels. No dramatic light rays or loose particles, no pedestal outside the machine."
+    }
+  ]
+}

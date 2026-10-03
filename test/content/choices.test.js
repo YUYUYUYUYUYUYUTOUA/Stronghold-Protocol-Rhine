@@ -81,8 +81,14 @@ test('coverage: every 悬赏 / 战术决策 effect and every 道具补给 / 机�
   const ids = choiceCardIds(DATA);
   assert.equal(ids.bounty.length, 129, '129 ENEMY_GAIN effects');
   assert.equal(ids.tactic.length, 43, '43 BUFF_GAIN effects');
-  // 56 normal EQUIP items − the 5 effect-only ones (4 special 维式重锤, 突变细胞: never sold, user playtest #4)
-  assert.equal(ids.items.length, 51, '51 shop items');
+  // 58 normal EQUIP items (including the two Rhine additions) − the 5 effect-only ones.
+  assert.equal(ids.items.length, 53, '53 shop items');
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a']) {
+    assert.ok(ids.items.includes(id), `${id} is an equipment supply card`);
+    const effectId = DATA.items[id].effectId;
+    assert.equal(DATA.effects[effectId].effectType, 'EQUIP');
+    assert.ok(!ids.bounty.includes(effectId) && !ids.tactic.includes(effectId), 'equipment effects are not tactic/bounty cards');
+  }
   for (const id of ['chess_item_2_03_e_a', 'chess_item_3_09_e_a', 'chess_item_3_10_e_a', 'chess_item_4_09_e_a', 'chess_item_5_08_e_a']) assert.ok(!ids.items.includes(id), `${id} is never a supply card`);
   assert.ok(ids.items.includes('chess_item_1_01_e_a'), 'the plain 维式重锤 is');
   for (const id of [...ids.bounty, ...ids.tactic, ...ids.items]) {
@@ -310,6 +316,22 @@ test('悬赏 kill payout in the real sim: a 联防 helper that strikes down a le
 
 // =====================================================================================================================
 // 道具补给 / 机密商店
+
+test('Rhine equipment supply handlers grant free items and a second shop pick merges them without applying a tactic', () => {
+  const h = makeMatch({ mode: 'solo', registry: REG, fake: true }).start();
+  h.toPrep(1);
+  const m = h.m, ps = h.ps('p_0'), funds = ps.funds;
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a']) {
+    applyCard(m, ps, { kind: 'item', id, family: 'supply' });
+    assert.ok(ownedItems(ps).some(p => p.id === id));
+    applyCard(m, ps, { kind: 'item', id, family: 'shop' });
+    assert.ok(ownedItems(ps).some(p => p.id === DATA.items[id].goldenId));
+    assert.ok(!ownedItems(ps).some(p => p.id === id));
+    assert.equal(ps.funds, funds);
+  }
+  matchInvariants(m);
+  m.dispose();
+});
 
 test('道具补给 E2E (co-op): 6 free normal items within the round window; the pick lands in the picker\'s hand (temp when full)', () => {
   const data = dataWith('mode_multi_normal', 3, 'supply');

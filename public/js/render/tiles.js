@@ -33,6 +33,7 @@
 import { tileAtlas, fxAtlas, rng, groundTexture } from './textures.js';
 import { GLYPH, TILEKEY_GLYPH, TILE_H, COLORS } from './style.js';
 import { parsePenRect, PEN_RECT } from './pen.js';
+import { circleRangeSections } from '../../../shared/rhineRange.js';
 
 /**
  * Depth-sort key (unit layer zIndex) of block row `row`: the row's far edge. Units use
@@ -522,7 +523,8 @@ export class TileField {
       }
     }
     if (!list.length) this.highlights.delete(key);
-    else this.highlights.set(key, { tiles: list, style: st });
+    else this.highlights.set(key, { tiles: list, style: st, circle: st.circle
+      ? circleRangeSections(st.circle.row, st.circle.col, st.circle.radius, st.circle.bounds) : null });
     this._drawHighlights();
   }
 
@@ -538,7 +540,8 @@ export class TileField {
     if (!cam || !this.highlights.size) return;
     const p = this._p;
     const inset = 0.05;
-    for (const { tiles, style } of this.highlights.values()) {
+    for (const { tiles, style, circle } of this.highlights.values()) {
+      if (circle) { this._drawCircleRange(circle, style); continue; }
       for (const [r, c] of tiles) {
         const h = this.heightAt(r, c);
         let g = this.hlGfx;
@@ -565,6 +568,26 @@ export class TileField {
         g.endFill();
         if (style.stripes) drawStripes(g, cam, r, c, z, inset, Math.max(1.5, sc * 0.05), p);
       }
+    }
+  }
+
+  _drawCircleRange(sections, style) {
+    const cam = this.cam;
+    for (const { row, col, polygon, arcs } of sections) {
+      const h = this.heightAt(row, col), z = h + .018;
+      let g = this.hlGfx;
+      if (h > 1e-3) {
+        const s = this.surfaceLayer(row);
+        if (s) {
+          if (!s._hl) { s._hl = new this.P.Graphics(); s.addChildAt(s._hl, 0); }
+          g = s._hl;
+        }
+      }
+      const project = ([x,y]) => { const p = cam.project(x,y,z); return [p.x,p.y]; };
+      g.lineStyle(0); g.beginFill(style.color, Math.min(.24, style.fill));
+      g.drawPolygon(polygon.flatMap(project)); g.endFill();
+      g.lineStyle(Math.max(2,cam.scaleAt(col,row,z)*.035),style.color,style.line);
+      for (const [a,b] of arcs) { g.moveTo(...project(a)); g.lineTo(...project(b)); }
     }
   }
 

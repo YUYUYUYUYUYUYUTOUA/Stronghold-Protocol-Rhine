@@ -1100,6 +1100,48 @@ export function diamondTexture(key, img, color, o = {}) {
   return tex;
 }
 
+const _unitIcons = new WeakMap();
+/** Whole-unit art on a transparent square: contain the image, without a portrait frame or clipping mask. */
+export function unitIconTexture(img) {
+  const old = _unitIcons.get(img);
+  if (old) return old;
+  const P = PIXI(), S = DIAMOND_PX;
+  const canvas = makeCanvas(S, S), c = canvas.getContext('2d');
+  const scale = Math.min((S - 16) / img.width, (S - 16) / img.height);
+  const w = img.width * scale, h = img.height * scale;
+  c.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+  const texture = new P.Texture(new P.BaseTexture(canvas));
+  _unitIcons.set(img, texture);
+  return texture;
+}
+
+const _unitSprites = new WeakMap();
+/** Full transparent sprite, with empty export margins trimmed once; never cropped through visible artwork. */
+export function unitSpriteTexture(img) {
+  const cached = _unitSprites.get(img);
+  if (cached) return cached;
+  const P = PIXI(), k = Math.min(1, 384 / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
+  const canvas = makeCanvas(w, h), c = canvas.getContext('2d');
+  c.drawImage(img, 0, 0, w, h);
+  let frame;
+  try {
+    const rgba = c.getImageData(0, 0, w, h).data;
+    let left = w, top = h, right = -1, bottom = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (rgba[(y * w + x) * 4 + 3] > 8) {
+      left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y);
+    }
+    if (right >= left) {
+      left = Math.max(0, left - 1); top = Math.max(0, top - 1);
+      right = Math.min(w - 1, right + 1); bottom = Math.min(h - 1, bottom + 1);
+      frame = new P.Rectangle(left, top, right - left + 1, bottom - top + 1);
+    }
+  } catch { /* A remote asset can disallow pixel reads; its untrimmed sprite remains usable. */ }
+  const texture = new P.Texture(new P.BaseTexture(canvas), frame);
+  _unitSprites.set(img, texture);
+  return texture;
+}
+
 const _silhouettes = new WeakMap(); // image → texture (field views are mounted once per match: one canvas per image)
 /** White copy of an image's alpha (so a dark silhouette can be tinted to any colour). Cached per image. */
 export function silhouetteTexture(img) {

@@ -1,4 +1,19 @@
-# 卫戍协议：盟约 · Stronghold Protocol: Covenant
+# 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
+
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.0** 提交 [`e9e032f`](https://github.com/sganggs/Stronghold-Protocol/commit/e9e032f)，本次扩展修改日期为 **2026-10-03**，尚未合入上游 v0.1.1。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-research`。
+
+扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
+
+### 本扩展新增内容
+
+- 莱茵生命 3 / 6 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
+- 梅尔、乌啾、森蚺、伊芙利特及其全部可选技能、适用模组；调整白面鸮、塞雷娅等干员的盟约与特质。
+- 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
+- 装置放置预览、选中圆形范围和突破后范围变化；联机同步、机器人选择及相关测试。
+
+完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。请按下方**从源码运行**步骤安装扩展；上游 v0.1.0 整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
+
+以下保留原项目介绍、声明与致谢，并对本 fork 的安装方式作相应说明。
 
 《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–4 人联机合作。
 
@@ -12,7 +27,7 @@
 > - 本项目是玩家自制的**非官方同人作品**，与上海鹰角网络科技有限公司（Hypergryph）、Yostar 及其关联方**没有任何关系**，未获其授权或认可。
 > - 《明日方舟》及「卫戍协议」相关的名称、角色、美术、音乐、音效、文本与数据等素材，版权归原权利人所有。这些素材**不适用**本项目的 GPL-3.0 许可证；GPL 只覆盖本项目自己编写的代码。
 > - 仅供学习交流与个人非商业使用。**严禁任何形式的盈利**，包括但不限于：售卖本项目或整合包、付费下载或付费分发、收费服务器或收费代开、广告 / 打赏 / 会员等变现方式，以及其他任何商业用途。
-> - 仓库源码不包含游戏的美术与音频素材（只有由官方数据表生成的数据和几张游戏截图，同样不适用 GPL）；[Releases](../../releases/latest) 中的整合包为了方便玩家附带了素材，下载即视为同意本声明。请勿将素材用于本项目以外的用途或单独再分发。完整条款见 [NOTICE.md](NOTICE.md)。
+> - 上游仓库源码不包含下载的游戏美术与音频素材（由官方数据表生成的数据和几张游戏截图同样不适用 GPL）；[上游 Releases](https://github.com/sganggs/Stronghold-Protocol/releases/latest) 中的原版整合包为了方便玩家附带了素材，下载即视为同意本声明。该整合包**不包含本扩展**。本 fork 保留下载目录排除规则，并增加 `public/art/rhine/` 中的扩展图像与阵营标识；这些图像不构成对官方角色、标识或其他权利的授权。请勿将游戏素材用于本项目以外的用途或单独再分发。完整条款见 [NOTICE.md](NOTICE.md)。
 > - 权利人如认为本项目侵犯其权益，请通过 Issue 联系，我们会**立即删除**相关内容。
 > - 本项目按「现状」提供，**不提供任何担保**，使用风险自负。
 
@@ -27,7 +42,7 @@ English summary: [below](#english).
 ## 目录
 
 - [声明](#声明) · [简介](#简介) · [功能一览](#功能一览)
-- [快速开始](#快速开始)：[整合包](#方式一整合包推荐) · [从源码运行](#方式二从源码运行) · [系统要求](#系统要求) · [端口与配置](#端口与配置) · [局域网联机](#和朋友一起玩局域网)
+- [快速开始](#快速开始)：[本扩展源码](#本扩展从源码运行) · [上游原版整合包](#上游原版整合包不包含本扩展) · [系统要求](#系统要求) · [端口与配置](#端口与配置) · [局域网联机](#和朋友一起玩局域网)
 - [联机方式](#联机方式) · [操作](#操作) · [文档](#文档) · [开发与测试](#开发与测试) · [项目结构](#项目结构)
 - [许可证](#许可证) · [致谢与数据来源](#致谢与数据来源) · [贡献](#贡献)
 
@@ -37,9 +52,11 @@ English summary: [below](#english).
 
 - **独立模拟**（单人）与**同盟模拟**（1–4 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
-- 这是第一个公开版本（0.1.0）。仍有少数规则按推断实现，与官方不一致的地方欢迎在 Issue 里反馈。
+- 上游基础版本为 0.1.0；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
 
-## 功能一览
+## 原版功能一览
+
+以下数量为上游 v0.1.0 介绍口径，本 fork 在此基础上加入上述莱茵扩展。
 
 - **完整的一局**：确认本局信息 → 策略轮选（40 名策略）→ 14 回合 → 结算称号；险境及以上满足条件时进入第 15 回合「隐秘核心」。
 - **4 种难度**：标准 / 险境 / 绝境 / 终极，独立与同盟各一套参数，均取自官方数据。
@@ -60,29 +77,37 @@ English summary: [below](#english).
 
 ## 快速开始
 
-### 方式一：整合包（推荐）
+### 本扩展：从源码运行
 
-整合包里已经包含代码、运行依赖和全部美术 / 音频（含官方 3D 棋盘贴图），解压就能玩，不需要再下载任何东西。
+安装 Node.js 22 或 24（LTS）与 Git 后运行：
+
+```bash
+git clone --branch codex/rhine-research https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git
+cd Stronghold-Protocol-Rhine
+npm ci             # 按锁文件安装依赖，postinstall 会准备浏览器依赖
+npm run setup      # 检查环境，下载原版及莱茵干员资源，可中断后续传
+npm start          # 启动服务器：http://localhost:3000
+```
+
+`npm run setup` 使用已接入莱茵资源计划的 `tools/fetch-assets.mjs`。已有原版资源时，可单独运行 `node tools/fetch-rhine-assets.mjs` 补全莱茵干员头像、技能图标、模型和召唤物，并更新素材清单。`public/art/rhine/` 的扩展贴图随源码提供；下载的官方资源仍保存在被 Git 排除的 `public/assets/`，不要提交或打包上传。
+
+源码已包含生成的数据，正常运行不需要先执行 `build-data`。修改扩展规则后按 [docs/RHINE.md](docs/RHINE.md) 的开发步骤重新生成并验证数据。
+
+### 上游原版整合包（不包含本扩展）
+
+以下保留上游原版的安装说明。**它仅用于体验原版，不会安装本 fork 的莱茵扩展。** 原版整合包包含代码、运行依赖和全部美术 / 音频（含官方 3D 棋盘贴图），解压就能玩，不需要再下载任何东西。
 
 1. **安装 Node.js 22 或 24（LTS）**
    - Windows：在 PowerShell 里运行 `winget install OpenJS.NodeJS.LTS`，或到 <https://nodejs.org/zh-cn/download> 下载安装包。
    - macOS：`brew install node@22`，或到官网下载安装包。
    - Linux：发行版的包管理器、nvm 或 fnm。
-2. **下载**：在 [Releases](../../releases/latest) 页面下载 v0.1.0 的整合包（zip），解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。
+2. **下载**：在 [上游 Releases](https://github.com/sganggs/Stronghold-Protocol/releases/latest) 页面下载 v0.1.0 的原版整合包（zip），解压到一个路径较短的文件夹（Windows 上建议不要放在 OneDrive 同步的目录里）。
 3. **启动**
    - Windows：双击 **`scripts\start-windows.bat`**。如果弹出「安全警告」，点「运行」；Windows 防火墙弹窗请勾选「专用网络」并允许。
    - macOS / Linux：在解压出的文件夹里运行 `./scripts/start.sh`（或 `bash scripts/start.sh`）。
 4. 浏览器会自动打开 `http://localhost:3000`。窗口里列出的局域网地址可以直接发给同一网络的朋友。关闭窗口（或按 `Ctrl+C`）即停止服务器。
 
-### 方式二：从源码运行
-
-```bash
-git clone https://github.com/sganggs/Stronghold-Protocol.git
-cd Stronghold-Protocol
-npm install        # 安装依赖（postinstall 会把 pixi / preact / three 复制到 public/vendor）
-npm run setup      # 检查环境，并从公开镜像下载约 250 MB 美术 / 音频（可中断，再次运行会续传）
-npm start          # 启动服务器：http://localhost:3000
-```
+### 源码安装补充
 
 也可以直接运行启动脚本（Windows `scripts\start-windows.bat`，macOS / Linux `scripts/start.sh`）：首次会自动安装依赖、下载素材，然后启动服务器并打开浏览器。
 
@@ -164,6 +189,8 @@ npm start          # 启动服务器：http://localhost:3000
 
 | 文档 | 内容 |
 |---|---|
+| [docs/RHINE.md](docs/RHINE.md) | 莱茵扩展：干员、盟约、科研装置、装备、开发与运行 |
+| [docs/RHINE-CHANGES.md](docs/RHINE-CHANGES.md) | 扩展修改范围、上游关系与测试边界 |
 | [docs/PLAYING.md](docs/PLAYING.md) | 玩法指南：流程、经济、招募与晋升、摆阵、联防、盟约、最终攻势、结算称号 |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | 部署指南：Windows 开服与开机自启、防火墙、组网 / 隧道、反向代理与 HTTPS、Docker、systemd、排错 |
 | [docs/DESIGN.md](docs/DESIGN.md) | 架构与契约（英文）：技术栈、目录分工、网络协议、渲染与 UI、各次试玩后的规则修订 |
@@ -178,7 +205,7 @@ npm start          # 启动服务器：http://localhost:3000
 
 ```bash
 npm run dev                 # node --watch：改动服务器代码后自动重启
-node --test                 # 单元 + 集成测试（约 2880 项；缺少素材 / 浏览器的用例会自动跳过）
+node --test                 # 单元 + 集成测试；缺少素材 / 浏览器的用例会按条件跳过
 SP_E2E=1 node --test test/ui/mock.e2e.test.js        # 浏览器端到端测试，需要本机 Chrome（CHROME_PATH 可指定路径）
 SP_REAL_E2E=1 node --test test/ui/real.e2e.test.js   # 需要 Chrome + 已下载的素材
 RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部分需要本地提取的棋盘贴图
@@ -186,6 +213,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 - 游戏数据由 `npm run build-data`（`tools/build-data.mjs`）从官方数据表生成，不要手工修改 `data/*.json`。
 - GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）在 Ubuntu 与 Windows、Node 22 / 24 上运行 `npm ci`、`node --test` 和服务器冒烟测试。
+- 2026-10-03 本地全量测试记录：3017 项，3009 通过、0 失败、8 项条件跳过（2 项缺少原始数据缓存，6 项未启用可选浏览器环境）。此记录不等同于每种技能／装备组合的完整人工实机验收，也不预先代表 GitHub Actions 已运行通过。
 
 ## 项目结构
 
@@ -208,6 +236,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 ## 致谢与数据来源
 
+- 原项目及作者：[sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol)。本 fork 的原版引擎、玩法、界面及文档基于其公开成果，保留原许可证、声明、作者记录和下列致谢。
 - 游戏数据：[Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)。
 - 素材来源：[yuanyan3060/ArknightsGameResource](https://github.com/yuanyan3060/ArknightsGameResource)、[fexli/ArknightsResource](https://github.com/fexli/ArknightsResource)、[isHarryh/Ark-Models](https://github.com/isHarryh/Ark-Models)、[ArknightsAssets/ArknightsAssets2](https://github.com/ArknightsAssets/ArknightsAssets2)；字体来自 [TimWangZi/The-font-of-Arknights](https://github.com/TimWangZi/The-font-of-Arknights) 与 Google Fonts（Noto Sans SC）。详见 [docs/ASSETS.md](docs/ASSETS.md)。
 - 规则核对参考：[PRTS 明日方舟中文 Wiki](https://prts.wiki/)。
@@ -218,7 +247,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 ## 贡献
 
-欢迎提 Issue 反馈 bug、与官方规则不一致的地方或改进建议，也欢迎提交 Pull Request：
+欢迎在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈扩展 bug 或改进建议，也欢迎提交 Pull Request。莱茵扩展是自定义规则，请不要将其专有问题直接报给上游；如问题能在未修改的上游版本复现，再按上游贡献要求提交最小复现：
 
 - 提交前请运行 `node --test`，并同步更新相关文档；文档使用简体中文，代码与注释使用英文。
 - 提交的代码将以 GPL-3.0-or-later 发布。
@@ -231,7 +260,8 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Covenant*, played in the browser: solo, or 1–4 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Run:** download the all-in-one bundle from [Releases](../../releases/latest), install Node.js 22 or 24, then double-click `scripts\start-windows.bat` (Windows) or run `./scripts/start.sh` (macOS / Linux) and open <http://localhost:3000>. From source: `npm install && npm run setup && npm start` (setup downloads ~250 MB of art from public mirrors; the official 3D board needs a local Arknights client to extract, otherwise the 2D board is used).
+- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) at `e9e032f`. Modified on 2026-10-03. It is not an upstream or official game release; report expansion issues to this fork.
+- **Run this expansion:** clone this fork, install Node.js 22 or 24, then run `npm ci`, `npm run setup`, and `npm start`. Setup includes the Rhine resource plan; `node tools/fetch-rhine-assets.mjs` can supplement an existing asset download. The [upstream all-in-one bundle](https://github.com/sganggs/Stronghold-Protocol/releases/latest) contains the original game only, not this expansion. The official 3D board needs a local Arknights client to extract; otherwise the 2D board is used.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.
 - **License:** code GPL-3.0-or-later ([LICENSE](LICENSE)); game assets excluded.

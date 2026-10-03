@@ -102,7 +102,7 @@ import { loadThree, loadBoardPack, webgl2Available, boardArtListed } from './boa
 import { BoardScene } from './board3d/scene.js';
 import { AREAS, areaFor, unionAreas } from './board3d/layout.js';
 import { layoutPen, penSignature } from './pen.js';
-import { IDENTITY, bossPrepField, tilesToDisp } from './prepfield.js';
+import { IDENTITY, bossPrepField, tilesToDisp, circleToDisp } from './prepfield.js';
 import { pickOnTile, pickBattle, hitRectAt } from './pick.js';
 import { promotionsOf } from './promote.js';
 
@@ -792,7 +792,7 @@ export async function createFieldView(host, options = {}) {
     }
     if (kind === 'token') {
       const rec = data.token(piece.id);
-      return { kind: 'token', side: 'ally', defId: piece.id, spine: rec?.assets?.spine || piece.id, avatar: rec?.assets?.avatar || piece.id, tier: piece.tier || 1, golden: false, dir };
+      return { kind: 'token', side: 'ally', defId: piece.id, spine: rec?.assets?.spine || piece.id, avatar: rec?.assets?.avatar || piece.id, tier: piece.tier || 1, golden: false, dir, researchStage: piece.research ? piece.stage : undefined };
     }
     const rec = data.chess(piece.id);
     return {
@@ -907,6 +907,7 @@ export async function createFieldView(host, options = {}) {
         }
       }
       v._home = w;
+      if (info.researchStage != null) v.setResearchStage?.(info.researchStage);
       v.dimmed = false;
       if (v.setCount) v.setCount(e.piece.kind === 'token' ? e.piece.count : 0);
       if (v.setItems) v.setItems(Array.isArray(e.piece.items) ? e.piece.items.map((it) => { const r = data.item(it?.id); return assets.itemIcon ? assets.itemIcon(r ? { trapId: r.trapId, iconId: r.iconId } : it?.id) : null; }) : []);
@@ -1076,6 +1077,7 @@ export async function createFieldView(host, options = {}) {
    */
   function drawHighlight(list, style, group) {
     const key = hlKey(style, group);
+    if (style?.circle) style = { ...style, circle: circleToDisp(mode === 'prep' ? prepXf : IDENTITY, style.circle) };
     const range = RANGE_GROUPS.has(key) || style === 'range';
     let t = tilesToDisp(IDENTITY, list);
     if (range) t = t.filter(([r]) => r !== GEO.HAND_ROW && r !== GEO.TEMP_ROW);

@@ -20,6 +20,7 @@
 import { render } from '../../vendor/preact.module.js';
 import { html, TierChip } from './components.js';
 import { GEO } from '../../../shared/constants.js';
+import { circleRangeSections } from '../../../shared/rhineRange.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
 
@@ -184,7 +185,7 @@ export function createFallbackView(host, opts = {}) {
     if (d.moved) {
       const t = targetAt(e.clientX, e.clientY);
       st.hoverTarget = t;
-      emit('tileHover', t.area === 'board' ? { row: t.row, col: t.col } : null);
+      emit('tileHover', t.area === 'board' ? { area: 'board', row: t.row, col: t.col } : null);
       schedule();
     }
   }
@@ -306,7 +307,7 @@ export function createFallbackView(host, opts = {}) {
         const p = tilePos(L, row, col);
         const k = tileKey(row, col);
         let hl = st.highlight.get(k);
-        for (const g of st.hlGroups.values()) if (g.tiles.has(k)) hl = g.name;
+        for (const g of st.hlGroups.values()) if (!g.circle && g.tiles.has(k)) hl = g.name;
         const hov = st.hoverTarget?.area === 'board' && st.hoverTarget.row === row && st.hoverTarget.col === col ? dropState(st.hoverTarget) : null;
         tiles.push(html`<div key=${k} class=${cx('ff-tile', `ff-tile--${tileClass(row, col)}`, hl && `is-${hl}`, hov && `is-hover-${hov}`)}
           data-drop="board" data-row=${row} data-col=${col}
@@ -360,7 +361,14 @@ export function createFallbackView(host, opts = {}) {
     if (st.camera === 'pen') { render(html`${penView()}<div class="ff-badge">SIMPLIFIED VIEW</div>`, root); return; }
     render(html`<div class=${cx('ff-board', `ff-board--${st.mode}`, `ff-cam--${st.camera}`)} style=${`left:${L.left}px;top:${L.top}px;width:${L.bw}px;height:${L.bh}px;--tile:${L.tile}px`}>
       ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>整备区</span><i></i></div>` : null}
-      ${tiles}${hand}${units}${pieces}${floats}
+      ${tiles}${hand}${[...st.hlGroups.values()].filter(g=>g.circle).map(g=>{
+        const {row,col,radius}=g.circle, color=`#${(g.color??0xff9c33).toString(16).padStart(6,'0')}`;
+        const point=([x,y])=>`${(x-r.c0+.5)*L.tile},${(r.r1-y+.5)*L.tile}`;
+        return html`<svg data-research-range=${radius} style=${`position:absolute;left:0;top:0;width:${L.bw}px;height:${L.rows*L.tile}px;pointer-events:none;overflow:hidden;z-index:1`}>
+          ${circleRangeSections(row,col,radius,r).map(s=>html`<g><polygon points=${s.polygon.map(point).join(' ')} fill=${color} fill-opacity=".2" />
+            ${s.arcs.map(([a,b])=>html`<polyline points=${`${point(a)} ${point(b)}`} fill="none" stroke=${color} stroke-width="2" />`)}</g>`)}
+        </svg>`;
+      })}${units}${pieces}${floats}
     </div>${ghost}
     <div class="ff-badge">SIMPLIFIED VIEW</div>`, root);
     if (st.floats.length) schedule();
@@ -451,7 +459,7 @@ export function createFallbackView(host, opts = {}) {
           const col = Array.isArray(t) ? t[1] : t?.col;
           if (Number.isInteger(row) && Number.isInteger(col)) set.add(tileKey(row, col));
         }
-        if (set.size) st.hlGroups.set(style.group, { name: 'range', tiles: set }); else st.hlGroups.delete(style.group);
+        if (set.size) st.hlGroups.set(style.group, { name: 'range', tiles: set, circle: style.circle, color: style.color }); else st.hlGroups.delete(style.group);
         schedule();
         return;
       }

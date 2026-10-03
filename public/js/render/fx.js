@@ -35,6 +35,7 @@
 
 import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
+import { RHINE_BALANCE } from '../../../shared/rhineResearch.js';
 
 /**
  * The sim's projectile speeds (server/sim/constants.js PROJECTILE_SPEEDS — pure data, served read-only at
@@ -157,6 +158,10 @@ const num = (v, d) => { const n = typeof v === 'number' ? v : typeof v === 'stri
  * kinds fall back to a keyword guess, then to a generic sparkle (fxSpec).
  */
 export const FX_KINDS = Object.freeze({
+  burn: { a: 'flame', c: 0xff713b, r: 0.6 },
+  rhineHeal: { a: 'researchHeal', c: 0x6fe8c1, pt: true },
+  rhinePulse: { a: 'researchPulse', c: 0xffbc70, r: RHINE_BALANCE.energySpreadRadius, pt: true },
+  rhineEcology: { a: 'researchEcology', c: 0x73dfd5, r: RHINE_BALANCE.radius, dur: RHINE_BALANCE.ecologyDuration, pt: true },
   // blasts
   aoe: { a: 'blast', c: 0xffb35c }, explode: { a: 'blast', c: 0xff7a33 }, explosion: { a: 'blast', c: 0xff7a33 },
   // `pt`: always at the event's (x, y) (its `id` is the shooter); `heavy`: debris + scorch
@@ -1682,6 +1687,27 @@ export class FxSystem {
     const r = clamp(num(ex.r ?? ex.radius, spec.r ?? 1), 0.3, 30);
     const ts = this.ctx.timeScale ? Math.max(0.25, this.ctx.timeScale()) : 2;
     const dur = num(ex.dur ?? ex.duration, spec.dur ?? 0) / ts;
+    // Research emits explicit source ids because the effect point can be a different unit's tile.
+    // Idle rigs never invent activations; these cues are tied to successful sim events only.
+    if (spec.a.startsWith('research')) {
+      const src = this._viewOf(ex.source ?? ex.src ?? ex.id);
+      src?.onResearchFx?.(kind, ex);
+      if (spec.a === 'researchHeal') {
+        const target = this._viewOf(ex.target);
+        if (src && target && src !== target) this._beam(src, target, col, 0.28, 0.1);
+        this.ring(at.x, at.y, at.z, 0.12, 0.48, col, 0.48);
+      } else if (spec.a === 'researchPulse') {
+        if (src) this.ring(src.x, src.y, src.z || 0, 0.16, 0.68, col, 0.38, 'shock');
+        const radius = ex.stage >= 1 ? r : 0.38;
+        this.ring(at.x, at.y, at.z, 0.1, radius, col, 0.46, 'shock');
+        if (this.rich && ex.stage >= 1) this.ring(at.x, at.y, at.z, 0.18, radius * 0.86, col, 0.65);
+      } else {
+        this.zone(at.x, at.y, at.z, r, col, Math.max(0.6, dur || 1.5), 'ring');
+        this.ring(at.x, at.y, at.z, 0.2, r, col, 0.85, 'ring');
+        if (this.rich && ex.stage >= 1) this.ring(at.x, at.y, at.z, r * 0.92, r, col, 0.5, 'hex');
+      }
+      return;
+    }
     const cam = this.ctx.cam();
     const chest = (v, out = this._p) => (v ? this._chest(v, out) : cam.project(at.x, at.y, at.z + 0.5, out));
     const p = chest(at.v);

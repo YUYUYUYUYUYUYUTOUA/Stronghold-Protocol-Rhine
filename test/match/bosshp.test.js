@@ -19,7 +19,7 @@ import { createBattleFromSpec } from '../../server/sim/spec.js';
 import { SharedBossPool } from '../../server/match/finalAssault.js';
 
 /** 4 AI seats, co-op, LP 400 (they reach R14), +`layers` on every active bond at the boss round's prep. */
-function toFinalAssault({ difficulty, seed, bossId, layers = 0 }) {
+function toFinalAssault({ difficulty, seed, bossId, layers = 0, finalPrepare = null }) {
   const seats = [0, 1, 2, 3].map((i) => ({ seat: i, playerId: `ai_${i}`, name: `AI${i}`, isBot: true, connected: true }));
   // instant: false — the boss fields wait for the test to step them (server-run, real sim)
   const h = makeMatch({ mode: 'coop', difficulty, seats, seed, captureFrames: false, instant: false });
@@ -32,6 +32,7 @@ function toFinalAssault({ difficulty, seed, bossId, layers = 0 }) {
     if (k !== last) {
       last = k;
       if (m.phase === PHASE.PREP && m.round === 1) for (const ps of m.players.values()) ps.lp = 400;
+      if (m.phase === PHASE.PREP && m.round === m.gd.bossRound) finalPrepare?.(m);
       if (layers && m.phase === PHASE.PREP && m.round === m.gd.bossRound) {
         for (const ps of m.alivePlayers()) {
           for (const id of m.gd.bondIds) if (ps.bonds[id] && ps.bonds[id].active) ps.layers[id] = (ps.layers[id] || 0) + layers;
@@ -116,16 +117,18 @@ test('绝境 Final Assault: both pair fields drain the one pool, every hit exact
   m.dispose();
 });
 
-test('终极 Final Assault vs 假想敌：胄 (seed 12): both players\' 奥术 never multiply on the leader; a drone costs it 2 % of the pool', () => {
+test('终极 Final Assault vs 假想敌：胄: both players\' 奥术 never multiply on the leader; a drone costs it 2 % of the pool', () => {
   // DESIGN §20.10: one 奥术 instance per target (the strongest — PRTS 作战机制 同名buff, 巴哈姆特 12316 "共享型buff會跟對面搶");
   // 死亡集群's "最大生命值2%" = the leader's shown max HP, the pool (DRONE_LINK_BASE 'pool' [ASSUMED]): 72 000 at 终极
-  // seed 12: since the elite-to-board merge (DESIGN §20.11) the bots' boards differ; seed 7 no longer pairs two 奥术 players
-  const h = toFinalAssault({ difficulty: 'ABYSS', seed: 12, bossId: 'boss_1' });
+  // Explicitly activate the competing auras at final prep: a new roster must not silently remove the test's precondition.
+  const h = toFinalAssault({ difficulty: 'ABYSS', seed: 12, bossId: 'boss_1', finalPrepare(m) {
+    for (const ps of m.alivePlayers()) { ps.bondCountBonus.arcaneShip = 2; ps.layers.arcaneShip = 40 + ps.seat * 10; ps.recompute(); }
+  } });
   const m = h.m;
   const fields = m.fields.filter((f) => f.battle);
   const bb = bondBb('arcaneShip');
   const both = fields.find((f) => f.players.length === 2 && f.players.every((pid) => f.battle.getPlayer(pid).bonds.arcaneShip?.active));
-  assert.ok(both, 'precondition: a pair field where both players run 奥术 (bot lineups of seed 12)');
+  assert.ok(both, 'precondition: a pair field with two explicitly active 奥术 auras');
   const allowed = [];
   for (const pid of both.players) {
     const b = both.battle.getPlayer(pid).bonds.arcaneShip;

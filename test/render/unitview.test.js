@@ -7,6 +7,8 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakePixi, fakeViewCtx } from './fakepixi.js';
 import { presetCamera } from '../../public/js/render/projection.js';
+import { createAssets } from '../../public/js/assets.js';
+import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
 
 let fake, UnitView, T;
 before(async () => {
@@ -130,6 +132,58 @@ describe('diamond cache', () => {
     const n0 = diamonds().length;
     T.diamondTexture('lru_1', null, 0xffffff);
     assert.equal(diamonds().length, n0 + 1, 'the least recently used ones were evicted');
+  });
+});
+
+describe('research device art', () => {
+  test('each research token uses its complete distinct PNG in prep and battle, even when the manifest still names the SVG', async () => {
+    const images = new Map(RHINE_DEVICES.map((d) => [d.sprite, { width: 1280, height: 1280, src: d.sprite }]));
+    for (const manifestPresent of [true, false]) {
+      const loaded = [];
+      const assets = createAssets({ manifest: { tokens: manifestPresent ? Object.fromEntries(RHINE_DEVICES.map((d) => [d.tokenId, { avatar: d.icon }])) : {} },
+        loadImage: async (url) => { loaded.push(url); return images.get(url) ?? null; } });
+      const textures = new Set();
+      for (const d of RHINE_DEVICES) for (const prep of [true, false]) {
+        const v = view({ kind: 'token', defId: d.tokenId, avatar: d.tokenId }, { prep }, assets);
+        await tick(); await tick(); v.update(1 / 60, cam(), 0);
+        assert.equal(v._pic.state, 'img', `${d.key} loaded`);
+        assert.equal(v.fallback.texture, T.unitSpriteTexture(images.get(d.sprite)), `${d.key} complete sprite, no diamond crop`);
+        textures.add(v.fallback.texture);
+        assert.equal(v.chip, null);
+        v.destroy();
+      }
+      assert.equal(textures.size, 3, 'three distinct images');
+      assert.deepEqual(loaded.sort(), RHINE_DEVICES.map((d) => d.sprite).sort());
+    }
+  });
+
+  test('a failed full sprite still falls back to the existing transparent icon', async () => {
+    const d = RHINE_DEVICES[0], loaded = [], icon = { width: 96, height: 96 };
+    const assets = createAssets({ manifest: {}, loadImage: async (url) => { loaded.push(url); return url === d.icon ? icon : null; } });
+    const v = view({ kind: 'token', defId: d.tokenId }, { prep: true }, assets);
+    await tick(); await tick(); v.update(1 / 60, cam(), 0);
+    assert.deepEqual(loaded, [d.sprite, d.icon]);
+    assert.equal(v.fallback.texture, T.unitSpriteTexture(icon));
+    v.destroy();
+  });
+
+  test('whole-unit icons preserve transparency and fit the complete image without clipping', () => {
+    const create = globalThis.document.createElement;
+    const calls = [];
+    globalThis.document.createElement = (tag) => {
+      const c = create(tag);
+      if (tag === 'canvas') {
+        const ctx = c.getContext('2d');
+        for (const method of ['drawImage', 'clip', 'fill', 'fillRect', 'stroke']) ctx[method] = (...args) => calls.push([method, ...args]);
+      }
+      return c;
+    };
+    try {
+      const img = { width: 80, height: 160 };
+      const a = T.unitIconTexture(img), b = T.unitIconTexture(img);
+      assert.equal(a, b, 'cached across prep and battle');
+      assert.deepEqual(calls, [['drawImage', img, 44, 8, 72, 144]], 'contains all art; no painted background or clipping');
+    } finally { globalThis.document.createElement = create; }
   });
 });
 

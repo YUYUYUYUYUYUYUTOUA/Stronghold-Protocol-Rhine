@@ -170,7 +170,7 @@ function legacyInvariants(m) {
       assert.ok(ps.hand.every((x) => x == null) && ps.temp.every((x) => x == null), 'eliminated player keeps nothing');
     }
     const chessUids = new Set();
-    const all = [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean)];
+    const all = [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean), ...(ps.research?.hand || []).filter(Boolean)];
     for (const p of all) if (p.kind === 'chess') chessUids.add(p.uid);
     let deployed = 0;
     const dmap = m.deployMapFor(ps); // a pure read (as server/match/invariants.js): no PlayerState cache touched
@@ -182,7 +182,7 @@ function legacyInvariants(m) {
       assert.ok(canPlace(dmap, positionClass(rec), r, c), `illegal tile ${p.id} @ ${k}`);
       assert.notEqual(p.kind, 'item', 'items never stand on the board');
       if (p.kind === 'chess') deployed++;
-      if (p.kind === 'token') assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
+      if (p.kind === 'token' && !p.research) assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
     }
     assert.ok(deployed <= ps.deployCap, `${ps.playerId} deployCount ${deployed} > cap ${ps.deployCap}`);
     for (const p of all) {
@@ -199,7 +199,7 @@ function legacyInvariants(m) {
         assert.ok(m.gd.item(p.id), `unknown item ${p.id}`);
       } else if (p.kind === 'token') {
         assert.ok(p.count >= 1, 'token stack count');
-        assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
+        if (!p.research) assert.ok(chessUids.has(p.ownerUid), `orphan token ${p.uid}`);
       }
     }
     // merges are immediate: never 3 normal copies (风丸 2) of one chess owned at once

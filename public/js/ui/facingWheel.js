@@ -133,10 +133,11 @@ export function syncPieceDirs(view, priv, skip = null) {
 }
 
 /** Light the rotated range of a piece on (row, col) facing `dir` (no grid / dir clears the style's group). */
-export function showRange(view, grid, row, col, dir, style = FACING_STYLE) {
+export function showRange(view, grid, row, col, dir, style = FACING_STYLE, radius = null) {
   if (!view || typeof view.highlightTiles !== 'function') return [];
-  const tiles = grid && dir ? rangeTiles(grid, row, col, dir) : [];
-  try { view.highlightTiles(tiles, style); } catch { /* cosmetic */ }
+  const circle = Number.isFinite(radius) && radius > 0;
+  const tiles = grid && (dir || circle) ? rangeTiles(grid, row, col, circle ? 'RIGHT' : dir) : [];
+  try { view.highlightTiles(tiles, circle ? { ...style, circle: { row, col, radius } } : style); } catch { /* cosmetic */ }
   return tiles;
 }
 
@@ -179,7 +180,7 @@ function Chevron({ dir, on }) {
  * @param {{ view: any, row: number, col: number, grid: Array<[number, number]>|null, name?: string,
  *   onPreview?: (dir: string|null) => void, onCommit: (dir: string) => void, onCancel: () => void }} props
  */
-export function FacingWheel({ view, row, col, grid, name = '', onPreview, onCommit, onCancel }) {
+export function FacingWheel({ view, row, col, grid, radius = null, name = '', onPreview, onCommit, onCancel }) {
   const g = useTileScreen(view, row, col);
   const [dir, setDir] = useState(null);
   const [drag, setDrag] = useState(null); // { id } while a pointer is down
@@ -195,7 +196,7 @@ export function FacingWheel({ view, row, col, grid, name = '', onPreview, onComm
   live.current = { g, half, dead, dir, bdir, mirror, onCommit, onCancel, onPreview };
 
   // preview: model / wedge direction and the rotated range under the units
-  const tiles = useRangeHighlight(view, grid, row, col, bdir);
+  const tiles = useRangeHighlight(view, grid, row, col, bdir, radius);
   useEffect(() => { try { onPreview?.(bdir); } catch { /* ignore */ } }, [bdir]);
   useEffect(() => () => { showRange(view, null, row, col, null); }, []);
 
@@ -252,7 +253,7 @@ export function FacingWheel({ view, row, col, grid, name = '', onPreview, onComm
   return html`<div class=${cx('fwheel', drag && 'is-pressed', dir && `is-${dir.toLowerCase()}`)} role="dialog" aria-label=${`选择${name ? `「${name}」的` : ''}朝向`}
       onPointerDown=${onDown} onPointerMove=${onMove} onPointerUp=${onUp} onPointerCancel=${onPointerCancel}
       onContextMenu=${(e) => { e.preventDefault(); onCancel(); }}>
-    ${g ? html`<${Stripes} tiles=${tiles} view=${view} row=${row} col=${col} />` : null}
+    ${g && !radius ? html`<${Stripes} tiles=${tiles} view=${view} row=${row} col=${col} />` : null}
     ${g ? html`<div class="fwheel__dia" style=${`left:${g.x}px;top:${g.y}px;width:${box}px;height:${box}px`}>
       <svg class="fwheel__svg" viewBox="-110 -110 220 220" aria-hidden="true">
         <path class="fwheel__outer" d="M0 -100 L100 0 L0 100 L-100 0 Z" />
@@ -275,9 +276,9 @@ export function FacingWheel({ view, row, col, grid, name = '', onPreview, onComm
 }
 
 /** Keep the view's 'facing' highlight group on the rotated range; returns the tiles. */
-function useRangeHighlight(view, grid, row, col, dir) {
+function useRangeHighlight(view, grid, row, col, dir, radius) {
   const [tiles, setTiles] = useState([]);
-  useLayoutEffect(() => { setTiles(showRange(view, grid, row, col, dir)); }, [view, grid, row, col, dir]);
+  useLayoutEffect(() => { setTiles(showRange(view, grid, row, col, dir, FACING_STYLE, radius)); }, [view, grid, row, col, dir, radius]);
   return tiles;
 }
 

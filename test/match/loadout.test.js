@@ -33,7 +33,7 @@ function place(m, ps, chessId, row, col) {
 // ---- shared checks -------------------------------------------------------------------------------------------------
 
 test('data carries the §16 choices every visible chess needs (skills at both statuses, elite modules + none)', () => {
-  assert.equal(visible.length, 112);
+  assert.equal(visible.length, 116);
   for (const c of visible) {
     const g = chess(c.goldenId);
     const o = loadoutOptions(c, g);
@@ -103,6 +103,16 @@ test('checkLoadout: strict semantic check against the data; defaults dropped; no
   const noGolden = (id) => (id === INSIDE ? solo : chess(id));
   assert.equal(checkLoadout({ [INSIDE]: { module: 'none' } }, noGolden).error, ERR.BAD_TARGET);
   assert.deepEqual(checkLoadout({ [INSIDE]: { skill: 0 } }, noGolden), { ok: true, loadout: { [INSIDE]: { skill: 0, module: null } } });
+});
+
+test('Rhine loadouts reject removed RA, resolve stale selection to HES-X, and still accept explicit none', () => {
+  const id = 'chess_rhine_eunectes_a', normal = chess(id), elite = chess(normal.goldenId);
+  assert.deepEqual(loadoutOptions(normal, elite).modules, ['uniequip_002_zumama','uniequip_003_zumama','none']);
+  assert.equal(checkLoadout({ [id]: { module: 'uniequip_004_zumama' } }, chess).error, ERR.BAD_TARGET);
+  assert.deepEqual(resolveLoadout({ [id]: { skill: 0, module: 'uniequip_004_zumama' } }, elite, chess),
+    { skillIndex: 0, moduleId: 'uniequip_002_zumama' });
+  const none = checkLoadout({ [id]: { module: 'none' } }, chess);
+  assert.ok(none.ok); assert.deepEqual(resolveLoadout(none.loadout, elite, chess), { skillIndex: 2, moduleId: 'none' });
 });
 
 test('resolveLoadout: normal chess → moduleId null; elite → the chosen module / none; others → defaults', () => {

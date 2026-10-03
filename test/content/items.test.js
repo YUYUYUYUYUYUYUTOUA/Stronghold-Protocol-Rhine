@@ -51,6 +51,8 @@ const hitTrue = (h, src, tgt, amount) => h.b.dealDamage(src, tgt, { amount, type
 // stats (直接乘算: each equipment % is its own multiplier)
 
 const STAT_CASES = [
+  ['chess_item_rhine_terminal_a', { atk: 575 }], ['chess_item_rhine_terminal_b', { atk: 625 }],
+  ['chess_item_rhine_mainframe_a', { maxHp: 2900 }], ['chess_item_rhine_mainframe_b', { maxHp: 3400 }],
   // [item id, expected stats (partial), note]
   [A('1_01'), { atk: 575 }], [B('1_01'), { atk: 625 }],                                   // 维式重锤 +15 / +25 %
   [A('1_02'), { def: 240 }], [B('1_02'), { def: 270 }],                                   // 坚守盾牌 +20 / +35 %
@@ -665,10 +667,10 @@ test('变形同构体: carrier counts as a member of the other item\'s giveBondI
   assert.deepEqual([...unitBonds(h.unit('t_op'))], ['lateranoShip']);
   const h2 = fight({ units: [{ chessId: 't_op', row: 10, col: 4, items: [A('4_08')] }] });
   assert.deepEqual([...unitBonds(h2.unit('t_op'))], [], 'the bond item alone grants nothing');
-  // every giveBondId item grants its bond (14 bonds)
+  // every giveBondId item grants its bond (including the Rhine expansion).
   const grants = Object.values(DATA.items).filter((r) => r.giveBondId && !r.isGolden);
-  assert.equal(grants.length, 18);
-  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 14);
+  assert.equal(grants.length, 19);
+  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 15);
   for (const r of grants) {
     const hh = fight({ units: [{ chessId: 't_op', row: 10, col: 4, items: [r.id, A('6_09')] }] });
     assert.ok(unitBonds(hh.unit('t_op')).includes(r.giveBondId), r.id);
@@ -1092,5 +1094,5 @@ test('coverage: every equipment (normal + golden) and every Art is exercised by 
   // items whose numbers are asserted in the stat table, the proc tests or the meta tests
   const missing = Object.keys(DATA.items).filter((id) => !COVER.has(id)).sort();
   assert.deepEqual(missing, []);
-  assert.equal(Object.keys(DATA.items).length, 115);
+  assert.equal(Object.keys(DATA.items).length, 119);
 });

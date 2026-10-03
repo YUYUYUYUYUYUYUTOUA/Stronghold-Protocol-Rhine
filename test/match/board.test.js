@@ -114,7 +114,8 @@ test('g.move to the hand: withdraw, full-hand swap with a chess, hand↔hand swa
   assert.deepEqual(m.handle('p_0', { t: 'g.move', uid: boardPiece.uid, to: { area: 'hand', idx: itemIdx } }), { error: ERR.HAND_FULL });
   // items cannot be placed on the board but can move inside the hand
   assert.deepEqual(m.handle('p_0', { t: 'g.move', uid: item.uid, to: { area: 'board', row: 9, col: 4 } }).error, ERR.BAD_TARGET);
-  const other = handChess[0];
+  const other = handChess.find((p) => ps.find(p.uid)?.area === 'hand');
+  assert.ok(other, 'a chess remains in the hand after the board swap');
   const oi = ps.hand.findIndex((p) => p && p.uid === other.uid);
   assert.deepEqual(m.handle('p_0', { t: 'g.move', uid: item.uid, to: { area: 'hand', idx: oi } }), { ok: true });
   assert.equal(ps.hand[oi].uid, item.uid);

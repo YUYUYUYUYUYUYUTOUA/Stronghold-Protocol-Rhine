@@ -64,3 +64,17 @@ art, models, audio and data — including everything under `public/assets/` in t
 Yostar and their licensors, are **not** covered by the GPL, and may be used for study and personal non-commercial
 purposes only: no selling, paid distribution, paid hosting, ads, donations or any other monetisation. Rights holders
 can request removal through a GitHub issue and the content will be taken down. No warranty of any kind.
+
+---
+
+## 6. 莱茵生命扩展补充说明（2026-10-03）
+
+本分支为 Stronghold-Protocol 的非官方莱茵生命扩展。上文原项目声明继续保留；本说明仅补充本扩展新增内容的来源与许可边界，不代表上游作者、鹰角网络或其他权利人的认可。
+
+- 本扩展自行编写的新增代码和文档文字沿用 **GPL-3.0-or-later**，并对这些新增部分同样授予上文第 1 节所列的 **GPL 第 7 条 Spine Runtimes 附加许可**。原有代码、第三方组件及其版权和许可声明保持不变。
+- `tools/rhine-data-source.json` 保存从固定版本游戏数据镜像提取的角色、技能、模组等信息，来源和版本记录在该文件内；它与由此产生的官方派生游戏数据均不属于本项目可以按 GPL 授权的原创代码。镜像来源或本仓库的收录不构成原权利人的授权。
+- `public/art/rhine/bond.svg` 根据用户提供的官方莱茵生命标志重绘。该标志及其底层形象不属于本扩展的 GPL 授权范围；重绘不表示取得名称、商标或官方美术的使用授权。
+- `public/art/rhine/medical-unit.png`、`energy-unit.png`、`ecology-unit.png`、`terminal.png` 和 `mainframe.png` 是本扩展使用内置 imagegen 新生成的五张贴图，分别用于三种科研装置和两件装备。逐项来源见 [`public/art/rhine/README.md`](public/art/rhine/README.md)，其中两件装备的完整提示与风格参考记录见 [`docs/rhine-equipment-art.json`](docs/rhine-equipment-art.json)。使用 AI 生成或参考游戏视觉风格不代表取得任何官方品牌、角色、标志或其他第三方内容的授权，也不构成独占版权承诺。
+- 对本扩展有权许可的原创绘制部分，包括新增的通用几何后备图形，可随本扩展按 GPL-3.0-or-later 使用；该许可不扩大到任何底层第三方内容、名称、标志或其他受保护元素，也不保证 AI 生成内容在所有法域均具备可主张的版权。
+
+本扩展继续保留非官方同人、素材权属及非商业使用的原项目说明。代码许可与第三方游戏内容的权利应分别理解；GPL 不授予官方游戏素材的再分发或商业利用权利。

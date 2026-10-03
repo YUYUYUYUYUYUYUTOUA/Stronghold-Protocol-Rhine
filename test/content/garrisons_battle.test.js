@@ -634,7 +634,10 @@ test('real data: every owned IN_BATTLE garrison installs without errors on its r
 });
 
 test('coverage: every IN_BATTLE garrison id of a visible chess (and every id they grant) was exercised above', () => {
-  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g)).sort();
+  // These traits are dispatched by content/rhine.js; their real normal / elite records and formulas are
+  // covered in rhine.test.js alongside the devices they read, rather than the legacy garrison dispatcher.
+  const rhine = /^garrison_rhine_(mayer|saria|ifrit)_[ab]$/;
+  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g) && !rhine.test(g)).sort();
   assert.deepEqual(missing, []);
   assert.ok(VISIBLE_IDS.size >= 100, `${VISIBLE_IDS.size} ids`);
 });

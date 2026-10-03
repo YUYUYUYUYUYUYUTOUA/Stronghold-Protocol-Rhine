@@ -12,6 +12,9 @@ public/fonts/
 data/local-assets.json
 # download caches, upstream tables, ledgers, reports, setup state
 .cache/
+# Local deployment evidence and workstation-specific update helper (not part of a source release)
+/rhine-*-verification.json
+/tools/deploy-rhine-update.ps1
 
 # --- Python (optional local-client extraction) ----------------------------------------------------
 .venv*/

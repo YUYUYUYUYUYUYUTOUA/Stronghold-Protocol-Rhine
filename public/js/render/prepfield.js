@@ -9,6 +9,14 @@
 //
 // The view keeps every public coordinate in BOARD space (the server's, g.move targets, canPlace, highlightTiles,
 // tileScreen, holdPiece, setPieceDir): only what is drawn and picked goes through this transform. Pure functions.
+import { GEO } from '../../../shared/constants.js';
+
+/** Circular range: transform the centre only; clip to the simulated field, never the reserve rows. */
+export function circleToDisp(xf, circle) {
+  if (!circle) return null;
+  const p = xf.toDisp(circle.row, circle.col);
+  return { ...circle, ...p, bounds: xf.kind === 'bossPrep' ? GEO.BOSS_RECT : GEO.NORMAL_RECT };
+}
 
 /** Board row → display (boss-field) row: row − 7 (server/match/board.js BOARD_ROWS_ABOVE_BOSS is +7, the inverse). */
 export const BOSS_ROW_SHIFT = -7;

@@ -39,6 +39,7 @@ import { Grid } from '../server/sim/grid.js';
 // ===== CLI & IO ==================================================================================
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const IS_MAIN = !!process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const RESEARCH_DIR = join(ROOT, 'docs', 'research');
 const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/';
 const SEASON = 'act2autochess';
@@ -75,7 +76,7 @@ function parseArgs(argv) {
 
 let OPTS;
 try {
-  OPTS = parseArgs(process.argv.slice(2));
+  OPTS = parseArgs(IS_MAIN ? process.argv.slice(2) : []);
 } catch (e) {
   console.error(`build-data: ${e.message}`);
   process.exit(2);
@@ -2832,6 +2833,10 @@ async function main() {
   const files = { config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages, bosses, tokens };
 
   const errors = validateAll(files);
+  // Apply the reproducible local roster/equipment expansion after validating the upstream season contract.
+  const { applyRhineData, validateRhineData } = await import('./rhine-data.mjs');
+  await applyRhineData(files);
+  errors.push(...validateRhineData(files));
   let total = 0;
   const sizes = {};
   const texts = {};
@@ -2881,7 +2886,10 @@ async function main() {
   }
 }
 
-main().catch((e) => {
+export { buildSkill, statsFrom, interpolateAttrs, baseTalentList, traitRecord, rangeGrid, immunitiesOf,
+  unlocked, bestCandidate, moduleAttr, moduleTalentChanges, splitModuleParts, tokenVariant };
+
+if (IS_MAIN) main().catch((e) => {
   console.error('build-data failed:', e && e.stack ? e.stack : e);
   process.exitCode = 1;
 });

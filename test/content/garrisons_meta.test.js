@@ -764,7 +764,7 @@ test('regression: 瑰盐 82 (hidden) triggers the top-most (highest row: row 0 i
   }
 });
 
-test('塞雷娅 99 / 白面鸮 86: the copier runs the front operator\'s prep-end / prep-start trait as its own (chains followed)', () => {
+test('森蚺 / 乌啾: migrated copiers run the front operator\'s prep-end / prep-start trait as their own (chains followed)', () => {
   for (const { gid, owners } of idsOf('SERVER_PREP_FIN', 'SERVER_FRONT_SAME_EFFECT_PREP_FIN')) {
     for (const owner of owners) {
       const v = setup();
@@ -800,11 +800,42 @@ test('塞雷娅 99 / 白面鸮 86: the copier runs the front operator\'s prep-en
     cover(gid);
   }
   const w = setup();
-  give(w.m, w.ps, 'chess_char_4_21_a', 'board', [10, 3]);             // 白面鸮 → 白面鸮 (hidden 5_16) → 缄默德克萨斯
-  give(w.m, w.ps, 'chess_char_5_16_a', 'board', [10, 4]);
+  give(w.m, w.ps, 'chess_rhine_wuhoo_a', 'board', [10, 3]);          // 乌啾 → 乌啾 精锐 → 缄默德克萨斯
+  give(w.m, w.ps, 'chess_rhine_wuhoo_b', 'board', [10, 4]);
   give(w.m, w.ps, 'chess_char_4_16_a', 'board', [10, 5]);
   w.roundStart();
   assert.equal(w.ps.shop.freeRefreshes, 3);
+});
+
+test('白面鸮: active Rhine research grants +2/+4 per real distinct deployed tier; reserve and harmony add no tier', () => {
+  const mayer = 'chess_rhine_mayer_a';
+  const silence = Object.values(DATA.chess).find((c) => c.visible && !c.isGolden && c.charId === 'char_108_silent').chessId;
+  for (const { gid, g, owners } of idsOf('SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_TIER')) {
+    for (const owner of owners) {
+      const s = setup();
+      const source = give(s.m, s.ps, owner, 'board', [10, 4]);
+      s.prepEnd();
+      assert.equal(s.L('rhineShip'), 0, `${owner}: inactive bond`);
+      give(s.m, s.ps, mayer, 'board', [10, 2]);
+      give(s.m, s.ps, silence, 'board', [10, 3]);
+      give(s.m, s.ps, 'chess_char_5_11_a', 'board', [10, 5]);       // 塞雷娅 is also III, not a fourth tier
+      give(s.m, s.ps, CH(mayer).goldenId, 'board', [10, 6]);      // normal/elite Mayer share tier I
+      assert.ok(s.active('rhineShip'));
+      s.prepEnd();
+      assert.equal(s.L('rhineShip'), 3 * g.bb.layer, `${owner}: actual tiers I/II/III`);
+      assert.deepEqual(s.ps.move(source.uid, { area: 'hand', idx: 0 }), { ok: true });
+      s.prepEnd();
+      assert.equal(s.L('rhineShip'), 3 * g.bb.layer, `${owner}: reserve source does not run`);
+    }
+    cover(gid);
+  }
+  const s = setup();
+  give(s.m, s.ps, 'chess_rhine_eunectes_a', 'board', [10, 3]);
+  give(s.m, s.ps, 'chess_char_4_21_b', 'board', [10, 4]);
+  give(s.m, s.ps, mayer, 'board', [10, 5]);
+  give(s.m, s.ps, silence, 'board', [10, 6]);
+  s.prepEnd();
+  assert.equal(s.L('rhineShip'), 24, 'three real tiers × elite +4, copied once by 森蚺');
 });
 
 test('triggerGainEffects export (band 铃兰): re-runs 获得时 garrisons ×投资人 and returns the effects run', () => {

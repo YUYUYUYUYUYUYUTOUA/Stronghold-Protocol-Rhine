@@ -1734,6 +1734,7 @@ export class Match {
     const spawns = withBounties(this.gd, this.round, wave, ps.bounties, ps.playerId).map((s) => ({ ...s, ownerPlayerId: ps.playerId }));
     const ev = { input, kind: 'normal', round: this.round, spawns };
     this.dispatch(ps, 'onBattleStart', ev);
+    ps.freezeResearch(ev.input || input, 'normal');
     return {
       seed: deriveSeed(this.seed, `n:${this.round}:${ps.seat}`),
       kind: 'normal',
@@ -1808,7 +1809,8 @@ export class Match {
       this._collectSimErrors(f, res);
       for (const pid of f.players) {
         const pp = res.perPlayer && res.perPlayer[pid];
-        this.lastResults.set(pid, pp || { killed: 0, total: 0, leaked: [], perfect: true, layerGains: {}, coins: 0, damageDealt: 0, unitsEnd: [], unitStats: [] });
+        const recorded = pp || { killed: 0, total: 0, leaked: [], perfect: true, layerGains: {}, coins: 0, damageDealt: 0, unitsEnd: [], unitStats: [] };
+        this.lastResults.set(pid, res.synthetic || !pp ? { ...recorded, synthetic: true } : recorded);
         // the views show the layers the battle reached until settle() makes them persistent (DESIGN §20.15)
         const ps = this.players.get(pid);
         const gains = pp && pp.layerGains && typeof pp.layerGains === 'object' ? pp.layerGains : null;
@@ -2736,6 +2738,7 @@ export class Match {
         this.dispatch(ps, 'onLayers', { bondId, from: before, to: ps.layers[bondId], reason: 'battle' });
       }
       this._charDamageTickers(ps, r);
+      if (this.lastResults.has(ps.playerId) && !r.synthetic) ps.settleResearch(counted === 0 && r.perfect !== false);
       this.dispatch(ps, 'onBattleResult', { result: r, lpLoss: loss, perfect: counted === 0 && r.perfect !== false, unite: uniteResult || null });
       ps.recompute();
     }
@@ -2827,6 +2830,7 @@ export class Match {
         input.lpForBoss = this.teamLp;
         const ev = { input, kind: hidden ? 'hidden' : 'boss', round: this.round, spawns };
         this.dispatch(ps, 'onBattleStart', ev);
+        ps.freezeResearch(ev.input || input, ev.kind);
         return ev.input && typeof ev.input === 'object' ? ev.input : input;
       });
       const fieldId = `b${i + 1}`;
@@ -2995,6 +2999,7 @@ export class Match {
     // the end condition the server registered first decides (client-side combat: _endFinal — pool 0 → victory, team LP 0
     // → defeat); a boss field's final result may never turn a defeat into a victory (user playtest #6 item 5)
     const victory = this._finalEnding ? this._finalEnding === 'cleared' : this.bossPool.hp <= 0;
+    for (const f of this.fields) for (const pid of f.players) this.players.get(pid)?.settleResearch(victory);
     this._syncTeamLp();
     this.deadline = 0;
     this.overtimeAt = 0;

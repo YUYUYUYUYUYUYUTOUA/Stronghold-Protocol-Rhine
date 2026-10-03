@@ -19,6 +19,7 @@ import { settingsStore } from '/js/ui/settings.js';
 import { awayStore } from '/js/ui/matchChrome.js';
 import { GAME_FILES } from '/js/ui/gameComponents.js';
 import { PHASE, GEO } from '/shared/constants.js';
+import { RHINE_DEVICES, rhineStage } from '/shared/rhineResearch.js';
 
 const params = new URLSearchParams(location.search);
 const SHOT = params.get('shot') === '1';
@@ -248,6 +249,23 @@ function setPhase(phase, variant) {
   stopBattle();
   buildState();
   for (const v of (variant || '').split(',').filter(Boolean)) VARIANTS.add(v);
+  if (VARIANTS.has('rhine') || VARIANTS.has('rhineRange')) S.priv.research = {
+    unlocked: true, active: true, capacity: 2, layers: 24,
+    hand: RHINE_DEVICES.map((d, i) => ({ uid: 900 + i, kind: 'token', id: d.tokenId, research: true, stage: 1 })),
+    devices: RHINE_DEVICES.map((d, i) => ({ ...d, uid: 900 + i, onBoard: false, points: 2, stage: 1 })),
+  };
+  if (VARIANTS.has('rhineRange')) {
+    const research = S.priv.research, stage = rhineStage(params.get('researchStage') ?? 2);
+    const index = Math.max(0,RHINE_DEVICES.findIndex(d=>d.key===(params.get('researchDevice')||'ecology')));
+    const row = 10, col = params.get('rangeEdge')==='1' ? 2 : 6;
+    for (let i=0;i<research.devices.length;i++) { research.devices[i].stage=stage; research.hand[i].stage=stage; }
+    S.priv.board=S.priv.board.filter(p=>p.row!==row||p.col!==col);
+    S.priv.board.push({...research.hand[index],row,col,dir:'RIGHT'});
+    research.hand[index]=null;research.devices[index].onBoard=true;
+    ['chess_item_rhine_terminal_a','chess_item_rhine_terminal_b','chess_item_rhine_mainframe_a','chess_item_rhine_mainframe_b'].forEach((id,i)=>{
+      const item=data.lookup('items',id);if(item)S.priv.hand[i]=itemPiece(item);
+    });
+  }
   if (VARIANTS.has('reward') && !S.priv.shop.rewardOffer) S.priv.shop.rewardOffer = { tier: 5, slots: shuffle(visibleChess(5)).slice(0, 3).map((c) => ({ kind: 'chess', id: c.chessId, price: 0, sold: false })) };
   if (VARIANTS.has('temp') && !S.priv.temp.some(Boolean)) { S.priv.temp[0] = chessPiece(pick(S.pool)); S.priv.temp[1] = itemPiece(shopItems()[2]); }
   const pub = S.pub;
@@ -478,12 +496,15 @@ function findPiece(uid) {
   if (i >= 0) return { area: 'hand', i, piece: p.hand[i] };
   i = p.temp.findIndex((x) => x && x.uid === uid);
   if (i >= 0) return { area: 'temp', i, piece: p.temp[i] };
+  i = p.research?.hand?.findIndex((x)=>x&&x.uid===uid) ?? -1;
+  if (i >= 0) return { area: 'research', i, piece: p.research.hand[i] };
   return null;
 }
 function removeAt(loc) {
   const p = S.priv;
   if (loc.area === 'board') p.board.splice(loc.i, 1);
   else if (loc.area === 'hand') p.hand[loc.i] = null;
+  else if (loc.area === 'research') p.research.hand[loc.i] = null;
   else p.temp[loc.i] = null;
 }
 function freeHandIdx() { for (let i = GEO.HAND_SIZE - 1; i >= 0; i--) if (!S.priv.hand[i]) return i; return -1; }
@@ -548,6 +569,17 @@ async function mockRequest(t, f = {}) {
       prepOnly();
       const loc = findPiece(f.uid); if (!loc) fail('BAD_TARGET');
       const to = f.to;
+      if (loc.piece.research) {
+        const index = S.priv.research.devices.findIndex(d=>d.uid===f.uid), status=S.priv.research.devices[index];
+        if (to.area==='research'||to.area==='hand') {
+          removeAt(loc);p.research.hand[index]={...loc.piece};delete p.research.hand[index].row;delete p.research.hand[index].col;status.onBoard=false;
+        } else if(to.area==='board') {
+          if(p.board.some(x=>x.uid!==f.uid&&x.row===to.row&&x.col===to.col))fail('BAD_TARGET');
+          if(!status.onBoard&&p.research.devices.filter(d=>d.onBoard).length>=p.research.capacity)fail('BOARD_FULL');
+          removeAt(loc);p.board.push({...loc.piece,row:to.row,col:to.col,dir:to.dir||'RIGHT'});status.onBoard=true;
+        } else fail('BAD_TARGET');
+        refreshPrivate();return {};
+      }
       if (to.area === 'hand') {
         const occ = p.hand[to.idx];
         removeAt(loc);

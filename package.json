@@ -1,16 +1,16 @@
 {
-  "name": "stronghold-protocol-covenant",
+  "name": "stronghold-protocol-rhine",
   "version": "0.1.0",
   "private": true,
-  "description": "明日方舟「卫戍协议：盟约」非官方同人联机网页复刻（1–4 人合作，Node.js 服务器 + 浏览器客户端）",
+  "description": "基于 sganggs/Stronghold-Protocol v0.1.0 的非官方莱茵生命扩展：科研装置、干员与装备（1–4 人合作）",
   "license": "GPL-3.0-or-later",
-  "homepage": "https://github.com/sganggs/Stronghold-Protocol#readme",
+  "homepage": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sganggs/Stronghold-Protocol.git"
+    "url": "git+https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git"
   },
   "bugs": {
-    "url": "https://github.com/sganggs/Stronghold-Protocol/issues"
+    "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues"
   },
   "keywords": [
     "arknights",

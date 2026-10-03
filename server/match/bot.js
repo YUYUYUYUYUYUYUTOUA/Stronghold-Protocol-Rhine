@@ -46,7 +46,8 @@ import { ASPD_MIN } from '../sim/constants.js';
 import { freeSlot, legalTiles, canPlace, positionClass, parseKey, tileKey, FIELD, pieceDir, boardTileOf, BOSS_MIRROR_COL } from './board.js';
 import { rotateOffset, normDir, mirrorDir, oppositeDir } from '../sim/dir.js';
 import { itemKey } from './gamedata.js';
-import { computeBonds } from './bondsMeta.js';
+import { computeBonds, pieceBonds } from './bondsMeta.js';
+import { RHINE_BOND, RHINE_EQUIPMENT as RE } from '../../shared/rhineResearch.js';
 import { withBounties } from './waves.js';
 import { HOVER_KEYS } from '../sim/content/enemies.js';
 
@@ -798,6 +799,25 @@ function canUseItem(m, ps, item) {
   return true;
 }
 
+function rhineCarrier(m, ps, piece) {
+  const bonds = pieceBonds(m.gd, piece);
+  return bonds.includes(RHINE_BOND) || (bonds.includes('maniShip') && ps.bonds?.maniShip?.active && ps.bonds?.[RHINE_BOND]?.active);
+}
+const carriesKey = (piece, key) => (piece.items || []).some((it) => itemKey(it.id) === key);
+/** Small synergy preference on top of ordinary equipment value, using only the bot's visible lineup/layers. */
+export function rhineItemSynergy(m, ps, id) {
+  const key = itemKey(id);
+  if (key !== RE.terminal.key && key !== RE.mainframe.key) return 0;
+  const carriers = [...ps.board.values()].filter((p) => p.kind === 'chess' && (p.items || []).length < m.gd.equipPerChess);
+  const members = carriers.filter((p) => rhineCarrier(m, ps, p));
+  const partner = key === RE.terminal.key ? RE.mainframe.key : RE.terminal.key;
+  const paired = members.some((p) => carriesKey(p, partner));
+  const active = !!ps.bonds?.[RHINE_BOND]?.active;
+  const layers = active ? Math.max(0, Number(ps.layers?.[RHINE_BOND] ?? ps.bonds[RHINE_BOND].layers) || 0) : 0;
+  if (key === RE.mainframe.key && !members.length) return 0;
+  return (active ? 3 + Math.min(5, layers / 20) : 0) + (paired ? 4 : 0);
+}
+
 function context(m, ps) {
   const owned = ownedBonds(m, ps);
   const model = fieldModel(m, ps);
@@ -866,7 +886,7 @@ function takeOffers(m, ps) {
     let bestS = -Infinity;
     offer.slots.forEach((s, i) => {
       if (s.sold) return;
-      const sc = s.kind === 'item' ? (canUseItem(m, ps, s) ? 10 : 1) + gd.tierOf(s.id) * 3 : buyScore(m, ps, s.id, ctx);
+      const sc = s.kind === 'item' ? (canUseItem(m, ps, s) ? 10 : 1) + gd.tierOf(s.id) * 3 + rhineItemSynergy(m, ps, s.id) : buyScore(m, ps, s.id, ctx);
       if (sc > bestS) { bestS = sc; best = i; }
     });
     if (best < 0) break;
@@ -999,7 +1019,7 @@ function* buyLoopSteps(m, ps, { fillOnly = false, maxRefreshes = 0 } = {}) {
         if (freeSlot(ps.hand) < 0 && !ps.completesItemMerge(s.id)) return;
         const carriers = [...ps.board.values()].filter((p) => p.kind === 'chess' && (p.items || []).length < gd.equipPerChess).length;
         if (!carriers) return;
-        sc = 6 + (gd.tierOf(s.id) || 1) * 3 - price + (ps.completesItemMerge(s.id) ? 10 : 0);
+        sc = 6 + (gd.tierOf(s.id) || 1) * 3 - price + (ps.completesItemMerge(s.id) ? 10 : 0) + rhineItemSynergy(m, ps, s.id);
       }
       if (sc > bestS) { bestS = sc; best = i; }
     });
@@ -1097,6 +1117,7 @@ function* applyPlanSteps(m, ps, chosen, target) {
 function liftTokens(ps) {
   for (const p of [...ps.board.values()]) {
     if (p.kind !== 'token') continue;
+    if (p.research) { tryDo(() => ps.move(p.uid, { area: 'research' })); continue; }
     const stack = ps.hand.findIndex((x) => x && x.kind === 'token' && x.ownerUid === p.ownerUid && x.id === p.id);
     const idx = stack >= 0 ? stack : freeSlot(ps.hand);
     if (idx >= 0) tryDo(() => ps.move(p.uid, { area: 'hand', idx }));
@@ -1141,7 +1162,11 @@ function supportSpot(m, ps, p) {
 
 /** Placeable summons from the hand / temp onto the best free tiles (one per stack count). */
 function* placeTokensSteps(m, ps) {
-  for (const p of [...ps.hand, ...ps.temp]) {
+  // Dedicated research cards never enter the ordinary hand. Prefer the devices already developed by this player.
+  const research = (ps.research?.hand || []).filter(Boolean).sort((a, b) =>
+    (ps.research.stages[b.researchKey] || 0) - (ps.research.stages[a.researchKey] || 0)
+    || (ps.research.points[b.researchKey] || 0) - (ps.research.points[a.researchKey] || 0));
+  for (const p of [...ps.hand, ...ps.temp, ...research]) {
     if (!p || p.kind !== 'token') continue;
     for (let n = p.count || 1; n > 0; n--) {
       yield;
@@ -1159,7 +1184,7 @@ function* placeTokensSteps(m, ps) {
   }
 }
 
-function equipItems(m, ps) {
+export function equipItems(m, ps) {
   const gd = m.gd;
   const ctx = context(m, ps);
   const carriers = () => [...ps.board.values()].filter((p) => p.kind === 'chess').sort((a, b) => pieceValue(m, ps, b, ctx) - pieceValue(m, ps, a, ctx));
@@ -1181,6 +1206,14 @@ function equipItems(m, ps) {
     // damage dealers carry equipment first (healers / non-attackers last)
     const dealers = list.filter((p) => { const c = chessRec(m, p.id); return c && !isHealer(c) && c.attackKind !== 'none'; });
     const pool = dealers.length ? dealers.concat(list.filter((p) => !dealers.includes(p))) : list;
+    const key = itemKey(item.id);
+    if (key === RE.terminal.key || key === RE.mainframe.key) {
+      const partner = key === RE.terminal.key ? RE.mainframe.key : RE.terminal.key;
+      // Preserve the generic ranking within ties; a Rhine carrier keeps the VI aura usable, and sharing
+      // one carrier completes the two-item combo regardless of which card appeared first in hand.
+      const priority = (p) => rhineCarrier(m, ps, p) ? 20 + (carriesKey(p, partner) ? 40 : 0) : 0;
+      pool.sort((a, b) => priority(b) - priority(a));
+    }
     const target = consume ? pool[0] : pool.find((p) => (p.items || []).length < gd.equipPerChess);
     if (!target) continue;
     tryDo(() => ps.equip(item.uid, target.uid));

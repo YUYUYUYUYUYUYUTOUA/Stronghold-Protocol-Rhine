@@ -51,8 +51,10 @@
 // ground point, i.e. on the pointer (render/app.js).
 
 import { UF, ANIM } from '../../../shared/constants.js';
+import { rhineDevice } from '../../../shared/rhineResearch.js';
 import { SpineActor } from './spine.js';
-import { diamondTexture, shadowTexture, fxAtlas, tierChip, statusTexture, itemTexture, hudRings, ringArc, HUD_DISC, ELEMENT_RING } from './textures.js';
+import { ResearchDeviceActor } from './rhineDevices.js';
+import { diamondTexture, unitSpriteTexture, shadowTexture, fxAtlas, tierChip, statusTexture, itemTexture, hudRings, ringArc, HUD_DISC, ELEMENT_RING } from './textures.js';
 import { COLORS, TIER_COLORS, ENEMY_FRAME, UNIT, statusIconKey } from './style.js';
 import { drawCrate, rowDepthKey, ROW_KEY, deviceBoxOf, DEVICE_BOX } from './tiles.js';
 
@@ -180,6 +182,7 @@ export class UnitView {
     // enemies: the official prefab's size factor (1 for operators, summons and enemies at the standard size)
     this.modelK = this.isEnemy ? enemyModelScale(ctx.lookupDef ? ctx.lookupDef(info) : null) : 1;
     this.isToken = info.kind === 'token';
+    this.researchDevice = this.isToken ? rhineDevice(info.defId) : null;
     this.golden = !!info.golden;
     this.tier = clamp(Number(info.tier) || 1, 1, 6);
     this.x = Number(info.x) || 0; this.y = Number(info.y) || 0; this.z = 0;
@@ -240,6 +243,7 @@ export class UnitView {
     this.fallback = new P.Sprite(P.Texture.EMPTY);
     this.fallback.anchor.set(0.5, 1);
     this.body.addChild(this.fallback);
+    this.researchActor = this.researchDevice ? new ResearchDeviceActor(this) : null;
     this.actor = null;
     this.spineReady = false;
 
@@ -266,16 +270,23 @@ export class UnitView {
   // is missing or still loading after PIC_WAIT_MS).
   _loadPicture() {
     const a = this.ctx.assets;
-    const url = a && (a.picture ? a.picture(this.info.avatar) || a.picture(this.info.defId) || a.picture(this.info.spine) : null);
+    const picture = a?.picture ? a.picture(this.info.avatar) || a.picture(this.info.defId) || a.picture(this.info.spine) : null;
+    const urls = this.researchDevice ? [...new Set([this.researchDevice.sprite, picture, this.researchDevice.icon].filter(Boolean))] : [picture].filter(Boolean);
     this._pic = { key: String(this.info.avatar || this.info.defId || 'unknown'), color: this._frameColor(), img: null, state: 'none', shown: null, t0: nowMs() };
-    if (!url || !a.image) return;
-    const cached = typeof a.imageNow === 'function' ? a.imageNow(url) : null;
+    if (!urls.length || !a?.image) return;
+    const cached = typeof a.imageNow === 'function' ? a.imageNow(urls[0]) : null;
     if (cached) { this._pic.img = cached; this._pic.state = 'img'; return; }
     this._pic.state = 'wait';
     const pic = this._pic;
-    Promise.resolve().then(() => a.image(url)).then((img) => {
-      if (img) { pic.img = img; pic.state = 'img'; } else pic.state = 'none';
-    }, () => { pic.state = 'none'; });
+    Promise.resolve().then(async () => {
+      for (const url of urls) {
+        let img = null;
+        try { img = await a.image(url); } catch { /* Try the fallback icon if the full sprite failed. */ }
+        if (this.destroyed) return;
+        if (img) { pic.img = img; pic.state = 'img'; return; }
+      }
+      pic.state = 'none';
+    });
   }
 
   /** Put the right diamond on the fallback sprite (called while the fallback is visible). */
@@ -285,11 +296,14 @@ export class UnitView {
     let want = pic.state === 'img' ? 'img' : 'placeholder';
     if (pic.state === 'wait' && nowMs() - pic.t0 < PIC_WAIT_MS) want = null;
     if (!want || pic.shown === want) return;
-    this.fallback.texture = diamondTexture(pic.key, want === 'img' ? pic.img : null, pic.color, { enemy: this.isEnemy, golden: this.golden });
+    // Research art depicts the whole device; a portrait's diamond mask would crop its chassis/leaves away.
+    this.fallback.texture = this.researchDevice && want === 'img' ? unitSpriteTexture(pic.img)
+      : diamondTexture(pic.key, want === 'img' ? pic.img : null, pic.color, { enemy: this.isEnemy, golden: this.golden });
     pic.shown = want;
   }
 
   _loadSpine() {
+    if (this.researchDevice) return;
     const a = this.ctx.assets;
     if (!a || !a.spineEntry || !a.spine) return;
     const id = this.info.spine || this.info.defId;
@@ -336,6 +350,12 @@ export class UnitView {
       }
     }, () => { this._releaseEntry(entry); /* keep the fallback */ });
   }
+
+  setResearchStage(stage) {
+    if (this.researchActor) { this.researchActor.setStage(stage); this.info.researchStage = this.researchActor.stage; }
+  }
+
+  onResearchFx(kind, extra) { this.researchActor?.trigger(kind, extra); }
 
   _formSpec() {
     return this.form ? FORMS[this.info.spine || this.info.defId]?.[this.form] || null : null;
@@ -653,6 +673,7 @@ export class UnitView {
     this.root.position.set(bx, by);
     this.root.alpha = alpha;
     this.root.zIndex = unitDepthKey(cam, this.x, this.y, this.lift);
+    this.researchActor?.advance(dt);
     // off-screen: nothing to animate or draw (bounds / hit-testing still follow `screen`)
     if (this._cull(bx, by, s, dt)) return;
     const flip = this.isEnemy ? (ENEMY_MODEL_FACES_LEFT ? -this.visFacing : this.visFacing) : this.visFacing;
@@ -709,6 +730,7 @@ export class UnitView {
       const bob = this.alive ? Math.sin(t * 2.4 + this.bob) * s * 0.03 : 0;
       this.fallback.scale.set(size / 160);
       this.fallback.position.set(0, -s * 0.08 + bob);
+      if (this.researchActor) this.researchActor.update(t, s);
       this.fallback.tint = this.down ? DOWN_LOOK.tint : this.flash > 0 ? mixTint(0xffffff, 0xff8a80, this.flash) : (this.flags & UF.FROZEN ? 0x9fd4ff : 0xffffff);
       if (!this.alive) this.fallback.alpha = Math.max(0, this.fallback.alpha);
     }
@@ -716,7 +738,7 @@ export class UnitView {
 
     // facing chevron on the ground, like the original's orange › (research 09 §1.2: prep and combat): own prep pieces
     // on the board (app.js sets _showFacing; bench pieces have none); battle / scouting allies whose dir is known
-    const wedge = this._showFacing !== undefined ? this._showFacing && this.prep : this.hasDir && this.info.kind !== 'device';
+    const wedge = !this.researchDevice && (this._showFacing !== undefined ? this._showFacing && this.prep : this.hasDir && this.info.kind !== 'device');
     if (wedge && this.alive) {
       if (!this.facingArrow) {
         this.facingArrow = new P.Sprite(fxAtlas().tex.chevron);
@@ -750,7 +772,7 @@ export class UnitView {
 
     // head height: operators/tokens are uniform chibis; enemies vary (setup-pose bounds, when known; else the chibi
     // headroom × their official model factor)
-    let headTiles = UNIT.headroom;
+    let headTiles = this.researchActor?.look.head ?? UNIT.headroom;
     if (this.isEnemy && spineShown && this.actor.entry.bounds) headTiles = clamp(this.actor.height * UNIT.modelScale * this.modelK * 0.92, 0.55, this.isBoss ? 3.2 : 2.2);
     else if (this.isEnemy && this.isBoss) headTiles = 2.2;
     else if (this.isEnemy && spineShown) headTiles = clamp(UNIT.headroom * this.modelK, 0.55, 2.2);

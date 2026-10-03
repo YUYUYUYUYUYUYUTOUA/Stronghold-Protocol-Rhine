@@ -18,6 +18,7 @@
 //   (research 09 §1.2); board drops of units go through the wheel before g.move {uid, to, dir} (ui/facing.js).
 
 import { GEO, PHASE, UF } from '../../../shared/constants.js';
+import { isRhineDevice } from '../../../shared/rhineResearch.js';
 import { resolveLoadout, loadoutOptions, MODULE_NONE } from '../../../shared/protocol.js';
 import { resolveRecordLoadout, loadoutRecord } from '../../../shared/loadoutRecord.js';
 import { layoutPen } from '../render/pen.js';
@@ -739,6 +740,9 @@ export function indexPieces(priv) {
   (Array.isArray(priv?.temp) ? priv.temp : []).forEach((p, idx) => {
     if (isObj(p) && Number.isInteger(p.uid)) map.set(p.uid, { piece: p, area: 'temp', idx });
   });
+  (Array.isArray(priv?.research?.hand) ? priv.research.hand : []).forEach((p, idx) => {
+    if (isObj(p) && Number.isInteger(p.uid)) map.set(p.uid, { piece: p, area: 'research', idx });
+  });
   return map;
 }
 
@@ -808,6 +812,19 @@ export function canPlace(ctx, uid, target) {
   if (!isObj(target)) return no('BAD_TILE', '无法部署在该位置');
   const piece = src.piece;
   const isMagic = piece.kind === 'item' && ctx.getItem(piece.id)?.itemType === 'MAGIC';
+
+  const research = piece.kind === 'token' && isRhineDevice(piece.id);
+  if (target.area === 'research') {
+    if (!research) return no('BAD_TARGET', '科研位只能放置科研装置');
+    return src.area === 'research' ? no('ALREADY', '装置已在科研位') : { ok: true, action: 'move' };
+  }
+  if (research && target.area === 'hand') return { ok: true, action: 'move' };
+  if (research && target.area === 'board') {
+    const capacity = ctx.priv?.research?.capacity || 0;
+    if (!capacity) return no('BAD_TARGET', '需要激活三人莱茵生命盟约');
+    const deployed = [...ctx.boardAt.values()].filter(e => isRhineDevice(e.piece.id)).length;
+    if (src.area !== 'board' && deployed >= capacity) return no('BOARD_FULL', `当前最多部署${capacity}台科研装置，请先收回其他装置`);
+  }
 
   if (target.area === 'hand') {
     const idx = target.idx;
@@ -941,7 +958,9 @@ export function dropIntent(ctx, uid, target) {
       && itemAttaches(ctx.getItem(ctx.pieces.get(uid)?.piece?.id)) && !equipMerges(ctx, uid);
     return { t: 'g.equip', fields: { itemUid: uid, targetUid: occ.piece.uid }, confirmReplace: full };
   }
-  const to = target.area === 'hand' ? { area: 'hand', idx: target.idx } : { area: 'board', row: target.row, col: target.col };
+  const research = isRhineDevice(ctx.pieces.get(uid)?.piece?.id);
+  const to = target.area === 'research' || (research && target.area === 'hand') ? { area: 'research' }
+    : target.area === 'hand' ? { area: 'hand', idx: target.idx } : { area: 'board', row: target.row, col: target.col };
   return { t: 'g.move', fields: { uid, to } };
 }
 

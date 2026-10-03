@@ -392,12 +392,12 @@ export function makeCtx(m, ps, source, hook, ev = null) {
     board: () => boardOrder(ps.board).map(({ r, c, piece }) => ps.pieceView(piece, [r, c])),
     hand: () => ps.hand.map(view),
     temp: () => ps.temp.map(view),
-    /** View of an owned piece + `area` ('board'|'hand'|'temp'|'equipped'), `holderUid`, and `row`/`col` on the board. */
+    /** View of an owned piece + `area` ('board'|'hand'|'temp'|'research'|'equipped'), `holderUid`, and `row`/`col` on the board. */
     piece: (uid) => {
       const l = ps.find(uid);
       if (!l) return null;
       const v = { ...(l.area === 'board' ? ps.pieceView(l.piece, parseKey(l.key)) : view(l.piece)), area: l.area, holderUid: l.holder ? l.holder.uid : null };
-      if (l.area === 'hand' || l.area === 'temp') v.idx = l.idx;
+      if (l.area === 'hand' || l.area === 'temp' || l.area === 'research') v.idx = l.idx;
       return v;
     },
     /**
@@ -499,7 +499,7 @@ export function makeCtx(m, ps, source, hook, ev = null) {
     },
     destroyPiece: (uid) => {
       const l = ps.find(uid);
-      if (!l) return false;
+      if (!l || l.piece.research) return false;
       ps._detach(l);
       if (l.piece.kind === 'chess') {
         ps.removeTokensOf(l.piece.uid);

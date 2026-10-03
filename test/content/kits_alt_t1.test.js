@@ -53,14 +53,14 @@ const pair = (n) => [`chess_char_1_${n}_a`, `chess_char_1_${n}_b`];
 
 test('tier 1: every selectable skill of every visible chess has a hand-authored spec (normal + elite)', () => {
   const rep = kitCoverage({ tier: 1 });
-  assert.equal(rep.summary.chess, 16);
+  assert.equal(rep.summary.chess, 17);
   assert.equal(rep.summary.covered, rep.summary.skills, rep.chess.flatMap((r) => r.skills.filter((s) => !s.covered).map((s) => `${r.name} S${s.index + 1}`)).join(', '));
   assert.equal(rep.summary.chessFullyCovered, rep.summary.chess);
 });
 
 test('tier 1: every chess × every legal skill × module (default / none) fights 30 s with its authored spec, no content errors', () => {
-  const bases = ds.chessIds().filter((id) => /^chess_char_1_\d+_a$/.test(id) && raw(id).visible);
-  assert.equal(bases.length, 16);
+  const bases = ds.chessIds().filter((id) => id.endsWith('_a') && raw(id).tier === 1 && raw(id).visible);
+  assert.equal(bases.length, 17);
   for (const base of bases) {
     const gold = base.replace(/_a$/, '_b');
     const opt = loadoutOptions(raw(base), raw(gold));
@@ -78,7 +78,7 @@ test('tier 1: every chess × every legal skill × module (default / none) fights
         const tag = `${id} S${skillIndex + 1} ${moduleId ?? 'default module'}`;
         assert.equal(u.def.loadout.skillIndex, skillIndex, tag);
         assert.ok(['skills', undefined].includes(u.kit.skillSource), `${tag}: ${u.kit.skillSource}`);
-        if (moduleId === 'none') assert.equal(u.def.raw.module.active, false, tag);
+        if (moduleId === 'none') assert.equal(u.def.raw.module?.active ?? false, false, tag);
         checkInvariants(h.b);
         assert.equal(h.b.errors.length, 0, `${tag}: ${JSON.stringify(h.b.errors[0])}`);
       }

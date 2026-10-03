@@ -21,6 +21,7 @@ import { Downloader } from './assets/downloader.mjs';
 import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio } from './assets/audio.mjs';
 import { buildPlan } from './assets/plan.mjs';
+import { rhineArtInput, addRhineArt } from './assets/rhine-plan.mjs';
 import { processModels } from './assets/spine.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, MANIFEST_VERSION } from './assets/manifest.mjs';
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
@@ -158,7 +159,7 @@ async function main() {
   const extraHandbook = {};
   for (const b of Object.values(dataBosses || {})) if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] = b.handbookId;
   const plan = buildPlan({
-    assets07, ops03, enemies05, maps05, audio, modelsData,
+    ...rhineArtInput(assets07, ops03), enemies05, maps05, audio, modelsData,
     extraEnemyIds: Object.keys(dataEnemies || {}),
     extraTokenIds: Object.keys(dataTokens || {}),
     extraHandbook,
@@ -199,7 +200,7 @@ async function main() {
 
   // Manifest
   const resolved = resolveTemplate(plan.template, { root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url });
-  const body = resolved.value;
+  const body = addRhineArt(resolved.value);
   tidyManifest(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;

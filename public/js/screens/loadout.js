@@ -162,6 +162,7 @@ function ModuleInfo({ m, golden, opt }) {
   return html`<div class="lo-minfo">
     <div class="lo-minfo__title"><${Img} src=${moduleIconOf(m, rec)} class="lo-minfo__icon" /><span class="lo-minfo__type num">${rec.typeName || ''}</span><b>${rec.name || rec.uniEquipId}</b>
       ${opt.isDefault ? html`<span class="lo-badge lo-badge--def">默认</span>` : null}</div>
+    ${rec.scopeNote ? html`<p class="lo-minfo__lead">${rec.scopeNote}</p>` : null}
     <div class="lo-minfo__row">
       <span class="lo-minfo__k">属性</span>
       <span class="lo-minfo__v lo-attrs">${rows.length ? rows.map((r) => html`<span key=${r.key} class=${cx('lo-attr', r.positive ? 'is-up' : 'is-down')}>${r.label}<b class="num">${r.text}</b></span>`) : html`<span class="t-dim">无属性加成</span>`}</span>

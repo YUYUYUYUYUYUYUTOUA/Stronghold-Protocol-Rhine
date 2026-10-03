@@ -18,7 +18,7 @@ const m = load('assets.json');
 const chess = load('chess.json');
 
 function manifestUrls(obj, out = new Set()) {
-  if (typeof obj === 'string' && obj.startsWith('/assets/')) out.add(obj);
+  if (typeof obj === 'string' && (obj.startsWith('/assets/') || obj.startsWith('/art/'))) out.add(obj);
   else if (obj && typeof obj === 'object') for (const v of Object.values(obj)) manifestUrls(v, out);
   return out;
 }
@@ -73,5 +73,20 @@ describe('assetUrls', () => {
     assert.equal(profIconUrl(m, 'NOPE'), null);
     assert.equal(uiUrl(undefined, 'x'), null);
     assert.equal(tokenAvatarUrl(m, null), null);
+  });
+  test('Rhine equipment art URLs are exact manifest entries backed by real local PNGs', () => {
+    const items = load('items.json');
+    for (const key of ['terminal', 'mainframe']) {
+      const url = `/art/rhine/${key}.png`;
+      for (const grade of ['a', 'b']) {
+        assert.equal(itemIconUrl(m, items[`chess_item_rhine_${key}_${grade}`]), url);
+      }
+      assert.equal(m.items[`trap_rhine_${key}`], url);
+      assert.ok(inManifest(url));
+      const image = readFileSync(path.join(ROOT, 'public', url.slice(1)));
+      assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+      assert.ok(image.length > 100, `${url} must contain image data`);
+    }
+    assert.equal(inManifest('/art/rhine/not-in-manifest.png'), false, 'art prefix alone does not make an URL valid');
   });
 });

@@ -18,6 +18,7 @@
 import { PHASE, BOND_LAYER_CAP } from '../../shared/constants.js';
 import { FIELD, canPlace, positionClass, parseKey } from './board.js';
 import { computeBonds } from './bondsMeta.js';
+import { RHINE_BOND, RHINE_BALANCE, RHINE_DEVICES, rhineCapacity, rhineDevice } from '../../shared/rhineResearch.js';
 
 const PHASES = new Set(Object.values(PHASE));
 
@@ -67,7 +68,15 @@ export function collectViolations(m, { limit = 25 } = {}) {
     }
 
     // pieces
-    const all = [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean)];
+    const reserve = ps.research?.hand || [];
+    const all = [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean), ...reserve.filter(Boolean)];
+    const researchPieces = all.filter((p) => p.research);
+    if (reserve.length !== RHINE_DEVICES.length) fail(`${id}: wrong research reserve length`);
+    if (new Set(researchPieces.map((p) => p.id)).size !== researchPieces.length) fail(`${id}: duplicate research device`);
+    if (ps.research?.unlocked && researchPieces.length !== RHINE_DEVICES.length) fail(`${id}: missing research device`);
+    if ([...ps.hand, ...ps.temp].some((p) => p?.research)) fail(`${id}: research device in ordinary hand`);
+    if ([...ps.board.values()].filter((p) => p.research).length > (ps.alive ? rhineCapacity(ps.bonds[RHINE_BOND]) : 0)) fail(`${id}: research capacity exceeded`);
+    reserve.forEach((p, idx) => { if (p && (!p.research || p.id !== RHINE_DEVICES[idx].tokenId)) fail(`${id}: wrong device in research slot ${idx}`); });
     const boardChessUids = new Set();
     for (const p of ps.board.values()) if (p.kind === 'chess') boardChessUids.add(p.uid);
     const itemCounts = new Map();
@@ -95,7 +104,14 @@ export function collectViolations(m, { limit = 25 } = {}) {
         if (!gd.token(p.id)) fail(`${id}: unknown token ${p.id}`);
         if (!(p.count >= 1)) fail(`${id}: token stack count ${p.count}`);
         // summons exist only while their owner is deployed (withdrawing / selling / merging it removes them)
-        if (!boardChessUids.has(p.ownerUid)) fail(`${id}: token ${p.uid} without a deployed owner (${p.ownerUid})`);
+        if (p.research) {
+          const d = rhineDevice(p.id);
+          if (!d || d.key !== p.researchKey || p.ownerUid != null || p.count !== 1) fail(`${id}: malformed research device ${p.uid}`);
+          const stage = ps.research.stages?.[p.researchKey], points = ps.research.points[p.researchKey];
+          const maxStage = RHINE_BALANCE.breakthroughPoints.length;
+          if (!Number.isInteger(stage) || stage < 0 || stage > maxStage) fail(`${id}: invalid research stage ${p.researchKey}`);
+          if (!Number.isInteger(points) || points < 0 || (stage === maxStage ? points !== 0 : points >= RHINE_BALANCE.breakthroughPoints[stage])) fail(`${id}: invalid research progress ${p.researchKey}`);
+        } else if (!boardChessUids.has(p.ownerUid)) fail(`${id}: token ${p.uid} without a deployed owner (${p.ownerUid})`);
       } else {
         fail(`${id}: piece of unknown kind ${p.kind}`);
       }

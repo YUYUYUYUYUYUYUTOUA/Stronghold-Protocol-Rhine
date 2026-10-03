@@ -63,14 +63,14 @@ function cast(h, u, max = 15) {
 
 test('tier 5: every selectable skill of every visible chess has a hand-authored spec (normal + elite)', () => {
   const rep = kitCoverage({ tier: 5 });
-  assert.equal(rep.summary.chess, 19);
+  assert.equal(rep.summary.chess, 20);
   assert.equal(rep.summary.covered, rep.summary.skills, rep.chess.flatMap((r) => r.skills.filter((s) => !s.covered).map((s) => `${r.name} S${s.index + 1}`)).join(', '));
   assert.equal(rep.summary.chessFullyCovered, rep.summary.chess);
 });
 
 test('tier 5: every chess × every legal skill × every module fights with its authored spec and casts, no content errors', () => {
-  const bases = ds.chessIds().filter((id) => /^chess_char_5_\d+_a$/.test(id) && raw(id).visible);
-  assert.equal(bases.length, 19);
+  const bases = ds.chessIds().filter((id) => id.endsWith('_a') && raw(id).tier === 5 && raw(id).visible);
+  assert.equal(bases.length, 20);
   let n = 0;
   for (const base of bases) {
     const gold = base.replace(/_a$/, '_b');
@@ -81,7 +81,7 @@ test('tier 5: every chess × every legal skill × every module fights with its a
         const h = makeBattle({
           seed: 5, hooks: [],
           defs: { enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 30000, atk: 400, bat: 2, speed: 0.6 }) }, chess: { t_a: ally('t_a', { stats: { maxHp: 5000, atk: 100, blockCnt: 1 } }) } },
-          units: [{ chessId: id, row: 10, col: 5, skillIndex, ...(moduleId ? { moduleId } : {}) }, { chessId: 't_a', row: 11, col: 5 }, { chessId: 'chess_char_5_11_a', row: 9, col: 4 }],
+          units: [{ chessId: id, row: ds.getChess(id).position === 'MELEE' ? 9 : 10, col: 5, skillIndex, ...(moduleId ? { moduleId } : {}) }, { chessId: 't_a', row: 11, col: 5 }, { chessId: 'chess_char_5_11_a', row: 9, col: 4 }],
           enemies: [{ key: 'enemy_dummy', count: 6, interval: 2 }, { key: 'enemy_dummy', route: 1, count: 6, interval: 2 }],
           timeLimit: 90,
         });
@@ -92,7 +92,9 @@ test('tier 5: every chess × every legal skill × every module fights with its a
         assert.ok(['skills', undefined].includes(u.kit.skillSource), `${tag}: ${u.kit.skillSource}`);
         const mate = h.b.allyUnits[1]; // (塞雷娅 S1 急救 casts only for an ally of its area below half HP)
         for (let t = 0; t < 60 && !h.b.finished; t += 5) { if (mate.alive) mate.hp = Math.min(mate.hp, mate.s.maxHp * 0.3); u.skill.gainSp(1000); h.run(5); }
-        assert.ok(u.skill.activations > 0, `${tag}: cast`);
+        // 森蚺 S1 is a passive stat bonus, matching the passive check in the tier-3 suite.
+        if (u.skill.kind === 'passive') assert.ok(u.skill.active, `${tag}: passive on`);
+        else assert.ok(u.skill.activations > 0, `${tag}: cast`);
         assert.deepEqual(h.b.errors.map((e) => `${e.label}: ${e.message}`), [], tag);
         checkInvariants(h.b);
         n++;

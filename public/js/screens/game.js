@@ -72,6 +72,8 @@ import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { Ticker } from '../ui/ticker.js';
 import { EmoteWheel } from '../ui/emotes.js';
 import { EffectsList } from '../ui/effectsList.js';
+import { RhineDock } from '../ui/rhineDock.js';
+import { researchRange } from '../../../shared/rhineRange.js';
 import { CombatHud } from '../ui/combatHud.js';
 import { SettingsModal } from '../ui/settings.js';
 import { ExitModal, AwayOverlay, awayStore } from '../ui/matchChrome.js';
@@ -701,6 +703,7 @@ function MatchScreen() {
       moveOff?.(); moveOff = null;
       setDrag(null);
       view.highlightTiles(null, null);
+      ptr.uid = null;
     };
     /** Open the direction wheel for a legal board drop (the piece stays on the tile meanwhile). */
     const openFacing = (entry, t) => {
@@ -725,12 +728,20 @@ function MatchScreen() {
         view.highlightTiles(null, null);
         view.highlightTiles(legal, 'legal');
         ptr.released = false; ptr.tile = null;
+        ptr.uid = entry.piece.uid;
         // capture phase: marked before the drag controller (canvas listener) ends the drag
         const onUp = () => { ptr.released = true; };
         window.addEventListener('pointerup', onUp, { passive: true, capture: true });
         moveOff = () => window.removeEventListener('pointerup', onUp, { capture: true });
       }),
-      view.on('tileHover', (t) => { ptr.tile = t && typeof t === 'object' ? t : null; }),
+      view.on('tileHover', (t) => {
+        ptr.tile = t && typeof t === 'object' ? t : null;
+        const L = live.current, entry = L.placeCtx?.pieces.get(ptr.uid), range = researchRange(entry?.piece);
+        if (!range) return;
+        const style = { ...SEL_RANGE, group: 'researchPreview' };
+        if (t?.area === 'board' && canPlace(L.placeCtx, ptr.uid, t).ok) showRange(view,range.grid,t.row,t.col,'RIGHT',style,range.radius);
+        else view.highlightTiles([],style);
+      }),
       view.on('pieceDrop', async (e) => {
         endDrag();
         const L = live.current;
@@ -899,10 +910,10 @@ function MatchScreen() {
   // the selected piece: gone / not editable → deselect; on the board its range tiles show (rotated to its facing)
   const selEntry = sel ? placeCtx.pieces.get(sel.uid) || null : null;
   useEffect(() => { if (sel && (!selEntry || !editable || !showPrep)) setSel(null); }, [sel, selEntry, editable, showPrep]);
-  const selRangeKey = selEntry && selEntry.area === 'board' ? `${selEntry.piece.uid}:${selEntry.row},${selEntry.col}:${pieceDir(selEntry.piece)}` : '';
+  const selRangeKey = selEntry && selEntry.area === 'board' ? `${selEntry.piece.uid}:${selEntry.row},${selEntry.col}:${pieceDir(selEntry.piece)}:${researchRange(selEntry.piece)?.radius ?? ''}` : '';
   useEffect(() => {
     if (!view || !selRangeKey) return undefined;
-    showRange(view, previewGrid(lookups, selEntry.piece), selEntry.row, selEntry.col, pieceDir(selEntry.piece), SEL_RANGE);
+    showRange(view, previewGrid(lookups, selEntry.piece), selEntry.row, selEntry.col, pieceDir(selEntry.piece), SEL_RANGE, researchRange(selEntry.piece)?.radius);
     return () => showRange(view, null, 0, 0, null, SEL_RANGE);
   }, [view, selRangeKey]);
   // the selected piece's underframe on screen: the detail card docks on the side away from it (user playtest #2
@@ -1162,6 +1173,14 @@ function MatchScreen() {
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />
 
       <div class="gm__effects"><${EffectsList} effects=${priv?.effects} /></div>
+      ${!watchingOther && !pen && !sp ? html`<${RhineDock} research=${priv?.research} editable=${editable && showPrep}
+        view=${view} placeCtx=${placeCtx}
+        onDeploy=${async (uid, tile) => {
+          const check = canPlace(live.current.placeCtx, uid, tile);
+          if (!check.ok) { toast(check.reason, 'warn'); return; }
+          await actions.move(uid, tile, 'RIGHT');
+        }} onRecall=${(uid) => actions.move(uid, { area: 'research' })}
+        onDetail=${(uid) => setDetail({ kind: 'piece', uid })} />` : null}
 
       ${watchingOther && !combat ? html`<div class="gm__watching" role="status">
         <${GIcon} name="eye" /><span>正在查看 <b>${watchedName}</b> 的阵地（只读）</span>
@@ -1219,7 +1238,7 @@ function MatchScreen() {
       tone=${banner.tone} duration=${banner.duration || 1500} onDone=${() => setBanner(null)} />` : null}
 
     ${facing && view ? html`<${FacingWheel} key=${`${facing.uid}:${facing.row},${facing.col}`} view=${view} row=${facing.row} col=${facing.col}
-      grid=${facing.grid} name=${facing.name} onPreview=${previewFacing} onCommit=${commitFacing} onCancel=${cancelFacing} />` : null}
+      grid=${facing.grid} radius=${researchRange(facing.piece)?.radius} name=${facing.name} onPreview=${previewFacing} onCommit=${commitFacing} onCancel=${cancelFacing} />` : null}
 
     ${paused ? html`<${PausedOverlay} canResume=${solo} busy=${pauseBusy} onResume=${() => togglePause(false)} onExit=${() => setExitOpen(true)} />` : null}
 

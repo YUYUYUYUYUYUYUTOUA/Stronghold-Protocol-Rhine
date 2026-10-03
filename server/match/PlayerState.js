@@ -61,6 +61,7 @@ import { offsetTile } from '../sim/dir.js';
 import { computeBonds, bondList, bondSnapshot, activatedLayers, bondsWithGains } from './bondsMeta.js';
 import { itemKey } from './gamedata.js';
 import { bountyText } from './choices.js';
+import { RHINE_BOND, RHINE_BALANCE, RHINE_DEVICES, rhineCapacity, rhineDevice, rhineStage, advanceRhineResearch } from '../../shared/rhineResearch.js';
 
 const HAND_SIZE = GEO.HAND_SIZE;
 const TEMP_SIZE = GEO.TEMP_SIZE;
@@ -108,6 +109,8 @@ export class PlayerState {
     this._tempDue = new Map();
     /** @type {Map<string, any>} 'r,c' → piece */
     this.board = new Map();
+    // Player-owned research devices have fixed reserve slots, independent of the ordinary hand and a summoner.
+    this.research = { unlocked: false, hand: RHINE_DEVICES.map(() => null), points: {}, stages: {}, battleRound: null, participants: [], settled: new Set() };
     /** persistent bond layers */
     this.layers = {};
     /** computed bond states */
@@ -285,6 +288,10 @@ export class PlayerState {
    */
   find(uid) {
     if (!Number.isInteger(uid)) return null;
+    for (let i = 0; i < this.research.hand.length; i++) {
+      const p = this.research.hand[i];
+      if (p && p.uid === uid) return { piece: p, area: 'research', idx: i };
+    }
     for (let i = 0; i < this.hand.length; i++) {
       const p = this.hand[i];
       if (!p) continue;
@@ -326,6 +333,7 @@ export class PlayerState {
   _detach(loc) {
     if (!loc) return;
     if (loc.area === 'hand') this.hand[loc.idx] = null;
+    else if (loc.area === 'research') this.research.hand[loc.idx] = null;
     else if (loc.area === 'temp') { this.temp[loc.idx] = null; this._tempDue.delete(loc.piece.uid); }
     else if (loc.area === 'board') this.board.delete(loc.key);
     else if (loc.area === 'equipped') {
@@ -339,6 +347,7 @@ export class PlayerState {
    * in which the player can act on it, _tempDueNow). Returns 'hand' | 'temp' | null.
    */
   stow(piece, { allowTemp = true, toTemp = false, preferIdx = null } = {}) {
+    if (piece?.research) return this._returnResearch(piece) ? 'research' : null;
     if (!toTemp) {
       if (Number.isInteger(preferIdx) && preferIdx >= 0 && preferIdx < this.hand.length && this.hand[preferIdx] == null) {
         this.hand[preferIdx] = piece;
@@ -930,6 +939,15 @@ export class PlayerState {
     if (!loc || loc.area === 'equipped') return fail(ERR.BAD_TARGET);
     if (!to || typeof to !== 'object') return fail(ERR.BAD_TARGET);
     const piece = loc.piece;
+    if (to.area === 'research' || (piece.research && to.area === 'hand')) {
+      const slotCount = to.area === 'hand' ? this.hand.length : RHINE_DEVICES.length;
+      if (!piece.research || (to.idx != null && (!Number.isInteger(to.idx) || to.idx < 0 || to.idx >= slotCount))) return fail(ERR.BAD_TARGET);
+      this._detach(loc);
+      this._returnResearch(piece);
+      this.recompute();
+      return OK;
+    }
+    if (piece.research && to.area !== 'board') return fail(ERR.BAD_TARGET, 'research devices use their own reserve');
     if (to.area === 'board') {
       if (piece.kind === 'item') return fail(ERR.BAD_TARGET, 'items are equipped, not placed');
       const d = parseDir(dir !== undefined ? dir : to.dir);
@@ -1013,6 +1031,7 @@ export class PlayerState {
    * like any other card (research 01 A1) instead of overflowing into temp.
    */
   _returnToken(tok, preferLoc = null, { allowTemp = true } = {}) {
+    if (tok.research) return this._returnResearch(tok);
     const stack = [...this.hand, ...this.temp].find((p) => p && p.kind === 'token' && p.ownerUid === tok.ownerUid && p.id === tok.id);
     if (stack) { stack.count = (stack.count || 1) + (tok.count || 1); return true; }
     tok.count = tok.count || 1;
@@ -1022,6 +1041,11 @@ export class PlayerState {
 
   _moveTokenToBoard(loc, r, c, dir = 'RIGHT') {
     const piece = loc.piece;
+    if (piece.research) {
+      const cap = this.alive ? rhineCapacity(this.bonds[RHINE_BOND]) : 0;
+      if (!cap) return fail(ERR.BAD_TARGET, '莱茵生命盟约尚未激活');
+      if (loc.area !== 'board' && [...this.board.values()].filter((p) => p.research).length >= cap) return fail(ERR.BOARD_FULL, '已达到科研装置上场上限');
+    }
     if (!inField(r, c) || !this._legal(piece, r, c)) return fail(ERR.BAD_TILE);
     const key = tileKey(r, c);
     const occ = this.board.get(key) || null;
@@ -1045,7 +1069,7 @@ export class PlayerState {
     if (occ) return fail(ERR.BAD_TILE, 'occupied');
     // owner must be on the board for its summons to be deployable
     const owner = [...this.board.values()].find((p) => p.uid === piece.ownerUid);
-    if (!owner) return fail(ERR.BAD_TARGET, 'owner not deployed');
+    if (!piece.research && !owner) return fail(ERR.BAD_TARGET, 'owner not deployed');
     if ((piece.count || 1) > 1) {
       piece.count -= 1;
       const one = this.newPiece('token', piece.id, { count: 1, ownerUid: piece.ownerUid, dir });
@@ -1351,6 +1375,7 @@ export class PlayerState {
     for (const p of this.hand) if (p) all.push(p);
     for (const p of this.temp) if (p) all.push(p);
     for (const p of all) this.returnCopies(p);
+    for (const p of this.board.values()) if (p.research) this._returnResearch(p);
     this.board.clear();
     this.hand.fill(null);
     this.temp.fill(null);
@@ -1367,7 +1392,77 @@ export class PlayerState {
     this.deployMap(); // a change of the deploy field (a boss round's prep) marks the legality stale
     if (this._legalityStale) this._evictIllegal();
     this.bonds = computeBonds(this.gd, this);
+    this._syncResearch();
     this.dirty();
+  }
+
+  /** The reserve slot is fixed by device kind; points belong to the player, never to a transient token uid. */
+  _returnResearch(piece) {
+    const idx = RHINE_DEVICES.findIndex((d) => d.tokenId === piece?.id);
+    if (idx < 0 || !piece.research) return false;
+    const old = this.research.hand[idx];
+    if (old && old.uid !== piece.uid) return false;
+    this.research.hand[idx] = piece;
+    return true;
+  }
+
+  _syncResearch() {
+    const cap = this.alive ? rhineCapacity(this.bonds[RHINE_BOND]) : 0;
+    if (cap && !this.research.unlocked) {
+      this.research.unlocked = true;
+      for (const [idx, d] of RHINE_DEVICES.entries()) {
+        this.research.points[d.key] = 0;
+        this.research.stages[d.key] = 0;
+        this.research.hand[idx] = this.newPiece('token', d.tokenId, { research: true, researchKey: d.key, ownerUid: null });
+      }
+    }
+    let kept = 0;
+    for (const [key, p] of this.board) {
+      if (!p.research) continue;
+      if (kept++ < cap) continue;
+      this.board.delete(key);
+      this._returnResearch(p);
+    }
+  }
+
+  researchView() {
+    const capacity = this.alive ? rhineCapacity(this.bonds[RHINE_BOND]) : 0;
+    const all = [...this.board.values(), ...this.research.hand.filter(Boolean)];
+    const deployed = new Set([...this.board.values()].filter((p) => p.research).map((p) => p.uid));
+    return {
+      unlocked: this.research.unlocked, active: capacity > 0, capacity,
+      layers: this.layers[RHINE_BOND] || 0,
+      hand: this.research.hand.map((p) => p ? this.pieceView(p) : null),
+      devices: RHINE_DEVICES.map((d) => {
+        const p = all.find((x) => x.research && x.id === d.tokenId);
+        const points = this.research.points[d.key] || 0;
+        return { key: d.key, tokenId: d.tokenId, uid: p?.uid ?? null, points, stage: rhineStage(this.research.stages[d.key]), onBoard: !!p && deployed.has(p.uid) };
+      }),
+    };
+  }
+
+  /** Called only by real main-battle construction, never by previews, helper battles or reconnects. */
+  freezeResearch(input, kind = 'normal') {
+    if (!['normal', 'boss', 'hidden'].includes(kind) || this.research.battleRound === this.m.round) return;
+    this.research.battleRound = this.m.round;
+    const uids = new Set((input?.units || []).filter((u) => u.research).map((u) => u.uid));
+    this.research.participants = input?.research?.active
+      ? input.research.devices.filter((d) => d.onBoard && uids.has(d.uid) && rhineDevice(d.key)).map((d) => d.key)
+      : [];
+  }
+
+  settleResearch(success) {
+    const round = this.m.round;
+    if (this.research.battleRound !== round || this.research.settled.has(round)) return false;
+    this.research.settled.add(round);
+    const gain = success ? RHINE_BALANCE.successPoints : RHINE_BALANCE.failurePoints;
+    for (const key of new Set(this.research.participants)) {
+      const next = advanceRhineResearch({ stage: this.research.stages[key], points: this.research.points[key] }, gain);
+      this.research.stages[key] = next.stage;
+      this.research.points[key] = next.points;
+    }
+    this.dirty();
+    return true;
   }
 
   activatedLayers() { return activatedLayers(this.bonds); }
@@ -1396,7 +1491,8 @@ export class PlayerState {
         if (carry && carry.has(piece.uid)) u.carryState = carry.get(piece.uid);
         units.push(u);
       } else if (piece.kind === 'token') {
-        units.push({ uid: piece.uid, kind: 'token', tokenId: piece.id, row: r, col: c, dir: pieceDir(piece), ownerUid: piece.ownerUid });
+        units.push({ uid: piece.uid, kind: 'token', tokenId: piece.id, row: r, col: c, dir: pieceDir(piece), ownerUid: piece.ownerUid,
+          ...(piece.research ? { research: true, researchKey: piece.researchKey } : {}) });
       }
     }
     return {
@@ -1411,6 +1507,7 @@ export class PlayerState {
         id: e.id, key: e.key ?? null, source: e.iconKind ?? null, params: e.params ?? null, counter: e.counter ?? null, data: e.data ?? null,
       })),
       deviceOverrides: { ...this.deviceOverrides },
+      research: this.researchView(),
     };
   }
 
@@ -1430,6 +1527,7 @@ export class PlayerState {
       ownerUid: p.kind === 'token' ? p.ownerUid ?? null : null,
     };
     if (rc) { v.row = rc[0]; v.col = rc[1]; v.dir = pieceDir(p); }
+    if (p.research) { v.research = true; v.researchKey = p.researchKey; v.points = this.research.points[p.researchKey] || 0; v.stage = rhineStage(this.research.stages[p.researchKey]); }
     return v;
   }
 
@@ -1485,6 +1583,7 @@ export class PlayerState {
       },
       hand: this.hand.map((p) => (p ? this.pieceView(p) : null)),
       temp: this.temp.map((p) => (p ? this.pieceView(p) : null)),
+      research: this.researchView(),
       board,
       deployCap: this.deployCap,
       deployCount: this.deployCount,

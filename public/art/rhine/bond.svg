@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 100 100">
+  <title>莱茵生命</title>
+  <!-- Monochrome, transparent faction glyph based on the supplied Rhine Lab insignia. -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M63 33 C76 22 94 31 94 49 C94 68 76 75 62 62 L39 39 C26 26 9 33 9 49 C9 66 27 74 41 60 L56 45" stroke-width="9.5"/>
+    <path d="M27 42 V56 M20 49 H34 M73 49 H85" stroke-width="4.5"/>
+  </g>
+</svg>
