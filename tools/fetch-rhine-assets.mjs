@@ -14,7 +14,8 @@ const assetRoot = join(root, 'public', 'assets');
 const cache = join(root, '.cache');
 const inputs = rhineArtInput();
 const plan = buildPlan({ ...inputs, audio: indexAudio({}), modelsData: {}, enemies05: {}, maps05: {} });
-const template = { chars: plan.template.chars, tokens: plan.template.tokens, skills: plan.template.skills, skillsById: plan.template.skillsById };
+const template = { chars: plan.template.chars, tokens: plan.template.tokens, skills: plan.template.skills, skillsById: plan.template.skillsById,
+  prof: { sub: plan.template.prof.sub } };
 const dl = new Downloader({ root: assetRoot, ledgerPath: join(cache, 'rhine-assets-ledger.json'), concurrency: 8, timeoutMs: 25000, retries: 2 });
 await mkdir(cache, { recursive: true });
 await dl.loadLedger();
@@ -27,10 +28,13 @@ if (resolved.misses.length || spine.problems.length) {
 } else {
   const path = join(root, 'data', 'assets.json');
   const manifest = JSON.parse(await readFile(path, 'utf8'));
-  for (const [key, value] of Object.entries(resolved.value)) manifest[key] = { ...manifest[key], ...value };
+  for (const [key, value] of Object.entries(resolved.value)) {
+    if (key === 'prof') manifest.prof = { ...manifest.prof, sub: { ...manifest.prof?.sub, ...value.sub } };
+    else manifest[key] = { ...manifest[key], ...value };
+  }
   addRhineArt(manifest);
   const { hash, ...body } = manifest;
   manifest.hash = contentHash(body);
   await writeFile(path, JSON.stringify(manifest) + '\n');
-  console.log('Rhine art ready: four operators, Mayer summon, three devices and faction icon.');
+  console.log('Rhine art ready: six operators, Mayer summon, Dorothy trap, three devices and faction icon.');
 }

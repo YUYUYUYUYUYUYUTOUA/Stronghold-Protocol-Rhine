@@ -159,10 +159,14 @@ const num = (v, d) => { const n = typeof v === 'number' ? v : typeof v === 'stri
  * kinds fall back to a keyword guess, then to a generic sparkle (fxSpec).
  */
 export const FX_KINDS = Object.freeze({
+  form: { a: 'none' }, // the persistent UnitView form is applied by render/app.js before cosmetic fx
   burn: { a: 'flame', c: 0xff713b, r: 0.6 },
   rhineHeal: { a: 'researchHeal', c: 0x6fe8c1, pt: true },
   rhinePulse: { a: 'researchPulse', c: 0xffbc70, r: RHINE_BALANCE.energySpreadRadius, pt: true },
   rhineEcology: { a: 'researchEcology', c: 0x73dfd5, r: RHINE_BALANCE.radius, dur: RHINE_BALANCE.ecologyDuration, pt: true },
+  dorothyTrap: { a: 'blast', c: 0xffcf69, r: 1.2, pt: true },
+  dorothyCritical: { a: 'summon', c: 0xff665c, r: 0.4, pt: true },
+  dorothyChain: { a: 'dorothyChain', c: 0xffcf69, r: 0.5, pt: true },
   // blasts
   aoe: { a: 'blast', c: 0xffb35c }, explode: { a: 'blast', c: 0xff7a33 }, explosion: { a: 'blast', c: 0xff7a33 },
   // `pt`: always at the event's (x, y) (its `id` is the shooter); `heavy`: debris + scorch
@@ -1690,10 +1694,23 @@ export class FxSystem {
     if (kind === 'crit' && ex.src != null && ex.id != null) {
       for (const L of this.locks) if (L.src === ex.src && L.id === ex.id) this._releaseLock(L);
     }
-    const col = spec.c;
+    const col = kind === 'dorothyTrap' && ex.critical ? 0xff665c : spec.c;
     const r = clamp(num(ex.r ?? ex.radius, spec.r ?? 1), 0.3, 30);
     const ts = this.ctx.timeScale ? Math.max(0.25, this.ctx.timeScale()) : 2;
     const dur = num(ex.dur ?? ex.duration, spec.dur ?? 0) / ts;
+    if (kind === 'dorothyTrap' && ex.skill === 'sktok_doroth_3') {
+      const row = Math.round(at.y), column = Math.round(at.x);
+      const cross = [[0,0],[1,0],[2,0],[-1,0],[-2,0],[0,1],[0,2],[0,-1],[0,-2]];
+      this.tileFlash(cross.map(([r,c]) => [row+r,column+c]), col, .35, true);
+    }
+    if (spec.a === 'dorothyChain') {
+      // A chained Resonator has a delay before it fires; keep the preview at the trap's own tile.
+      const wait = Math.max(.2, num(ex.delay, 2) / ts);
+      const from = this._viewOf(ex.source) || (Number.isFinite(ex.fromX) && Number.isFinite(ex.fromY) ? this._point(ex.fromX, ex.fromY) : null);
+      if (from) this._beam(from, at, col, Math.min(.6, wait), 0);
+      this.ring(at.x, at.y, at.z, .25, .5, col, wait, 'ring', 'pulse');
+      return;
+    }
     // Research emits explicit source ids because the effect point can be a different unit's tile.
     // Idle rigs never invent activations; these cues are tied to successful sim events only.
     if (spec.a.startsWith('research')) {

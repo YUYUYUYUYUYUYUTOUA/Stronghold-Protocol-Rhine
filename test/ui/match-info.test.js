@@ -161,20 +161,21 @@ test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "o
     assert.equal(pub.modeId, modeId);
     const m = matchInfoModel(pub, SRC(pub.modeId));
     assert.deepEqual([...m.sets.off].sort(), [...OFF_FUNNY].sort(), `${modeId}: 标准模拟's inactiveBondIdList`);
-    assert.equal(m.sets.drawn.size, 1, '标准 draws one add-on bond');
-    assert.ok([...m.sets.drawn].every((b) => !OFF_FUNNY.includes(b) && !DATA.bonds[b].isCore));
+    assert.equal(m.sets.drawn.size, 2, '标准 draws one core and one add-on bond');
+    assert.equal([...m.sets.drawn].filter((b) => DATA.bonds[b].isCore).length, 1);
+    assert.ok([...m.sets.drawn].every((b) => !OFF_FUNNY.includes(b)));
     assert.deepEqual([...m.banned].sort(), [...pub.bannedChess].sort(), 'every banned operator is known');
     assert.deepEqual(m.banned.map((id) => DATA.chess[id].tier), [...m.banned.map((id) => DATA.chess[id].tier)].sort((a, b) => a - b));
     for (const id of m.banned) assert.ok(DATA.chess[id].bonds.every((b) => m.stateOf(b)), `${id}: every bond greyed`);
-    assert.equal(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length, 11);
+    assert.equal(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length, 12);
     assert.match(textOf(MatchLegend({ model: m })), /或本模式禁用/);
     h.m.dispose();
   }
-  // 绝境: 3 core + 4 add-on drawn, nothing switched off by the mode
+  // 绝境: 4 core + 4 add-on drawn, nothing switched off by the mode
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, bots: 1, seed: 4 }).start();
   const m = matchInfoModel(h.m.publicView(), SRC('mode_multi_hard'));
   assert.equal(m.sets.off.size, 0);
-  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [3, 4]);
+  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [4, 4]);
   assert.deepEqual([...m.banned].sort(), [...h.m.bannedChess].sort());
   h.m.dispose();
 });

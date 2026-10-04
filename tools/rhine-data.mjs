@@ -6,14 +6,18 @@ import { buildSkill, statsFrom, interpolateAttrs, baseTalentList, traitRecord, r
   unlocked, bestCandidate, moduleAttr, moduleTalentChanges, splitModuleParts, tokenVariant } from './build-data.mjs';
 import { RHINE_BOND, RHINE_CHARACTERS, RHINE_BALANCE, RHINE_DEVICES, RHINE_EQUIPMENT } from '../shared/rhineResearch.js';
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
+import { applyOpeningBans } from '../shared/openingBans.js';
 
 export const RHINE_ADDITIONS = Object.freeze([
   { key: 'mayer', charId: 'char_242_otter', tier: 1, bonds: [RHINE_BOND], skillId: 'skchr_otter_1', defaultModuleId: 'uniequip_002_otter', subName: '召唤师', trait: 'mayer' },
   { key: 'wuhoo', charId: 'char_4224_turdus', tier: 4, bonds: ['skillfulShip', 'emptyShip'], skillId: 'skchr_turdus_2', defaultModuleId: 'uniequip_002_turdus', subName: '链愈师', trait: 'copy_start' },
   { key: 'eunectes', charId: 'char_416_zumama', tier: 5, bonds: ['soloShip', 'sargonShip'], skillId: 'skchr_zumama_3', defaultModuleId: 'uniequip_002_zumama', excludedModuleIds: ['uniequip_004_zumama'], subName: '决战者', trait: 'copy_end' },
   { key: 'ifrit', charId: 'char_134_ifrit', tier: 5, bonds: ['arcaneShip', RHINE_BOND], skillId: 'skchr_ifrit_2', defaultModuleId: 'uniequip_002_ifrit', subName: '轰击术师', trait: 'ifrit' },
+  { key: 'astgenne', charId: 'char_135_halo', tier: 2, bonds: [RHINE_BOND, 'preciShip'], skillId: 'skchr_halo_1', defaultModuleId: 'uniequip_002_halo', subName: '链术师', trait: 'astgenne' },
+  { key: 'dorothy', charId: 'char_4048_doroth', tier: 5, bonds: [RHINE_BOND], skillId: 'skchr_doroth_3', defaultModuleId: 'uniequip_002_doroth', excludedModuleIds: ['uniequip_003_doroth'], subName: '陷阱师', trait: 'dorothy' },
 ]);
 const TOKEN = 'token_10004_otter_motter';
+export const DOROTHY_TOKEN = 'token_10025_doroth_recttp';
 const clone = x => structuredClone(x);
 const BASE_STATS = { maxHp: 3000, atk: 300, def: 0, res: 0, cost: 0, blockCnt: 0, bat: 1, aspd: 100,
   respawnTime: 999, spRecovery: 0, hpRecoveryPerSec: 0, moveSpeed: 0, tauntLevel: -10, massLevel: 0, deployLimit: 1, deckStack: 0 };
@@ -65,6 +69,8 @@ function makeGarrison(key, gold) {
   if (key === 'mayer') return garrison(id, `战斗中，每${r.mayerLayerStep}层科研使身前一格的科研装置攻击力+${r.mayerAttack[grade]}`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { layer_step: r.mayerLayerStep, atk: r.mayerAttack[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
   if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署科研装置基础攻击力总和的${r.ifritInheritance[grade] * 100}%作为额外攻击力`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
+  if (key === 'astgenne') return garrison(id, `战斗中，首次开启技能时，使已激活的【莱茵生命】与【精准】各增加${r.astgenneFirstSkillLayers[grade]}层；仅普通主战生效`, 'IN_BATTLE', 'RHINE_ASTGENNE_FIRST_SKILL', { layer: r.astgenneFirstSkillLayers[grade] }, { bond_ids: `${RHINE_BOND},preciShip` });
+  if (key === 'dorothy') return garrison(id, `战斗中，自身布置的陷阱每触发一枚，使已激活的【莱茵生命】增加${r.dorothyTrapLayers[grade]}层；每场普通主战最多获得${r.dorothyBattleLayerCap[grade]}层。一枚陷阱命中多人只计一次，连锁引爆逐枚计数；双倍伤害陷阱不额外产层，撤回、搬动或未触发销毁不产层`, 'IN_BATTLE', 'RHINE_DOROTHY_TRAP_RESEARCH', { layer: r.dorothyTrapLayers[grade], max_layer: r.dorothyBattleLayerCap[grade] }, { bond_id: RHINE_BOND });
   return garrison(id, `休整期结束时，每名实际在场的莱茵生命干员使莱茵生命增加${r.ptilopsisLayersPerMember[grade]}层科研；同名干员分别计数，调和的虚拟人数不计入`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
 }
 
@@ -72,6 +78,43 @@ function adaptMayerTalent(talent, count) {
   if (talent.bb?.cnt == null) return;
   talent.bb.cnt = count;
   for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用\d+个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗';
+}
+
+function adaptDorothyTalent(talent, count) {
+  if (talent.bb?.cnt == null || talent.tokenKey !== DOROTHY_TOKEN) return;
+  talent.bb.cnt = count;
+  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用\d+个共振装置（最多拥有\d+个）/, `可以使用${count}个共振装置（最多拥有${count}个，同时最多部署${count}个）`);
+}
+
+function compileDorothyToken(ctx, chess) {
+  const t = ctx.charTable[DOROTHY_TOKEN], variants = {}, owners = ['chess_rhine_dorothy_a', 'chess_rhine_dorothy_b'];
+  for (const id of owners) {
+    const c = chess[id], opts = { ...c.status, skillIndex: c.skill.index, label: id };
+    if (c.module?.active) {
+      opts.modulePhase = ordinaryModulePhase(ctx, c.module.id, c.module.level);
+      opts.moduleTokenParts = splitModuleParts(opts.modulePhase).token;
+    }
+    const count = RHINE_BALANCE.dorothyTrapLimit[c.isGolden ? 1 : 0];
+    const variant = (extra = {}) => {
+      const v = tokenVariant({ ...ctx, ac: {} }, DOROTHY_TOKEN, t, { ...opts, ...extra });
+      v.stats.deployLimit = count; v.stats.deckStack = count;
+      // Only the trap kit may activate the zero-SP token skill after a ground enemy steps on it.
+      if (v.skill) v.skill.trigger = { rule: 'DOROTHY_TRAP', rawRule: 'DEFAULT', customRangeGrid: null };
+      return v;
+    };
+    const v = variants[id] = { ...variant(), count, sources: ['talent'], bySkill: {} };
+    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count, sources: ['talent'] };
+    if (c.isGolden) {
+      const mv = variant({ modulePhase: null, moduleTokenParts: [] });
+      v.byModule = { none: { stats: mv.stats, immunities: mv.immunities, trait: mv.trait, talents: mv.talents } };
+    }
+  }
+  const initial = variants[owners[0]], desc = `${t.description}；库存与同时部署上限为普通4个、精锐5个，开场自动部署也占上限。撤回、搬动或未触发销毁不会获得科研层数`;
+  return { tokenId: DOROTHY_TOKEN, kind: 'summon', name: t.name, appellation: t.appellation, desc, descRaw: desc,
+    profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
+    owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'none', attackKind: 'melee', projectile: 'none', canHitFly: false,
+    skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: ['isolated'], variants,
+    assets: { avatar: DOROTHY_TOKEN, spine: DOROTHY_TOKEN } };
 }
 
 function compileChess(ctx, config, spec, gold, index) {
@@ -86,14 +129,17 @@ function compileChess(ctx, config, spec, gold, index) {
     const skill = buildSkill(ctx, s.skillId, status.skillLevel, null, chessId);
     skill.index = index; skill.overrideTokenKey = s.overrideTokenKey || null;
     if (spec.key === 'mayer' && index === 1) skill.trigger = { rule: 'SP_FULL', rawRule: 'ALWAYS', customRangeGrid: null };
+    if (spec.key === 'dorothy') skill.trigger = { rule: 'SP_FULL', rawRule: 'ALWAYS', customRangeGrid: null };
     return [{ ...skill, isDefault: s.skillId === spec.skillId }];
   });
   const skill = clone(skills.find(s => s.isDefault)); delete skill.isDefault;
   const g = makeGarrison(spec.trait, gold);
   const statsBase = statsFrom(attrs), talentsBase = baseTalentList(ctx, c, status.phase, status.level, chessId);
   if (spec.key === 'mayer') for (const t of talentsBase) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
+  if (spec.key === 'dorothy') for (const t of talentsBase) adaptDorothyTalent(t, RHINE_BALANCE.dorothyTrapLimit[gold ? 1 : 0]);
   const modules = gold ? moduleChoices(ctx, { ...c, charId: spec.charId }, status, chessId, spec) : [];
   if (spec.key === 'mayer') for (const m of modules) for (const t of m.talentChanges) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
+  if (spec.key === 'dorothy') for (const m of modules) for (const t of m.talentChanges) adaptDorothyTalent(t, RHINE_BALANCE.dorothyTrapLimit[gold ? 1 : 0]);
   const mod = modules.find(m => m.isDefault);
   return { chessId, baseId, goldenId, isGolden: gold, tier: spec.tier, identifier: 200 + index,
     isHidden: false, isDiy: false, visible: true, chessType: 'PRESET', shopSortId: 200 + index,
@@ -105,7 +151,7 @@ function compileChess(ctx, config, spec, gold, index) {
     stats: mod ? composeStats(statsBase, mod.attr) : statsBase, immunities: immunitiesOf(attrs), rangeId: c.phases[status.phase].rangeId,
     rangeGrid: rangeGrid(ctx, c.phases[status.phase].rangeId), ...classify, trait: mod?.traitOverride || trait, skill,
     skills, talents: mod ? composeTalents(talentsBase, mod.talentChanges) : talentsBase,
-    tokens: spec.key === 'mayer' ? [TOKEN] : [], module: mod ? { id: mod.uniEquipId, name: mod.name, type: mod.typeName, level: mod.level, active: true } : null,
+    tokens: spec.key === 'mayer' ? [TOKEN] : spec.key === 'dorothy' ? [DOROTHY_TOKEN] : [], module: mod ? { id: mod.uniEquipId, name: mod.name, type: mod.typeName, level: mod.level, active: true } : null,
     assets: { avatar: gold ? `${spec.charId}_2` : spec.charId, portrait: `${spec.charId}_${gold ? 2 : 1}`, spine: spec.charId, skillIcon: skill.iconId, subProfIcon: `sub_${c.subProfessionId}_icon` },
     ...(gold ? { statsBase, traitBase: clone(trait), talentsBase, modules } : {}),
     extension: { id: 'rhine-research', sourceRevision: ctx.source.revision, supportedSkills: skills.map(s => s.skillId) } };
@@ -159,6 +205,7 @@ function applyEquipment({ items, effects }) {
 export async function applyRhineData(files, source = null) {
   const ctx = source || JSON.parse(await readFile(new URL('./rhine-data-source.json', import.meta.url), 'utf8'));
   const { chess, bonds, garrisons, tokens, effects, config } = files;
+  applyOpeningBans(config);
   for (const [index, spec] of RHINE_ADDITIONS.entries()) for (const gold of [false, true]) {
     const c = compileChess(ctx, config, spec, gold, index);
     chess[c.chessId] = c;
@@ -225,6 +272,7 @@ export async function applyRhineData(files, source = null) {
     profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
     owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'phys', attackKind: 'melee', projectile: 'none', canHitFly: false,
     skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
+  tokens[DOROTHY_TOKEN] = compileDorothyToken(ctx, chess);
   for (const d of RHINE_DEVICES) tokens[d.tokenId] = { tokenId: d.tokenId, kind: 'summon', name: d.name, appellation: d.name,
     desc: d.description, descRaw: d.description, profession: 'TOKEN', subProfessionId: 'notchar1', position: 'ALL', displayType: 'DEFAULT',
     placeable: false, ownerRange: false, owners: [], stats: { ...BASE_STATS, atk: RHINE_BALANCE.baseAttack },
@@ -236,10 +284,10 @@ export async function applyRhineData(files, source = null) {
 
 export function validateRhineData({ chess, bonds, garrisons, tokens, config, items, effects }) {
   const errors = [], rhine = bonds[RHINE_BOND];
-  if (!rhine || rhine.visibleMembers.length !== 7) errors.push('Rhine must have exactly 7 visible normal members');
+  if (!rhine || rhine.visibleMembers.length !== 9) errors.push('Rhine must have exactly 9 visible normal members');
   for (const spec of RHINE_ADDITIONS) for (const suffix of ['a','b']) {
     const c = chess[`chess_rhine_${spec.key}_${suffix}`];
-    if (!c || c.charId !== spec.charId || c.skills.length !== (['mayer','wuhoo'].includes(spec.key) ? 2 : 3)
+    if (!c || c.charId !== spec.charId || c.skills.length !== (['mayer','wuhoo','astgenne'].includes(spec.key) ? 2 : 3)
       || c.skill.skillId !== spec.skillId || c.skills.filter(s => s.isDefault).length !== 1) errors.push(`Rhine missing supported unit ${spec.key}_${suffix}`);
     if (c) for (const id of c.garrisonIds) if (!garrisons[id]) errors.push(`Rhine missing garrison ${id}`);
     if (c) for (const id of c.tokens) if (!tokens[id]) errors.push(`Rhine missing token ${id}`);
@@ -265,5 +313,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const errors = validateRhineData(files);
   if (errors.length) throw new Error(errors.join('\n'));
   for (const n of names) { const dest = join(out, `${n}.json`), tmp = `${dest}.tmp-${process.pid}`; await writeFile(tmp, JSON.stringify(files[n])); await rename(tmp, dest); }
-  console.log('Rhine overlay complete: 4 operators, 7 Rhine members, 3 research devices, 2 equipment pairs.');
+  console.log('Rhine overlay complete: 6 operators, 9 Rhine members, 3 research devices, 2 equipment pairs.');
 }

@@ -275,7 +275,7 @@ describe('GitHub issue #8 item 1: 本局信息 in the strategy draft (real serve
     for (const p of [a, b]) briefs.set(p, await readInfo(p.page, '.brief__right'));
     const want = await truth(a.page);
     assert.deepEqual(want.off, [], '绝境 switches no bond off');
-    assert.equal(want.greyed.length, 7, '3 core + 4 add-on bonds drawn');
+    assert.equal(want.greyed.length, 8, '4 core + 4 add-on bonds drawn');
     for (const [p, info] of briefs) {
       assert.deepEqual(greyedOf(info), want.greyed, `${p.name}: briefing greyed`);
       assert.deepEqual(info.banned, want.names, `${p.name}: briefing banned`);

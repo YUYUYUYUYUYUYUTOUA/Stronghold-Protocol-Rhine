@@ -13,7 +13,7 @@ test('pool caps follow config (12/14/18/16/8/5, 缪尔赛思 4) and only visible
   const pool = new SharedPool(gd, { banned: [] });
   const caps = { 1: 12, 2: 14, 3: 18, 4: 16, 5: 8, 6: 5 };
   assert.equal(pool.entries.size, gd.visibleChess.length);
-  assert.equal(pool.entries.size, 116);
+  assert.equal(pool.entries.size, 118);
   for (const [id, e] of pool.entries) {
     const expect = id === 'chess_char_6_11_a' ? 4 : caps[e.tier];
     assert.equal(e.cap, expect, id);
@@ -22,7 +22,7 @@ test('pool caps follow config (12/14/18/16/8/5, 缪尔赛思 4) and only visible
   }
   const banned = [gd.visibleChess[0], gd.visibleChess[5]];
   const p2 = new SharedPool(gd, { banned });
-  assert.equal(p2.entries.size, 114);
+  assert.equal(p2.entries.size, 116);
   assert.ok(!p2.has(banned[0]) && p2.left(banned[0]) === 0 && p2.take(banned[0]) === 0);
 });
 
@@ -59,12 +59,12 @@ test('odds sanity: level L rolls only tiers ≤ L; level 1 only tier 1; shares �
     const shares = pool.tierShares(level);
     for (const [t, n] of Object.entries(seen)) assert.ok(Math.abs(n / 4000 - shares[t]) < 0.035, `L${level} T${t} ${n / 4000} vs ${shares[t]}`);
   }
-  // Rhine roster (four additions, Ptilopsis/Saria now III), full pools and no bans.
+  // Rhine roster (six additions, Ptilopsis/Saria now III), full pools and no bans.
   const s6 = pool.tierShares(6);
-  const want = { 1: 0.1431, 2: 0.1669, 3: 0.2651, 4: 0.2468, 5: 0.1122, 6: 0.0659 };
+  const want = { 1: 0.1409, 2: 0.1740, 3: 0.2611, 4: 0.2431, 5: 0.1160, 6: 0.0649 };
   for (const t of Object.keys(want)) assert.ok(Math.abs(s6[t] - want[t]) < 0.01, `T${t} ${s6[t]}`);
   const s2 = pool.tierShares(2);
-  assert.ok(Math.abs(s2[1] - 0.4615) < 0.01 && Math.abs(s2[2] - 0.5385) < 0.01);
+  assert.ok(Math.abs(s2[1] - 0.4474) < 0.01 && Math.abs(s2[2] - 0.5526) < 0.01);
 });
 
 test('rolls are copy-weighted: an exhausted chess never rolls; tier/filter options work', () => {
@@ -135,8 +135,8 @@ test('维多利亚 25-layer reward and 洛洛的定制品: the 4 special 维式�
   m.dispose();
 });
 
-test('per-match disabled bonds: 3 core + 4 add-on (NORMAL+), FUNNY static + 0 + 1; weight-0 never drawn; subset ban rule', () => {
-  for (const [modeId, core, addon] of [['mode_multi_hard', 3, 4], ['mode_single_abyss', 3, 4], ['mode_multi_funny', 0, 1], ['mode_single_normal', 3, 4]]) {
+test('per-match disabled bonds: 4 core + 4 add-on (NORMAL+), FUNNY static + 1 + 1; weight-0 never drawn; subset ban rule', () => {
+  for (const [modeId, core, addon] of [['mode_multi_hard', 4, 4], ['mode_single_abyss', 4, 4], ['mode_multi_funny', 1, 1], ['mode_single_normal', 4, 4]]) {
     const gd = new GameData(DATA, modeId);
     for (let seed = 1; seed <= 20; seed++) {
       const { drawn, staticOff, banned } = drawDisabledBonds(gd, createRng(seed));
@@ -163,10 +163,10 @@ test('per-match disabled bonds: 3 core + 4 add-on (NORMAL+), FUNNY static + 0 + 
 test('the match pool excludes banned chess; m.public lists disabled bonds and banned chess', () => {
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, bots: 1, seed: 3 }).start();
   const pub = h.lastBc('m.public');
-  assert.equal(pub.drawnDisabledBonds.length, 7);
+  assert.equal(pub.drawnDisabledBonds.length, 8);
   assert.ok(pub.bannedChess.length > 0);
   for (const id of pub.bannedChess) assert.ok(!h.m.pool.has(id), `${id} should not be in the pool`);
-  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 116);
+  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 118);
   checkInvariants(h.m);
   h.m.dispose();
 });

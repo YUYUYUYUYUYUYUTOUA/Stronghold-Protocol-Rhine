@@ -229,8 +229,13 @@ test('real-time co-op over websockets with the real simulation: 2 humans + 2 AI 
   for (const ps of m.order.filter((p) => p.isBot && p.alive)) assert.ok(ps.deployCount >= 3, `${ps.playerId} deployed ${ps.deployCount}`);
 
   // both humans leave: the match ends as abandoned exactly once and the room returns to the lobby
+  // The scripted prep probes tile legality in a burst. Let the production 40 msg/s bucket
+  // refill four tokens before these cleanup intents; keep the real limiter enabled.
+  await delay(100);
   assert.equal((await a.request({ t: 'g.leave' })).t, 'ok');
-  assert.equal((await b.request({ t: 'g.leave' })).t, 'ok');
+  const leaveB = await b.request({ t: 'g.leave' });
+  assert.equal(leaveB.t, 'ok', JSON.stringify({ reply: leaveB, phase: m.phase, outcome: m.outcome,
+    players: m.order.map(p => ({ id: p.playerId, alive: p.alive, left: p.left, lp: p.lp })) }));
   await delay(50);
   assert.equal(m.ended, true);
   assert.equal(m.outcome.reason, 'abandoned');

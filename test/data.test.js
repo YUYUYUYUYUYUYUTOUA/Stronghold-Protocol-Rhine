@@ -74,12 +74,12 @@ test('numbers: every stats/bb/enemyScale object holds only finite numbers (no nu
   assert.deepEqual(bad.slice(0, 10), [], `${bad.length} bad numeric fields`);
 });
 
-test('chess: base roster plus four Rhine expansion operators and two tier migrations', () => {
-  assert.equal(Object.keys(chess).length, 274);
-  assert.equal(visible.length, 116);
+test('chess: base roster plus six Rhine expansion operators and two tier migrations', () => {
+  assert.equal(Object.keys(chess).length, 278);
+  assert.equal(visible.length, 118);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
-  assert.deepEqual(perTier, { 1: 17, 2: 17, 3: 21, 4: 22, 5: 20, 6: 19 });
+  assert.deepEqual(perTier, { 1: 17, 2: 18, 3: 21, 4: 22, 5: 21, 6: 19 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
   assert.equal(normalChess.filter((c) => c.isHidden).length, 17);
 });
@@ -152,9 +152,9 @@ test('bonds: 24 bonds including Rhine, with valid members, thresholds and effect
   for (const c of normalChess) for (const b of c.bonds) assert.ok(bonds[b].members.includes(c.chessId), `${c.chessId} not in ${b}.members`);
 });
 
-test('garrisons: all referenced exist; 47 distinct effect keys including four Rhine traits', () => {
+test('garrisons: all referenced exist; 49 distinct effect keys including six Rhine traits', () => {
   const keys = new Set(Object.values(garrisons).map((g) => g.effectKey));
-  assert.equal(keys.size, 47);
+  assert.equal(keys.size, 49);
   for (const g of Object.values(garrisons)) {
     assert.ok(typeof g.eventType === 'string' && typeof g.desc === 'string', g.garrisonId);
     for (const o of g.owners) assert.ok(chess[o], `${g.garrisonId}: owner ${o}`);
@@ -426,7 +426,7 @@ test('chess/tokens: talent tokens resolve and every token variant says where it 
     assert.equal(t.placeable, t.displayType !== 'HIDDEN' && made, `${t.tokenId} (${t.name}): placeable`);
   }
   assert.deepEqual(Object.values(tokens).filter((t) => t.placeable).map((t) => t.name).sort(),
-    ['医疗探机', '机械水獭', '诅咒娃娃', '斯卡蒂的海嗣', '流形', '狼群', '爬行号·防护单元'].sort());
+    ['医疗探机', '机械水獭', '诅咒娃娃', '斯卡蒂的海嗣', '流形', '狼群', '爬行号·防护单元', '共振装置'].sort());
   assert.equal(tokens.enemy_9012_acloon.stats.deployLimit, tokens.enemy_9012_acloon.deployLimit);
 });
 

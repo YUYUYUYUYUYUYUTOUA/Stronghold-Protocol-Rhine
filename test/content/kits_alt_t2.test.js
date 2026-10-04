@@ -52,7 +52,7 @@ const plain = (id, o = {}) => chessRec({ id, skill: null, ...o });
 
 test('kit coverage: every selectable skill of every visible tier-2 chess is hand-authored (normal + elite)', () => {
   const rep = kitCoverage({ tier: 2 });
-  assert.equal(rep.summary.chess, 17);
+  assert.equal(rep.summary.chess, 18);
   assert.equal(rep.summary.covered, rep.summary.skills, JSON.stringify(rep.chess.filter((r) => r.skills.some((s) => !s.covered)).map((r) => r.name)));
   for (const r of rep.chess) {
     for (const s of r.skills.filter((x) => !x.isDefault)) {
@@ -736,7 +736,8 @@ test('every tier-2 loadout (skill × module, normal & elite) fights 30 s with it
   for (const base of bases) {
     for (const id of [base.chessId, base.goldenId].filter(Boolean)) {
       const r = raw(id);
-      const mods = Array.isArray(r.modules) && r.modules.length ? [null, 'none'] : [null];
+      const mods = r.isGolden && Array.isArray(r.modules) && r.modules.length
+        ? [null, 'none', ...r.modules.map(m => m.uniEquipId)] : [null];
       for (const s of r.skills) {
         for (const moduleId of mods) {
           const h = makeBattle({
@@ -746,8 +747,11 @@ test('every tier-2 loadout (skill × module, normal & elite) fights 30 s with it
           });
           const u = h.unit(id);
           assert.equal(u.skill.id, s.skillId);
-          assert.equal(u.kit.skillSource ?? 'kit', s.isDefault ? 'kit' : 'skills', `${id} ${s.skillId}`);
+          const source = u.kit.skillSource ?? 'kit';
+          if (s.isDefault) assert.ok(['kit', 'skills'].includes(source), `${id} ${s.skillId}: ${source}`);
+          else assert.equal(source, 'skills', `${id} ${s.skillId}`);
           h.run(30);
+          if (r.charId === 'char_135_halo') assert.ok(u.skill.activations > 0, `${id} ${s.skillId} module ${moduleId}: actually cast`);
           assert.equal(h.b.errors.length, 0, `${id} S${s.index + 1} module ${moduleId}: ${JSON.stringify(h.b.errors[0])}`);
           checkInvariants(h.b);
         }

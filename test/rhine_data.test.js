@@ -19,9 +19,9 @@ test('Rhine data: offline overlay is idempotent and preserves unrelated operator
   await applyRhineData(files);assert.equal(JSON.stringify(files),before);
   assert.deepEqual(files.chess.chess_char_1_01_a,original);assert.deepEqual(validateRhineData(files),[]);
 });
-test('Rhine data: exactly seven distinct visible members; existing IDs remain stable at tier III',()=>{
-  assert.equal(files.bonds.rhineShip.visibleMembers.length,7);
-  assert.equal(new Set(files.bonds.rhineShip.visibleMembers.map(id=>files.chess[id].charId)).size,7);
+test('Rhine data: exactly nine distinct visible members; existing IDs remain stable at tier III',()=>{
+  assert.equal(files.bonds.rhineShip.visibleMembers.length,9);
+  assert.equal(new Set(files.bonds.rhineShip.visibleMembers.map(id=>files.chess[id].charId)).size,9);
   for(const id of ['chess_char_4_21_a','chess_char_5_11_a'])assert.equal(files.chess[id].tier,3);
   assert.ok(Object.values(files.chess).filter(c=>c.name==='溯光星源').every(c=>c.bonds.includes('rhineShip')));
 });
@@ -43,7 +43,7 @@ test('Rhine data: Astgenne alter receives only the extra bond on normal and elit
     assert.deepEqual(input.chess[id].bonds,['arcaneShip','skillfulShip','rhineShip']);
   }
   const members=bondMembers(input.bonds.rhineShip,{board:[{kind:'chess',id:ids[1]}]},[],id=>input.chess[id]);
-  assert.equal(members.length,7);
+  assert.equal(members.length,9);
   assert.deepEqual(members.find(c=>c.id===ids[0]),{id:ids[0],tier:6,name:'溯光星源',onBoard:true,owned:true,banned:false});
   assert.ok(input.bonds.arcaneShip.visibleMembers.includes(ids[0]));
   assert.ok(input.bonds.skillfulShip.visibleMembers.includes(ids[0]));
@@ -78,8 +78,8 @@ test('Rhine data: every official skill, requested defaults and real owner-specif
   assert.equal(t.variants.chess_rhine_mayer_a.count,1);assert.equal(t.variants.chess_rhine_mayer_b.count,2);
 });
 test('Rhine data: default modules compose real stats and none restores base traits and talents',()=>{
-  const expected={mayer:['uniequip_002_otter'],wuhoo:['uniequip_002_turdus'],eunectes:['uniequip_002_zumama','uniequip_003_zumama'],ifrit:['uniequip_002_ifrit','uniequip_003_ifrit']};
-  const defaults={mayer:[0,'uniequip_002_otter'],wuhoo:[1,'uniequip_002_turdus'],eunectes:[2,'uniequip_002_zumama'],ifrit:[1,'uniequip_002_ifrit']};
+  const expected={mayer:['uniequip_002_otter'],wuhoo:['uniequip_002_turdus'],eunectes:['uniequip_002_zumama','uniequip_003_zumama'],ifrit:['uniequip_002_ifrit','uniequip_003_ifrit'],astgenne:['uniequip_002_halo'],dorothy:['uniequip_002_doroth']};
+  const defaults={mayer:[0,'uniequip_002_otter'],wuhoo:[1,'uniequip_002_turdus'],eunectes:[2,'uniequip_002_zumama'],ifrit:[1,'uniequip_002_ifrit'],astgenne:[0,'uniequip_002_halo'],dorothy:[2,'uniequip_002_doroth']};
   const ds=new DataSource(files,null);
   for(const [key,ids] of Object.entries(expected)){
     const c=files.chess[`chess_rhine_${key}_b`], base=ds.getChess(c.chessId,{moduleId:'none'}), selected=ds.getChess(c.chessId);
@@ -173,4 +173,50 @@ test('Rhine data: moved copy traits and distinct research currencies',()=>{
   assert.equal(g('chess_char_4_21_a').bb.layer,2);
   assert.equal(g('chess_char_5_11_a').effectKey,'RHINE_SARIA_HEALING');
   for(const t of Object.values(files.tokens).filter(t=>t.tokenId.startsWith('token_rhine_')))assert.equal(t.stats.atk,300);
+});
+
+test('Rhine data: Astgenne keeps the requested tier, dual bonds and first-cast trait across both skills',()=>{
+  const ds=new DataSource(files,null);
+  for(const [suffix,layer] of [['a',3],['b',6]]){
+    const c=files.chess[`chess_rhine_astgenne_${suffix}`],g=files.garrisons[c.garrisonIds[0]];
+    assert.equal(c.tier,2);assert.deepEqual(c.bonds,['rhineShip','preciShip']);
+    assert.equal(g.effectKey,'RHINE_ASTGENNE_FIRST_SKILL');assert.equal(g.bb.layer,layer);
+    assert.equal(g.bbStr.bond_ids,'rhineShip,preciShip');
+    for(const skillIndex of [0,1]){
+      const v=ds.getChess(c.chessId,{skillIndex,moduleId:'none'});
+      assert.equal(v.skill.id,`skchr_halo_${skillIndex+1}`);
+      assert.equal(v.raw.talents[0].bb.interval,15);assert.equal(v.raw.talents[0].bb.max_stack_cnt,5);
+    }
+  }
+  assert.equal(ds.getChess('chess_rhine_astgenne_b').traitBb['attack@chain.atk_scale'],1);
+  assert.equal(ds.getChess('chess_rhine_astgenne_b',{moduleId:'none'}).traitBb['attack@chain.atk_scale'],undefined);
+});
+
+test('Rhine data: Dorothy has three skills, only TRP-Y and a consistent four/five trap limit in every loadout',async()=>{
+  const ds=new DataSource(files,null),token='token_10025_doroth_recttp';
+  for(const [suffix,count,layer,maxLayer] of [['a',4,2,24],['b',5,4,48]]){
+    const id=`chess_rhine_dorothy_${suffix}`,c=files.chess[id],g=files.garrisons[c.garrisonIds[0]];
+    assert.equal(c.tier,5);assert.deepEqual(c.bonds,['rhineShip']);assert.deepEqual(c.tokens,[token]);
+    assert.equal(c.talents[0].bb.cnt,count);assert.equal(c.talents[0].bb['attack@max_cnt'],2);
+    assert.ok(c.talents[0].desc.includes(`同时最多部署${count}个`));
+    assert.equal(g.effectKey,'RHINE_DOROTHY_TRAP_RESEARCH');assert.deepEqual(g.bb,{layer,max_layer:maxLayer});
+    for(const skillIndex of [0,1,2])for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_doroth']){
+      const owner=ds.getChess(id,{skillIndex,moduleId}),v=ds.getToken(token,id,{skillIndex,moduleId});
+      assert.equal(owner.skill.id,`skchr_doroth_${skillIndex+1}`);assert.equal(owner.skill.trigger.rule,'SP_FULL');
+      assert.equal(owner.raw.talents[0].bb.cnt,count);assert.equal(v.skill.id,`sktok_doroth_${skillIndex+1}`);
+      assert.equal(v.skill.trigger.rule,'DOROTHY_TRAP');assert.equal(v.count,count);
+      const raw=files.tokens[token].variants[id];assert.equal(raw.stats.deployLimit,count);assert.equal(raw.stats.deckStack,count);
+      assert.equal((raw.bySkill[skillIndex]||raw).count,count);
+    }
+  }
+  const elite=ds.getChess('chess_rhine_dorothy_b');
+  assert.deepEqual(elite.raw.modules.map(m=>m.uniEquipId),['uniequip_002_doroth']);
+  assert.equal(elite.traitBb.prob,.2);assert.equal(elite.traitBb.atk_scale,2);
+  assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'none'}).traitBb.prob,undefined);
+  assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'uniequip_003_doroth'}),elite,'excluded first module never loads');
+  const upgraded=structuredClone(files);upgraded.config.economy.chessStatus[5].golden.equipLevel=3;
+  await applyRhineData(upgraded);
+  const upper=new DataSource(upgraded,null).getChess('chess_rhine_dorothy_b');
+  assert.equal(upper.raw.talents[0].bb.cnt,5);assert.equal(upper.raw.talents[1].bb.atk,.04);
+  assert.equal(upgraded.tokens[token].variants.chess_rhine_dorothy_b.stats.deployLimit,5);
 });

@@ -63,14 +63,14 @@ function cast(h, u, max = 15) {
 
 test('tier 5: every selectable skill of every visible chess has a hand-authored spec (normal + elite)', () => {
   const rep = kitCoverage({ tier: 5 });
-  assert.equal(rep.summary.chess, 20);
+  assert.equal(rep.summary.chess, 21);
   assert.equal(rep.summary.covered, rep.summary.skills, rep.chess.flatMap((r) => r.skills.filter((s) => !s.covered).map((s) => `${r.name} S${s.index + 1}`)).join(', '));
   assert.equal(rep.summary.chessFullyCovered, rep.summary.chess);
 });
 
 test('tier 5: every chess × every legal skill × every module fights with its authored spec and casts, no content errors', () => {
   const bases = ds.chessIds().filter((id) => id.endsWith('_a') && raw(id).tier === 5 && raw(id).visible);
-  assert.equal(bases.length, 20);
+  assert.equal(bases.length, 21);
   let n = 0;
   for (const base of bases) {
     const gold = base.replace(/_a$/, '_b');
@@ -81,7 +81,10 @@ test('tier 5: every chess × every legal skill × every module fights with its a
         const h = makeBattle({
           seed: 5, hooks: [],
           defs: { enemies: { enemy_dummy: enemyRec({ key: 'enemy_dummy', hp: 30000, atk: 400, bat: 2, speed: 0.6 }) }, chess: { t_a: ally('t_a', { stats: { maxHp: 5000, atk: 100, blockCnt: 1 } }) } },
-          units: [{ chessId: id, row: ds.getChess(id).position === 'MELEE' ? 9 : 10, col: 5, skillIndex, ...(moduleId ? { moduleId } : {}) }, { chessId: 't_a', row: 11, col: 5 }, { chessId: 'chess_char_5_11_a', row: 9, col: 4 }],
+          units: [{ chessId: id, row: ds.getChess(id).position === 'MELEE' ? 9 : 10, col: 5, skillIndex, ...(moduleId ? { moduleId } : {}) }, { chessId: 't_a', row: 11, col: 5 }, { chessId: 'chess_char_5_11_a', row: 9, col: 4 },
+            // Dorothy's actual hand placement spends inventory; full stock correctly prevents her refill skill
+            // gaining SP. Give her a placed trap, as a player would, so the normal cast assertion exercises refill.
+            ...(raw(id).charId === 'char_4048_doroth' ? [{ kind: 'token', tokenId: 'token_10025_doroth_recttp', ownerUid: 1, row: 9, col: 7 }] : [])],
           enemies: [{ key: 'enemy_dummy', count: 6, interval: 2 }, { key: 'enemy_dummy', route: 1, count: 6, interval: 2 }],
           timeLimit: 90,
         });

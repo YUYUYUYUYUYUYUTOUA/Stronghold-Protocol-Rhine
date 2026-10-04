@@ -169,6 +169,10 @@ const STATUE = Object.freeze({
 });
 const JAKILL2 = clipSet('C2_Idle', 'C2_Move', 'C2_Die', 'C2_Attack');
 export const FORMS = Object.freeze({
+  token_10025_doroth_recttp: Object.freeze({
+    dorothyCritical: Object.freeze({ roles: Object.freeze({}), tint: 0xff665c }),
+    dorothyNormal: Object.freeze({ roles: Object.freeze({}), tint: 0xffffff }),
+  }),
   enemy_1040_bombd: Object.freeze({
     bombed: Object.freeze({
       roles: Object.freeze({
@@ -839,7 +843,7 @@ export class UnitView {
       this.fallback.visible = this.swapT < 1;
       const sc = s * UNIT.modelScale * this.modelK;
       const flashK = this.flash > 0 ? this.flash : 0;
-      let tint = this.baseTint;
+      let tint = this._formSpec()?.tint ?? this.baseTint;
       if (this.down) tint = DOWN_LOOK.tint;
       else if (this.flags & UF.FROZEN) tint = 0x9fd4ff;
       else if (this.flags & UF.COLD) tint = 0xcfe6ff;
@@ -876,7 +880,8 @@ export class UnitView {
       this.fallback.scale.set(size / 160);
       this.fallback.position.set(0, -s * 0.08 + bob);
       if (this.researchActor) this.researchActor.update(t, s);
-      this.fallback.tint = this.down ? DOWN_LOOK.tint : this.flash > 0 ? mixTint(0xffffff, 0xff8a80, this.flash) : (this.flags & UF.FROZEN ? 0x9fd4ff : 0xffffff);
+      const formTint = this._formSpec()?.tint ?? 0xffffff;
+      this.fallback.tint = this.down ? DOWN_LOOK.tint : this.flash > 0 ? mixTint(formTint, 0xff8a80, this.flash) : (this.flags & UF.FROZEN ? 0x9fd4ff : formTint);
       if (!this.alive) this.fallback.alpha = Math.max(0, this.fallback.alpha);
     }
     this.flash = Math.max(0, this.flash - dt * 6);

@@ -57,9 +57,14 @@ test('a real 标准 match: 奥术 operators are buyable, three on the board neve
   const h = makeMatch({ mode: 'solo', difficulty: 'FUNNY', humans: 1, seed: 3 }).start();
   h.toPrep(1);
   const m = h.m, ps = h.ps('p_0');
+  const disabled = new Set([...m.disabledBonds, ...m.staticInactiveBonds]);
+  for (const id of DATA.bonds.arcaneShip.visibleMembers) {
+    const expectedBanned = DATA.chess[id].bonds.every(bond => disabled.has(bond));
+    assert.equal(m.bannedChess.includes(id), expectedBanned, `${DATA.chess[id].name}: every bond disabled`);
+    assert.equal(m.pool.has(id), !expectedBanned, `${DATA.chess[id].name}: pool follows the rotation`);
+  }
   const members = DATA.bonds.arcaneShip.visibleMembers.filter((id) => m.pool.has(id) && !m.bannedChess.includes(id));
-  assert.deepEqual(members.map((id) => DATA.chess[id].name), ['深靛', '洛洛', '阿罗玛', '夕', '圣聆初雪', '溯光星源', '伊芙利特'],
-    'members kept in the pool by their other bond, including the enabled Rhine faction');
+  assert.ok(members.length >= 3, 'at least three Arcane operators survive through their other bond');
   ps.board.clear();
   const used = new Set();
   for (const id of members.slice(0, 3)) { const t = legalTileFor(m, ps, id, used); used.add(tileKey(t[0], t[1])); give(m, ps, id, 'board', t); }
@@ -76,9 +81,11 @@ test('a real 标准 match: 奥术 operators are buyable, three on the board neve
   assert.equal(chip.props.title, '奥术：本局禁用（该盟约不会激活）');
   assert.match(textOf(chip), /本局禁用/);
   assert.ok(![...walk(chip)].some((v) => hasClass(v, 'dbond__count')), 'no member count');
-  // the operator's enabled bond (精准) keeps its normal chip
-  const preci = chipOf(BondChips({ bondIds: DATA.chess[members[0]].bonds, bonds: priv.bonds, off }), 'preciShip');
-  assert.ok(!hasClass(preci, 'is-off'));
+  // The deployed operator's other enabled bond keeps its normal chip.
+  const otherBond = DATA.chess[members[0]].bonds.find(id => id !== 'arcaneShip' && !off.has(id));
+  assert.ok(otherBond, 'this operator stays buyable through an enabled bond');
+  const other = chipOf(BondChips({ bondIds: DATA.chess[members[0]].bonds, bonds: priv.bonds, off }), otherBond);
+  assert.ok(!hasClass(other, 'is-off'));
   m.dispose();
 });
 

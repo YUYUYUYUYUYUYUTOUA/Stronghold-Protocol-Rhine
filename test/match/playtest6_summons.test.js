@@ -18,6 +18,8 @@ const SHAMARE = 'chess_char_3_15_a';
 const DRONE = 'token_10000_silent_healrb';
 const DEVICE = 'token_10041_cathy_catsld';
 const DOLL = 'token_10006_vodfox_doll';
+const DOROTHY = 'chess_rhine_dorothy_a';
+const RESONATOR = 'token_10025_doroth_recttp';
 const chess = (id) => (Object.hasOwn(DATA.chess, id) ? DATA.chess[id] : null);
 
 function prep({ loadout = null, stageId = 'act2autochess_m04', seed = 11 } = {}) {
@@ -37,9 +39,9 @@ const tokensOf = (ps, id) => [...ps.hand, ...ps.temp, ...ps.board.values()].filt
 const stackOf = (ps, id) => ps.hand.find((p) => p && p.kind === 'token' && p.id === id) ?? null;
 const move = (m, uid, to, dir) => m.handle('p_0', { t: 'g.move', uid, to, ...(dir ? { dir } : {}) });
 
-test('tokens.json: the manually deployable summons are hand pieces — 医疗探机, 诅咒娃娃, 爬行号·防护单元 with the talent ones', () => {
+test('tokens.json: the manually deployable summons are hand pieces — 医疗探机, 诅咒娃娃, 爬行号·防护单元, 共振器 with the talent ones', () => {
   const placeable = Object.values(DATA.tokens).filter((t) => t.placeable).map((t) => t.tokenId).sort();
-  assert.deepEqual(placeable, [DRONE, 'token_10004_otter_motter', DOLL, 'token_10017_skadi2_dedant', 'token_10028_vigil_wolf', 'token_10030_mlyss_wtrman', DEVICE].sort());
+  assert.deepEqual(placeable, [DRONE, 'token_10004_otter_motter', DOLL, 'token_10017_skadi2_dedant', RESONATOR, 'token_10028_vigil_wolf', 'token_10030_mlyss_wtrman', DEVICE].sort());
   // HIDDEN shop-state tokens stay battle-only (PRTS: 新约能天使 with 使命必达！ provides no 投递坐标 card)
   for (const t of Object.values(DATA.tokens)) if (t.displayType === 'HIDDEN') assert.equal(t.placeable, false, t.name);
   assert.equal(DATA.tokens.token_10056_angel2_target.placeable, false);
@@ -47,6 +49,40 @@ test('tokens.json: the manually deployable summons are hand pieces — 医疗探
   assert.equal(DATA.tokens[DEVICE].displayType, null);
   assert.equal(DATA.tokens[DEVICE].deployLimit, 2);
 });
+
+// Every Dorothy loadout grants the same physical trap budget; selected skills change the effect, never the count.
+for (const elite of [false, true]) for (const skill of [0, 1, 2]) {
+  for (const module of elite ? ['none', 'uniequip_002_doroth'] : ['none']) {
+    test(`多萝西: ${elite ? 'elite' : 'normal'} S${skill + 1} / ${module} grants ${elite ? 5 : 4} traps without duplicate grants`, () => {
+      const checked = checkLoadout({ [DOROTHY]: { skill, module } }, chess);
+      assert.equal(checked.ok, true);
+      const { m, ps } = prep({ loadout: checked.loadout });
+      const owner = give(m, ps, elite ? chess(DOROTHY).goldenId : DOROTHY);
+      assert.deepEqual(move(m, owner.uid, { area: 'board', row: 10, col: 4 }), { ok: true });
+      const count = elite ? 5 : 4;
+      const sum = () => tokensOf(ps, RESONATOR).reduce((n, p) => n + (p.count || 1), 0);
+      const card = stackOf(ps, RESONATOR);
+      assert.ok(card, 'placing the owner grants its trap card immediately');
+      assert.equal(card.ownerUid, owner.uid);
+      assert.equal(card.count, count);
+      ps.grantTokensFor(owner);
+      assert.equal(sum(), count, 'an existing stack is not duplicated');
+      const deployed = ps.deployCount;
+      assert.deepEqual(move(m, card.uid, { area: 'board', row: 10, col: 5 }), { ok: true });
+      assert.equal(stackOf(ps, RESONATOR).count, count - 1);
+      assert.equal(ps.deployCount, deployed, 'a trap does not use an operator slot');
+      ps.grantTokensFor(owner);
+      assert.equal(sum(), count, 'a placed trap is included in the budget');
+      const input = ps.battleInput();
+      const op = input.units.find(u => u.uid === owner.uid);
+      assert.equal(op.skillIndex, skill);
+      assert.equal(op.moduleId, elite ? module : null);
+      assert.ok(input.units.some(u => u.kind === 'token' && u.tokenId === RESONATOR && u.ownerUid === owner.uid));
+      checkInvariants(m);
+      m.dispose();
+    });
+  }
+}
 
 test('#2 赫默 on the board sends a 医疗探机 card to the hand; it is placed by hand like any summon (S2 only)', () => {
   const { m, ps } = prep();

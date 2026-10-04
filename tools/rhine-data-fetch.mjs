@@ -9,11 +9,12 @@ const tables = await Promise.all(names.map(async name => {
   return r.json();
 }));
 const [chars, skills, ranges, equipment, battleEquipment] = tables;
-const ids = ['char_242_otter','char_4224_turdus','char_416_zumama','char_134_ifrit','char_128_plosis','char_202_demkni','token_10004_otter_motter'];
+const moduleOwners = ['char_242_otter','char_4224_turdus','char_416_zumama','char_134_ifrit','char_135_halo','char_4048_doroth'];
+const ids = [...moduleOwners, 'char_128_plosis','char_202_demkni','token_10004_otter_motter','token_10025_doroth_recttp'];
+for (const id of ids) if (!chars[id]) throw new Error(`Missing pinned character ${id}`);
 const charTable = Object.fromEntries(ids.map(id => [id, chars[id]]));
 const skillIds = [...new Set(Object.values(charTable).flatMap(c => (c.skills || []).map(s => s.skillId)))];
 const skillTable = Object.fromEntries(skillIds.map(id => [id, skills[id]]));
-const moduleOwners = ids.slice(0, 4);
 const charEquip = Object.fromEntries(moduleOwners.map(id => [id, equipment.charEquip[id]]));
 const moduleIds = [...new Set(Object.values(charEquip).flat())];
 const equipDict = Object.fromEntries(moduleIds.map(id => {
@@ -28,7 +29,7 @@ visit(charTable); visit(skillTable); visit(battleEquipTable);
 const rangeTable = Object.fromEntries([...rangeIds].sort().map(id => [id, ranges[id]]));
 const source = { source: { repository: 'https://github.com/Kengxxiao/ArknightsGameData', revision,
   note: 'Extracted original client game data; no trust or potential bonuses. Optional modules retain all levels and mode conditions. This repository mirrors client data and is not an official Hypergryph repository.',
-  verifiedAgainst: ['梅尔','乌啾','森蚺','伊芙利特'].map(name => `https://prts.wiki/w/${encodeURIComponent(name)}`),
+  verifiedAgainst: ['梅尔','乌啾','森蚺','伊芙利特','星源','多萝西'].map(name => `https://prts.wiki/w/${encodeURIComponent(name)}`),
   files: names.map(name => `${base}${name}.json`) }, charTable, skillTable, rangeTable, uniequipTable, battleEquipTable };
 await writeFile(new URL('./rhine-data-source.json', import.meta.url), JSON.stringify(source, null, 2) + '\n');
 console.log(`Wrote ${ids.length} characters/tokens and ${skillIds.length} skills at ${revision}`);

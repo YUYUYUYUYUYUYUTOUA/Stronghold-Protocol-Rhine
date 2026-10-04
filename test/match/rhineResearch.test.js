@@ -105,7 +105,7 @@ test('the shipped seven-member roster reaches Rhine nine through Muelsyse harmon
     const tile = [...ps.deployMap()].find(([k]) => !ps.board.has(k) && canPlace(ps.deployMap(), position, ...parseKey(k)));
     return give(h.m, ps, id, 'board', parseKey(tile[0]));
   };
-  for (const id of DATA.bonds[RHINE_BOND].visibleMembers) place(id);
+  for (const id of DATA.bonds[RHINE_BOND].visibleMembers.filter(id => !['char_135_halo', 'char_4048_doroth'].includes(DATA.chess[id].charId))) place(id);
   assert.equal(ps.bonds[RHINE_BOND].count, 8, 'seven real Rhine operators plus Muelsyse harmony');
   const recruitId = Object.values(DATA.chess).find(c => c.visible && !c.isGolden && !c.bonds.includes(RHINE_BOND)).chessId;
   const recruit = place(recruitId);

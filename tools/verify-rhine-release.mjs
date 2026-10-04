@@ -26,7 +26,7 @@ for (const base of bases) {
   assert.equal(health.app, APP_VERSION, 'served release version mismatch');
   const artifacts = {};
   const fetched = {};
-  for (const name of ['chess', 'items', 'assets', 'tokens', 'bonds', 'garrisons', 'effects']) {
+  for (const name of ['chess', 'items', 'assets', 'tokens', 'bonds', 'garrisons', 'effects', 'config']) {
     const bytes = await get(`/data/${name}.json`);
     assert.equal(hash(bytes), hash(fs.readFileSync(new URL(`data/${name}.json`, root))), `${name} served data mismatch`);
     artifacts[name] = hash(bytes);
@@ -35,6 +35,34 @@ for (const base of bases) {
   assert.equal(fetched.chess.chess_rhine_mayer_b.skill.index, 0);
   assert.equal(fetched.chess.chess_rhine_mayer_b.module.id, 'uniequip_002_otter');
   assert.deepEqual(fetched.bonds.rhineShip.thresholds, [3, 6, 9]);
+  const operators = [];
+  for (const [key, charId, tier, skillCount, defaultSkill, moduleId] of [
+    ['astgenne', 'char_135_halo', 2, 2, 0, 'uniequip_002_halo'],
+    ['dorothy', 'char_4048_doroth', 5, 3, 2, 'uniequip_002_doroth'],
+  ]) {
+    const normal = fetched.chess[`chess_rhine_${key}_a`], elite = fetched.chess[`chess_rhine_${key}_b`];
+    assert.equal(normal.charId, charId);
+    assert.equal(normal.tier, tier);
+    assert.equal(normal.skills.length, skillCount);
+    assert.equal(normal.skill.index, defaultSkill);
+    assert.equal(elite.skill.index, defaultSkill);
+    assert.equal(elite.module.id, moduleId);
+    assert.ok(normal.bonds.includes('rhineShip'));
+    if (key === 'astgenne') assert.ok(normal.bonds.includes('preciShip'));
+    else assert.deepEqual(elite.modules.map(m => m.uniEquipId), [moduleId]);
+    const avatar = fetched.assets.chars[charId].avatar;
+    const bytes = await get(avatar);
+    assert.equal(hash(bytes), hash(fs.readFileSync(new URL(`public${avatar}`, root))));
+    operators.push({ name: normal.name, tier, skills: skillCount, defaultSkill: defaultSkill + 1, eliteModule: elite.module.type });
+  }
+  assert.deepEqual(fetched.config.bans.FUNNY, { core: 1, addon: 1 });
+  for (const level of ['NORMAL', 'HARD', 'ABYSS']) assert.deepEqual(fetched.config.bans[level], { core: 4, addon: 4 });
+  for (const [id, count] of [['chess_rhine_dorothy_a', 4], ['chess_rhine_dorothy_b', 5]]) {
+    const variant = fetched.tokens.token_10025_doroth_recttp.variants[id];
+    assert.equal(variant.count, count);
+    assert.equal(variant.stats.deployLimit, count);
+    assert.equal(fetched.chess[id].talents.find(t => t.tokenKey === 'token_10025_doroth_recttp').bb.cnt, count);
+  }
   for (const [id, count] of [['chess_rhine_mayer_a', 1], ['chess_rhine_mayer_b', 2]]) {
     const variant = fetched.tokens.token_10004_otter_motter.variants[id];
     assert.equal(variant.count, count);
@@ -75,7 +103,7 @@ for (const base of bases) {
     assert.equal((await client.hello('科研装备验证')).t, 'welcome');
     assert.equal((await client.request({ t: 'ping', c: Date.now() }, 10000)).t, 'pong');
   } finally { await client.close(); }
-  checks.push({ base, health, equipment, artifacts, http: 'passed', webSocket: 'welcome + pong' });
+  checks.push({ base, health, operators, equipment, artifacts, http: 'passed', webSocket: 'welcome + pong' });
 }
 const report = { timestamp: new Date().toISOString(), checks };
 fs.writeFileSync(new URL('rhine-equipment-verification.json', root), JSON.stringify(report, null, 2));

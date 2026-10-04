@@ -57,7 +57,7 @@ test('options: skill records at Lv4 (normal) and Lv7 (elite); modules + 不装�
 
 test('Rhine defaults appear in the loadout UI and stale RA choices preserve a valid skill while falling back to HES-X', () => {
   for (const [key, skill, module] of [['mayer',0,'uniequip_002_otter'], ['wuhoo',1,'uniequip_002_turdus'],
-    ['eunectes',2,'uniequip_002_zumama'], ['ifrit',1,'uniequip_002_ifrit']]) {
+    ['eunectes',2,'uniequip_002_zumama'], ['ifrit',1,'uniequip_002_ifrit'], ['astgenne',0,'uniequip_002_halo'], ['dorothy',2,'uniequip_002_doroth']]) {
     const { base, golden } = recordsOf(`chess_rhine_${key}_a`, get), opt = chessOptions(base, golden);
     assert.deepEqual(effectiveChoice({}, base, golden), { skill, module, changed: false });
     assert.equal(opt.skillOptions.find(s => s.isDefault).index, skill);
@@ -110,7 +110,7 @@ test('sanitizeEntries: drops unknown chess / illegal parts one by one, and the r
     all[c.chessId] = { skill: o.skills.find((i) => i !== o.defaultSkill), module: o.modules[o.modules.length - 1] };
   }
   const s = sanitizeEntries(all, get);
-  assert.equal(Object.keys(s).length, 116);
+  assert.equal(Object.keys(s).length, 118);
   assert.ok(checkLoadout(s, get).ok);
 });
 
@@ -124,9 +124,9 @@ test('selectedSkill / selectedModule for the in-match UI (shop cards, detail pan
   assert.equal(selectedSkill(null, SB, get).index, SB.skill.index);
 });
 
-test('roster and filters: 116 visible chess in shop order; tier / class / bond / search / changed-only', () => {
+test('roster and filters: 118 visible chess in shop order; tier / class / bond / search / changed-only', () => {
   const roster = rosterOf(Object.values(CHESS));
-  assert.equal(roster.length, 116);
+  assert.equal(roster.length, 118);
   assert.ok(roster.every((c) => !c.isGolden && c.visible));
   for (let i = 1; i < roster.length; i++) assert.ok(roster[i - 1].tier <= roster[i].tier);
   const t3 = filterRoster(roster, { tier: 3 }, {}, get, getBond);

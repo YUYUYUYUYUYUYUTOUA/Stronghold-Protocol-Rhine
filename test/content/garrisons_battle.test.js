@@ -633,6 +633,33 @@ test('real data: every owned IN_BATTLE garrison installs without errors on its r
   }
 });
 
+test('Rhine Astgenne: first activation grants each active bond once, including after redeployment', () => {
+  for (const suffix of ['a', 'b']) {
+    const gid = `garrison_rhine_astgenne_${suffix}`, n = suffix === 'b' ? 6 : 3;
+    const h = battle({ units: [{ id: 'star', g: [gid], row: 10, col: 4 }], bonds: { rhineShip: B(), preciShip: B() } });
+    const u = h.unit('star'); skill(h, u); skill(h, u);
+    h.b.retreat(u); h.b.redeploy(u); skill(h, u);
+    assert.deepEqual(gains(h), { rhineShip: n, preciShip: n }); cover(gid);
+    const inactive = battle({ units: [{ id: 'star', g: [gid], row: 10, col: 4 }], bonds: { rhineShip: B(), preciShip: B(0, false) } });
+    skill(inactive, inactive.unit('star')); assert.deepEqual(gains(inactive), { rhineShip: n });
+  }
+});
+
+test('Rhine Dorothy: distinct physical activations use the owner cap and ignore repeated trap events', () => {
+  for (const suffix of ['a', 'b']) {
+    const gid = `garrison_rhine_dorothy_${suffix}`, n = suffix === 'b' ? 4 : 2;
+    const h = battle({ units: [{ id: 'doro', g: [gid], row: 10, col: 4 }], bonds: { rhineShip: B() } });
+    const owner = h.unit('doro'), token = { ownerUnit: owner, mem: {} };
+    for (let seq = 1; seq <= 20; seq++) {
+      token.mem.dorothyTriggered = seq;
+      h.b.emit('trapTriggered', { owner, token, deploySeq: seq });
+      h.b.emit('trapTriggered', { owner, token, deploySeq: seq });
+      assert.equal(gains(h).rhineShip, Math.min(seq * n, 12 * n));
+    }
+    cover(gid);
+  }
+});
+
 test('coverage: every IN_BATTLE garrison id of a visible chess (and every id they grant) was exercised above', () => {
   // These traits are dispatched by content/rhine.js; their real normal / elite records and formulas are
   // covered in rhine.test.js alongside the devices they read, rather than the legacy garrison dispatcher.
