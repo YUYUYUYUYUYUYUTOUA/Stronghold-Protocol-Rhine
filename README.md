@@ -81,7 +81,7 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.2-rhine.1-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.2-rhine.3-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 
@@ -92,7 +92,7 @@ English summary: [below](#english).
 安装 Node.js 22 或 24（LTS）与 Git 后运行：
 
 ```bash
-git clone --branch codex/rhine-upstream-012 https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git
+git clone --branch codex/six-player https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine.git
 cd Stronghold-Protocol-Rhine
 npm ci             # 按锁文件安装依赖，postinstall 会准备浏览器依赖
 npm run setup      # 检查环境，下载原版及莱茵干员资源，可中断后续传
@@ -258,7 +258,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 ## 贡献
 
-欢迎在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈扩展 bug 或改进建议，也欢迎提交 Pull Request。莱茵扩展是自定义规则，请不要将其专有问题直接报给上游；如问题能在未修改的上游版本复现，再按上游贡献要求提交最小复现：
+欢迎在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈扩展 bug 或改进建议，也欢迎提交 Pull Request。莱茵扩展是自定义规则，请不要将其专有问题直接报给上游；如问题能在未修改的上游版本复现，再按上游贡献要求提交最小复现：
 
 - 提交前请运行 `node --test`，并同步更新相关文档；文档使用简体中文，代码与注释使用英文。
 - 提交的代码将以 GPL-3.0-or-later 发布。
@@ -269,9 +269,9 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 ## English
 
-An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–4 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
+An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–6 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.1.2 plus fixes through `9d40419`. Modified on 2026-10-03. It is not an upstream or official game release; report expansion issues to this fork.
+- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.1.2 plus fixes through `9d40419`. Modified on 2026-10-04. It is not an upstream or official game release; report expansion issues to this fork.
 - **Run this expansion:** clone this fork, install Node.js 22 or 24, then run `npm ci`, `npm run setup`, and `npm start`. Setup includes the Rhine resource plan; `node tools/fetch-rhine-assets.mjs` can supplement an existing asset download. The [upstream all-in-one bundle](https://github.com/sganggs/Stronghold-Protocol/releases/latest) contains the original game only, not this expansion. The official 3D board needs a local Arknights client to extract; otherwise the 2D board is used.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.
