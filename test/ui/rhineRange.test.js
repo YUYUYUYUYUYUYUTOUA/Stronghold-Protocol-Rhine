@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { researchRange, researchRangeText, circleRangeSections } from '../../shared/rhineRange.js';
+import { researchRange, researchRangeText, researchContainsTile, researchRangeTiles, circleRangeSections } from '../../shared/rhineRange.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
 import { GEO } from '../../shared/constants.js';
-import { bodyInRadius } from '../../server/sim/body.js';
+import { bodyInRadius, bodyOnTile } from '../../server/sim/body.js';
 import { previewGrid } from '../../public/js/ui/facing.js';
 import { showRange } from '../../public/js/ui/facingWheel.js';
 import { bossPrepField, circleToDisp, IDENTITY } from '../../public/js/render/prepfield.js';
@@ -17,7 +17,7 @@ const area = poly => Math.abs(poly.reduce((sum, a, i) => {
 }, 0)) / 2;
 const full = { r0: 0, r1: 18, c0: 0, c1: 20 };
 
-test('device previews match the battle radius, including the boundary, at every breakthrough', () => {
+test('device previews cover the same complete battle cells at every breakthrough', () => {
   for (const key of ['medical', 'energy', 'ecology']) for (const stage of [0, 1, 2]) {
     const piece = device(key, stage), range = researchRange(piece);
     assert.equal(range.radius, key === 'ecology' && stage === 2 ? 3 : 2);
@@ -25,14 +25,16 @@ test('device previews match the battle radius, including the boundary, at every 
     assert.deepEqual(previewGrid({ getToken: () => ({ rangeGrid: [[0, 0]] }) }, piece), range.grid,
       'the legacy one-square token grid must not override the current breakthrough');
     for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) {
-      assert.equal(range.grid.some(([r, c]) => r === y && c === x), bodyInRadius({ x, y }, 0, 0, range.radius));
+      assert.equal(range.grid.some(([r, c]) => r === y && c === x), researchContainsTile({ x, y }, 0, 0, range.radius));
     }
-    assert.ok(bodyInRadius({ x: range.radius, y: 0 }, 0, 0, range.radius));
-    assert.equal(bodyInRadius({ x: range.radius, y: .01 }, 0, 0, range.radius), false);
+    assert.ok(researchContainsTile({ x: range.radius + .49, y: .49 }, 0, 0, range.radius),
+      'the whole highlighted outer cell is effective, including the corner outside the old circle');
+    assert.equal(researchContainsTile({ x: range.radius + .5, y: 0 }, 0, 0, range.radius), false,
+      'crossing into the next non-highlighted cell ends the effect');
   }
 });
 
-test('stage is normalized and battle researchStage metadata also selects the larger circle', () => {
+test('stage is normalized and battle researchStage metadata also selects the larger grid', () => {
   assert.equal(researchRange(device('ecology', 9)).radius, 3);
   assert.equal(researchRange(device('ecology', -1)).radius, 2);
   assert.equal(researchRange(device('ecology', NaN)).radius, 2);
@@ -40,7 +42,7 @@ test('stage is normalized and battle researchStage metadata also selects the lar
   assert.equal(researchRange({ kind: 'chess', id: 'ordinary' }), null);
 });
 
-test('preplacement needs no facing, changing facing does not rotate the circle, and cleanup clears it', () => {
+test('preplacement needs no facing, uses full grid tiles without circles, and cleanup clears it', () => {
   const calls = [], view = { highlightTiles: (...args) => calls.push(args) };
   const range = researchRange(device('ecology'));
   const style = { group: 'researchPreview', color: 0x00ff00 };
@@ -49,16 +51,55 @@ test('preplacement needs no facing, changing facing does not rotate the circle, 
     const tiles = showRange(view, range.grid, 10, 6, dir, style, range.radius);
     if (!first) first = tiles;
     assert.deepEqual(tiles, first);
-    assert.deepEqual(calls.at(-1)[1].circle, { row: 10, col: 6, radius: 2 });
+    assert.equal(calls.at(-1)[1].circle, undefined);
+    assert.equal(calls.at(-1)[1].researchRange, true, 'renderer clips research grids to the current field');
   }
   const mature = researchRange(device('ecology', 2));
   assert.equal(showRange(view, mature.grid, 10, 6, 'LEFT', style, mature.radius).length, 29);
-  assert.equal(calls.at(-1)[1].circle.radius, 3);
+  assert.equal(calls.at(-1)[1].circle, undefined);
   showRange(view, null, 0, 0, null, style);
   assert.deepEqual(calls.at(-1), [[], style]);
   assert.deepEqual(showRange(view, [[0, 0], [0, 1]], 10, 6, 'UP', style), [[10, 6], [11, 6]],
     'ordinary directional previews retain the existing contract');
   assert.equal(calls.at(-1)[1].circle, undefined);
+});
+
+test('live position-to-cell mapping matches the full preview across every boundary', () => {
+  for (const radius of [2, 3]) {
+    const grid = researchRangeTiles(10, 6, radius, full);
+    for (let r = 6; r <= 14; r++) for (let c = 2; c <= 10; c++) {
+      const expected = grid.some(([row, col]) => row === r && col === c);
+      for (const dx of [-.499, 0, .499]) for (const dy of [-.499, 0, .499]) {
+        assert.equal(researchContainsTile({ x: c + dx, y: r + dy }, 6, 10, radius), expected);
+      }
+    }
+  }
+  assert.equal(researchContainsTile({ x: 7.5, y: 11.5 }, 6, 10, 2), false, 'diagonal outer cell is unlit');
+  assert.equal(researchContainsTile({ x: 7.499, y: 11.499 }, 6, 10, 2), true, 'moving centre is still in the diagonal inner cell');
+  assert.equal(researchContainsTile({ x: NaN, y: 10 }, 6, 10, 2), false);
+  assert.equal(researchContainsTile({ x: 6, y: 10 }, 6, 10, Infinity), false);
+});
+
+test('giant bosses are hit if any occupied cell belongs to the preview; edge-only contact is excluded', () => {
+  const grid = researchRangeTiles(3, 6, 2, { r0: 0, r1: 18, c0: 0, c1: 20 });
+  for (const x of [8, 8.5, 9.5, 10, 11]) for (const y of [2, 3, 5, 6]) {
+    const body = { x, y, hitArea: { w: 4.95, h: 2.95, dx: 0, dy: 1 } };
+    assert.equal(researchContainsTile(body, 6, 3, 2), grid.some(([r, c]) => bodyOnTile(body, r, c)));
+  }
+  const touch = { x: 9, y: 3, hitArea: { w: 1, h: 1, dx: 0, dy: 0 } };
+  assert.equal(researchContainsTile(touch, 6, 3, 2), false);
+  touch.x -= .001;
+  assert.equal(researchContainsTile(touch, 6, 3, 2), true);
+});
+
+test('grid range clips map edges and is mirrored onto the boss field with the same effective cells', () => {
+  const normal = researchRangeTiles(10, 2, 3);
+  assert.ok(normal.every(([r,c]) => r >= 9 && r <= 12 && c >= 0 && c <= 10));
+  const left = researchRangeTiles(3, 6, 3, GEO.BOSS_RECT);
+  const right = researchRangeTiles(3, 14, 3, GEO.BOSS_RECT);
+  assert.deepEqual(left.map(([r,c]) => [r,20-c]).sort(), right.sort());
+  assert.ok(left.some(([r]) => r === 0), 'boss battle cells below the own deployment rows remain effective');
+  assert.deepEqual(researchRangeTiles(10, 6, NaN), []);
 });
 
 test('smooth circle sections cover the Euclidean disc, never square corners or outside cells', () => {
@@ -132,10 +173,10 @@ test('renderer draws clipped circles on terrain tops, replaces them at breakthro
   assert.equal(rendered.hlGfx.polygons.length, 0);
 });
 
-test('descriptions distinguish charge/target range from splash and explain ecology timing', () => {
-  assert.match(researchRangeText(device('medical')), /半径 2 格.*本方干员.*召唤物/);
-  assert.match(researchRangeText(device('energy')), /充能干员与主目标.*半径 2 格.*突破Ⅰ.*半径 1 格.*范围外/);
-  assert.match(researchRangeText(device('ecology', 2)), /当前圆形半径 3 格.*突破Ⅱ为 3 格.*每 8 秒开启 4 秒/);
+test('descriptions distinguish complete cell coverage from circular splash and explain ecology timing', () => {
+  assert.match(researchRangeText(device('medical')), /半径 2 格.*整格区域.*13 格.*本方干员.*召唤物.*机械水獭/);
+  assert.match(researchRangeText(device('energy')), /充能干员与主目标.*半径 2 格.*整格区域.*突破Ⅰ.*实际半径 1 格.*范围外/);
+  assert.match(researchRangeText(device('ecology', 2)), /当前覆盖半径 3 格.*整格区域.*29 格.*突破Ⅱ为 3 格.*每 8 秒开启 4 秒/);
 });
 
 // Inspect component nodes without a DOM: this verifies the label decision, not screenshot rendering.

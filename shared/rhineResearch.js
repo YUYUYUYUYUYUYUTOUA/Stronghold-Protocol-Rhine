@@ -2,8 +2,8 @@
 export const RHINE_BOND = 'rhineShip';
 export const RHINE_CHARACTERS = Object.freeze({ mayer: 'char_242_otter', silence: 'char_108_silent', ptilopsis: 'char_128_plosis', saria: 'char_202_demkni', ifrit: 'char_134_ifrit', muelsyse: 'char_249_mlyss', halo2: 'char_1047_halo2' });
 export const RHINE_BALANCE = Object.freeze({
-  thresholds: [3, 6], baseAttack: 300, attackPerLayer: 3,
-  mayerLayerStep: 5, mayerAttack: [2, 4], ptilopsisLayersPerTier: [2, 4],
+  thresholds: [3, 6, 9], baseAttack: 300, attackPerLayer: 3,
+  mayerLayerStep: 5, mayerAttack: [2, 4], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
   sariaLayerStep: 3, sariaHealBonus: [0.01, 0.02], ifritInheritance: [0.30, 0.60],
   successPoints: 2, failurePoints: 1, breakthroughPoints: [5, 5],
   medicalInterval: 3, medicalHealScale: 0.5, medicalShieldRatio: 0.5, medicalShieldDuration: 6,
@@ -23,7 +23,9 @@ export const RHINE_DEVICES = Object.freeze([
 ]);
 export const rhineDevice = (id) => RHINE_DEVICES.find(d => d.key === id || d.tokenId === id) ?? null;
 export const isRhineDevice = (id) => rhineDevice(id) !== null;
-export function rhineCapacity(bond) { return bond?.active ? (bond.count >= RHINE_BALANCE.thresholds[1] ? 2 : 1) : 0; }
+export function rhineCapacity(bond) {
+  return bond?.active ? RHINE_BALANCE.thresholds.filter(n => bond.count >= n).length : 0;
+}
 const nonnegativeInteger = (value) => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
 /** Normalize an explicit stage. A stage can no longer be inferred from points, which reset on every breakthrough. */
 export function rhineStage(stage = 0) { return Math.min(RHINE_BALANCE.breakthroughPoints.length, nonnegativeInteger(stage)); }

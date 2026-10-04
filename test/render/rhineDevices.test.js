@@ -6,6 +6,8 @@ import { researchPose, RHINE_LOOK } from '../../public/js/render/rhineDevices.js
 import { FxSystem } from '../../public/js/render/fx.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
 import { createAssets } from '../../public/js/assets.js';
+import { GEO } from '../../shared/constants.js';
+import { COLORS } from '../../public/js/render/style.js';
 
 let fake, UnitView, unitSpriteTexture, renderInfo;
 before(async () => {
@@ -127,12 +129,13 @@ test('research rigs are bounded, show breakthrough lamps, react only to their ow
 });
 
 test('actual source ids animate the device while medical and pulse effects use their target point', () => {
-  const activations = [], rings = [], beams = [], zones = [];
+  const activations = [], rings = [], beams = [], flashes = [], particles = [];
   const source = { id: 20, x: 1, y: 2, z: 0.16, onResearchFx: (...args) => activations.push(args) };
   const target = { id: 30, x: 3, y: 4, z: 0 };
   const fx = Object.create(FxSystem.prototype);
   Object.assign(fx, { ctx: { cam: () => cam, heightAt: () => 0, view: id => ({ 20: source, 30: target })[id], timeScale: () => 2 },
-    ring: (...args) => rings.push(args), zone: (...args) => zones.push(args), _beam: (...args) => beams.push(args) });
+    ring: (...args) => rings.push(args), tileFlash: (...args) => flashes.push(args), _beam: (...args) => beams.push(args),
+    particle: (...args) => particles.push(args) });
   fx.simFx('rhineHeal', 3, 4, { source: 20, target: 30, stage: 1 });
   assert.deepEqual(activations[0], ['rhineHeal', { source: 20, target: 30, stage: 1 }]);
   assert.deepEqual(beams[0].slice(0, 2), [source, target]);
@@ -141,14 +144,65 @@ test('actual source ids animate the device while medical and pulse effects use t
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 0 });
   assert.deepEqual(rings.map(r => r.slice(0, 2)), [[1, 2], [3, 4]]);
   assert.equal(rings[1][4], 0.38, 'prototype impact does not imply an area attack');
+  assert.equal(beams[1][0], source, 'a visible beam starts at the firing tower');
+  assert.deepEqual([beams[1][1].x, beams[1][1].y], [3, 4], 'instant hit cue terminates at the sim impact point');
+  assert.equal(particles.length, 1, 'high quality adds a muzzle flare to the persistent actor pulse');
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 2 });
   assert.equal(rings.length, 3); assert.equal(rings[1][4], 1);
   fx.simFx('rhineEcology', 1, 2, { source: 20, stage: 2, radius: 3 });
-  assert.deepEqual(zones[0].slice(0, 4), [1, 2, 0, 3]);
-  assert.equal(zones[0][5], 2, 'four game seconds at 2x battle speed');
-  assert.equal(zones[0][6], 'ring', 'an outline leaves units and terrain readable');
+  assert.ok(flashes[0][0].length > 0, 'ecology activation lights complete cells instead of a round area');
+  assert.equal(flashes[0][2], 2, 'four game seconds at 2x battle speed');
+  assert.equal(flashes[0][3], true, 'the cells pulse for the active interval');
   assert.doesNotThrow(() => fx.simFx('rhineHeal', 3, 4, { source: 999, target: 999 }), 'missing/removed source leaves a safe point effect');
+});
+
+test('energy charge uses the real skill gauge under the tower, including zero/partial/full and reconnect states', async () => {
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
+  const info = renderInfo({ id: 210, kind: 'token', defId: 'token_rhine_energy', side: 'ally', x: 5, y: 12,
+    maxHp: 1, sp: 2, spMax: 3 });
+  const v = new UnitView(ctx, info);
+  await tick(); await tick(); v.update(1 / 60, cam, 0);
+  assert.equal(v.spFill.visible, true, 'late observer sees charge before the next snapshot');
+  assert.ok(Math.abs(v.spFill.width / (v.spBg.width - 2) - 2 / 3) < 1e-9);
+  assert.ok(v.spFill.position.y > v.screen.y, 'the charge gauge sits below the tower feet');
+  assert.equal(v.spFill.tint, 0xffbc70);
+  const children = v.hud.children.length, canvases = fake.canvases.length;
+  for (const charge of [0, 1, 2, 3, 0]) {
+    v.sync({ x: 5, y: 12, hp: 1, maxHp: 1, sp: charge, spMax: 3, flags: 0, anim: 0, vx: 0 }, 1);
+    v.update(1 / 60, cam, 1);
+    assert.ok(Math.abs(v.spFill.width / (v.spBg.width - 2) - charge / 3) < 1e-9);
+    assert.equal(v.spFill.tint, charge === 3 ? COLORS.spReady : 0xffbc70);
+    assert.equal(v.spGlow.visible, charge === 3);
+  }
+  assert.equal(v.hud.children.length, children); assert.equal(fake.canvases.length, canvases);
+  v.die(); v.update(1 / 60, cam, 2);
+  assert.equal(v.spFill.visible, false, 'dead equipment never leaves an active charge meter');
+  v.destroy();
+  const prep = new UnitView(ctx, info, { prep: true });
+  await tick(); await tick(); prep.update(1 / 60, cam, 0);
+  assert.equal(prep.spFill.visible, false, 'charge is combat state, not a preparation progress counter');
+  prep.destroy();
+});
+
+test('low quality keeps the actual pulse beam and impact, and ecology visuals match the clipped field grid', () => {
+  const beams = [], rings = [], flashes = [];
+  const source = { id: 1, x: 6, y: 10, z: 0, onResearchFx() {} };
+  const fx = Object.create(FxSystem.prototype);
+  Object.assign(fx, { ctx: { cam: () => cam, settings: { quality: 'low' }, heightAt: () => 0,
+    fieldRect: () => GEO.NORMAL_RECT, view: id => id === 1 ? source : null, timeScale: () => 1 },
+    ring: (...args) => rings.push(args), tileFlash: (...args) => flashes.push(args), _beam: (...args) => beams.push(args),
+    particle: () => { throw new Error('low quality must shed the extra muzzle particle'); } });
+  fx.simFx('rhinePulse', 8.4, 10.4, { source: 1, stage: 2 });
+  assert.equal(beams.length, 1);
+  assert.equal(rings.length, 2, 'source firing and true splash remain clear');
+  const before = rings.length;
+  fx.simFx('rhineEcology', 6, 10, { source: 1, stage: 2, radius: 3 });
+  assert.equal(rings.length, before, 'ecology range no longer emits a circular boundary');
+  const tiles = flashes[0][0];
+  assert.ok(tiles.every(([r,c]) => r >= 9 && r <= 12 && c >= 0 && c <= 10));
+  assert.ok(tiles.some(([r,c]) => r === 10 && c === 9));
+  assert.equal(tiles.some(([r,c]) => r === 12 && c === 9), false);
 });
 
 test('an activation expires offscreen and is not replayed when its device re-enters the viewport', async () => {

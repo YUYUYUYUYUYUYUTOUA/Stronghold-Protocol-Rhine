@@ -1,5 +1,5 @@
-// Research auras use Euclidean distance, independently of facing. Tile centres are a placement aid;
-// the clipped circle is the actual boundary (moving enemies need not stand at tile centres).
+// Research auras cover complete board cells, independently of facing. Moving targets are tested
+// against the cell containing their centre, so placement highlights and live effects share a boundary.
 import { RHINE_BALANCE as B, rhineDevice, rhineStage } from './rhineResearch.js';
 import { GEO } from './constants.js';
 
@@ -15,12 +15,44 @@ export function researchRange(piece) {
   return { key: def.key, radius, grid, stage };
 }
 
+/** Complete cell membership. A target crosses the boundary when its centre enters the next cell. */
+export function researchContainsTile(body, x, y, radius) {
+  if (![body?.x, body?.y, x, y, radius].every(Number.isFinite) || radius < 0 || radius > 10) return false;
+  const cx = Math.floor(x + .5), cy = Math.floor(y + .5);
+  const has = (row, col) => (row - cy) ** 2 + (col - cx) ** 2 <= radius ** 2 + 1e-9;
+  const a = body.hitArea;
+  if (!a || ![a.w, a.h, a.dx ?? 0, a.dy ?? 0].every(Number.isFinite) || !(a.w > 0 && a.h > 0)) {
+    return has(Math.floor(body.y + .5), Math.floor(body.x + .5));
+  }
+  // Giant bosses occupy every cell their hit rectangle overlaps, like an operator's grid attack.
+  // Merely touching a cell along an edge does not count as entering that cell.
+  const bx = body.x + (a.dx ?? 0), by = body.y + (a.dy ?? 0);
+  const r0 = Math.max(0, cy - radius, Math.floor(by - a.h / 2 + .5 + 1e-9));
+  const r1 = Math.min(GEO.ROWS - 1, cy + radius, Math.ceil(by + a.h / 2 - .5 - 1e-9));
+  const c0 = Math.max(0, cx - radius, Math.floor(bx - a.w / 2 + .5 + 1e-9));
+  const c1 = Math.min(GEO.COLS - 1, cx + radius, Math.ceil(bx + a.w / 2 - .5 - 1e-9));
+  for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) if (has(row, col)) return true;
+  return false;
+}
+
+/** Absolute covered cells, clipped to the current battle field (never the reserve pads). */
+export function researchRangeTiles(row, col, radius, bounds = GEO.NORMAL_RECT) {
+  if (![row, col, radius].every(Number.isFinite) || radius < 0 || radius > 10) return [];
+  const tiles = [];
+  for (let r = Math.max(bounds.r0, Math.ceil(row - radius)); r <= Math.min(bounds.r1, Math.floor(row + radius)); r++) {
+    for (let c = Math.max(bounds.c0, Math.ceil(col - radius)); c <= Math.min(bounds.c1, Math.floor(col + radius)); c++) {
+      if (researchContainsTile({ x: c, y: r }, col, row, radius)) tiles.push([r, c]);
+    }
+  }
+  return tiles;
+}
+
 export function researchRangeText(piece) {
   const range = researchRange(piece);
   if (!range) return '';
-  if (range.key === 'medical') return `圆形半径 ${B.radius} 格；治疗本方干员及可受治疗的召唤物。突破不扩大范围。`;
-  if (range.key === 'energy') return `充能干员与主目标均在圆形半径 ${B.radius} 格内；突破Ⅰ起，溅射主目标周围半径 ${B.energySpreadRadius} 格，可波及装置范围外。`;
-  return `当前圆形半径 ${range.radius} 格；原型及突破Ⅰ为 ${B.radius} 格，突破Ⅱ为 ${B.radius + 1} 格。每 ${B.ecologyInterval} 秒开启 ${B.ecologyDuration} 秒。`;
+  if (range.key === 'medical') return `覆盖半径 ${B.radius} 格内的整格区域（${range.grid.length} 格）；治疗本方干员及可受治疗的召唤物，包括机械水獭。突破不扩大范围。`;
+  if (range.key === 'energy') return `充能干员与主目标均在半径 ${B.radius} 格内的整格区域（${range.grid.length} 格）；突破Ⅰ起，溅射主目标周围实际半径 ${B.energySpreadRadius} 格，可波及装置范围外。`;
+  return `当前覆盖半径 ${range.radius} 格内的整格区域（${range.grid.length} 格）；原型及突破Ⅰ为 ${B.radius} 格，突破Ⅱ为 ${B.radius + 1} 格。每 ${B.ecologyInterval} 秒开启 ${B.ecologyDuration} 秒。`;
 }
 
 /** Polygon clipped to a tile's square. Coordinates throughout are [column, row]. */

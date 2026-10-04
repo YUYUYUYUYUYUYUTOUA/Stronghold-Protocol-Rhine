@@ -20,7 +20,7 @@ test('dedicated research slots are selectable; devices ignore population and nee
   assert.ok(canPlace(ctx, 100, { area: 'board', row, col }).ok);
   assert.equal(canPlace(context(priv(0)), 100, { area: 'board', row, col }).ok, false);
 });
-test('3-member cap blocks a second device, 6-member cap permits it, deployed device can move', () => {
+test('3/6/9-member caps permit one/two/three devices, and a deployed device can move', () => {
   const initial = context(priv());
   const [a, b] = boardTargets(initial, 100).legal;
   const placed = { ...device(0), row: a[0], col: a[1] };
@@ -29,6 +29,10 @@ test('3-member cap blocks a second device, 6-member cap permits it, deployed dev
   assert.ok(canPlace(context(priv(2, [placed])), 101, tile).ok);
   assert.ok(canPlace(context(priv(1, [placed])), 100, tile).ok);
   assert.equal(canPlace(context(priv(2, [placed])), 101, { area: 'board', row: a[0], col: a[1] }).ok, false);
+  const second = { ...device(1), row: b[0], col: b[1] };
+  const [row, col] = boardTargets(context(priv(3, [placed, second])), 102).legal[0];
+  assert.equal(canPlace(context(priv(2, [placed, second])), 102, { area: 'board', row, col }).code, 'BOARD_FULL');
+  assert.equal(canPlace(context(priv(3, [placed, second])), 102, { area: 'board', row, col }).ok, true);
 });
 test('full ordinary bench never prevents recall, never offers sell, and ordinary pieces cannot enter research slots', () => {
   const p = priv(1, [{ ...device(0), row: 10, col: 3 }]);

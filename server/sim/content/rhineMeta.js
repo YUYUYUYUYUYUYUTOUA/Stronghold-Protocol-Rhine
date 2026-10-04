@@ -2,17 +2,18 @@
 import { RHINE_BOND } from '../../../shared/rhineResearch.js';
 
 export function registerMeta(registry) {
-  registry.garrison('RHINE_RESEARCH_BY_TIER', {
+  registry.garrison('RHINE_RESEARCH_BY_MEMBER', {
     run(ctx) {
       if (!ctx.bondActive(RHINE_BOND)) return;
-      const tiers = new Set();
+      let members = 0;
       for (const piece of ctx.board()) {
         if (piece.kind !== 'chess' || !ctx.pieceBonds(piece.uid).includes(RHINE_BOND)) continue;
-        const tier = ctx.chessRecord(piece.id)?.tier;
-        if (Number.isInteger(tier)) tiers.add(tier);
+        // Count actual deployed pieces, including same-name normal/elite copies. Harmony's
+        // virtual bond count and reserve/token pieces never enter this roster.
+        members++;
       }
       const layer = Number(ctx.source.bb?.layer) || 0;
-      if (layer > 0) ctx.addLayers(RHINE_BOND, tiers.size * layer, { requireActive: true, reason: 'garrison:rhine-research-by-tier' });
+      if (layer > 0) ctx.addLayers(RHINE_BOND, members * layer, { requireActive: true, reason: 'garrison:rhine-research-by-member' });
     },
   });
 }

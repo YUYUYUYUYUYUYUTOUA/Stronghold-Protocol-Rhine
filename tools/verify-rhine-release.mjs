@@ -26,7 +26,7 @@ for (const base of bases) {
   assert.equal(health.app, APP_VERSION, 'served release version mismatch');
   const artifacts = {};
   const fetched = {};
-  for (const name of ['chess', 'items', 'assets', 'tokens']) {
+  for (const name of ['chess', 'items', 'assets', 'tokens', 'bonds', 'garrisons', 'effects']) {
     const bytes = await get(`/data/${name}.json`);
     assert.equal(hash(bytes), hash(fs.readFileSync(new URL(`data/${name}.json`, root))), `${name} served data mismatch`);
     artifacts[name] = hash(bytes);
@@ -34,6 +34,13 @@ for (const base of bases) {
   }
   assert.equal(fetched.chess.chess_rhine_mayer_b.skill.index, 0);
   assert.equal(fetched.chess.chess_rhine_mayer_b.module.id, 'uniequip_002_otter');
+  assert.deepEqual(fetched.bonds.rhineShip.thresholds, [3, 6, 9]);
+  for (const [id, count] of [['chess_rhine_mayer_a', 1], ['chess_rhine_mayer_b', 2]]) {
+    const variant = fetched.tokens.token_10004_otter_motter.variants[id];
+    assert.equal(variant.count, count);
+    assert.equal(variant.stats.deployLimit, count);
+    assert.equal(fetched.chess[id].talents.find(t => t.tokenKey === 'token_10004_otter_motter').bb.cnt, count);
+  }
   const equipment = ['terminal', 'mainframe'].map(key => {
     const normal = fetched.items[`chess_item_rhine_${key}_a`];
     const elite = fetched.items[`chess_item_rhine_${key}_b`];
@@ -57,6 +64,12 @@ for (const base of bases) {
   const range = await get('/shared/rhineRange.js');
   assert.equal(hash(range), hash(fs.readFileSync(new URL('shared/rhineRange.js', root))));
   artifacts.range = hash(range);
+  for (const path of ['/shared/rhineResearch.js', '/js/render/units.js', '/js/render/fx.js', '/js/render/app.js', '/js/ui/facingWheel.js', '/js/ui/rhineDock.js']) {
+    const bytes = await get(path);
+    const local = path.startsWith('/shared/') ? path.slice(1) : `public${path}`;
+    assert.equal(hash(bytes), hash(fs.readFileSync(new URL(local, root))), `${path} served code mismatch`);
+    artifacts[path] = hash(bytes);
+  }
   const client = await TestClient.connect(base.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws', { timeout: 20000, wsOptions: { headers } });
   try {
     assert.equal((await client.hello('科研装备验证')).t, 'welcome');

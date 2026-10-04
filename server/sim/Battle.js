@@ -30,7 +30,7 @@ import { createRng } from './rng.js';
 import { Grid } from './grid.js';
 import { Unit } from './units.js';
 import { makeBuff, STATUS, RESIST_STATUSES } from './buffs.js';
-import { dealDamage as pipeDamage, heal as pipeHeal, applyHpLoss, makeDamageInfo, reduceElement, palsyBuff, elementView, leaderHitCancelled } from './damage.js';
+import { dealDamage as pipeDamage, heal as pipeHeal, canReceiveHeal, applyHpLoss, makeDamageInfo, reduceElement, palsyBuff, elementView, leaderHitCancelled } from './damage.js';
 import { absoluteRangeKeys, canTargetEnemy, extendedGrid, evadesGround } from './targeting.js';
 import { bodyKeys, bodyInKeys, bodyInRadius } from './body.js';
 import { normDir, mirrorDir, localOrder, localBefore } from './dir.js';
@@ -1540,7 +1540,7 @@ export class Battle {
     for (const a of this.allyUnits) {
       if (!a.alive || !a.deployed || a.hidden || a.kind === 'device') continue;
       if (!set.has(a.tileR * COLS + a.tileC)) continue;
-      if (a !== healer && (a.s.flags.noHeal || (a.profile && a.profile.noHeal))) continue;
+      if (!canReceiveHeal(healer, a)) continue;
       const injured = a.hp < a.s.maxHp - 1e-6;
       const elem = includeElement && (a.elem.burn + a.elem.neural + a.elem.necrosis + a.elem.apoptosis + a.elem.erosion) > 0;
       if (injured || elem) out.push(a);

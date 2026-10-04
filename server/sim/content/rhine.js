@@ -1,8 +1,10 @@
 // Rhine research devices and the battle-side protocol traits. Device experience belongs to Match;
 // this module consumes its frozen selection and reads the owner's live bond layers only.
-import { RHINE_BALANCE as B, RHINE_BOND, RHINE_CHARACTERS as C, RHINE_DEVICES, rhineDevice, rhineAttack } from '../../../shared/rhineResearch.js';
+import { RHINE_BALANCE as B, RHINE_BOND, RHINE_CHARACTERS as C, RHINE_DEVICES, rhineDevice, rhineCapacity, rhineAttack } from '../../../shared/rhineResearch.js';
+import { researchContainsTile } from '../../../shared/rhineRange.js';
 import { frontOf } from '../dir.js';
-import { bodyDist, bodyInRadius } from '../body.js';
+import { bodyDist } from '../body.js';
+import { canReceiveHeal } from '../damage.js';
 import { TICK } from '../constants.js';
 import { rhineEquipmentAttack } from './items/battle.js';
 
@@ -30,7 +32,7 @@ export const kits = Object.freeze(Object.fromEntries(RHINE_DEVICES.map((d) => [d
 function selectedDevices(ps) {
   const bond = ps.bonds?.[RHINE_BOND];
   if (!bond?.active || !(bond.count >= B.thresholds[0]) || !ps.input.research?.active) return [];
-  const cap = bond.count >= B.thresholds[1] ? 2 : 1;
+  const cap = rhineCapacity(bond);
   const out = [], seen = new Set();
   for (const entry of ps.input.research.devices ?? []) {
     const d = rhineDevice(entry?.key);
@@ -69,18 +71,30 @@ export function install(battle) {
     const entries = selectedDevices(ps);
     for (const entry of entries) {
       entry.unit.researchStage = entry.stage;
+      if (entry.key === 'energy') {
+        entry.unit.researchCharges = 0;
+        entry.unit.researchChargeMax = B.energyCharges;
+      }
       states.push({ ...entry, ps, charges: 0, contributors: new Map(), zoneUntil: -1 });
     }
   }
   const enabled = (s) => alive(s.unit) && selectedDevices(s.ps).some((d) => d.unit === s.unit);
   // Use the engine's ally-side selector: unrevealed, unblocked stealth enemies cannot be selected by a device.
-  const targets = (s, radius = B.radius) => battle.foesInRadius(s.unit.x, s.unit.y, radius);
+  const targets = (s, radius = B.radius) => battle.foesInRadius(s.unit.x, s.unit.y, radius + Math.SQRT1_2)
+    .filter(u => researchContainsTile(u, s.unit.x, s.unit.y, radius));
+  const setCharges = (s, charges) => {
+    s.charges = charges;
+    if (s.key === 'energy' && s.unit.researchCharges !== charges) {
+      s.unit.researchCharges = charges;
+      s.unit.markDirty();
+    }
+  };
 
   const refresh = () => {
     for (const s of states) {
       const atk = deviceBaseAttack(battle, s.unit);
       if (s.unit.base.atk !== atk) { s.unit.base.atk = atk; s.unit.markDirty(); }
-      if (!enabled(s)) { s.charges = 0; s.contributors.clear(); s.zoneUntil = -1; }
+      if (!enabled(s)) { setCharges(s, 0); s.contributors.clear(); s.zoneUntil = -1; }
     }
     for (const ps of battle.players) {
       const layers = layersOf(ps);
@@ -105,8 +119,8 @@ export function install(battle) {
   const medical = (s) => {
     if (!enabled(s)) return;
     refresh();
-    const eligible = s.ps.units.filter((u) => alive(u) && battle.allySelectable(u, s.unit) && !rhineDevice(u.defId) && !u.bossPool && !u.s.flags.noHeal && !u.profile?.noHeal
-      && bodyInRadius(u, s.unit.x, s.unit.y, B.radius) && (s.stage >= 1 || u.hp < u.s.maxHp));
+    const eligible = s.ps.units.filter((u) => alive(u) && battle.allySelectable(u, s.unit) && !rhineDevice(u.defId) && !u.bossPool && canReceiveHeal(s.unit, u)
+      && researchContainsTile(u, s.unit.x, s.unit.y, B.radius) && (s.stage >= 1 || u.hp < u.s.maxHp));
     eligible.sort((a, b) => a.hp / a.s.maxHp - b.hp / b.s.maxHp || a.id - b.id);
     for (const target of eligible.slice(0, s.stage >= 2 ? 2 : 1)) {
       const capture = { amount: 0 };
@@ -130,18 +144,19 @@ export function install(battle) {
     const hit = s.stage >= 1 ? battle.foesInRadius(primary.x, primary.y, B.energySpreadRadius ?? 1, true) : [primary];
     const amount = deviceBaseAttack(battle, s.unit) * B.energyPulseScale * (s.stage >= 2 ? (B.energyStage2Scale ?? 1.5) : 1);
     for (const target of hit) battle.dealDamage(s.unit, target, { type: 'arts', amount, canDodge: false, tags: ['rhinePulse'] });
-    battle.fx('rhinePulse', { x: primary.x, y: primary.y, source: s.unit.id, stage: s.stage });
+    battle.fx('rhinePulse', { x: primary.x, y: primary.y, fromX: s.unit.x, fromY: s.unit.y, source: s.unit.id, target: primary.id, stage: s.stage });
   };
   battle.on('skillStart', ({ unit, skill, reason }) => {
     // A carried active skill merely resumes in a unite field; passive deployment is not a cast either.
     if (unit?.kind !== 'op' || !alive(unit) || reason === 'carry' || skill?.kind === 'passive') return;
     refresh();
     for (const s of states) {
-      if (s.key !== 'energy' || !enabled(s) || unit.ownerId !== s.unit.ownerId || !bodyInRadius(unit, s.unit.x, s.unit.y, B.radius)) continue;
+      if (s.key !== 'energy' || !enabled(s) || unit.ownerId !== s.unit.ownerId || !researchContainsTile(unit, s.unit.x, s.unit.y, B.radius)) continue;
       const last = s.contributors.get(unit.id) ?? -Infinity;
       if (battle.time - last < B.energyContributorCooldown - 1e-9) continue;
       s.contributors.set(unit.id, battle.time);
-      if (++s.charges >= B.energyCharges) { s.charges -= B.energyCharges; pulse(s); }
+      setCharges(s, s.charges + 1);
+      if (s.charges >= B.energyCharges) { setCharges(s, s.charges - B.energyCharges); pulse(s); }
     }
   });
 

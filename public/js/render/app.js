@@ -130,7 +130,7 @@ export const PEN_CAMERA_MS = 250;
 const BOARD3D_RETRY_MS = [1200, 4000, 12000];
 const BOARD3D_STABLE_MS = 10000;
 /** Highlight groups that show a unit's range: never drawn on bench / temp pads (they are not part of any battle). */
-const RANGE_GROUPS = new Set(['facing', 'range', 'rangeStand', 'select', 'sel', 'selRange']);
+const RANGE_GROUPS = new Set(['facing', 'range', 'rangeStand', 'select', 'sel', 'selRange', 'researchPreview']);
 /** atk projectile kinds whose first id is the previous bounce target (sim ai.js), not the attacker. */
 const CHAIN_KINDS = new Set(['chain', 'chainHeal']);
 const DROP_PENDING_MS = 1300;
@@ -270,6 +270,8 @@ export function renderInfo(u) {
     defId: u.defId ?? null, name: u.name ?? '', tier: u.tier ?? 1, golden: !!u.golden, spine: u.spine ?? u.defId ?? null,
     avatar: u.avatar ?? u.defId ?? null, x: Number(u.x) || 0, y: Number(u.y) || 0, facing: u.facing === -1 ? -1 : 1,
     maxHp: Number(u.maxHp) || 1, boss: !!u.boss, motion: u.motion,
+    sp: Number.isFinite(u.sp) && u.sp >= 0 ? u.sp : 0,
+    spMax: Number.isFinite(u.spMax) && u.spMax >= 0 ? u.spMax : 0,
     // deploy direction of allies (UnitInfo.dir, DESIGN §3): the model (Back for UP, mirrored for LEFT) and the
     // ground wedge follow it; absent = unknown (legacy frames) → derived from `facing`, no wedge
     dir: typeof u.dir === 'string' ? u.dir : undefined,
@@ -1147,8 +1149,13 @@ export async function createFieldView(host, options = {}) {
     if (style?.circle) style = { ...style, circle: circleToDisp(mode === 'prep' ? prepXf : IDENTITY, style.circle) };
     const range = RANGE_GROUPS.has(key) || style === 'range';
     let t = tilesToDisp(IDENTITY, list);
-    if (range) t = t.filter(([r]) => r !== GEO.HAND_ROW && r !== GEO.TEMP_ROW);
+    if (range && !style?.researchRange) t = t.filter(([r]) => r !== GEO.HAND_ROW && r !== GEO.TEMP_ROW);
     if (mode === 'prep' && prepXf !== IDENTITY) t = tilesToDisp(prepXf, t);
+    if (style?.researchRange) {
+      const bounds = mode === 'prep' && prepXf !== IDENTITY ? GEO.BOSS_RECT
+        : mode === 'battle' && battleMeta?.rect ? battleMeta.rect : GEO.NORMAL_RECT;
+      t = t.filter(([r, c]) => r >= bounds.r0 && r <= bounds.r1 && c >= bounds.c0 && c <= bounds.c1);
+    }
     tiles.setHighlights(t, style, key, { stripes: range && key !== 'rangeStand' && !board3d });
   }
   function clearHl(group) {

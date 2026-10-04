@@ -74,6 +74,34 @@ test('Rhine: inactive, forged capacity and duplicated type inputs cannot activat
   checkInvariants(both.b);
 });
 
+test('Rhine sim boundary enables the third distinct device only at count nine', () => {
+  for (const count of [8, 9, 12]) {
+    const h = battle([player('p1', [op('i', C.ifrit), device('medical'), device('energy', 11, 5), device('ecology', 12, 5)], { count })]);
+    close(h.unit('i').s.atk, 100 + 300 * (count < 9 ? 2 : 3) * B.ifritInheritance[0]);
+    assert.equal(Number.isInteger(h.unit('ecology').researchStage), count >= 9);
+    checkInvariants(h.b);
+  }
+});
+
+test('Rhine grid effects include entire highlighted tiles for moving enemies and exclude neighboring unhighlighted tiles', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy')])]);
+  const inside = h.spawn('dummy', { pos: [11.49, 6.49] });
+  const outside = h.spawn('dummy', { pos: [11.51, 6.51] });
+  for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  close(inside.s.maxHp - inside.hp, 300 * B.energyPulseScale);
+  close(outside.hp, outside.s.maxHp);
+  checkInvariants(h.b);
+
+  const ecology = battle([player('p1', [device('ecology')])]);
+  const near = ecology.spawn('dummy', { pos: [11.49, 6.49] });
+  const far = ecology.spawn('dummy', { pos: [11.51, 6.51] });
+  ecology.run(B.ecologyInterval);
+  assert.ok(near.findBuff('slow'));
+  assert.equal(far.findBuff('slow'), null);
+  checkInvariants(ecology.b);
+});
+
 test('Rhine: device occupies its tile but has no attack/block and ignores direct, AoE and elemental damage', () => {
   const h = battle([player('p1', [device('energy')])]);
   const u = h.unit('energy');

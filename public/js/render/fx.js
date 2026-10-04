@@ -36,6 +36,8 @@
 import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
 import { RHINE_BALANCE } from '../../../shared/rhineResearch.js';
+import { researchRangeTiles } from '../../../shared/rhineRange.js';
+import { GEO } from '../../../shared/constants.js';
 
 /**
  * The sim's projectile speeds (server/sim/constants.js PROJECTILE_SPEEDS — pure data, served read-only at
@@ -1702,14 +1704,23 @@ export class FxSystem {
         if (src && target && src !== target) this._beam(src, target, col, 0.28, 0.1);
         this.ring(at.x, at.y, at.z, 0.12, 0.48, col, 0.48);
       } else if (spec.a === 'researchPulse') {
-        if (src) this.ring(src.x, src.y, src.z || 0, 0.16, 0.68, col, 0.38, 'shock');
+        if (src) {
+          this.ring(src.x, src.y, src.z || 0, 0.16, 0.68, col, 0.38, 'shock');
+          // The shot resolves instantly in the sim: a short bright beam links the firing tower
+          // to the actual impact point even if the struck enemy has already been removed.
+          const point = { x: at.x, y: at.y, z: at.z, _headTiles: .75 };
+          this._beam(src, point, col, .32, .16);
+          if (this.rich) {
+            const p = this.ctx.cam().project(src.x, src.y, chestZ(src));
+            this.particle('glow', p.x, p.y, { tint: 0xffe8c4, life: .22, s0: p.s * .5 / 128, s1: p.s / 128, a0: .95, a1: 0 });
+          }
+        }
         const radius = ex.stage >= 1 ? r : 0.38;
         this.ring(at.x, at.y, at.z, 0.1, radius, col, 0.46, 'shock');
         if (this.rich && ex.stage >= 1) this.ring(at.x, at.y, at.z, 0.18, radius * 0.86, col, 0.65);
       } else {
-        this.zone(at.x, at.y, at.z, r, col, Math.max(0.6, dur || 1.5), 'ring');
-        this.ring(at.x, at.y, at.z, 0.2, r, col, 0.85, 'ring');
-        if (this.rich && ex.stage >= 1) this.ring(at.x, at.y, at.z, r * 0.92, r, col, 0.5, 'hex');
+        const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };
+        this.tileFlash(researchRangeTiles(Math.round(at.y), Math.round(at.x), r, bounds), col, Math.max(.6, dur || 1.5), true);
       }
       return;
     }

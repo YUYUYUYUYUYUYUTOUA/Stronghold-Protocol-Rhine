@@ -47,6 +47,9 @@ export function unitInfo(u) {
     // field shows its owner's module in the detail card)
     moduleId: u.side === 'ally' && d.golden && typeof d.loadout?.moduleId === 'string' ? d.loadout.moduleId : undefined,
     researchStage: Number.isInteger(u.researchStage) ? u.researchStage : undefined,
+    // Independent research charging reuses the ordinary skill-bar slots, including late joins.
+    sp: Number.isFinite(u.researchCharges) ? u.researchCharges : undefined,
+    spMax: Number.isFinite(u.researchChargeMax) ? u.researchChargeMax : undefined,
     // an ally operator's equipped item ids (display: a 变形同构体 wearer counts for the bond it grants — the bond popup's
     // member list and the detail card's bond chips of a teammate's unit)
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
@@ -87,8 +90,9 @@ export function animOf(u, t) {
 /** Snapshot tuple for one unit. */
 export function unitTuple(u, t) {
   const sk = u.skill;
-  const spMax = sk && !sk.noSkill ? sk.spCost : 0;
-  let sp = sk && !sk.noSkill ? sk.sp : 0;
+  const research = Number.isFinite(u.researchChargeMax);
+  const spMax = research ? u.researchChargeMax : sk && !sk.noSkill ? sk.spCost : 0;
+  let sp = research ? u.researchCharges : sk && !sk.noSkill ? sk.sp : 0;
   if (sk && sk.active && sk.isTimed) {
     // show remaining duration/ammo as a draining bar
     if (sk.kind === 'ammo') sp = spMax * (sk.ammoLeft / Math.max(1, sk.ammo));

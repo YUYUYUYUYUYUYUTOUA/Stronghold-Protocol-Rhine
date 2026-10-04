@@ -39,9 +39,9 @@ test('Eunectes: SP requires blocking; S3 grants ATK, DEF, three blocks, regenera
 
 test('Mayer: a full hand-placed otter roster consumes her capacity before automatic placement',()=>{
   const h=run('mayer',{units:[{chessId:id('mayer'),uid:1,row:10,col:4},
-    ...[[9,4],[10,5],[11,4],[10,3]].map(([row,col],i)=>({kind:'token',tokenId:'token_10004_otter_motter',ownerUid:1,uid:i+2,row,col}))]});
+    ...[[10,5]].map(([row,col],i)=>({kind:'token',tokenId:'token_10004_otter_motter',ownerUid:1,uid:i+2,row,col}))]});
   h.run(11);const u=h.unit(1);
-  assert.equal(h.b.allyUnits.filter(a=>a.defId==='token_10004_otter_motter'&&a.alive).length,4);
+  assert.equal(h.b.allyUnits.filter(a=>a.defId==='token_10004_otter_motter'&&a.alive).length,1);
   assert.equal(u.mem.otterStock,0);done(h);
 });
 

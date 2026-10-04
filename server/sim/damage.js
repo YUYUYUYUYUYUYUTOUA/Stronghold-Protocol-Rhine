@@ -500,11 +500,25 @@ export function reduceElement(target, amount, el = null) {
   return removed;
 }
 
+/** Shared recipient rule for healing selectors and the final pipeline. Operator-owned healing
+ * summons are operator healing too; independent research devices retain their own source. */
+export function canReceiveHeal(source, target, opts = {}) {
+  if (!target) return false;
+  if (target.s.flags.noOperatorHeal && source !== target) {
+    const seen = new Set();
+    for (let origin = source; origin && !seen.has(origin); origin = origin.ownerUnit) {
+      if (origin.kind === 'op') return false;
+      seen.add(origin);
+    }
+  }
+  const self = source === target || !!opts.self;
+  return self || !(target.s.flags.noHeal || target.profile?.noHeal);
+}
+
 /** Heal pipeline. Returns the HP actually restored. */
 export function heal(battle, source, target, amount, opts = {}) {
   if (!target || !target.alive || target.removed || !target.deployed || target.bossPool) return 0;
-  const self = source === target || !!opts.self;
-  if (!self && (target.s.flags.noHeal || (target.profile && target.profile.noHeal))) return 0;
+  if (!canReceiveHeal(source, target, opts)) return 0;
   let amt = amount * (source && source.s ? source.s.healingDealtMul : 1) * target.s.healingTakenMul;
   if (!(amt > 0) || !Number.isFinite(amt)) return 0;
   if (battle._hooks.heal) {

@@ -135,9 +135,9 @@ export function syncPieceDirs(view, priv, skip = null) {
 /** Light the rotated range of a piece on (row, col) facing `dir` (no grid / dir clears the style's group). */
 export function showRange(view, grid, row, col, dir, style = FACING_STYLE, radius = null) {
   if (!view || typeof view.highlightTiles !== 'function') return [];
-  const circle = Number.isFinite(radius) && radius > 0;
-  const tiles = grid && (dir || circle) ? rangeTiles(grid, row, col, circle ? 'RIGHT' : dir) : [];
-  try { view.highlightTiles(tiles, circle ? { ...style, circle: { row, col, radius } } : style); } catch { /* cosmetic */ }
+  const radial = Number.isFinite(radius) && radius > 0;
+  const tiles = grid && (dir || radial) ? rangeTiles(grid, row, col, radial ? 'RIGHT' : dir) : [];
+  try { view.highlightTiles(tiles, radial ? { ...style, researchRange: true } : style); } catch { /* cosmetic */ }
   return tiles;
 }
 
@@ -253,7 +253,7 @@ export function FacingWheel({ view, row, col, grid, radius = null, name = '', on
   return html`<div class=${cx('fwheel', drag && 'is-pressed', dir && `is-${dir.toLowerCase()}`)} role="dialog" aria-label=${`选择${name ? `「${name}」的` : ''}朝向`}
       onPointerDown=${onDown} onPointerMove=${onMove} onPointerUp=${onUp} onPointerCancel=${onPointerCancel}
       onContextMenu=${(e) => { e.preventDefault(); onCancel(); }}>
-    ${g && !radius ? html`<${Stripes} tiles=${tiles} view=${view} row=${row} col=${col} />` : null}
+    ${g ? html`<${Stripes} tiles=${tiles} view=${view} row=${row} col=${col} />` : null}
     ${g ? html`<div class="fwheel__dia" style=${`left:${g.x}px;top:${g.y}px;width:${box}px;height:${box}px`}>
       <svg class="fwheel__svg" viewBox="-110 -110 220 220" aria-hidden="true">
         <path class="fwheel__outer" d="M0 -100 L100 0 L0 100 L-100 0 Z" />

@@ -54,7 +54,7 @@ test('Mayer defaults to S1 and elite SUM-X; pre-placed and automatic otters both
     const bare=ds.getChess(id,{moduleId:'none'});
     close(owner.s.atk,bare.stats.atk+(elite?25:0));
     close(owner.s.maxHp,bare.stats.maxHp+(elite?80:0));
-    assert.equal(otters.length, 2); assert.ok(otters.includes(h.unit('preplaced')));
+    assert.equal(otters.length, elite ? 2 : 1); assert.ok(otters.includes(h.unit('preplaced')));
     for (const t of otters) {
       assert.equal(t.def.skill.id, 'sktok_motter_1'); close(t.s.dodgePhys, rate); close(t.s.dodgeArts, rate);
     }
@@ -67,7 +67,7 @@ test('Mayer S1 applies the selected 18%/25% physical and arts dodge to pre-place
     const h = run('mayer', { elite, skillIndex: 0, units: [token(2, 10, 5), { chessId: 'patient', uid: 3, row: 11, col: 5 }] });
     h.run(0.2);
     const rate = elite ? 0.25 : 0.18, otters = liveOtters(h.b, h.owner);
-    assert.equal(otters.length, 2);
+    assert.equal(otters.length, elite ? 2 : 1);
     for (const t of otters) { close(t.s.dodgePhys, rate); close(t.s.dodgeArts, rate); }
     assert.equal(h.unit(3).s.dodgePhys, 0, 'current Lv4/Lv7 skill range is only the summon tile');
     assert.equal(h.owner.skill.kind, 'passive'); assert.equal(h.owner.skill.activations, 0);
@@ -96,7 +96,7 @@ test('Mayer SUM-X Lv1 applies its actual stats while both live and pre-placed ot
 });
 
 test('Mayer S2 detonates her own available otters, honors control, returns stock and redeploys without reviving the old token', () => {
-  const h = run('mayer', { units: [token(2, 10, 5), token(3, 11, 4)] });
+  const h = run('mayer', { elite: true, units: [token(2, 10, 5), token(3, 11, 4)] });
   const u = h.owner, frozen = h.unit(3), t = h.unit(2);
   const enemy = h.spawn('dummy', { pos: [10, 5] });
   h.run(0.1);
@@ -104,7 +104,7 @@ test('Mayer S2 detonates her own available otters, honors control, returns stock
   assert.equal(cast(u), true);
   assert.equal(t.alive, false); assert.equal(frozen.alive, true);
   const hit = h.hooksOf('damaged').find(c => c.target === enemy && c.dmg.tags?.includes('mayerExplosion'));
-  close(hit.dmg.amount, u.s.atk * 3.8); assert.equal(hit.dmg.type, 'arts'); assert.equal(enemy.s.flags.stun, true);
+  close(hit.dmg.amount, u.s.atk * 4.5); assert.equal(hit.dmg.type, 'arts'); assert.equal(enemy.s.flags.stun, true);
   const stock = u.mem.otterStock;
   h.run(1.2); assert.equal(u.mem.otterStock, stock - 1);
   assert.ok(liveOtters(h.b, u).some(a => a !== frozen)); assert.equal(t.alive, false);
@@ -114,8 +114,8 @@ test('Mayer S2 detonates her own available otters, honors control, returns stock
 });
 
 test('Mayer automatic placement respects a full pre-placed roster and no-otter S2 preserves its charge', () => {
-  const h = run('mayer', { units: [[9, 4], [10, 5], [11, 4], [10, 3]].map(([r, c], i) => token(i + 2, r, c)) });
-  h.run(10.2); assert.equal(liveOtters(h.b, h.owner).length, 4); assert.equal(h.owner.mem.otterStock, 0);
+  const h = run('mayer', { units: [token(2, 10, 5)] });
+  h.run(10.2); assert.equal(liveOtters(h.b, h.owner).length, 1); assert.equal(h.owner.mem.otterStock, 0);
   for (const t of liveOtters(h.b, h.owner)) h.b.retreat(t, { permanent: true });
   h.owner.skill.gainSp(999, 'test'); const charges = h.owner.skill.charges;
   assert.equal(h.owner.skill.activate('test'), false); assert.equal(h.owner.skill.charges, charges);
@@ -134,6 +134,55 @@ test('Mayer automatic otters avoid deep water and a knocked-out operator awaitin
   assert.ok(otters.every(t => (t.tileR !== 10 || t.tileC !== 5) && (t.tileR !== 11 || t.tileC !== 5)));
   assert.equal(h.b.redeploy(body), true, 'the reserved tile is still free for its original operator');
   done(h);
+});
+
+test('Mayer summon stock and concurrency stay at one normal / two elite for both skills and module choices', () => {
+  for (const elite of [false, true]) for (const skillIndex of [0, 1]) {
+    for (const moduleId of elite ? ['none', mods.mayer] : ['none']) {
+      const h = run('mayer', { elite, skillIndex, moduleId });
+      h.run(20.1);
+      const limit = elite ? 2 : 1;
+      assert.equal(liveOtters(h.b, h.owner).length, limit);
+      assert.equal(h.owner.mem.otterStock, 0);
+      assert.equal(h.owner.def.raw.talents.find(t => t.bb.cnt != null).bb.cnt, limit);
+      done(h);
+    }
+  }
+});
+
+test('Mayer otters reject operator heals including Saria, chained HoT and operator-owned summons, while medical devices still heal', () => {
+  for (const elite of [false, true]) {
+    const id = cid('mayer', elite), h = makeBattle({ autoFinish: false, hooks: ['heal'], captureNoisy: true,
+      players: [{ playerId: 'p1', seat: 0, side: 'L', colOffset: 0,
+        bonds: { rhineShip: { active: true, count: 3, layers: 0 } },
+        research: { active: true, devices: [{ key: 'medical', tokenId: 'token_rhine_medical', uid: 'medical', onBoard: true, stage: 0 }] },
+        units: [{ chessId: id, uid: 'owner', row: 10, col: 4 }, token('preplaced', 10, 5),
+          { chessId: 'chess_char_5_11_a', uid: 'saria', row: 11, col: 4 },
+          { chessId: cid('wuhoo'), uid: 'wuhoo', row: 12, col: 4 },
+          { kind: 'token', tokenId: 'token_rhine_medical', uid: 'medical', row: 11, col: 5 }] }] });
+    h.run(0.3);
+    const t = h.unit('preplaced'), medical = h.unit('medical');
+    for (const otter of liveOtters(h.b, h.unit('owner'))) assert.equal(otter.s.flags.noOperatorHeal, true);
+    t.hp = 100;
+    for (const uid of ['owner', 'saria', 'wuhoo']) {
+      const healer = h.unit(uid);
+      for (const opts of [{}, { regen: true }, { self: true }]) {
+        assert.equal(h.b.heal(healer, t, 100, opts), 0, `${uid} cannot bypass with heal options`);
+      }
+      assert.equal(h.b.injuredAlliesInKeys(new Set([t.tileR * 21 + t.tileC]), healer).includes(t), false);
+      healer.atkCd = 999;
+    }
+    assert.equal(h.b.heal({ kind: 'token', ownerUnit: h.unit('saria') }, t, 100), 0, 'operator-owned healing summons follow the same source rule');
+    assert.equal(t.hp, 100);
+    assert.equal(h.hooksOf('heal').some(c => c.target === t), false, 'rejected heals never reach reactive heal hooks');
+    h.run(3);
+    close(t.hp, 100 + 150);
+    assert.ok(h.hooksOf('heal').some(c => c.source === medical && c.target === t));
+    assert.equal(h.b.heal(t, t, 10, { self: true }), 10, 'intrinsic self recovery retains the original self-heal rule');
+    h.b.addBuff(t, { key: 'absoluteNoHeal', flags: { noHeal: true } });
+    assert.equal(h.b.heal(medical, t, 100), 0, 'medical exception never bypasses unrelated noHeal');
+    done(h);
+  }
 });
 
 function healer(opts = {}) {

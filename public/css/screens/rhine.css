@@ -8,3 +8,7 @@
 .rhine-card__range{font-size:.105rem;color:#90deca;line-height:1.5;margin-top:.025rem}
 .rhine-dock__hint{display:none}
 .rhine-dock.is-placing .rhine-dock__hint{display:block;position:absolute;bottom:100%;left:0;right:0;background:#18352b;padding:.08rem;border:1px solid #6fe8c1}
+/* Keep the full device silhouette and its amber charge bar readable in simplified rendering. */
+.ff-unit.is-research .ff-unit__art{border:0;background:transparent;border-radius:0;overflow:visible}
+.ff-unit.is-research .ff-unit__art img{object-fit:contain}
+.ff-unit.is-research-energy .ff-unit__bars i.sp{background:#ffbc70}

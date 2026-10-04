@@ -17,7 +17,7 @@ const TOKEN = 'token_10004_otter_motter';
 const clone = x => structuredClone(x);
 const BASE_STATS = { maxHp: 3000, atk: 300, def: 0, res: 0, cost: 0, blockCnt: 0, bat: 1, aspd: 100,
   respawnTime: 999, spRecovery: 0, hpRecoveryPerSec: 0, moveSpeed: 0, tauntLevel: -10, massLevel: 0, deployLimit: 1, deckStack: 0 };
-const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台。休整期选择生命维持仪、能量谐振仪或生态调控器。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响。`;
+const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动一台科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台，${RHINE_BALANCE.thresholds[2]}名时三台全部启动。休整期选择生命维持仪、能量谐振仪或生态调控器。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响。`;
 
 // This expansion is not a sandbox/roguelike mode. Preserve the source conditions for auditing,
 // but never compile mode-restricted module parts into the live ordinary-battle blackboards.
@@ -65,7 +65,13 @@ function makeGarrison(key, gold) {
   if (key === 'mayer') return garrison(id, `战斗中，每${r.mayerLayerStep}层科研使身前一格的科研装置攻击力+${r.mayerAttack[grade]}`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { layer_step: r.mayerLayerStep, atk: r.mayerAttack[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
   if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署科研装置基础攻击力总和的${r.ifritInheritance[grade] * 100}%作为额外攻击力`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
-  return garrison(id, `休整期结束时，在场莱茵生命干员每有一种不同的真实阶级，莱茵生命增加${r.ptilopsisLayersPerTier[grade]}层科研`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_TIER', { layer: r.ptilopsisLayersPerTier[grade] }, { conditionkey: 'character_target_inboard' });
+  return garrison(id, `休整期结束时，每名实际在场的莱茵生命干员使莱茵生命增加${r.ptilopsisLayersPerMember[grade]}层科研；同名干员分别计数，调和的虚拟人数不计入`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
+}
+
+function adaptMayerTalent(talent, count) {
+  if (talent.bb?.cnt == null) return;
+  talent.bb.cnt = count;
+  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用\d+个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗';
 }
 
 function compileChess(ctx, config, spec, gold, index) {
@@ -85,7 +91,9 @@ function compileChess(ctx, config, spec, gold, index) {
   const skill = clone(skills.find(s => s.isDefault)); delete skill.isDefault;
   const g = makeGarrison(spec.trait, gold);
   const statsBase = statsFrom(attrs), talentsBase = baseTalentList(ctx, c, status.phase, status.level, chessId);
+  if (spec.key === 'mayer') for (const t of talentsBase) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
   const modules = gold ? moduleChoices(ctx, { ...c, charId: spec.charId }, status, chessId, spec) : [];
+  if (spec.key === 'mayer') for (const m of modules) for (const t of m.talentChanges) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
   const mod = modules.find(m => m.isDefault);
   return { chessId, baseId, goldenId, isGolden: gold, tier: spec.tier, identifier: 200 + index,
     isHidden: false, isDiy: false, visible: true, chessType: 'PRESET', shopSortId: 200 + index,
@@ -195,8 +203,9 @@ export async function applyRhineData(files, source = null) {
     }
     const variant = (extra = {}) => {
       const v = tokenVariant({ ...ctx, ac: {} }, TOKEN, t, { ...opts, ...extra });
-      // Raw deployLimit=1 is overridden by the token's own concurrent-deployment talent.
-      v.stats.deployLimit = v.talents.find(t => t.bb.max_deploy_count != null)?.bb.max_deploy_count ?? v.stats.deployLimit;
+      // Expansion summon limit applies to every loadout variant, not only the default skill.
+      v.stats.deployLimit = RHINE_BALANCE.mayerSummons[c.isGolden ? 1 : 0];
+      for (const talent of v.talents) if (talent.bb.max_deploy_count != null) talent.bb.max_deploy_count = v.stats.deployLimit;
       return v;
     };
     const v = variants[id] = { ...variant(), count: c.talents[0].bb.cnt, sources: ['talent'], bySkill: {} };
@@ -211,10 +220,11 @@ export async function applyRhineData(files, source = null) {
     }
   }
   const initial = variants[owners[0]];
-  tokens[TOKEN] = { tokenId: TOKEN, kind: 'summon', name: t.name, appellation: t.appellation, desc: t.description, descRaw: t.description,
+  const otterDesc = `${t.description}；机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗`;
+  tokens[TOKEN] = { tokenId: TOKEN, kind: 'summon', name: t.name, appellation: t.appellation, desc: otterDesc, descRaw: otterDesc,
     profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
     owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'phys', attackKind: 'melee', projectile: 'none', canHitFly: false,
-    skill: null, deployLimit: 5, count: 4, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
+    skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
   for (const d of RHINE_DEVICES) tokens[d.tokenId] = { tokenId: d.tokenId, kind: 'summon', name: d.name, appellation: d.name,
     desc: d.description, descRaw: d.description, profession: 'TOKEN', subProfessionId: 'notchar1', position: 'ALL', displayType: 'DEFAULT',
     placeable: false, ownerRange: false, owners: [], stats: { ...BASE_STATS, atk: RHINE_BALANCE.baseAttack },

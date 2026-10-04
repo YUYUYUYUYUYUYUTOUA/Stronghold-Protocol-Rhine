@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
-import { unitInfo } from '../../server/sim/snapshot.js';
+import { unitInfo, unitTuple } from '../../server/sim/snapshot.js';
 import { RHINE_BALANCE as B } from '../../shared/rhineResearch.js';
 
 function setup(key, stage) {
@@ -48,7 +48,8 @@ test('Rhine visual metadata: all three spawn stages serialize and pulse/ecology 
     const energy=setup('energy',stage), d=energy.unit('device');energy.spawn('dummy',{pos:[10,6]});
     for(const uid of ['a','b','c'])assert.equal(energy.unit(uid).skill.activate('test',{free:true}),true);
     assert.equal(fx(energy,'rhinePulse').length,1);
-    assert.deepEqual(fx(energy,'rhinePulse')[0][4],{source:d.id,stage});
+    const target=energy.b.enemies[0];
+    assert.deepEqual(fx(energy,'rhinePulse')[0][4],{fromX:d.x,fromY:d.y,source:d.id,target:target.id,stage});
     assert.equal(unitInfo(d).researchStage,stage);
     assert.equal(energy.eventsOf('spawn').find(e=>e[1].id===d.id)[1].researchStage,stage);
     assert.equal('researchStage' in JSON.parse(JSON.stringify(unitInfo(energy.unit('a')))),false);
@@ -57,4 +58,25 @@ test('Rhine visual metadata: all three spawn stages serialize and pulse/ecology 
     assert.deepEqual(fx(ecology,'rhineEcology')[0][4],{source:ecology.unit('device').id,stage,radius:B.radius+(stage>=2?1:0)});
     done(energy);done(ecology);
   }
+});
+
+test('energy charging serializes the actual progress for spawn, live snapshots and late joins, then resets after a pulse',()=>{
+  const h=setup('energy',0), d=h.unit('device');
+  assert.deepEqual([unitInfo(d).sp,unitInfo(d).spMax],[0,B.energyCharges]);
+  assert.deepEqual(h.eventsOf('spawn').find(e=>e[1].id===d.id)[1].spMax,B.energyCharges);
+  h.spawn('dummy',{pos:[10,6]});
+  for(const [i,uid] of ['a','b'].entries()){
+    assert.equal(h.unit(uid).skill.activate('test',{free:true}),true);
+    assert.deepEqual(unitTuple(d,h.b.time).slice(5,7),[i+1,B.energyCharges]);
+    assert.deepEqual([unitInfo(d).sp,unitInfo(d).spMax],[i+1,B.energyCharges]);
+  }
+  assert.equal(h.unit('c').skill.activate('test',{free:true}),true);
+  assert.deepEqual(unitTuple(d,h.b.time).slice(5,7),[0,B.energyCharges]);
+  assert.equal(fx(h,'rhinePulse').length,1);
+  h.run(B.energyContributorCooldown+0.1);h.unit('a').skill.activate('test',{free:true});
+  assert.equal(unitInfo(d).sp,1);
+  h.b.getPlayer('p1').bonds.rhineShip.active=false;h.step();
+  assert.deepEqual(unitTuple(d,h.b.time).slice(5,7),[0,B.energyCharges]);
+  assert.equal('spMax' in JSON.parse(JSON.stringify(unitInfo(h.unit('a')))),false);
+  done(h);
 });

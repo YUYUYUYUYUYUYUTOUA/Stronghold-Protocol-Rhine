@@ -63,7 +63,7 @@ describe('§21.26 2 — 调和\'s +1 in the bond states and views', () => {
     assert.deepEqual(pub, { bondId: 'yanShip', count: 3, active: true, tier: 1, layers: 0, harmony: 1 });
     const rhine = { bondId: 'rhineShip', count: 2, active: false, tier: 0, layers: 0, harmony: 1 };
     assert.deepEqual(bondList(gd, s).find((b) => b.bondId === 'rhineShip'), rhine);
-    assert.deepEqual(bondList(gd, s, { full: true }).find((b) => b.bondId === 'rhineShip'), { ...rhine, thresholds: [3, 6], countsHand: false });
+    assert.deepEqual(bondList(gd, s, { full: true }).find((b) => b.bondId === 'rhineShip'), { ...rhine, thresholds: [3, 6, 9], countsHand: false });
     assert.deepEqual(bondList(gd, s).filter((b) => 'harmony' in b).map((b) => b.bondId).sort(), ['rhineShip', 'yanShip']);
     assert.equal(bondsWithGains(s, { yanShip: 4 }).yanShip.harmony, 1, 'the battle\'s gains keep the mark');
     assert.equal(bondsWithGains(s, { rhineShip: 4 }).rhineShip.harmony, 1);

@@ -6,10 +6,10 @@
 
 ### 本扩展新增内容
 
-- 莱茵生命 3 / 6 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
+- 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
 - 梅尔、乌啾、森蚺、伊芙利特及其全部可选技能、适用模组；调整白面鸮、塞雷娅等干员的盟约与特质。
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
-- 装置放置预览、选中圆形范围和突破后范围变化；联机同步、机器人选择及相关测试。
+- 装置放置预览、整格范围、充能条、攻击反馈和突破后范围变化；联机同步、机器人选择及相关测试。
 
 完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。Windows 玩家可直接下载 [莱茵版免安装整合包](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest)，完整解压后双击 **`启动莱茵科研版.bat`**；无需安装 Node.js 或 Git。上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
 
@@ -79,7 +79,7 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.1-rhine.1-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.1-rhine.2-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 

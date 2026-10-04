@@ -279,7 +279,7 @@ export class UnitView {
     this.facing = this.dir === 'LEFT' ? -1 : 1;
     this.visFacing = this.isEnemy ? -1 : this.facing;
     this.hp = Number(info.maxHp) || 1; this.maxHp = Number(info.maxHp) || 1; this.ghostHp = this.hp;
-    this.sp = 0; this.spMax = 0;
+    this.sp = Number(info.sp) || 0; this.spMax = Number(info.spMax) || 0;
     this.flags = 0; this.anim = ANIM.IDLE;
     this.statuses = new Set();
     this.alive = true;
@@ -977,6 +977,7 @@ export class UnitView {
     this.shieldBar.visible = !!shielded;
     if (shielded) { this.shieldBar.position.set(x0, cy - bh / 2 - 1); this.shieldBar.width = bw; this.shieldBar.height = Math.max(1.5, bh * 0.35); }
     // SP
+    const researchCharge = this.researchDevice?.key === 'energy';
     const showSp = showBars && !this.isEnemy && this.spMax > 0;
     this.spBg.visible = this.spFill.visible = showSp;
     const spH = Math.max(2, bh * 0.6);
@@ -985,10 +986,11 @@ export class UnitView {
       const active = !!(this.flags & UF.SKILL);
       const k = clamp(this.sp / this.spMax, 0, 1);
       ready = !active && k >= 0.999;
-      const sy = cy + bh / 2 + spH / 2 + 1.5;
+      // Research charge belongs beneath the device, rather than above its tower with the HP bar.
+      const sy = researchCharge ? this.screen.y + s * .1 : cy + bh / 2 + spH / 2 + 1.5;
       this.spBg.position.set(x0 - 1, sy); this.spBg.width = bw + 2; this.spBg.height = spH + 2;
       this.spFill.position.set(x0, sy); this.spFill.width = bw * k; this.spFill.height = spH;
-      this.spFill.tint = active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
+      this.spFill.tint = researchCharge ? ready ? COLORS.spReady : 0xffbc70 : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
       this._spY = sy;
     }
     this.spGlow.visible = ready;

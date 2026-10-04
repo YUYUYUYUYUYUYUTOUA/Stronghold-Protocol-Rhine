@@ -48,7 +48,7 @@ test('Rhine data: Astgenne alter receives only the extra bond on normal and elit
   assert.ok(input.bonds.arcaneShip.visibleMembers.includes(ids[0]));
   assert.ok(input.bonds.skillfulShip.visibleMembers.includes(ids[0]));
 });
-test('Rhine data: the real tier VI member activates the third slot and contributes one tier to Ptilopsis',()=>{
+test('Rhine data: a real tier VI member unlocks research and each duplicate adds Ptilopsis layers',()=>{
   const registry=new MetaRegistry();registerMeta(registry);
   const h=makeMatch({mode:'solo',fake:true,registry}).start();h.toPrep(1);
   const ps=h.ps('p_0');
@@ -60,11 +60,11 @@ test('Rhine data: the real tier VI member activates the third slot and contribut
   give(h.m,ps,'chess_char_6_16_a','board',[13,4]);
   assert.equal(ps.bonds.rhineShip.count,3);assert.equal(ps.researchView().capacity,1);
   h.m.dispatch(ps,'onPrepEnd',{round:1});
-  assert.equal(ps.layers.rhineShip,3*RHINE_BALANCE.ptilopsisLayersPerTier[0]);
+  assert.equal(ps.layers.rhineShip,3*RHINE_BALANCE.ptilopsisLayersPerMember[0]);
   give(h.m,ps,'chess_char_6_16_b','board',[14,4]);
   assert.equal(ps.bonds.rhineShip.count,3,'ordinary and elite are one member');
   h.m.dispatch(ps,'onPrepEnd',{round:1});
-  assert.equal(ps.layers.rhineShip,6*RHINE_BALANCE.ptilopsisLayersPerTier[0],'duplicate tier VI does not add a fourth tier');
+  assert.equal(ps.layers.rhineShip,7*RHINE_BALANCE.ptilopsisLayersPerMember[0],'duplicate member contributes a fourth real piece');
 });
 test('Rhine data: every official skill, requested defaults and real owner-specific otter stats',()=>{
   for(const spec of RHINE_ADDITIONS)for(const suffix of ['a','b']){
@@ -75,7 +75,7 @@ test('Rhine data: every official skill, requested defaults and real owner-specif
   }
   const t=files.tokens.token_10004_otter_motter;
   assert.ok(t.variants.chess_rhine_mayer_b.stats.maxHp>t.variants.chess_rhine_mayer_a.stats.maxHp);
-  assert.equal(t.variants.chess_rhine_mayer_a.count,4);assert.equal(t.variants.chess_rhine_mayer_b.count,5);
+  assert.equal(t.variants.chess_rhine_mayer_a.count,1);assert.equal(t.variants.chess_rhine_mayer_b.count,2);
 });
 test('Rhine data: default modules compose real stats and none restores base traits and talents',()=>{
   const expected={mayer:['uniequip_002_otter'],wuhoo:['uniequip_002_turdus'],eunectes:['uniequip_002_zumama','uniequip_003_zumama'],ifrit:['uniequip_002_ifrit','uniequip_003_ifrit']};
@@ -124,6 +124,8 @@ test('Rhine data: higher levels remain supported and removed RA never becomes a 
   assert.ok(!stale.talents.some(t=>t.bb.range_radius||t.bb.block_cnt||t.bb.damage_scale),'sandbox-only effects never enter a combat record');
   assert.ok(source.battleEquipTable.uniequip_004_zumama.phases[2].parts.some(p=>p.validInGameTag==='sandbox'),'excluded raw source remains auditable');
   const otter=upgraded.tokens.token_10004_otter_motter.variants.chess_rhine_mayer_b;
+  assert.equal(get('mayer','uniequip_002_otter').talents[0].bb.cnt,2,'module talent overrides cannot restore the upstream five-summon count');
+  assert.equal(otter.count,2);
   assert.equal(otter.talents[0].bb.attack_speed,-30,'default module affects the default token variant');
   assert.deepEqual(Object.keys(otter.byModule),['none']);
   assert.equal(otter.byModule.none.talents[0].bb.attack_speed,-25,'unequipped token keeps the original slow');
@@ -139,10 +141,12 @@ test('Rhine data: both Mayer skills keep deployable otters with correct module v
     const owner=`chess_rhine_mayer_${suffix}`,v=files.tokens[id].variants[owner];
     assert.equal(v.skill.skillId,'sktok_motter_1');assert.deepEqual(Object.keys(v.bySkill),['1']);
     assert.equal(v.bySkill[1].skill.skillId,'sktok_motter_2');
-    assert.deepEqual((v.bySkill[skillIndex]||v).sources,['talent']);assert.equal((v.bySkill[skillIndex]||v).count,suffix==='a'?4:5);
+    assert.equal(v.stats.deployLimit,suffix==='a'?1:2);
+    assert.deepEqual((v.bySkill[skillIndex]||v).sources,['talent']);assert.equal((v.bySkill[skillIndex]||v).count,suffix==='a'?1:2);
     for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_otter']){
       const token=ds.getToken(id,owner,{skillIndex,moduleId});
-      assert.equal(token.talents[0].bb.max_deploy_count,suffix==='a'?4:5);
+      assert.equal(token.talents[0].bb.max_deploy_count,suffix==='a'?1:2);
+      if (v.byModule?.[moduleId]) assert.equal(v.byModule[moduleId].stats.deployLimit,suffix==='a'?1:2);
       assert.equal(token.talents[0].bb.attack_speed,-25);
     }
   }
@@ -165,7 +169,7 @@ test('Rhine data: moved copy traits and distinct research currencies',()=>{
   const g=id=>files.garrisons[files.chess[id].garrisonIds[0]];
   assert.equal(g('chess_rhine_wuhoo_a').effectKey,'SERVER_FRONT_SAME_EFFECT_PREP_START');
   assert.equal(g('chess_rhine_eunectes_a').effectKey,'SERVER_FRONT_SAME_EFFECT_PREP_FIN');
-  assert.equal(g('chess_char_4_21_a').effectKey,'RHINE_RESEARCH_BY_TIER');
+  assert.equal(g('chess_char_4_21_a').effectKey,'RHINE_RESEARCH_BY_MEMBER');
   assert.equal(g('chess_char_4_21_a').bb.layer,2);
   assert.equal(g('chess_char_5_11_a').effectKey,'RHINE_SARIA_HEALING');
   for(const t of Object.values(files.tokens).filter(t=>t.tokenId.startsWith('token_rhine_')))assert.equal(t.stats.atk,300);

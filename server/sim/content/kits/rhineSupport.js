@@ -1,6 +1,8 @@
 // Selectable Rhine support kits. Skill/talent/module numbers come from the resolved loadout records.
 // PRTS: https://prts.wiki/w/梅尔 · https://prts.wiki/w/乌啾
 import { num, talentBb, skillRec, freeTileAround, enemiesInGrid, alliesInGridOf, up } from './tier1.js';
+import { RHINE_BALANCE as B } from '../../../../shared/rhineResearch.js';
+import { canReceiveHeal } from '../../damage.js';
 
 export const OTTER = 'token_10004_otter_motter';
 const MAYER_S1 = 'skchr_otter_1', MAYER_S2 = 'skchr_otter_2';
@@ -22,6 +24,7 @@ function aura(b, target, key, source, value, mods) {
 /** Intrinsic blocking slow reads the token's OWN resolved module variant, including pre-placed otters. */
 export function otterKit() {
   return { fromTokens: true, skill: null, talents: [{ install(b, t) {
+    b.addBuff(t, { key: 'mayer:noOperatorHeal', persist: true, allowDead: true, flags: { noOperatorHeal: true } });
     const owner = t.ownerUnit;
     const slow = num(t.def.talents?.find(x => x.bb?.attack_speed != null)?.bb.attack_speed, -25);
     const s1 = owner?.def.skill?.id === MAYER_S1 ? owner.def.raw?.skill : null;
@@ -40,7 +43,7 @@ export function otterKit() {
 export const RHINE_SUPPORT_TOKEN_KITS = { [OTTER]: otterKit };
 
 export function mayer(bb, chess, def) {
-  const capacity = Math.max(1, num(talentBb(chess).cnt, 4));
+  const capacity = Math.min(B.mayerSummons[chess.isGolden ? 1 : 0], Math.max(1, num(talentBb(chess).cnt, 1)));
   const s2 = record(chess, MAYER_S2, bb, def);
   const summon = (b, u) => {
     if (!up(u) || !(u.mem.otterStock > 0) || liveOtters(b, u).length >= capacity) return;
@@ -95,7 +98,7 @@ export function mayer(bb, chess, def) {
 }
 
 const isWuhoo = u => u?.def?.charId === 'char_4224_turdus';
-const healable = (b, u, a) => up(a) && !a.hidden && a.kind !== 'device' && !a.s.flags.noHeal && !a.profile?.noHeal && b.allySelectable(a, u);
+const healable = (b, u, a) => up(a) && !a.hidden && a.kind !== 'device' && !a.s.flags.noHeal && !a.profile?.noHeal && canReceiveHeal(u, a) && b.allySelectable(a, u);
 
 export function wuhoo(bb, chess, def) {
   const s1 = record(chess, WUHOO_S1, bb, def), s2 = record(chess, WUHOO_S2, bb, def);

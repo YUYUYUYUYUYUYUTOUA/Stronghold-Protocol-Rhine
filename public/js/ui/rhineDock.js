@@ -44,7 +44,7 @@ export function RhineDock({ research, editable, view, placeCtx, onDeploy, onReca
     const piece = placeCtx.pieces.get(armed)?.piece;
     const status = research?.devices?.find(d => d.uid === armed);
     const range = researchRange({ ...piece, stage: status?.stage ?? piece?.stage });
-    const previewStyle = { group: 'researchPreview', color: 0x6fe8c1, fill: .2, line: .95 };
+    const previewStyle = { group: 'researchPreview', color: 0xff9c33, fill: .36, line: 1 };
     const move = (e) => {
       const tile = researchTileAt(view, e.clientX, e.clientY);
       if (range && tile && legal.some(([r,c])=>r===tile.row && c===tile.col)) {
@@ -85,12 +85,12 @@ export function RhineDock({ research, editable, view, placeCtx, onDeploy, onReca
           <img src=${def.sprite || def.icon} alt="" draggable="false" /><strong>${def.name}</strong><small>${['原型', '改良型', '成熟型'][stage]}</small>
         </button>
         <div class="rhine-card__stats">攻击 ${Math.round(status.attack ?? rhineAttack(research.layers))}${status.onBoard ? ' · 已部署' : ''}</div>
-        <div class="rhine-card__range" title=${researchRangeText({id:def.tokenId,stage})}>圆形半径 ${range.radius} 格${def.key==='energy' && stage>=1 ? ` · 溅射 ${RHINE_BALANCE.energySpreadRadius}` : ''}</div>
+        <div class="rhine-card__range" title=${researchRangeText({id:def.tokenId,stage})}>范围 ${range.grid.length} 格 · 半径 ${range.radius}${def.key==='energy' && stage>=1 ? ` · 溅射 ${RHINE_BALANCE.energySpreadRadius}` : ''}</div>
         <div class="rhine-card__progress" title="每阶段需要5点；突破后研究点清零，溢出不保留。">${researchProgress(status.points || 0, stage)}</div>
         <div class="rhine-card__next">${stage < 2 ? `下次：${def.breakthroughs[stage]}` : def.breakthroughs.join(' · ')}</div>
         <div class="rhine-card__actions"><button type="button" onClick=${() => uid != null && onDetail?.(uid)}>详情</button>
           ${status.onBoard ? html`<button type="button" disabled=${!editable} onClick=${() => onRecall?.(uid)}>收回</button>` : null}</div>
       </article>`;
-    })}</div><p class="rhine-dock__hint">${armed != null ? '点击高亮格或拖动到棋盘部署 · Esc取消' : research.capacity ? '3人可部署1台，6人可部署2台 · 科研位不占普通备牌格' : '莱茵生命未激活，装置停机；研究成果已保留'}</p>`}
+    })}</div><p class="rhine-dock__hint">${armed != null ? '点击高亮格或拖动到棋盘部署 · Esc取消' : research.capacity ? '3人可部署1台，6人可部署2台，9人可部署3台 · 科研位不占普通备牌格' : '莱茵生命未激活，装置停机；研究成果已保留'}</p>`}
   </section>`;
 }

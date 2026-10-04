@@ -16,7 +16,7 @@ import { collectViolations } from '../../server/match/invariants.js';
 const IDS = ['chess_char_1_02_a', 'chess_char_2_02_a', 'chess_char_3_02_a', 'chess_char_4_21_a', 'chess_char_5_11_a', 'chess_char_6_11_a'];
 function fixture() {
   const d = structuredClone(DATA);
-  d.bonds[RHINE_BOND] = { bondId: RHINE_BOND, name: '莱茵生命', isCore: true, thresholds: [3, 6], activeCount: 3, countMode: 'BOARD', weight: 0 };
+  d.bonds[RHINE_BOND] = { bondId: RHINE_BOND, name: '莱茵生命', isCore: true, thresholds: [3, 6, 9], activeCount: 3, countMode: 'BOARD', weight: 0 };
   IDS.forEach((id, i) => {
     for (const c of [d.chess[id], d.chess[d.chess[id].goldenId]].filter(Boolean)) {
       c.bonds = [RHINE_BOND]; c.tier = i + 1; c.position = 'MELEE'; c.tokens = []; c.garrisonIds = [];
@@ -69,6 +69,56 @@ test('Rhine thresholds unlock a separate reserve, capacity 1/2, and harmony adds
   member(hh, pp, 2); member(hh, pp, 3); member(hh, pp, 4);
   assert.equal(pp.bonds[RHINE_BOND].count, 6);
   assert.equal(pp.researchView().capacity, 2);
+});
+
+test('Rhine count nine with eight actual members and harmony deploys all three types; dropping to eight recalls only excess', () => {
+  const data = fixture();
+  const extra = Object.values(data.chess).filter(c => c.visible && !c.isGolden && !IDS.includes(c.chessId)).slice(0, 2).map(c => c.chessId);
+  for (const id of extra) for (const c of [data.chess[id], data.chess[data.chess[id].goldenId]].filter(Boolean)) {
+    c.bonds = [RHINE_BOND]; c.tokens = []; c.garrisonIds = []; c.position = 'MELEE';
+  }
+  data.chess[IDS[1]].bonds.push('maniShip');
+  const h = setup({ data }), ps = h.ps('p_0');
+  const pieces = [...IDS, ...extra].map(id => give(h.m, ps, id, 'board', freeTile(ps)));
+  assert.equal(ps.bonds[RHINE_BOND].count, 9);
+  assert.equal(ps.researchView().capacity, 3);
+  for (const key of ['medical', 'energy', 'ecology']) assert.deepEqual(deploy(h, ps, key), { ok: true });
+  ps.research.points.ecology = 4; ps.research.stages.ecology = 1;
+  assert.equal(ps.battleInput().research.devices.filter(d => d.onBoard).length, 3);
+  checkInvariants(h.m);
+  assert.deepEqual(ps.move(pieces[7].uid, { area: 'hand', idx: 0 }), { ok: true });
+  assert.equal(ps.researchView().capacity, 2);
+  assert.equal(ps.researchView().devices.filter(d => d.onBoard).length, 2);
+  assert.deepEqual([device(ps, 'ecology').stage, device(ps, 'ecology').points], [1, 4]);
+  assert.equal(ps.research.hand.filter(Boolean).length, 1);
+  assert.equal(deploy(h, ps, 'ecology').error, ERR.BOARD_FULL);
+  checkInvariants(h.m);
+});
+
+test('the shipped seven-member roster reaches Rhine nine through Muelsyse harmony and a terminal-isomorph recruit', () => {
+  const h = makeMatch({ mode: 'solo', fake: true }).start(); h.toPrep(1).setStage('act2autochess_m01');
+  const ps = h.ps('p_0');
+  for (const p of [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean)]) if (p.kind === 'chess') ps.returnCopies(p);
+  ps.board.clear(); ps.hand.fill(null); ps.temp.fill(null); ps.recompute();
+  const place = id => {
+    const position = DATA.chess[id].position === 'RANGED' ? 'ranged' : 'melee';
+    const tile = [...ps.deployMap()].find(([k]) => !ps.board.has(k) && canPlace(ps.deployMap(), position, ...parseKey(k)));
+    return give(h.m, ps, id, 'board', parseKey(tile[0]));
+  };
+  for (const id of DATA.bonds[RHINE_BOND].visibleMembers) place(id);
+  assert.equal(ps.bonds[RHINE_BOND].count, 8, 'seven real Rhine operators plus Muelsyse harmony');
+  const recruitId = Object.values(DATA.chess).find(c => c.visible && !c.isGolden && !c.bonds.includes(RHINE_BOND)).chessId;
+  const recruit = place(recruitId);
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_6_09_e_a']) {
+    const it = ps.acquireItem(id);
+    assert.deepEqual(ps.equip(it.uid, recruit.uid), { ok: true });
+  }
+  assert.equal(ps.bonds[RHINE_BOND].count, 9);
+  assert.equal(ps.researchView().capacity, 3);
+  for (const key of ['medical', 'energy', 'ecology']) assert.deepEqual(deploy(h, ps, key), { ok: true });
+  assert.equal([...ps.board.values()].filter(p => p.kind === 'chess').length, 8);
+  assert.equal(ps.battleInput().research.devices.filter(d => d.onBoard).length, 3);
+  checkInvariants(h.m);
 });
 
 test('research cards never consume ordinary reserve slots, cannot be sold/equipped/destroyed, and reject unknown destinations', () => {
@@ -298,20 +348,20 @@ test('boss research grows once from the shared victory, not separately for each 
   }
 });
 
-test('Ptilopsis research trait uses real distinct member tiers, not duplicated normal/elite members or a harmony virtual tier', () => {
+test('Ptilopsis research trait counts duplicate real pieces but excludes the harmony virtual member', () => {
   const data = fixture(), registry = new MetaRegistry(); registerMeta(registry);
-  data.garrisons.garrison_rhine_test = { garrisonId: 'garrison_rhine_test', eventType: 'SERVER_PREP_FIN', effectKey: 'RHINE_RESEARCH_BY_TIER', bb: { layer: 2 }, bbStr: { conditionkey: 'character_target_inboard' } };
+  data.garrisons.garrison_rhine_test = { garrisonId: 'garrison_rhine_test', eventType: 'SERVER_PREP_FIN', effectKey: 'RHINE_RESEARCH_BY_MEMBER', bb: { layer: 2 }, bbStr: { conditionkey: 'character_target_inboard' } };
   data.chess[IDS[2]].garrisonIds = ['garrison_rhine_test'];
   data.chess[IDS[1]].bonds.push('maniShip');
   const h = setup({ data, registry }), ps = h.ps('p_0');
   member(h, ps, 0); member(h, ps, 1); member(h, ps, 2);
   h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
   assert.equal(ps.layers[RHINE_BOND], 6);
-  // A second ordinary/elite copy of an existing member adds neither a new member nor a new tier.
+  // Bond thresholds still use distinct names, but the research trait counts every real copy.
   give(h.m, ps, data.chess[IDS[0]].goldenId, 'board', freeTile(ps));
   assert.equal(ps.bonds[RHINE_BOND].count, 4, 'three real members plus the one harmony bonus');
   const elite = h.m.gd.raw.garrisons.garrison_rhine_test;
   elite.bb.layer = 4;
   h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
-  assert.equal(ps.layers[RHINE_BOND], 18);
+  assert.equal(ps.layers[RHINE_BOND], 22);
 });
