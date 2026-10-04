@@ -1,5 +1,5 @@
 /* ==========================================================================================
-   screens/room.css — room/waiting screen: invite key, 4 seat cards, bottom action bar.
+   screens/room.css — room/waiting screen: invite key, capacity-sized seat cards, bottom action bar.
    ========================================================================================== */
 
 .room-screen .topbar { height: 1.36rem; }
@@ -41,7 +41,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 3.8rem));
+  grid-template-columns: repeat(var(--seat-count, 1), minmax(0, 3.8rem));
   grid-template-rows: minmax(0, 6rem);
   justify-content: center;
   align-content: center;

@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { createBattleFromSpec, compactResult, battleProgress, attachLpMeter } from '../../server/sim/spec.js';
 import { validateC2S } from '../../shared/protocol.js';
 import { TICK } from '../../server/sim/constants.js';
+import { MAX_SEATS } from '../../shared/constants.js';
 
 const SLICE_MS = 250;
 
@@ -138,7 +139,7 @@ export class SimClient {
     } else {
       msg.leaks = p.leaks;
       // 联防: the leakers' enemies still standing (like public/js/battle/runner.js)
-      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, 4));
+      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, MAX_SEATS));
     }
     this.send(msg);
   }
