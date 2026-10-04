@@ -20,7 +20,7 @@ test('fifth room seat retains its identity and participates in readiness and con
   const fifth = roomFacts(room, 'p4');
   assert.equal(fifth.mine.playerId, 'p4');
   assert.equal(fifth.mine.seat, 4);
-  assert.equal(fifth.emptySeats, 0);
+  assert.equal(fifth.emptySeats, 1);
   assert.equal(roomFacts(room, 'p0').canStart, false, 'the fifth guest is still deciding');
   seats[4].ready = true;
   assert.equal(roomFacts(room, 'p0').canStart, true);
@@ -29,7 +29,7 @@ test('fifth room seat retains its identity and participates in readiness and con
   assert.equal(roomFacts(room, 'p0').canStart, false, 'the fifth guest is disconnected');
   room.seats = seats.slice(0, 4);
   assert.equal(normalizeSeats(room)[4], null, 'a four-member room has a usable fifth empty seat');
-  assert.equal(roomFacts(room, 'p0').emptySeats, 1);
+  assert.equal(roomFacts(room, 'p0').emptySeats, 2);
   assert.equal(normalizeSeats({ mode: 'solo', seats }).length, 1, 'solo stays single-seat');
 });
 

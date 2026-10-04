@@ -16,8 +16,8 @@
 //   opts.mode        'solo' | 'coop'
 //   opts.difficulty  'FUNNY'|'NORMAL'|'HARD'|'ABYSS'
 //   opts.modeId      string                     modeIdFor(mode, difficulty), e.g. 'mode_multi_hard'
-//   opts.seats       Array<{ seat: 0..4, playerId: string, name: string, isBot: boolean, connected: boolean }>
-//                    sorted by seat, 1–5 entries, ≥ 1 human; solo ⇒ exactly 1 human and no bots.
+//   opts.seats       Array<{ seat: 0..MAX_SEATS-1, playerId: string, name: string, isBot: boolean, connected: boolean }>
+//                    sorted by seat, 1–MAX_SEATS entries, ≥ 1 human; solo ⇒ exactly 1 human and no bots.
 //                    Bot playerIds start with 'ai_'. Seat indexes may have gaps (e.g. seats 0 and 2).
 //   opts.seed        uint32                     master seed for all match randomness
 //   opts.data        frozen game data (server/data.js getData()); may lack keys while data is generated

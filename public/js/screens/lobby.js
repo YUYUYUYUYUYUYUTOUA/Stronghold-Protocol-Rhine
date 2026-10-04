@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, ROOM_CODE_LEN, MAX_SEATS, modeIdFor } from '../../../shared/constants.js';
+import { openingBanCounts } from '../../../shared/openingBans.js';
 import { html, Button, Icon, MicroLabel, Panel, TextField, PingPill, AvatarFrame, Tooltip, Spinner, DifficultyIcon, doctorNo } from '../ui/components.js';
 import { toast, toastError } from '../ui/toasts.js';
 import { GuideButton } from '../ui/guide.js';
@@ -79,9 +80,11 @@ const MODE_CARDS = [
  * Text for a difficulty card, preferring data/config.json.
  * @param {'solo'|'coop'} roomMode
  * @param {string} difficulty
- * @returns {{ code: string, desc: string, effects: string[], rounds: number, hidden: boolean, stageNote: string }}
+ * @param {number|null} [playerCount] occupied human + AI seats; null while a co-op room has not been assembled
+ * @returns {{ code: string, desc: string, effects: string[], rounds: number, hidden: boolean, stageNote: string,
+ *   openingBans: { core: number, addon: number }, openingBanNote: string }}
  */
-export function difficultyInfo(roomMode, difficulty) {
+export function difficultyInfo(roomMode, difficulty, playerCount = null) {
   const fallback = MODE_TEXT[roomMode === 'solo' ? 'single' : 'multi'][difficulty] || { code: '', desc: '', effects: [] };
   // modeIdFor() lower-cases the difficulty: never call it with a value the server did not validate.
   const m = DIFFICULTIES.includes(difficulty) ? getMode(modeIdFor(roomMode, difficulty)) : null;
@@ -89,6 +92,12 @@ export function difficultyInfo(roomMode, difficulty) {
     ? m.effectDescList.map((e) => String(e).replace(/^[·•\s]+/, '')).filter(Boolean)
     : fallback.effects;
   const rounds = Number.isFinite(m?.lastRound) ? m.lastRound : roomMode === 'solo' && difficulty === 'FUNNY' ? 9 : 14;
+  const knownCount = roomMode === 'solo' ? 1 : Number.isInteger(playerCount) && playerCount > 0 ? playerCount : null;
+  const configuredBans = getConfig()?.bans;
+  const openingBans = openingBanCounts(difficulty, knownCount ?? 1, configuredBans);
+  const largeRoomBans = openingBanCounts(difficulty, 6, configuredBans);
+  const conditional = knownCount == null && largeRoomBans.core !== openingBans.core
+    ? `；5–6 人（含 AI）时核心 ${largeRoomBans.core}` : '';
   return {
     code: typeof m?.code === 'string' ? m.code : fallback.code,
     desc: typeof m?.desc === 'string' ? m.desc : fallback.desc,
@@ -96,6 +105,8 @@ export function difficultyInfo(roomMode, difficulty) {
     rounds,
     hidden: difficulty !== 'FUNNY',
     stageNote: stageNote(Array.isArray(m?.stages) && m.stages.length ? m.stages : STAGE_POOL[difficulty]),
+    openingBans,
+    openingBanNote: `开局 BAN：核心 ${openingBans.core} / 附加 ${openingBans.addon}${conditional}`,
   };
 }
 
@@ -206,7 +217,7 @@ function DifficultyCard({ roomMode, difficulty, selected, onSelect }) {
       </span>
     </span>
     <span class="diff-card__desc">${info.desc}</span>
-    <span class="diff-card__effects">${info.effects.map((e) => html`<span key=${e}>${e}</span>`)}${info.stageNote ? html`<span key="stage" class="diff-card__stage"><${Icon} name="rook" />${info.stageNote}</span>` : null}</span>
+    <span class="diff-card__effects">${info.effects.map((e) => html`<span key=${e}>${e}</span>`)}<span key="bans" class="diff-card__bans">${info.openingBanNote}</span>${info.stageNote ? html`<span key="stage" class="diff-card__stage"><${Icon} name="rook" />${info.stageNote}</span>` : null}</span>
     <span class="diff-card__check" aria-hidden="true"><${Icon} name="check" /><span>已选定</span></span>
   </button>`;
 }

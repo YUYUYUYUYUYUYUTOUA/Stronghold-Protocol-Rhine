@@ -1028,14 +1028,14 @@ describe('screen helpers', () => {
         { seat: 3, playerId: 'ai_1', name: 'AI·华法琳', isBot: true, ready: true, connected: true },
       ],
     };
-    assert.equal(normalizeSeats(room).length, 5);
+    assert.equal(normalizeSeats(room).length, 6);
     assert.equal(normalizeSeats({ mode: 'solo', seats: [room.seats[0], null, null, null] }).length, 1);
-    assert.deepEqual(normalizeSeats({ mode: 'coop', seats: 'bad' }), [null, null, null, null, null]);
+    assert.deepEqual(normalizeSeats({ mode: 'coop', seats: 'bad' }), [null, null, null, null, null, null]);
     let f = roomFacts(room, 'h');
     assert.equal(f.isHost, true);
     assert.equal(f.canStart, false, 'guest not ready');
     assert.equal(f.humans.length, 2);
-    assert.equal(f.emptySeats, 2);
+    assert.equal(f.emptySeats, 3);
     assert.equal(f.readyHumans, 1, 'host counts as ready (start = host ready)');
     room.seats[1].ready = true;
     f = roomFacts(room, 'h');
@@ -1043,6 +1043,14 @@ describe('screen helpers', () => {
     room.seats[1].connected = false;
     assert.equal(roomFacts(room, 'h').canStart, false, 'disconnected guest blocks start');
     assert.equal(roomFacts(room, 'g').canStart, false, 'guests cannot start');
+    room.seats[1].connected = true;
+    room.seats[5] = { seat: 5, playerId: 'sixth', name: 'Sixth', isBot: false, ready: false, connected: true };
+    assert.equal(normalizeSeats(room)[5].playerId, 'sixth', 'the sixth occupied seat survives normalization');
+    assert.equal(roomFacts(room, 'h').canStart, false, 'the sixth guest must also be ready');
+    room.seats[5].ready = true;
+    assert.equal(roomFacts(room, 'h').canStart, true);
+    room.seats[5].connected = false;
+    assert.equal(roomFacts(room, 'h').canStart, false, 'the sixth guest must also be connected');
     assert.equal(roomFacts(null, 'x').mine, null);
     assert.match(inviteLink('ABCD'), /\?room=ABCD$/);
   });

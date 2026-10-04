@@ -672,8 +672,8 @@ export function Spinner({ size = 'md', label, tone = 'mint', class: cls }) {
 
 // ---- Avatar frame ------------------------------------------------------------------------------
 
-const SEAT_HUES = [162, 196, 38, 280, 12];
-/** Stable seat colour shared by the room and match avatars, including the fifth seat. */
+const SEAT_HUES = [162, 196, 38, 280, 12, 82];
+/** Stable seat colour shared by the room and match avatars, including all six seats. */
 export function seatHue(seat = 0) {
   const n = SEAT_HUES.length;
   return SEAT_HUES[((seat | 0) % n + n) % n];

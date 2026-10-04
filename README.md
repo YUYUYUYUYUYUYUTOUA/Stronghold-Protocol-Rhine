@@ -1,12 +1,12 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.2**，合入官方发布标签 v0.1.2（提交 [`9d40419`](https://github.com/sganggs/Stronghold-Protocol/commit/9d40419)），本次扩展修改日期为 **2026-10-04**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/five-player`。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.2**，合入官方发布标签 v0.1.2（提交 [`9d40419`](https://github.com/sganggs/Stronghold-Protocol/commit/9d40419)），本次扩展修改日期为 **2026-10-04**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/six-player`。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
 ### 本扩展新增内容
 
-- 五人同房合作：真人与 AI 共用五个席位，完整支持联防及最终攻势的 2＋2＋1 阵地分组；详见 [五人版说明](docs/FIVE-PLAYER.md)。
+- 六人同房合作：真人与 AI 共用六个席位；五至六人开场少 BAN 一个核心盟约，最终攻势支持五人 2＋2＋1、六人 2＋2＋2 分组；详见 [多人版说明](docs/MULTIPLAYER.md)。
 
 - 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
 - 梅尔、乌啾、森蚺、伊芙利特、星源、多萝西及其全部可选技能、适用模组；调整白面鸮、塞雷娅等干员的盟约与特质。
@@ -17,7 +17,7 @@
 
 以下保留原项目介绍、声明与致谢，并对本 fork 的安装方式作相应说明。
 
-《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–5 人联机合作。
+《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–6 人联机合作。
 
 ![version](https://img.shields.io/badge/version-0.1.2-2ea44f)
 ![license](https://img.shields.io/badge/code%20license-GPL--3.0--or--later-blue)
@@ -52,7 +52,7 @@ English summary: [below](#english).
 
 「卫戍协议：盟约」是自走棋 + 塔防：休整期在调度中心招募干员、摆阵、配装备，作战期干员自动部署，迎击从红门涌来的敌人，漏过去的敌人扣目标生命值。本项目在浏览器里复刻了这一玩法，规则和数值尽量对照官方数据表与 PRTS 核对。
 
-- **独立模拟**（单人）与**同盟模拟**（1–5 人**合作**，没有 PvP；空位可以加 AI 队友）。
+- **独立模拟**（单人）与**同盟模拟**（1–6 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
 - 上游基础版本为 0.1.2，其修复记录见 [CHANGELOG.md](CHANGELOG.md)；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
 

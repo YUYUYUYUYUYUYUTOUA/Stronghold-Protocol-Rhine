@@ -1,6 +1,6 @@
 # 莱茵生命扩展整合包使用说明
 
-下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.1.2-rhine.2-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
+下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.1.2-rhine.3-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
 
 ## 解压并开始
 
@@ -13,7 +13,7 @@
 
 ## 和朋友一起玩
 
-支持 1–5 人同房合作，真人与 AI 共用五个席位。只有房主需要下载并启动整合包，其他玩家使用浏览器加入即可；规则见 [五人版说明](FIVE-PLAYER.md)。
+支持 1–6 人同房合作，真人与 AI 共用六个席位。只有房主需要下载并启动整合包，其他玩家使用浏览器加入即可；规则见 [多人版说明](MULTIPLAYER.md)。
 
 - **同一局域网**：把启动窗口显示的局域网网址发给朋友，例如 `http://192.168.0.101:3000/`，再分享房间的同盟密钥或房间链接。朋友不能使用你的 `127.0.0.1` 地址。
 - **异地联机**：房主先使用自己的内网穿透服务或虚拟局域网，再分享该入口下的游戏网址和同盟密钥。整合包不包含预设公网隧道、账号或令牌；具体配置见 [部署说明](DEPLOY.md)。
@@ -27,6 +27,6 @@
 
 ## 版本与来源
 
-本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.1.2** 的非官方莱茵生命扩展，包含上游提交 `9d40419` 及其之前的修复。Release 标记 `v0.1.2-rhine.2` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.1.2`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。
+本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.1.2** 的非官方莱茵生命扩展，包含上游提交 `9d40419` 及其之前的修复。Release 标记 `v0.1.2-rhine.3` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.1.2`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。
 
 游戏源代码随包提供，代码许可见 [LICENSE](../LICENSE)。游戏素材、数据、官方标识及非商业使用说明继续按 [NOTICE.md](../NOTICE.md) 区分，不因打包而获得额外授权。Node.js 原文许可随包位于 `runtime/node/LICENSE`；其内置组件及其他依赖的许可见 [第三方声明](../THIRD-PARTY-NOTICES.md)。本包不代表上游作者、《明日方舟》官方或 Node.js 项目的认可。

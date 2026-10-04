@@ -259,6 +259,9 @@
 
 /* ---- team panel ------------------------------------------------------------------------------------------- */
 .team { position: absolute; left: .22rem; top: 2.36rem; display: flex; flex-direction: column; gap: .14rem; pointer-events: none; }
+/* Six rows fit above the open shop without covering the sixth member's controls. */
+.team--large { gap: .1rem; }
+.team--large .pavatar { --pa: .68rem; }
 .team__row { position: relative; display: flex; align-items: center; gap: .1rem; pointer-events: auto; }
 .team__btn {
   position: relative; padding: 0; background: none; border: 0;

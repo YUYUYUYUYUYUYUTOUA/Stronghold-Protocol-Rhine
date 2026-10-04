@@ -13,7 +13,7 @@
 
 import { getConfig, getMode } from '../data.js';
 import { isShopItem } from '../sim/simdata.js';
-import { OPENING_BANS } from '../../shared/openingBans.js';
+import { OPENING_BANS, openingBanCounts } from '../../shared/openingBans.js';
 
 const own = (map, id) => (map && typeof map === 'object' && typeof id === 'string' && Object.hasOwn(map, id) && map[id] && typeof map[id] === 'object' ? map[id] : null);
 const numOr = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -62,12 +62,14 @@ export class GameData {
   /**
    * @param {Readonly<Record<string, any>>} data server/data.js getData() (may be partial)
    * @param {string} modeId e.g. 'mode_multi_hard'
+   * @param {number} [startingPlayerCount=1] fixed occupied starting seats, including AI
    */
-  constructor(data, modeId) {
+  constructor(data, modeId, startingPlayerCount = 1) {
     this.raw = data && typeof data === 'object' ? data : {};
     this.config = getConfig(this.raw) || {};
     this.modeId = modeId;
     this.mode = getMode(modeId, this.raw) || {};
+    this.startingPlayerCount = startingPlayerCount;
     this.economy = this.config.economy && typeof this.config.economy === 'object' ? this.config.economy : {};
     const chess = this.raw.chess && typeof this.raw.chess === 'object' ? this.raw.chess : {};
     this._chess = chess;
@@ -423,10 +425,7 @@ export class GameData {
     };
   }
   bans(difficulty) {
-    const b = this.config.bans && this.config.bans[difficulty];
-    const d = DEFAULTS.bans[difficulty] || { core: 0, addon: 0 };
-    if (!b || typeof b !== 'object') return { ...d };
-    return { core: Number.isInteger(b.core) && b.core >= 0 ? b.core : d.core, addon: Number.isInteger(b.addon) && b.addon >= 0 ? b.addon : d.addon };
+    return openingBanCounts(difficulty, this.startingPlayerCount, this.config.bans);
   }
   get bandDraft() {
     const b = this.config.bandDraft && typeof this.config.bandDraft === 'object' ? this.config.bandDraft : {};

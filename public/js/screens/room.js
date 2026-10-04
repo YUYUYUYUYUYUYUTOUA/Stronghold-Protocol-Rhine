@@ -18,6 +18,7 @@ import { LoadoutButton } from './loadout.js';
 import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch } from '../store.js';
 import { difficultyInfo } from './lobby.js';
+import { useData } from '../data.js';
 
 /**
  * Seats padded to the room's capacity (co-op MAX_SEATS, solo 1), each null or a seat record.
@@ -189,6 +190,7 @@ export function RoomScreen() {
   const room = useStore((s) => s.room);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
+  useData('config');
   const [busy, setBusy] = useState(null);
   const alive = useRef(true);
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
@@ -199,7 +201,7 @@ export function RoomScreen() {
   const coop = room.mode !== 'solo';
   const facts = roomFacts(room, me.playerId);
   const myReady = !!facts.mine?.ready;
-  const info = difficultyInfo(room.mode, room.difficulty);
+  const info = difficultyInfo(room.mode, room.difficulty, facts.occupied.length);
 
   const run = async (kind, fn) => {
     if (inFlight.current) return;
@@ -280,6 +282,7 @@ export function RoomScreen() {
         <p>${info.desc}</p>
         <ul>
           ${info.effects.map((e) => html`<li key=${e}>${e}</li>`)}
+          <li>${info.openingBanNote}</li>
           <li>共 <b class="num">${info.rounds}</b> 回合${info.hidden ? '，满足条件时进入隐秘核心' : ''}</li>
           <li>独立模拟中休整期与机变阶段不限时</li>
         </ul>
@@ -289,7 +292,10 @@ export function RoomScreen() {
     <footer class="room-bar">
       <div class="room-bar__left">
         <span class="room-bar__label">模拟难度<${MicroLabel}>DIFFICULTY<//></span>
-        <${DifficultyPicker} room=${room} isHost=${facts.isHost} busy=${busy} onPick=${setDifficulty} />
+        <div class="room-bar__difficulty">
+          <${DifficultyPicker} room=${room} isHost=${facts.isHost} busy=${busy} onPick=${setDifficulty} />
+          ${coop ? html`<span class="room-bar__bans">${info.openingBanNote}<span class="t-dim"> · ${facts.occupied.length} 人（含 AI）</span></span>` : null}
+        </div>
       </div>
       <div class="room-bar__center">
         <div class="ready-count" hidden=${!coop}>

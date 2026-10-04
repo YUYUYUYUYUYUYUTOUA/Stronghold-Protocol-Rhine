@@ -606,93 +606,93 @@ describe('websocket lobby', () => {
     await expectError(solo, { t: 'room.addBot' }, ERR.ROOM_FULL);
   });
 
-  test('five humans: the fifth seat gates start, resumes in lobby and match, and can be reused after leaving', async () => {
-    const host = await pool.player('Host5');
+  test('six humans: the sixth seat gates start, resumes in lobby and match, and can be reused after leaving', async () => {
+    const host = await pool.player('Host6');
     const st = await createRoom(host);
     const guests = [];
-    for (let i = 1; i < 5; i++) {
+    for (let i = 1; i < 6; i++) {
       const guest = await pool.player(`Guest${i}`);
       const joined = await joinRoom(guest, st.code);
       assert.equal(seatOf(joined, guest.id).seat, i);
       guests.push(guest);
     }
-    const full = await host.waitFor('room.state', (s) => s.seats.filter(Boolean).length === 5);
-    assert.deepEqual(full.seats.map((s) => s.seat), [0, 1, 2, 3, 4]);
+    const full = await host.waitFor('room.state', (s) => s.seats.filter(Boolean).length === 6);
+    assert.deepEqual(full.seats.map((s) => s.seat), [0, 1, 2, 3, 4, 5]);
     assert.ok(full.seats.every((s) => !s.isBot));
-    const sixth = await pool.player('Sixth');
-    await expectError(sixth, { t: 'room.join', code: st.code }, ERR.ROOM_FULL);
+    const seventh = await pool.player('Seventh');
+    await expectError(seventh, { t: 'room.join', code: st.code }, ERR.ROOM_FULL);
 
-    for (const guest of guests.slice(0, 3)) await expectOk(guest, { t: 'room.ready', ready: true });
+    for (const guest of guests.slice(0, 4)) await expectOk(guest, { t: 'room.ready', ready: true });
     await expectError(host, { t: 'room.start' }, ERR.NOT_READY);
-    const fifth = guests[3];
-    await expectOk(fifth, { t: 'room.ready', ready: true });
-    await fifth.terminate();
-    const dropped = await host.waitFor('room.state', (s) => seatOf(s, fifth.id)?.connected === false);
-    assert.equal(seatOf(dropped, fifth.id).seat, 4);
+    const sixth = guests[4];
+    await expectOk(sixth, { t: 'room.ready', ready: true });
+    await sixth.terminate();
+    const dropped = await host.waitFor('room.state', (s) => seatOf(s, sixth.id)?.connected === false);
+    assert.equal(seatOf(dropped, sixth.id).seat, 5);
     await expectError(host, { t: 'room.start' }, ERR.NOT_READY);
-    await expectError(sixth, { t: 'room.join', code: st.code }, ERR.ROOM_FULL);
+    await expectError(seventh, { t: 'room.join', code: st.code }, ERR.ROOM_FULL);
 
-    const resumed = await pool.player('Guest4', fifth.token);
+    const resumed = await pool.player('Guest5', sixth.token);
     assert.equal(resumed.welcome.resumed, true);
-    assert.equal(resumed.id, fifth.id);
+    assert.equal(resumed.id, sixth.id);
     const lobbyBack = await resumed.waitFor('room.state');
-    assert.equal(seatOf(lobbyBack, fifth.id).seat, 4);
-    assert.equal(seatOf(lobbyBack, fifth.id).ready, true);
-    assert.equal(lobbyBack.seats.filter(Boolean).length, 5);
+    assert.equal(seatOf(lobbyBack, sixth.id).seat, 5);
+    assert.equal(seatOf(lobbyBack, sixth.id).ready, true);
+    assert.equal(lobbyBack.seats.filter(Boolean).length, 6);
 
-    const humans = [host, ...guests.slice(0, 3), resumed];
+    const humans = [host, ...guests.slice(0, 4), resumed];
     await expectOk(host, { t: 'room.start' });
     for (const human of humans) {
       const pub = await human.waitFor('m.public', (m) => m.phase === 'INFO_CHECK');
-      assert.equal(pub.players.length, 5);
-      assert.deepEqual(pub.players.map((p) => p.seat), [0, 1, 2, 3, 4]);
+      assert.equal(pub.players.length, 6);
+      assert.deepEqual(pub.players.map((p) => p.seat), [0, 1, 2, 3, 4, 5]);
       assert.equal((await human.waitFor('m.private')).playerId, human.id);
     }
     host.clearInbox();
     await resumed.terminate();
-    await host.waitFor('room.state', (s) => s.inMatch && seatOf(s, fifth.id)?.connected === false);
-    const matchBack = await pool.player('Guest4', fifth.token);
+    await host.waitFor('room.state', (s) => s.inMatch && seatOf(s, sixth.id)?.connected === false);
+    const matchBack = await pool.player('Guest5', sixth.token);
     const restored = await matchBack.waitFor('room.state');
     assert.equal(restored.inMatch, true);
-    assert.equal(seatOf(restored, fifth.id).seat, 4);
-    assert.equal(seatOf(restored, fifth.id).connected, true);
+    assert.equal(seatOf(restored, sixth.id).seat, 5);
+    assert.equal(seatOf(restored, sixth.id).connected, true);
     const pub = await matchBack.waitFor('m.public');
-    assert.equal(pub.players.length, 5);
-    assert.equal(pub.players.find((p) => p.playerId === fifth.id).connected, true);
-    assert.equal((await matchBack.waitFor('m.private')).playerId, fifth.id);
-    for (const human of [host, ...guests.slice(0, 3), matchBack]) await expectOk(human, { t: 'g.infoReady' });
+    assert.equal(pub.players.length, 6);
+    assert.equal(pub.players.find((p) => p.playerId === sixth.id).connected, true);
+    assert.equal((await matchBack.waitFor('m.private')).playerId, sixth.id);
+    for (const human of [host, ...guests.slice(0, 4), matchBack]) await expectOk(human, { t: 'g.infoReady' });
     await host.waitFor('m.result');
     const ended = await host.waitFor('room.state', (s) => !s.inMatch && s.seats.every((x) => x && !x.ready));
-    assert.equal(ended.seats.length, 5);
+    assert.equal(ended.seats.length, 6);
 
     await expectOk(matchBack, { t: 'room.leave' });
-    const freed = await host.waitFor('room.state', (s) => !s.inMatch && s.seats[4] === null);
-    assert.deepEqual(freed.seats.slice(0, 4).map((s) => s.seat), [0, 1, 2, 3]);
-    assert.equal(seatOf(await joinRoom(sixth, st.code), sixth.id).seat, 4);
+    const freed = await host.waitFor('room.state', (s) => !s.inMatch && s.seats[5] === null);
+    assert.deepEqual(freed.seats.slice(0, 5).map((s) => s.seat), [0, 1, 2, 3, 4]);
+    assert.equal(seatOf(await joinRoom(seventh, st.code), seventh.id).seat, 5);
   });
 
-  test('one human + four AI fills all five seats; removeBot accepts seat 4 and reuses it', async () => {
-    const host = await pool.player('HostBots5');
+  test('one human + five AI fills all six seats; removeBot accepts seat 5 and reuses it', async () => {
+    const host = await pool.player('HostBots6');
     await createRoom(host);
-    for (let seat = 1; seat < 5; seat++) {
+    for (let seat = 1; seat < 6; seat++) {
       await expectOk(host, { t: 'room.addBot' });
       const state = await host.waitFor('room.state', (s) => s.seats[seat]?.isBot);
       assert.equal(state.seats[seat].seat, seat);
       assert.equal(state.seats[seat].name, BOT_NAMES[seat - 1]);
     }
     await expectError(host, { t: 'room.addBot' }, ERR.ROOM_FULL);
-    await expectError(host, { t: 'room.removeBot', seat: 5 }, ERR.BAD_MSG);
-    await expectOk(host, { t: 'room.removeBot', seat: 4 });
-    const freed = await host.waitFor('room.state', (s) => s.seats[4] === null && s.seats[3]?.isBot);
-    assert.deepEqual(freed.seats.slice(0, 4).map((s) => s.seat), [0, 1, 2, 3]);
+    await expectError(host, { t: 'room.removeBot', seat: 6 }, ERR.BAD_MSG);
+    await expectOk(host, { t: 'room.removeBot', seat: 5 });
+    const freed = await host.waitFor('room.state', (s) => s.seats[5] === null && s.seats[4]?.isBot);
+    assert.deepEqual(freed.seats.slice(0, 5).map((s) => s.seat), [0, 1, 2, 3, 4]);
     await expectOk(host, { t: 'room.addBot' });
-    const full = await host.waitFor('room.state', (s) => s.seats[4]?.isBot);
-    assert.equal(full.seats[4].name, BOT_NAMES[3]);
+    const full = await host.waitFor('room.state', (s) => s.seats[5]?.isBot);
+    assert.equal(full.seats[5].name, BOT_NAMES[4]);
     await expectOk(host, { t: 'room.start' });
     const pub = await host.waitFor('m.public', (m) => m.phase === 'INFO_CHECK');
-    assert.equal(pub.players.length, 5);
-    assert.equal(pub.players.filter((p) => p.isBot).length, 4);
-    assert.equal(pub.players[4].seat, 4);
+    assert.equal(pub.players.length, 6);
+    assert.equal(pub.players.filter((p) => p.isBot).length, 5);
+    assert.equal(pub.players[5].seat, 5);
     await expectOk(host, { t: 'g.infoReady' });
     await host.waitFor('m.result');
   });

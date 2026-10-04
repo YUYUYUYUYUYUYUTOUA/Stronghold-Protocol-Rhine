@@ -84,7 +84,7 @@ export function TeamPanel({ pub, myId, watching, bubbles, onWatch, compact = fal
     if (!t.fieldId) { setOpenPid(null); onWatch(p); return; } // the game screen toasts the reason
     setOpenPid((cur) => (cur === p.playerId ? null : p.playerId));
   };
-  return html`<aside class=${cx('team', compact && 'team--compact')} aria-label="同盟成员">
+  return html`<aside class=${cx('team', compact && 'team--compact', players.length >= 6 && 'team--large')} aria-label="同盟成员">
     ${players.map((p) => {
       const self = p.playerId === myId;
       const status = p.alive === false ? 'dead' : p.status;

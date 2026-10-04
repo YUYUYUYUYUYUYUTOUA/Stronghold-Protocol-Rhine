@@ -6,8 +6,9 @@
 
 .draft__main { position: relative; z-index: 1; flex: 1; min-height: 0; display: grid; grid-template-columns: 3.9rem 1fr 5rem; gap: .3rem; padding: .3rem .42rem .36rem; }
 
-.draft-order { display: flex; flex-direction: column; gap: .1rem; min-height: 0; }
+.draft-order { display: flex; flex-direction: column; gap: .1rem; min-height: 0; overflow: auto; }
 .dorder {
+  flex: none;
   position: relative; display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: .12rem;
   padding: .1rem .12rem .1rem .08rem; background: rgba(12, 15, 14, .82); border: 1px solid var(--line);
   transition: border-color var(--t-med), background var(--t-med);

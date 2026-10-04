@@ -9,34 +9,34 @@ const resultFor = (count) => ({
   perPlayer: playerMap(count, () => ({ killed: 0, total: 0, leaked: [], perfect: true, layerGains: {}, unitsEnd: [] })),
 });
 
-test('room.removeBot accepts the fifth seat and rejects indexes outside the five-seat room', () => {
-  assert.equal(MAX_SEATS, 5);
-  assert.equal(validateC2S({ t: 'room.removeBot', seat: 4 }), null);
-  for (const seat of [-1, 5, 4.5, '4']) {
+test('room.removeBot accepts the sixth seat and rejects indexes outside the six-seat room', () => {
+  assert.equal(MAX_SEATS, 6);
+  assert.equal(validateC2S({ t: 'room.removeBot', seat: 5 }), null);
+  for (const seat of [-1, 6, 5.5, '5']) {
     assert.equal(validateC2S({ t: 'room.removeBot', seat }), 'bad field seat');
   }
 });
 
-test('battle results accept five player records, reject a sixth, and still validate the fifth record', () => {
+test('battle results accept six player records, reject a seventh, and still validate the sixth record', () => {
   assert.equal(RESULT_LIMITS.players, MAX_SEATS);
-  const five = resultFor(5);
-  assert.equal(isBattleResult(five), true);
-  assert.equal(validateC2S({ t: 'b.result', battleId: 'battle_5', result: five }), null);
   const six = resultFor(6);
+  assert.equal(isBattleResult(six), true);
+  assert.equal(validateC2S({ t: 'b.result', battleId: 'battle_6', result: six }), null);
+  const seven = resultFor(7);
+  assert.equal(isBattleResult(seven), false);
+  assert.equal(validateC2S({ t: 'b.result', battleId: 'battle_7', result: seven }), 'bad field result');
+  six.perPlayer.p_5.killed = 1; // the sixth record must obey killed <= total too
   assert.equal(isBattleResult(six), false);
-  assert.equal(validateC2S({ t: 'b.result', battleId: 'battle_6', result: six }), 'bad field result');
-  five.perPlayer.p_4.killed = 1; // the fifth record must obey killed <= total too
-  assert.equal(isBattleResult(five), false);
 });
 
-test('battle progress accepts five attribution and leak counters, rejects six or a bad fifth counter', () => {
+test('battle progress accepts six attribution and leak counters, rejects seven or a bad sixth counter', () => {
   const progress = {
-    t: 'b.progress', battleId: 'battle_5', gt: 1, killed: 0, total: 0,
-    by: playerMap(5, (seat) => seat * 10), left: playerMap(5, (seat) => seat),
+    t: 'b.progress', battleId: 'battle_6', gt: 1, killed: 0, total: 0,
+    by: playerMap(6, (seat) => seat * 10), left: playerMap(6, (seat) => seat),
   };
   assert.equal(validateC2S(progress), null);
-  assert.equal(validateC2S({ ...progress, by: playerMap(6, () => 0) }), 'bad field by');
-  assert.equal(validateC2S({ ...progress, left: playerMap(6, () => 0) }), 'bad field left');
-  assert.equal(validateC2S({ ...progress, by: { ...progress.by, p_4: -1 } }), 'bad field by');
-  assert.equal(validateC2S({ ...progress, left: { ...progress.left, p_4: 1.5 } }), 'bad field left');
+  assert.equal(validateC2S({ ...progress, by: playerMap(7, () => 0) }), 'bad field by');
+  assert.equal(validateC2S({ ...progress, left: playerMap(7, () => 0) }), 'bad field left');
+  assert.equal(validateC2S({ ...progress, by: { ...progress.by, p_5: -1 } }), 'bad field by');
+  assert.equal(validateC2S({ ...progress, left: { ...progress.left, p_5: 1.5 } }), 'bad field left');
 });

@@ -19,7 +19,7 @@ const finishFake = (m, f) => {
 const close = (h) => { h.m.dispose(); h.clients?.closeAll(); };
 
 test('a real five-player BattleResult retains the fifth entry through compact upload and validation', () => {
-  assert.equal(MAX_SEATS, 5);
+  assert.ok(ids.length <= MAX_SEATS, 'five-player matches remain supported within the room capacity');
   const spec = buildBattleSpec({
     battleId: 'five-player-upload', fieldId: 'n:five', kind: 'normal', seed: 5, round: 1,
     stageId: Object.keys(DATA.stages)[0], timeLimit: 1, content: 'full',
