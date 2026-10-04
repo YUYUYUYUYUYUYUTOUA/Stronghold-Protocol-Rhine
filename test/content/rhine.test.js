@@ -199,6 +199,27 @@ test('Rhine energy splash: hidden enemies are skipped, while blocked stealth ene
   checkInvariants(h.b);
 });
 
+test('Rhine energy: the upstream stealth restoration window remains selectable, then conceals the target again', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy')])]);
+  const target = h.spawn('dummy', { pos: [10, 4] }), blocker = h.unit('a');
+  h.b.addBuff(target, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.b.addBuff(blocker, { key: 'test:block', mods: { blockCnt: 1 }, persist: true });
+  h.b._checkBlock(target); assert.equal(target.blockedBy, blocker);
+  h.b.releaseBlocked(blocker);
+  h.b.removeBuff(blocker, 'test:block');
+  assert.equal(target.blockedBy, null);
+  assert.ok(h.b.foesInRadius(5, 10, 2).includes(target), 'unblock keeps the target revealed for the upstream restore interval');
+  for (const id of ['a', 'b', 'c']) cast(h, id);
+  close(target.s.maxHp - target.hp, 300 * B.energyPulseScale);
+  h.run(3.1);
+  assert.equal(h.b.foesInRadius(5, 10, 2).includes(target), false);
+  const hp = target.hp;
+  for (const id of ['a', 'b', 'c']) cast(h, id);
+  close(target.hp, hp);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+});
+
 test('Rhine ecology: stealth prevents bind and slow; revealing inside an active zone enables only slow', () => {
   const h = battle([player('p1', [device('ecology', 10, 5, 2)])]);
   const concealed = h.spawn('dummy', { pos: [10, 7] }), visible = h.spawn('dummy', { pos: [10, 8] });

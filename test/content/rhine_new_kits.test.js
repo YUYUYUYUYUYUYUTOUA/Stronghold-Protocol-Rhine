@@ -104,6 +104,21 @@ for (const skillIndex of [0, 1, 2]) test(`Dorothy S${skillIndex + 1}: native dam
   assert.ok(!t.alive); valid(h);
 });
 
+test('Dorothy traps keep physical contact with stealthed ground enemies across the upstream targeting changes', () => {
+  for (const skillIndex of [0, 1, 2]) {
+    const h = run('dorothy', { bonds: { rhineShip: { ...active } },
+      units: [{ chessId: cid('dorothy'), uid: 'owner', row: 10, col: 4, skillIndex }] });
+    h.unit('owner').atkCd = 999;
+    const t = traps(h)[0], target = h.spawn('e', { pos: [t.tileR, t.tileC] });
+    h.b.addBuff(target, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+    assert.equal(h.b.foesInRadius(target.x, target.y, 0.2).includes(target), false, 'ordinary targeting cannot select the unblocked stealth enemy');
+    h.run(0.1);
+    assert.ok(!t.alive && target.hp < target.s.maxHp, 'physical trap contact still triggers and damages it');
+    assert.equal(gain(h).rhineShip, 2, 'one physical activation still awards only one layer gain');
+    valid(h);
+  }
+});
+
 test('Dorothy S2: its one-victim bind is longer; flying enemies neither trigger nor receive trap effects', () => {
   const h = run('dorothy', { units: [{ chessId: cid('dorothy'), uid: 'owner', row: 10, col: 4, skillIndex: 1 }] });
   h.unit('owner').atkCd = 999;

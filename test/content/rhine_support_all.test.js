@@ -179,6 +179,13 @@ test('Mayer otters reject operator heals including Saria, chained HoT and operat
     close(t.hp, 100 + 150);
     assert.ok(h.hooksOf('heal').some(c => c.source === medical && c.target === t));
     assert.equal(h.b.heal(t, t, 10, { self: true }), 10, 'intrinsic self recovery retains the original self-heal rule');
+    h.b.addBuff(t, { key: 'test:healFree', flags: { healFree: true } });
+    assert.equal(h.b.heal(medical, t, 100), 0, 'the independent medical device does not bypass upstream 禁疗');
+    assert.equal(h.b.heal(t, t, 10, { self: true }), 0, 'upstream 禁疗 stops intrinsic heals too');
+    assert.equal(h.b.heal(t, t, 10, { regen: true }), 10, 'HP-regeneration attributes retain the upstream exception');
+    assert.equal(h.b.heal(t, t, 10, { ignoreHealFree: true }), 10, 'an explicitly exempt intrinsic heal retains the upstream rule');
+    assert.equal(h.b.heal(h.unit('saria'), t, 100, { ignoreHealFree: true }), 0, 'the upstream exemption does not bypass the separate operator-healing restriction');
+    h.b.removeBuff(t, 'test:healFree');
     h.b.addBuff(t, { key: 'absoluteNoHeal', flags: { noHeal: true } });
     assert.equal(h.b.heal(medical, t, 100), 0, 'medical exception never bypasses unrelated noHeal');
     done(h);

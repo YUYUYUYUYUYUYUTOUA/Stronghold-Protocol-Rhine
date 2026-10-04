@@ -1,4 +1,4 @@
-// Real assets and loadout controls for the two new Rhine operators, on a temporary local server.
+// Real assets and loadout controls for all six added operators, on a temporary local server.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -8,7 +8,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const OUT = path.join(ROOT, 'test/e2e/out');
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const enabled = process.env.RENDER_E2E === '1' && existsSync(CHROME) && existsSync(path.join(ROOT, 'public/assets'));
-describe('Astgenne and Dorothy actual art, loadout and traps in Chromium', { skip: enabled ? false : 'set RENDER_E2E=1 with Chrome and downloaded assets' }, () => {
+describe('Rhine added operators actual art, loadout stats and traps in Chromium', { skip: enabled ? false : 'set RENDER_E2E=1 with Chrome and downloaded assets' }, () => {
  let srv, browser;
  before(async () => {
   const { startServer } = await import('../../server/index.js');
@@ -18,7 +18,7 @@ describe('Astgenne and Dorothy actual art, loadout and traps in Chromium', { ski
   mkdirSync(OUT, { recursive: true });
  });
  after(async () => { await browser?.close(); await srv?.close(); });
- test('each operator shows every skill, actual portrait and its sole permitted module', async () => {
+ test('all six operators show every skill, actual portrait, permitted modules and the chosen module stats', async () => {
   const page = await browser.newPage(), errors=[];
   page.on('pageerror', e=>errors.push(e.message));
   try {
@@ -27,16 +27,40 @@ describe('Astgenne and Dorothy actual art, loadout and traps in Chromium', { ski
    await page.goto(`http://127.0.0.1:${srv.port}/`);
    await page.waitForSelector('[data-testid="loadout-open"]',{timeout:40000});
    await page.click('[data-testid="loadout-open"]');
-   for (const [key,count,module] of [['astgenne',2,'uniequip_002_halo'],['dorothy',3,'uniequip_002_doroth']]) {
+   const cases = [
+    ['mayer',2,['uniequip_002_otter']], ['wuhoo',2,['uniequip_002_turdus']],
+    ['eunectes',3,['uniequip_002_zumama','uniequip_003_zumama']],
+    ['ifrit',3,['uniequip_002_ifrit','uniequip_003_ifrit']],
+    ['astgenne',2,['uniequip_002_halo']], ['dorothy',3,['uniequip_002_doroth']],
+   ];
+   for (const [key,count,modules] of cases) {
     const sel=`[data-chess="chess_rhine_${key}_a"]`;
     await page.waitForSelector(sel,{timeout:40000});
     await page.click(sel);
     await page.waitForFunction((count)=>document.querySelectorAll('.lo-detail [data-skill]').length===count,{},count);
     await page.waitForFunction(()=>{const image=document.querySelector('.lo-dhead__art img');return image?.complete&&image.naturalWidth>0;});
     const choices=await page.$$eval('.lo-detail [data-module]',ns=>ns.map(n=>n.dataset.module));
-    assert.deepEqual(choices,[module,'none']);
-    await page.click(`.lo-detail [data-skill="${count-1}"]`);
-    assert.equal(await page.$eval(`.lo-detail [data-skill="${count-1}"]`,n=>n.getAttribute('aria-checked')),'true');
+    assert.deepEqual(choices,[...modules,'none']);
+    for (let skill=0;skill<count;skill++) {
+     await page.click(`.lo-detail [data-skill="${skill}"]`);
+     assert.equal(await page.$eval(`.lo-detail [data-skill="${skill}"]`,n=>n.getAttribute('aria-checked')),'true');
+    }
+    // 0.1.2 adds 局内数值: module changes must update the same stat block even with an alternate skill selected.
+    const expected = await page.evaluate(async key => {
+     const chess = await (await fetch('/data/chess.json')).json();
+     const rec = chess[`chess_rhine_${key}_b`];
+     return { baseAtk:rec.statsBase.atk, modules:rec.modules.map(m=>({id:m.uniEquipId, atk:rec.statsBase.atk+(m.attr.atk||0)})) };
+    },key);
+    const atk = () => page.$eval('.lo-sec--stats .dstats',n=>[...n.querySelectorAll('.dstat')].find(v=>v.querySelector('.dstat__k').textContent==='攻击').querySelector('.dstat__v').textContent);
+    for (const module of expected.modules) {
+     await page.click(`.lo-detail [data-module="${module.id}"]`);
+     await page.waitForFunction((value)=>[...document.querySelectorAll('.lo-sec--stats .dstat')].some(n=>n.querySelector('.dstat__k').textContent==='攻击' && Number(n.querySelector('.dstat__v').textContent.replaceAll(',',''))===value),{},module.atk);
+     assert.equal(Number((await atk()).replaceAll(',','')),module.atk);
+    }
+    await page.click('.lo-detail [data-module="none"]');
+    await page.waitForFunction((value)=>[...document.querySelectorAll('.lo-sec--stats .dstat')].some(n=>n.querySelector('.dstat__k').textContent==='攻击' && Number(n.querySelector('.dstat__v').textContent.replaceAll(',',''))===value),{},expected.baseAtk);
+    assert.equal(Number((await atk()).replaceAll(',','')),expected.baseAtk);
+    await page.click(`.lo-detail [data-module="${modules[0]}"]`);
     await page.screenshot({path:path.join(OUT,`rhine-${key}-loadout.png`)});
    }
    assert.deepEqual(errors,[]);
