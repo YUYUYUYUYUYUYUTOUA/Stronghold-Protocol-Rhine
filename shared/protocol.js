@@ -26,7 +26,7 @@ const isList = (v, max, item) => Array.isArray(v) && v.length <= max && v.every(
 // ---- client-side combat (DESIGN §14): b.progress / b.result payloads -------------------------------------------
 
 /** Size limits of a b.result payload (the whole frame also obeys the 64 KB inbound limit). */
-export const RESULT_LIMITS = Object.freeze({ players: 4, leaked: 400, unitsEnd: 64, unitStats: 160, layerGains: 40, mods: 16, unspawned: 400 });
+export const RESULT_LIMITS = Object.freeze({ players: MAX_SEATS, leaked: 400, unitsEnd: 64, unitStats: 160, layerGains: 40, mods: 16, unspawned: 400 });
 const BIG = 1e13;
 const isStat = (v) => v === undefined || isNum(v, 0, BIG);
 const isModVal = (v) => v === null || isNum(v, -BIG, BIG) || isStr(v, 64) || isBool(v);

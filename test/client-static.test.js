@@ -1028,14 +1028,14 @@ describe('screen helpers', () => {
         { seat: 3, playerId: 'ai_1', name: 'AI·华法琳', isBot: true, ready: true, connected: true },
       ],
     };
-    assert.equal(normalizeSeats(room).length, 4);
+    assert.equal(normalizeSeats(room).length, 5);
     assert.equal(normalizeSeats({ mode: 'solo', seats: [room.seats[0], null, null, null] }).length, 1);
-    assert.deepEqual(normalizeSeats({ mode: 'coop', seats: 'bad' }), [null, null, null, null]);
+    assert.deepEqual(normalizeSeats({ mode: 'coop', seats: 'bad' }), [null, null, null, null, null]);
     let f = roomFacts(room, 'h');
     assert.equal(f.isHost, true);
     assert.equal(f.canStart, false, 'guest not ready');
     assert.equal(f.humans.length, 2);
-    assert.equal(f.emptySeats, 1);
+    assert.equal(f.emptySeats, 2);
     assert.equal(f.readyHumans, 1, 'host counts as ready (start = host ready)');
     room.seats[1].ready = true;
     f = roomFacts(room, 'h');
