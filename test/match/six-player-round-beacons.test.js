@@ -11,8 +11,9 @@ const beacons = (ps) => held(ps).filter((p) => p.kind === 'item' && p.id === BEA
 
 for (const rhine of [true, false]) {
   test(`${rhine ? 'Rhine' : 'vanilla'} six-seat match supplies one ordinary beacon per surviving player before R10/R12/R14 prep`, () => {
-    const h = makeMatch({ humans: 6, difficulty: 'HARD', data: getDataProfile(rhine, { log: QUIET }), fake: true, seed: 8643 }).start();
+    const h = makeMatch({ humans: 6, difficulty: 'HARD', data: getDataProfile(rhine, { log: QUIET }), rhineEnabled: rhine, fake: true, seed: 8643 }).start();
     try {
+      assert.equal(h.m.publicView().dataProfile, rhine ? 'rhine' : 'vanilla');
       for (const round of [10, 12, 14]) {
         h.toPrep(round - 1);
         const before = new Map(h.m.order.map((ps) => [ps.playerId, beacons(ps).length]));
@@ -149,8 +150,8 @@ test('a round-supplied beacon can replace a six-tier core and send its original 
 });
 
 for (const rhine of [true, false]) for (const golden of [false, true]) {
-  test(`${rhine ? 'Rhine' : 'vanilla'} R14 reward beacon immediately transfers a ${golden ? 'golden' : 'normal'} core as one normal copy, with overflow and a gift notice`, () => {
-    const h = makeMatch({ humans: 6, difficulty: 'HARD', data: getDataProfile(rhine, { log: QUIET }), fake: true, seed: 45 }).start();
+  test(`${rhine ? 'Rhine' : 'vanilla'} R14 reward beacon immediately transfers the original ${golden ? 'elite' : 'normal'} core, with overflow and a gift notice`, () => {
+    const h = makeMatch({ humans: 6, difficulty: 'HARD', data: getDataProfile(rhine, { log: QUIET }), rhineEnabled: rhine, fake: true, seed: 45 }).start();
     try {
       h.toPrep(14);
       const m = h.m, sender = h.ps('p_0'), receiver = h.ps('p_1');
@@ -161,18 +162,20 @@ for (const rhine of [true, false]) for (const golden of [false, true]) {
       assert.ok(mate);
       give(m, receiver, mate, 'board', legalTileFor(m, receiver, mate));
       for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
-      const target = give(m, sender, golden ? m.gd.goldenIdOf(core) : core);
+      const original = golden ? m.gd.goldenIdOf(core) : core;
+      const target = give(m, sender, original);
       const beacon = beacons(sender).find((p) => p.meta.sixPlayerBeaconRound === 14);
       assert.ok(beacon);
       assert.equal(sender.pieceView(beacon).giftTiming, 'immediate', 'only the R14 supply exposes its timing to the client');
       assert.deepEqual(m.handle(sender.playerId, { t: 'g.equip', itemUid: beacon.uid, targetUid: target.uid }), { ok: true });
-      const gift = receiver.temp.find((p) => p?.kind === 'chess' && p.id === core);
+      const gift = receiver.temp.find((p) => p?.kind === 'chess' && p.id === original);
       assert.ok(gift, 'same prep immediate gift uses the recipient temp inventory when their hand is full');
-      assert.equal(gift.id, core);
-      assert.equal(m.gd.chess(gift.id).isGolden, false, 'original beacon semantics gift one normal base copy even for an elite carrier');
+      assert.equal(gift.id, original);
+      assert.equal(m.gd.chess(gift.id).isGolden, golden, 'upstream original-operator semantics retain elite status');
+      assert.equal(gift.poolCopies, golden ? m.gd.goldenCopies : 1, 'the gift retains the original pool-copy count');
       assert.equal(receiver.tempDue(gift), receiver.prepsEnded, 'gift remains usable in R14 preparation');
       assert.ok(receiver.privateView().temp.some((p) => p?.uid === gift.uid));
-      assert.ok(h.allTo(receiver.playerId, 'm.ticker').some((msg) => msg.type === 'CHAR_GIFT' && msg.text.includes(m.gd.chess(core).name)), 'receiver is told which core arrived');
+      assert.ok(h.allTo(receiver.playerId, 'm.ticker').some((msg) => msg.type === 'CHAR_GIFT' && msg.text.includes(m.gd.chess(original).name)), 'receiver is told which core arrived');
       assert.equal(sender.find(target.uid), null);
       assert.equal(sender.find(beacon.uid), null);
       assert.equal(sender.offers.at(-1).slots.length, 2);
@@ -180,7 +183,7 @@ for (const rhine of [true, false]) for (const golden of [false, true]) {
       assert.ok(!sender.effects.some((e) => e.id === `gift:${beacon.uid}`), 'immediate gift does not leave a second next-round transfer');
       m.onReconnect(sender.playerId);
       m.onReconnect(receiver.playerId);
-      assert.equal(receiver.temp.filter((p) => p?.id === core).length, 1, 'resync cannot duplicate delivery');
+      assert.equal(receiver.temp.filter((p) => p?.id === original).length, 1, 'resync cannot duplicate delivery');
       h.invariants();
     } finally { h.m.dispose(); }
   });
@@ -208,4 +211,68 @@ test('an ordinary bought beacon and a saved R10 supply used in R14 both retain n
       h.invariants();
     } finally { h.m.dispose(); }
   }
+});
+
+test('a six-seat R10 reward still sends the original elite after its sender is eliminated', () => {
+  const h = makeMatch({ humans: 6, difficulty: 'HARD', fake: true, seed: 45 }).start();
+  try {
+    h.toPrep(10);
+    const m = h.m, sender = h.ps('p_0'), receiver = h.ps('p_1');
+    const core = m.gd.visibleChess.find((id) => m.gd.chess(id).tier === 6 && m.pool.left(id) >= 3 && m.gd.chess(id).bonds?.length);
+    assert.ok(core);
+    const bond = m.gd.chess(core).bonds[0];
+    const mate = m.gd.visibleChess.find((id) => id !== core && m.gd.chess(id).bonds.includes(bond) && legalTileFor(m, receiver, id));
+    assert.ok(mate);
+    give(m, receiver, mate, 'board', legalTileFor(m, receiver, mate));
+    const original = m.gd.goldenIdOf(core);
+    const target = give(m, sender, original);
+    const beacon = beacons(sender).find((p) => p.meta.sixPlayerBeaconRound === 10);
+    assert.deepEqual(m.handle(sender.playerId, { t: 'g.equip', itemUid: beacon.uid, targetUid: target.uid }), { ok: true });
+    const pending = sender.effects.find((e) => e.id === `gift:${beacon.uid}`);
+    assert.equal(pending.params.chessId, original);
+    assert.deepEqual(pending.params.bonds, m.gd.chess(original).bonds);
+    sender.eliminate(10);
+    m.startRound(11);
+    const gift = held(receiver).find((p) => p.kind === 'chess' && p.id === original);
+    assert.ok(gift, 'the eliminated sender still dispatches its pending reward gift');
+    assert.equal(gift.poolCopies, m.gd.goldenCopies);
+    assert.ok(!sender.effects.some((e) => e.id === pending.id));
+    assert.equal(m.startingPlayerCount, 6, 'elimination never changes the fixed starting-seat rules');
+    h.invariants();
+  } finally { h.m.dispose(); }
+});
+
+test('a full R14 recipient keeps the immediate elite gift pending and receives it even after the sender is eliminated', () => {
+  const h = makeMatch({ humans: 6, difficulty: 'HARD', fake: true, seed: 45 }).start();
+  try {
+    h.toPrep(14);
+    const m = h.m, sender = h.ps('p_0'), receiver = h.ps('p_1');
+    const core = m.gd.visibleChess.find((id) => m.gd.chess(id).tier === 6 && m.pool.left(id) >= 3 && m.gd.chess(id).bonds?.length);
+    assert.ok(core);
+    const bond = m.gd.chess(core).bonds[0];
+    const mate = m.gd.visibleChess.find((id) => id !== core && m.gd.chess(id).bonds.includes(bond) && legalTileFor(m, receiver, id));
+    assert.ok(mate);
+    give(m, receiver, mate, 'board', legalTileFor(m, receiver, mate));
+    for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
+    for (let i = 0; i < receiver.temp.length; i++) receiver.temp[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
+    const original = m.gd.goldenIdOf(core);
+    const target = give(m, sender, original);
+    const beacon = beacons(sender).find((p) => p.meta.sixPlayerBeaconRound === 14);
+    const before = held(receiver).map((p) => p.uid);
+    assert.deepEqual(m.handle(sender.playerId, { t: 'g.equip', itemUid: beacon.uid, targetUid: target.uid }), { ok: true });
+    assert.deepEqual(held(receiver).map((p) => p.uid), before, 'failed delivery never evicts the recipient inventory');
+    const pending = sender.effects.find((e) => e.id === `gift:${beacon.uid}`);
+    assert.equal(pending?.params.chessId, original, 'full inventories retain the original elite for retry');
+    assert.ok(h.allTo(receiver.playerId, 'm.toast').some((msg) => JSON.stringify(msg).includes('整备区已满')));
+    receiver.hand[0] = null;
+    sender.eliminate(14);
+    m.startRound(15);
+    const gift = held(receiver).find((p) => p.kind === 'chess' && p.id === original);
+    assert.ok(gift);
+    assert.equal(gift.poolCopies, m.gd.goldenCopies);
+    assert.ok(!sender.effects.some((e) => e.id === pending.id), 'successful retry removes the gift once');
+    m.onReconnect(receiver.playerId);
+    assert.equal(held(receiver).filter((p) => p.kind === 'chess' && p.id === original).length, 1);
+    h.invariants();
+  } finally { h.m.dispose(); }
 });

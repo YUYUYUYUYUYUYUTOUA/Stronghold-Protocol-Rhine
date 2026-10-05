@@ -38,7 +38,7 @@ for (const base of bases) {
   const operators = [];
   for (const [key, charId, tier, skillCount, defaultSkill, moduleId] of [
     ['astgenne', 'char_135_halo', 2, 2, 0, 'uniequip_002_halo'],
-    ['dorothy', 'char_4048_doroth', 5, 3, 2, 'uniequip_002_doroth'],
+    ['dorothy', 'char_4048_doroth', 4, 3, 2, 'uniequip_002_doroth'],
   ]) {
     const normal = fetched.chess[`chess_rhine_${key}_a`], elite = fetched.chess[`chess_rhine_${key}_b`];
     assert.equal(normal.charId, charId);

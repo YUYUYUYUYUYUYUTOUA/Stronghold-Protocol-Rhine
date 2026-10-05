@@ -19,6 +19,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { MAX_SEATS } from '../shared/constants.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(ROOT, 'public');
@@ -1053,6 +1054,31 @@ describe('screen helpers', () => {
     assert.equal(roomFacts(room, 'h').canStart, false, 'the sixth guest must also be connected');
     assert.equal(roomFacts(null, 'x').mine, null);
     assert.match(inviteLink('ABCD'), /\?room=ABCD$/);
+  });
+
+  test('room: spectator seats (community report #26) — isSpectating; roomFacts never counts a spectator as a player', async () => {
+    const { roomFacts } = await mod('screens/room.js');
+    const { isSpectating } = await mod('store.js');
+    const room = {
+      code: 'ABCD', hostId: 'h', mode: 'coop', difficulty: 'HARD',
+      seats: [{ seat: 0, playerId: 'h', name: 'Host', isBot: false, ready: false, connected: true }, null, null, null],
+      spectators: [{ playerId: 's', name: 'Spec', connected: true }],
+    };
+    assert.equal(isSpectating(room, 's'), true);
+    assert.equal(isSpectating(room, 'h'), false);
+    assert.equal(isSpectating({ ...room, spectators: undefined }, 's'), false, 'a room.state without the list');
+    assert.equal(isSpectating(room, null), false);
+    assert.equal(isSpectating(null, 's'), false);
+    const f = roomFacts(room, 's');
+    assert.equal(f.spectating, true);
+    assert.equal(f.mine, null);
+    assert.equal(f.humans.length, 1, 'never a player');
+    assert.equal(f.emptySeats, MAX_SEATS - 1, 'spectators leave all remaining player seats free (入座)');
+    assert.deepEqual(f.spectators.map((x) => x.playerId), ['s']);
+    const hf = roomFacts(room, 'h');
+    assert.equal(hf.canStart, true, 'a spectator never blocks the start');
+    assert.equal(hf.spectating, false);
+    assert.deepEqual(roomFacts({ ...room, spectators: 'bad' }, 'h').spectators, []);
   });
 
   test('components: roman / doctorNo / secondsLeft', async () => {

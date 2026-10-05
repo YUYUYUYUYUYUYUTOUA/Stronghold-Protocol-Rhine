@@ -32,7 +32,7 @@ import { html, UiHosts, Button, MicroLabel, Spinner, closeAllDialogs } from './u
 import { ConnectionBanner } from './ui/connBanner.js';
 import { ToastHost, toast, toastError, describeError } from './ui/toasts.js';
 import { net, identity, NetError } from './net.js';
-import { store, useStore, emptyMatch, selectRoute, sessionResetNotice } from './store.js';
+import { store, useStore, emptyMatch, selectRoute, sessionResetNotice, isSpectating } from './store.js';
 import { data, CORE_DATA_FILES } from './data.js';
 import { createDataProfilePreparation, profileFromState } from './ui/dataProfile.js';
 import { GAME_FILES } from './ui/gameComponents.js';
@@ -46,6 +46,7 @@ import { GuideHost } from './ui/guide.js';
 import { installDeviceSupport } from './ui/device.js';
 import { LoadoutHost } from './screens/loadout.js';
 import { installLoadoutSync } from './ui/loadoutSync.js';
+import { startBuildGuard } from './ui/buildGuard.js';
 
 const RESTORE_GRACE_MS = 1500;
 const JOIN_DELAY_MS = 350;
@@ -180,8 +181,8 @@ function onRoomState(msg) {
   roomStateAt = Date.now();
   const myId = store.get().me.playerId;
   const seats = Array.isArray(room.seats) ? room.seats : [];
-  if (myId != null && seats.length && !seats.some((s) => s && s.playerId === myId)) {
-    // We are no longer seated (kicked / left elsewhere).
+  if (myId != null && seats.length && !seats.some((s) => s && s.playerId === myId) && !isSpectating(room, myId)) {
+    // We are no longer seated (kicked / left elsewhere) — neither in a player seat nor a spectator seat.
     if (store.get().room) toast('你已不在该同盟中', 'warn');
     store.set({ room: null, match: emptyMatch() });
     return;
@@ -375,6 +376,18 @@ async function boot() {
     setTimeout(() => splash.remove(), 300);
   }
   globalThis.__SP__ = { store, net, data, version: 1 };
+  // A page keeps the modules it imported at load time for its whole lifetime, so a deploy cannot reach an open tab
+  // (ui/buildGuard.js): watch `/healthz.build`. Outside a match the page reloads itself; during a match the guard says
+  // so instead (the connection banner offers 刷新页面) and reloads once the match — settlement screen included — is over,
+  // so a running game is never thrown away.
+  try {
+    startBuildGuard({
+      inMatch: () => selectRoute(store.get()) === 'game',
+      onStale: ({ waiting }) => { if (waiting) store.patch('ui', { buildStale: true }); },
+    });
+  } catch (err) {
+    console.warn('[app] build guard failed to start', err);
+  }
 }
 
 boot().catch((err) => {

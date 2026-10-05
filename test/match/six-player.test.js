@@ -102,7 +102,7 @@ test('six-player unite selects the sixth helper and routes the shared field to a
     assert.deepEqual(f.players, ['p_5', 'p_2'], 'the sixth helper ranks first by deployed count');
     assert.equal(f.authority, 'p_2', 'the lower seated connected helper reports the shared field');
     assert.deepEqual(f.spec.players.map((p) => [p.playerId, p.colOffset]), [['p_5', 8], ['p_2', 0]]);
-    assert.deepEqual(f.spec.players[0].units.find((u) => u.uid === first.uid).carryState, { hpPct: 0.5, sp: 3, skillActive: false });
+    assert.deepEqual(f.spec.players[0].units.find((u) => u.uid === first.uid).carryState, { hpPct: 0.5, sp: 3 });
     assert.equal(f.spec.spawns.length, 10);
     for (const pid of ids) {
       const start = h.lastTo(pid, 'b.start');

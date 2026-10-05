@@ -82,7 +82,7 @@ export const initialState = Object.freeze({
   ticker: [],
   emotes: [],
   clock: { offset: 0, rtt: null, synced: false },
-  ui: { pendingJoin: null, restoring: false, dataProfile: 'rhine', dataGeneration: 0, dataReady: false, dataError: null },
+  ui: { pendingJoin: null, restoring: false, buildStale: false, dataProfile: 'rhine', dataGeneration: 0, dataReady: false, dataError: null },
 });
 
 /** The app-wide store singleton. */
@@ -101,6 +101,17 @@ export function selectRoute(s) {
   if (s.room?.inMatch) return 'game'; // match starting: m.public is on its way
   if (s.room) return 'room';
   return 'lobby';
+}
+
+/**
+ * Whether the player holds one of the room's spectator seats (room.state `spectators`; community report #26, a remake
+ * feature): it is no player of the room or its match, watches like an eliminated player and may not act.
+ * @param {any} room room.state payload
+ * @param {string|null|undefined} playerId
+ * @returns {boolean}
+ */
+export function isSpectating(room, playerId) {
+  return playerId != null && Array.isArray(room?.spectators) && room.spectators.some((s) => s && s.playerId === playerId);
 }
 
 /**

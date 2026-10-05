@@ -11,7 +11,7 @@ import { applyRhineData } from '../tools/rhine-data.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const VANILLA = path.join(ROOT, 'data', 'vanilla');
-const PIN = '9d404199df76f862eff7385b82f952ab0498f4c5';
+const PIN = 'a0a5419eb875fb24de62e4dfb32b78cfcb3090be';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const git = (...args) => {
   try { return execFileSync('git', ['-C', ROOT, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }); }
@@ -21,7 +21,7 @@ async function validateManifest(directory) {
   const manifest = JSON.parse(await fs.readFile(path.join(directory, 'manifest.json'), 'utf8'));
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.profile, 'vanilla');
-  assert.equal(manifest.upstreamVersion, '0.1.2');
+  assert.equal(manifest.upstreamVersion, '0.1.3');
   const entries = manifest.files.map((entry) => entry.path);
   assert.equal(new Set(entries).size, entries.length);
   const disk = (await fs.readdir(directory)).filter((name) => name.endsWith('.json') && name !== 'manifest.json').sort();
@@ -42,12 +42,12 @@ test('the entire shipped vanilla manifest covers valid files with exact byte siz
   assert.equal(manifest.source, PIN);
 });
 
-test('every shipped vanilla snapshot is byte-identical to the fixed v0.1.2 commit', async (t) => {
+test('every shipped vanilla snapshot is byte-identical to the fixed v0.1.3 commit', async (t) => {
   assert.equal(VANILLA_UPSTREAM_COMMIT, PIN);
   try { git('cat-file', '-t', PIN); } catch { t.skip('fixed upstream Git object unavailable in the portable package or shallow checkout'); return; }
   assert.equal(git('cat-file', '-t', PIN).toString('utf8').trim(), 'commit');
   const upstreamPackage = JSON.parse(git('show', `${PIN}:package.json`).toString('utf8'));
-  assert.equal(upstreamPackage.version, '0.1.2');
+  assert.equal(upstreamPackage.version, '0.1.3');
   const paths = git('ls-tree', '--name-only', PIN, 'data/').toString('utf8').trim().split(/\r?\n/);
   const manifest = JSON.parse(await fs.readFile(path.join(VANILLA, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest.files.map((entry) => 'data/' + entry.path).sort(), paths.slice().sort());

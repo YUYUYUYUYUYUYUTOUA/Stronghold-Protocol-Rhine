@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "profile": "vanilla",
-  "upstreamVersion": "0.1.2",
-  "source": "9d404199df76f862eff7385b82f952ab0498f4c5",
+  "upstreamVersion": "0.1.3",
+  "source": "a0a5419eb875fb24de62e4dfb32b78cfcb3090be",
   "files": [
     {
       "path": "assets.json",
-      "size": 676646,
-      "sha256": "4c4ee1d5fab91d58bd52795d330af2aca9707a9039713f6e6014f4bdcd1b8d69"
+      "size": 677491,
+      "sha256": "45d2666379bcea3fa7c5ac628c3e372325d063a0d84e9b3405113508b31968df"
     },
     {
       "path": "bands.json",
@@ -16,8 +16,8 @@
     },
     {
       "path": "bonds.json",
-      "size": 84183,
-      "sha256": "7a12696d5332ad6bfef943364c05575568dbb3189aa21e5a7c3de3f88f6f9e7f"
+      "size": 84560,
+      "sha256": "97fe4ffb602a5a617465023fa755a239b43a03f3c71cebeeac44496b7c6c03b6"
     },
     {
       "path": "bosses.json",
@@ -26,8 +26,8 @@
     },
     {
       "path": "chess.json",
-      "size": 1657718,
-      "sha256": "2cfb0b8d1db1e571eaf5d766663b2dce516ccd4f980b0c33afffe6c88a45cc45"
+      "size": 1657610,
+      "sha256": "16ff1ceeae13a17bd3e024660d21ec3b746fea25a9dcc8461a3e90ac7ead30d6"
     },
     {
       "path": "choices.json",

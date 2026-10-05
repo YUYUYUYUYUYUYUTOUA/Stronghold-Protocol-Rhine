@@ -44,7 +44,7 @@ test('Rhine data: Astgenne alter receives only the extra bond on normal and elit
   }
   const members=bondMembers(input.bonds.rhineShip,{board:[{kind:'chess',id:ids[1]}]},[],id=>input.chess[id]);
   assert.equal(members.length,9);
-  assert.deepEqual(members.find(c=>c.id===ids[0]),{id:ids[0],tier:6,name:'溯光星源',onBoard:true,owned:true,banned:false});
+  assert.deepEqual(members.find(c=>c.id===ids[0]),{id:ids[0],tier:6,name:'溯光星源',onBoard:true,owned:true,inHand:false,banned:false});
   assert.ok(input.bonds.arcaneShip.visibleMembers.includes(ids[0]));
   assert.ok(input.bonds.skillfulShip.visibleMembers.includes(ids[0]));
 });

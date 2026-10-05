@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installFakePixi, fakeViewCtx } from './fakepixi.js';
 import { presetCamera } from '../../public/js/render/projection.js';
 import { researchPose, RHINE_LOOK } from '../../public/js/render/rhineDevices.js';
-import { FxSystem } from '../../public/js/render/fx.js';
+import { FxSystem, SHOT_HEIGHT } from '../../public/js/render/fx.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
 import { createAssets } from '../../public/js/assets.js';
 import { GEO } from '../../shared/constants.js';
@@ -19,6 +19,25 @@ before(async () => {
 after(() => fake.restore());
 const cam = presetCamera('prep', { width: 1280, height: 720 });
 const tick = () => new Promise(r => setImmediate(r));
+
+test('the upstream frozen-gate marker stays pictorially distinct from Rhine full-sprite devices', async () => {
+  const requested = [], img = { width: 160, height: 100 };
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: {
+    picture: () => '/owner-portrait.png',
+    image: async url => { requested.push(url); return img; },
+  } });
+  const ice = new UnitView(ctx, { id: 210, kind: 'token', defId: 'token_10058_sbell2_icetgt', side: 'ally', x: 5, y: 12 });
+  const device = new UnitView(ctx, { id: 211, kind: 'token', defId: 'token_rhine_medical', side: 'ally', x: 6, y: 12 });
+  await tick(); await tick();
+  ice.update(1 / 60, cam, 0); device.update(1 / 60, cam, 0);
+  assert.equal(ice._pic.state, 'none', 'the frozen gate must not load its operator portrait');
+  assert.equal(ice._pic.color, 0x9fe6ff);
+  assert.equal(ice.researchActor, null);
+  assert.deepEqual(requested, [RHINE_DEVICES.find(d => d.key === 'medical').sprite]);
+  assert.equal(device._pic.img, img);
+  assert.equal(device.fallback.texture, unitSpriteTexture(img), 'research art must retain the uncropped sprite texture');
+  ice.destroy(); device.destroy();
+});
 
 test('a late battle view preserves breakthrough lamps before any research effect is replayed', async () => {
   const info = renderInfo({ id: 200, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, researchStage: 2 });
@@ -147,6 +166,10 @@ test('actual source ids animate the device while medical and pulse effects use t
   assert.equal(beams[1][0], source, 'a visible beam starts at the firing tower');
   assert.deepEqual([beams[1][1].x, beams[1][1].y], [3, 4], 'instant hit cue terminates at the sim impact point');
   assert.equal(particles.length, 1, 'high quality adds a muzzle flare to the persistent actor pulse');
+  const feet = cam.project(source.x, source.y, source.z);
+  assert.equal(particles[0][1], feet.x);
+  assert.equal(particles[0][2], feet.y - 1.2 * SHOT_HEIGHT.launch * feet.s,
+    'the pulse muzzle flare shares the upstream beam launch height in screen space');
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 2 });
   assert.equal(rings.length, 3); assert.equal(rings[1][4], 1);

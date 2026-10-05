@@ -334,6 +334,23 @@ test('research survives the actual BattleSpec JSON boundary and retains the open
   assert.equal(battle.opts.players[0].research.devices[0].points, 4);
 });
 
+test('a research token retains its device identity alongside the upstream unite SP carry', () => {
+  const h = setup(), ps = h.ps('p_0');
+  try {
+    IDS.slice(0, 3).forEach((_, i) => member(h, ps, i)); deploy(h, ps, 'medical');
+    const uid = device(ps, 'medical').uid;
+    const input = ps.battleInput({ carry: new Map([[uid, { sp: 40 }]]), reached: true });
+    const token = input.units.find((u) => u.uid === uid);
+    assert.equal(token.kind, 'token');
+    assert.equal(token.research, true);
+    assert.equal(token.researchKey, 'medical');
+    assert.deepEqual(token.carryState, { sp: 40 });
+    const spec = buildBattleSpec({ players: [input], kind: 'unite', battleId: 'rhine-unite-carry' });
+    assert.deepEqual(spec.players[0].units.find((u) => u.uid === uid), token, 'JSON battle input keeps both fields');
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
+});
+
 test('boss research grows once from the shared victory, not separately for each teammate or result callback', () => {
   const h = setup({ mode: 'coop', difficulty: 'FUNNY', humans: 2, script: (b) => b.kind === 'boss' ? { bossDps: 1e9 } : {} });
   h.toPrep(14);

@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
-export const VANILLA_UPSTREAM_COMMIT = '9d404199df76f862eff7385b82f952ab0498f4c5';
+export const VANILLA_UPSTREAM_COMMIT = 'a0a5419eb875fb24de62e4dfb32b78cfcb3090be';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 
@@ -21,7 +21,7 @@ export async function writeVanillaData(files,out,{source='build-data before the 
     const bytes=await fs.readFile(path.join(out,name));JSON.parse(bytes.toString('utf8'));
     entries.push({path:name,size:bytes.length,sha256:hash(bytes)});
   }
-  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.1.2',source,files:entries},null,2)+'\n');
+  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.1.3',source,files:entries},null,2)+'\n');
 }
 
 async function snapshot(){
@@ -36,7 +36,7 @@ async function snapshot(){
     const name=path.basename(rel);await fs.writeFile(path.join(out,name),bytes);
     entries.push({path:name,size:bytes.length,sha256:hash(bytes)});
   }
-  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.1.2',source:VANILLA_UPSTREAM_COMMIT,files:entries},null,2)+'\n');
+  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.1.3',source:VANILLA_UPSTREAM_COMMIT,files:entries},null,2)+'\n');
   console.log(`Preserved ${entries.length} exact upstream data files in data/vanilla.`);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await snapshot();
