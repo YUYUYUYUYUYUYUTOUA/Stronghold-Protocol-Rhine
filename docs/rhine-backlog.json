@@ -1,9 +1,9 @@
 {
   "title": "莱茵生命扩展待修记录",
   "recordedDate": "2026-10-04",
-  "status": "历史七项已验证；2026-10-05新增三项已实施，发布验收另行记录",
+  "status": "已修复大房间悬赏前端六张截断；48项针对性检查及真实六浏览器回归通过，整合包验收另行记录",
   "updatedDate": "2026-10-05",
-  "currentRelease": "v0.1.2-rhine.4",
+  "currentRelease": "v0.1.2-rhine.5",
   "currentBranch": "codex/rhine-toggle-update",
   "items": [
     {

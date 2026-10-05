@@ -363,7 +363,23 @@ describe('drafts', () => {
     const sp2 = normalizeSp({ cards: [{}, {}], order: ['b', 'a'], turn: 0, picks: [{ playerId: 'b', idx: 1 }, { playerId: 'x', idx: 9 }] }, players);
     assert.equal(sp2.turnPid, 'b'); assert.equal(sp2.cards[1].takenBy, 'b'); assert.equal(sp2.pickOf.has('x'), false);
     assert.equal(normalizeSp(null), null);
-    assert.equal(normalizeSp({ cards: new Array(9).fill({}) }).cards.length, 6, 'at most 6 cards');
+    assert.equal(normalizeSp({ cards: new Array(12).fill({}) }).cards.length, 9, 'at most 9 cards');
+  });
+  test('normalizeSp preserves large-room bounty choices and picks in the third row', () => {
+    const cards = Array.from({ length: 9 }, (_, idx) => ({ id: `bounty_${idx}` }));
+    for (const picks of [{ a: 6, b: 7, c: 8 }, [{ playerId: 'a', idx: 6 }, { playerId: 'b', idx: 7 }, { playerId: 'c', idx: 8 }]]) {
+      const sp = normalizeSp({ family: 'bounty', cards, picks, turn: 'c' }, players);
+      assert.equal(sp.cards.length, 9);
+      assert.equal(sp.pickedCount, 3);
+      assert.deepEqual([...sp.pickOf.entries()], [['a', 6], ['b', 7], ['c', 8]]);
+      assert.deepEqual(sp.cards.slice(6).map((card) => [card.idx, card.id, card.takenBy]), [
+        [6, 'bounty_6', 'a'], [7, 'bounty_7', 'b'], [8, 'bounty_8', 'c'],
+      ]);
+      assert.equal(sp.turnPid, 'c');
+    }
+    const six = normalizeSp({ family: 'bounty', cards: cards.slice(0, 6), picks: { a: 5 } }, players);
+    assert.equal(six.cards.length, 6, 'ordinary rooms retain their six server-generated choices');
+    assert.equal(six.pickOf.get('a'), 5);
   });
 });
 

@@ -1,4 +1,4 @@
-卫戍协议：莱茵生命扩展 v0.1.2-rhine.4
+卫戍协议：莱茵生命扩展 v0.1.2-rhine.5
 Windows x64 免安装整合包
 更新日期：2026-10-05；源码分支：codex/rhine-toggle-update
 
