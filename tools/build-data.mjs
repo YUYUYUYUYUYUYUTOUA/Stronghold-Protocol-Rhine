@@ -3269,6 +3269,7 @@ async function main() {
   const files = { config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages, bosses, tokens };
 
   const errors = validateAll(files);
+  const vanillaFiles = structuredClone(files);
   // Apply the reproducible local roster/equipment expansion after validating the upstream season contract.
   const { applyRhineData, validateRhineData } = await import('./rhine-data.mjs');
   await applyRhineData(files);
@@ -3286,6 +3287,8 @@ async function main() {
   const write = !errors.length || OPTS.force;
   if (write) {
     await mkdir(OPTS.out, { recursive: true });
+    const { writeVanillaData } = await import('./vanilla-data.mjs');
+    await writeVanillaData(vanillaFiles, join(OPTS.out, 'vanilla'));
     for (const [name, text] of Object.entries(texts)) {
       // Atomic per file: a crash mid-write never leaves a truncated JSON behind.
       const dest = join(OPTS.out, `${name}.json`);

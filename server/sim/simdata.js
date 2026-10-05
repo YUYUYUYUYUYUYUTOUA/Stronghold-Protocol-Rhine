@@ -513,6 +513,7 @@ export function freezeDef(d) {
  */
 export class DataSource {
   constructor(raw = {}, fallback = null) {
+    this.contentData = raw;
     this.raw = {
       chess: asMap(unwrap(raw.chess, 'chess'), 'chessId') ?? {},
       enemies: asMap(unwrap(raw.enemies, 'enemies'), 'key') ?? {},

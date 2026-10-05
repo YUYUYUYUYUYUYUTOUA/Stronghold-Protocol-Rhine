@@ -353,6 +353,8 @@ test('Ptilopsis research trait counts duplicate real pieces but excludes the har
   data.garrisons.garrison_rhine_test = { garrisonId: 'garrison_rhine_test', eventType: 'SERVER_PREP_FIN', effectKey: 'RHINE_RESEARCH_BY_MEMBER', bb: { layer: 2 }, bbStr: { conditionkey: 'character_target_inboard' } };
   data.chess[IDS[2]].garrisonIds = ['garrison_rhine_test'];
   data.chess[IDS[1]].bonds.push('maniShip');
+  const eliteData = structuredClone(data);
+  eliteData.garrisons.garrison_rhine_test.bb.layer = 4;
   const h = setup({ data, registry }), ps = h.ps('p_0');
   member(h, ps, 0); member(h, ps, 1); member(h, ps, 2);
   h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
@@ -360,8 +362,10 @@ test('Ptilopsis research trait counts duplicate real pieces but excludes the har
   // Bond thresholds still use distinct names, but the research trait counts every real copy.
   give(h.m, ps, data.chess[IDS[0]].goldenId, 'board', freeTile(ps));
   assert.equal(ps.bonds[RHINE_BOND].count, 4, 'three real members plus the one harmony bonus');
-  const elite = h.m.gd.raw.garrisons.garrison_rhine_test;
-  elite.bb.layer = 4;
-  h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
-  assert.equal(ps.layers[RHINE_BOND], 22);
+  const elite = setup({ data: eliteData, registry }), elitePs = elite.ps('p_0');
+  member(elite, elitePs, 0); member(elite, elitePs, 1); member(elite, elitePs, 2);
+  give(elite.m, elitePs, eliteData.chess[IDS[0]].goldenId, 'board', freeTile(elitePs));
+  elite.m.dispatch(elitePs, 'onPrepEnd', { round: 1 });
+  assert.equal(elitePs.layers[RHINE_BOND], 16, 'four actual copies each give the elite four layers');
+  assert.equal(h.m.gd.raw.garrisons.garrison_rhine_test.bb.layer, 2, 'another match cannot change the normal profile');
 });

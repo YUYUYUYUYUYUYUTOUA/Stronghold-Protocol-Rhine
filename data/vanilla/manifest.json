@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "profile": "vanilla",
+  "upstreamVersion": "0.1.2",
+  "source": "9d404199df76f862eff7385b82f952ab0498f4c5",
+  "files": [
+    {
+      "path": "assets.json",
+      "size": 676646,
+      "sha256": "4c4ee1d5fab91d58bd52795d330af2aca9707a9039713f6e6014f4bdcd1b8d69"
+    },
+    {
+      "path": "bands.json",
+      "size": 35918,
+      "sha256": "8f18abc99eb50639a1f2fc679a84015d6d8cc8aa3ff7c7d22ad6db5dc347053b"
+    },
+    {
+      "path": "bonds.json",
+      "size": 84183,
+      "sha256": "7a12696d5332ad6bfef943364c05575568dbb3189aa21e5a7c3de3f88f6f9e7f"
+    },
+    {
+      "path": "bosses.json",
+      "size": 18057,
+      "sha256": "427c12bcdb23c449ab2d423129b1d339ecd76cc7c70a181a3d2b5a4af88b96a9"
+    },
+    {
+      "path": "chess.json",
+      "size": 1657718,
+      "sha256": "2cfb0b8d1db1e571eaf5d766663b2dce516ccd4f980b0c33afffe6c88a45cc45"
+    },
+    {
+      "path": "choices.json",
+      "size": 124385,
+      "sha256": "c0b43cfdb03bac3964ce398a4d94e313d2de2e89926a55e7337cec5a19ce193a"
+    },
+    {
+      "path": "config.json",
+      "size": 63347,
+      "sha256": "a8e1fc4cf9bd33626d3aa8fd9628fdd9bad57d7656d1825647e3b9ce48fb4511"
+    },
+    {
+      "path": "effects.json",
+      "size": 253427,
+      "sha256": "96e28be614f04da6d58c9e95706d742863c756b94dcad498e808c3410ba620e3"
+    },
+    {
+      "path": "emotes.json",
+      "size": 9746,
+      "sha256": "1c63ef4c57c1184b140d7830d1ada3ee4f1e4db7bb877570ab033399f7565aa4"
+    },
+    {
+      "path": "enemies.json",
+      "size": 407198,
+      "sha256": "2539f78f06e276829299234d38e273bfd0fcabd3432f3158bb8abac70d9c5712"
+    },
+    {
+      "path": "factions.json",
+      "size": 22026,
+      "sha256": "6bdcf7933eee4b156476769d724d60b34f4b69b095726d1638f02b91d8a22362"
+    },
+    {
+      "path": "garrisons.json",
+      "size": 150039,
+      "sha256": "f5b1f5558a263c95abcf36411c31e781efd3ebb1bebdced99ad1f242c2a960e3"
+    },
+    {
+      "path": "items.json",
+      "size": 170806,
+      "sha256": "6122a3cd75531f551a03082f000426a2d6b8028788fbd1abbaea5286592fbba4"
+    },
+    {
+      "path": "stages.json",
+      "size": 256804,
+      "sha256": "8d02f00f7a862c26d1375e6377ad13824c536a19771866587f10c17c66d54701"
+    },
+    {
+      "path": "tokens.json",
+      "size": 133722,
+      "sha256": "c2a85310c22fcc306937ac877927b660a20d481290266d307f2c8bb77c6d3636"
+    },
+    {
+      "path": "tuning.json",
+      "size": 621,
+      "sha256": "931253292844e51327e5273197dc03fb425bc966b65cb496f1f55f26832da3fd"
+    },
+    {
+      "path": "waves.json",
+      "size": 137772,
+      "sha256": "80cb535958f22a1bf4ea71b26155c6f92ee1b49dd24b88acf4b2bcdf73d80e68"
+    }
+  ]
+}

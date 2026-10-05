@@ -41,7 +41,7 @@ function battle(units, o = {}) {
 
 test('tier4 loadouts: every selectable skill of every visible chess is hand-authored (normal + elite)', () => {
   const rep = kitCoverage({ tier: 4 });
-  assert.equal(rep.summary.chess, 22);
+  assert.equal(rep.summary.chess, 23);
   assert.equal(rep.summary.covered, rep.summary.skills, JSON.stringify(rep.chess.flatMap((r) => r.skills.filter((s) => !s.covered).map((s) => `${r.name} S${s.index + 1}`))));
   for (const base of T4) {
     const { skills } = loadoutOptions(C[base], C[gold(base)]);
@@ -69,15 +69,19 @@ test('tier4 loadouts: every chess × selectable skill × module fights a mixed w
         e_fly: enemyRec({ key: 'e_fly', hp: 3000, atk: 150, motion: 'FLY', speed: 1, range: 1.5 }),
         e_elite: enemyRec({ key: 'e_elite', rank: 'ELITE', hp: 9000, atk: 400, def: 200, speed: 0.8, bat: 2 }),
       } },
-      units: [U(id, 9, 6, i, m), U('chess_char_1_02_a', 10, 6), U('chess_char_1_01_a', 11, 5), U('chess_char_4_17_a', 12, 7)],
+      units: [U(id, 9, 6, i, m), U('chess_char_1_02_a', 10, 6), U('chess_char_1_01_a', 11, 5), U('chess_char_4_17_a', 12, 7),
+        // A placed trap spends Dorothy's stock, allowing all three refill skills to actually cast.
+        ...(C[id].charId === 'char_4048_doroth' ? [{ kind: 'token', tokenId: 'token_10025_doroth_recttp', ownerUid: 1, row: 9, col: 7 }] : [])],
       enemies: [{ key: 'e_walk', route: 0, count: 6, interval: 3 }, { key: 'e_walk', route: 1, count: 4, interval: 4 },
         { key: 'e_fly', route: 2, count: 3, interval: 5 }, { key: 'e_elite', route: 0, time: 8 }],
       timeLimit: 70, seed: 5, hooks: [],
     });
     const u = h.unit(id);
     assert.equal(u.def.loadout?.skillIndex ?? u.def.skill.index, i, `${id} S${i + 1} selected`);
+    if (C[id].charId === 'char_4048_doroth') h.step();
     u.skill.gainSp?.(1000, 'test');
     h.runToEnd(80);
+    if (C[id].charId === 'char_4048_doroth') assert.ok(u.skill.activations > 0, `${id} S${i + 1} ${m}: refill cast`);
     assert.equal(h.b.errorCount, 0, `${id} S${i + 1} ${m}: ${JSON.stringify(h.b.errors.map((e) => e.label + ' ' + e.message))}`);
     checkInvariants(h.b);
   }

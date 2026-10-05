@@ -18,6 +18,7 @@
 //     `PlayerBattleInput.contentInfo`, written by the `global:contentb_info` meta handler (support/meta.js).
 
 import { getData } from '../../../data.js';
+import { scopedGameData } from './dataScope.js';
 import { COLS, DIRECT_BONUS_STACKING } from '../../constants.js';
 import { frontOf, offsetTile } from '../../dir.js';
 import { bodyInKeys, bodyDist, bodyInRadius, bodyOnTile, bodyTileReach } from '../../body.js';
@@ -37,13 +38,15 @@ const QUIET = Object.freeze({ warn() {}, error() {}, info() {} });
 let DATA = null;
 /** Frozen data/*.json (process singleton of server/data.js). Never mutate. */
 export function gameData() {
+  const scoped = scopedGameData();
+  if (scoped) return scoped;
   if (!DATA) {
     try { DATA = getData({ log: QUIET }) || {}; } catch { DATA = {}; }
   }
   return DATA;
 }
 /** Tests only: swap the data object (null → reload the singleton). Also drops derived caches. */
-export function setGameData(d) { DATA = d ?? null; CORE = null; }
+export function setGameData(d) { DATA = d ?? null; }
 
 export const bondRecord = (id) => own(gameData().bonds, id);
 export const itemRecord = (id) => own(gameData().items, id);
@@ -78,14 +81,17 @@ export function buffParams(rec, key) {
   return null;
 }
 
-let CORE = null;
+const CORE = new WeakMap();
 /** Core (核心, isPower) bond ids. */
 export function coreBondIds() {
-  if (!CORE) {
-    CORE = new Set();
-    for (const [id, b] of Object.entries(gameData().bonds || {})) if (b && b.isCore) CORE.add(id);
+  const data = gameData();
+  let ids = CORE.get(data);
+  if (!ids) {
+    ids = new Set();
+    for (const [id, b] of Object.entries(data.bonds || {})) if (b && b.isCore) ids.add(id);
+    CORE.set(data, ids);
   }
-  return CORE;
+  return ids;
 }
 export const isCoreBond = (id) => coreBondIds().has(id);
 

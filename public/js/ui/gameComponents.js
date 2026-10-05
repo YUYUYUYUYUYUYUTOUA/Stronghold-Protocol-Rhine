@@ -22,8 +22,9 @@ export const GAME_FILES = ['config', 'assets', 'chess', 'bonds', 'items', 'bands
  *   effect: (id:string)=>any, garrison: (id:string)=>any, factions: any, choices: any, list: (name:string)=>any[] }}
  */
 export function useGameData() {
-  const ready = useData(...GAME_FILES);
-  return useMemo(() => makeLookups(ready), [ready]);
+  const settled = useData(...GAME_FILES);
+  const ready = settled && data.isReady(GAME_FILES);
+  return useMemo(() => makeLookups(ready), [ready, data.generation]);
 }
 
 /** Non-hook lookups (for event handlers). */

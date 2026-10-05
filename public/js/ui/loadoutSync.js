@@ -11,21 +11,24 @@
 // is logged. `sync.state` ∈ 'idle' | 'pending' | 'sending' | 'synced' | 'locked' | 'error' is mirrored into the store
 // for the screen's status line.
 
-import { createStore, loadPref, savePref } from '../store.js';
-import { data } from '../data.js';
+import { createStore, loadPref, savePref, store } from '../store.js';
+import { data, PROFILE_CHANGE } from '../data.js';
 import { LOADOUT_PREF, parseStored, toStored, sanitizeEntries } from './loadoutModel.js';
 import { toast } from './toasts.js';
 
 export const SYNC_DEBOUNCE_MS = 500;
 export const RETRY_MS = 1500;
 
-function readStored() {
-  try { return parseStored(loadPref(LOADOUT_PREF, null)); } catch { return {}; }
+export const loadoutPreferenceKey = (profileId) => profileId === 'vanilla' ? `${LOADOUT_PREF}.vanilla` : LOADOUT_PREF;
+
+function readStored(profileId = data.profileId) {
+  try { return parseStored(loadPref(loadoutPreferenceKey(profileId), null)); } catch { return {}; }
 }
 
 /** Loadout + screen state (separate from the app store: it must survive room / match resets). */
 export const loadoutStore = createStore({
   entries: readStored(),
+  profileId: data.profileId,
   open: false,
   from: null,          // 'lobby' | 'room' | 'briefing'
   sel: null,           // selected base chess id
@@ -36,12 +39,14 @@ export const loadoutStore = createStore({
 /** Replace the stored entries (persisted at once; the sync picks the change up). */
 export function setEntries(entries) {
   const next = entries && typeof entries === 'object' ? entries : {};
-  savePref(LOADOUT_PREF, toStored(next));
+  savePref(loadoutPreferenceKey(data.profileId), toStored(next));
   loadoutStore.set({ entries: next });
 }
 
 /** Open the 干員调配 screen. @param {'lobby'|'room'|'briefing'} from @param {string|null} [sel] */
 export function openLoadout(from = 'lobby', sel = null) {
+  // Room/profile preparation must finish before an overlay can edit or send choices for the new room.
+  if (from !== 'lobby' && (!store.get().ui.dataReady || !data.isReady('chess', 'bonds', 'config'))) return false;
   data.load('chess');
   data.load('bonds');
   data.load('assets');
@@ -56,10 +61,8 @@ export const closeLoadout = () => loadoutStore.set({ open: false });
  *   timers?: { setTimeout: Function, clearTimeout: Function }, target?: ReturnType<typeof createStore> }} deps
  * @returns {{ flush: () => Promise<void>, dispose: () => void }}
  */
-export function installLoadoutSync({ net, getChessReady, lookupChess, timers, target = loadoutStore, notify } = {}) {
+export function installLoadoutSync({ net, getChessReady, lookupChess, timers, target = loadoutStore, notify, cache = data } = {}) {
   const T = timers || { setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms), clearTimeout: (id) => globalThis.clearTimeout(id) };
-  const ready = getChessReady || (() => data.load('chess'));
-  const lookup = lookupChess || ((id) => data.lookup('chess', id));
   const tell = notify || ((text) => toast(text, 'warn'));
   let timer = null;
   let seq = 0;            // room.loadout requests sent (the reply of an older one never overrides a newer one's state)
@@ -67,6 +70,7 @@ export function installLoadoutSync({ net, getChessReady, lookupChess, timers, ta
   let lastSent = null;    // JSON of the last entries the server accepted (on this session)
   let edited = false;     // an edit is waiting to be sent (a lock refusal is then worth telling the player)
   let disposed = false;
+  let profileId = cache.profileId;
 
   const setState = (sync) => { if (target.get().sync !== sync) target.set({ sync }); };
 
@@ -83,15 +87,18 @@ export function installLoadoutSync({ net, getChessReady, lookupChess, timers, ta
   async function flush() {
     if (disposed) return;
     if (net.status !== 'online') { setState('idle'); return; } // the next welcome resends
+    const snapshot = cache.snapshot();
+    const generation = snapshot.generation;
     try {
       const current = target.get().entries;
       // an empty loadout needs no data (nothing to sanitise): a player who never opened 干员调配 does not download
       // chess.json in the lobby just for this
       const empty = !current || Object.keys(current).length === 0;
-      const loaded = empty ? true : await ready();
-      if (disposed) return;
+      const loaded = empty ? true : await (getChessReady ? getChessReady() : snapshot.load('chess'));
+      if (disposed || generation !== cache.generation) return;
       // never sanitise against missing data: every entry would be dropped and the server's copy cleared
       if (loaded == null) { setState('error'); return; }
+      const lookup = lookupChess || ((id) => snapshot.lookup('chess', id));
       const entries = empty ? {} : sanitizeEntries(target.get().entries, lookup);
       const json = JSON.stringify(entries);
       if (json === pendingJson) return; // the same content is already on its way
@@ -135,6 +142,19 @@ export function installLoadoutSync({ net, getChessReady, lookupChess, timers, ta
   });
   // a match leaving INFO_CHECK locks the loadout; a new match (the room back in LOBBY / a new INFO_CHECK) accepts it again
   const offRoom = net.on('room.state', (msg) => { if (msg && !msg.inMatch && target.get().sync === 'locked') { lastSent = null; schedule(); } });
+  const offProfile = cache.subscribe((name) => {
+    if (name !== PROFILE_CHANGE) return;
+    seq++;
+    pendingJson = null;
+    lastSent = null;
+    if (target === loadoutStore) {
+      savePref(loadoutPreferenceKey(profileId), toStored(target.get().entries));
+      target.set({ entries: readStored(cache.profileId), profileId: cache.profileId, open: false, sel: null,
+        filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false } });
+    }
+    profileId = cache.profileId;
+    schedule(0);
+  });
 
   return {
     flush,
@@ -144,6 +164,7 @@ export function installLoadoutSync({ net, getChessReady, lookupChess, timers, ta
       offWelcome?.();
       offStore?.();
       offRoom?.();
+      offProfile?.();
     },
   };
 }

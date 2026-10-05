@@ -79,7 +79,7 @@ test('chess: base roster plus six Rhine expansion operators and two tier migrati
   assert.equal(visible.length, 118);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
-  assert.deepEqual(perTier, { 1: 17, 2: 18, 3: 21, 4: 22, 5: 21, 6: 19 });
+  assert.deepEqual(perTier, { 1: 17, 2: 18, 3: 21, 4: 23, 5: 20, 6: 19 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
   assert.equal(normalChess.filter((c) => c.isHidden).length, 17);
 });

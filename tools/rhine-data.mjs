@@ -14,7 +14,7 @@ export const RHINE_ADDITIONS = Object.freeze([
   { key: 'eunectes', charId: 'char_416_zumama', tier: 5, bonds: ['soloShip', 'sargonShip'], skillId: 'skchr_zumama_3', defaultModuleId: 'uniequip_002_zumama', excludedModuleIds: ['uniequip_004_zumama'], subName: '决战者', trait: 'copy_end' },
   { key: 'ifrit', charId: 'char_134_ifrit', tier: 5, bonds: ['arcaneShip', RHINE_BOND], skillId: 'skchr_ifrit_2', defaultModuleId: 'uniequip_002_ifrit', subName: '轰击术师', trait: 'ifrit' },
   { key: 'astgenne', charId: 'char_135_halo', tier: 2, bonds: [RHINE_BOND, 'preciShip'], skillId: 'skchr_halo_1', defaultModuleId: 'uniequip_002_halo', subName: '链术师', trait: 'astgenne' },
-  { key: 'dorothy', charId: 'char_4048_doroth', tier: 5, bonds: [RHINE_BOND], skillId: 'skchr_doroth_3', defaultModuleId: 'uniequip_002_doroth', excludedModuleIds: ['uniequip_003_doroth'], subName: '陷阱师', trait: 'dorothy' },
+  { key: 'dorothy', charId: 'char_4048_doroth', tier: 4, bonds: [RHINE_BOND], skillId: 'skchr_doroth_3', defaultModuleId: 'uniequip_002_doroth', excludedModuleIds: ['uniequip_003_doroth'], subName: '陷阱师', trait: 'dorothy' },
 ]);
 const TOKEN = 'token_10004_otter_motter';
 export const DOROTHY_TOKEN = 'token_10025_doroth_recttp';

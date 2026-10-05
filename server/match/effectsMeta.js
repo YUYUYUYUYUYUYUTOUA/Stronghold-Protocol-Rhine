@@ -39,6 +39,7 @@ import { boardOrder, parseKey, tileKey } from './board.js';
 import { pieceBonds as bondsOfPiece } from './bondsMeta.js';
 import { registerAllMeta } from '../sim/content/index.js';
 import { registerBuiltins } from './builtinMeta.js';
+import { withGameData } from '../sim/content/support/dataScope.js';
 
 export const HOOKS = Object.freeze([
   'onRoundStart', 'onIncome', 'onPrepStart', 'onPrepEnd', 'onGain', 'onSold', 'onRefresh', 'onPrice', 'onBuy',
@@ -167,7 +168,7 @@ export class EffectDispatcher {
     if (!fn) return;
     const ctx = makeCtx(this.m, ps, source, hook, ev);
     for (let i = 0; i < repeat; i++) {
-      try { fn.call(handler, ctx, ev); } catch (e) { this._report(key, hook, e); }
+      try { withGameData(this.m.data, () => fn.call(handler, ctx, ev)); } catch (e) { this._report(key, hook, e); }
     }
   }
 
@@ -243,7 +244,7 @@ export class EffectDispatcher {
   _garrisonHooks(h, g) {
     if (typeof h.garrisonHooks === 'function') {
       try {
-        const list = h.garrisonHooks(g);
+        const list = withGameData(this.m.data, () => h.garrisonHooks(g));
         if (Array.isArray(list) && list.length) return list;
       } catch (e) { this._report(`garrison:${g.effectKey}`, 'garrisonHooks', e); }
     }
@@ -340,7 +341,7 @@ export class EffectDispatcher {
     this.depth++;
     try {
       const ctx = makeCtx(this.m, ps, { ...source, key }, hook, ev);
-      try { fn.call(h, ctx, ev); } catch (e) { this._report(key, hook, e); }
+      try { withGameData(this.m.data, () => fn.call(h, ctx, ev)); } catch (e) { this._report(key, hook, e); }
     } finally {
       this.depth--;
     }

@@ -36,6 +36,17 @@
 .invite__btns { display: flex; flex-direction: column; gap: .06rem; }
 .solo-note { display: flex; flex-direction: column; align-items: flex-end; gap: .03rem; font-size: .16rem; color: var(--text-lo); }
 
+.room-options { flex: none; padding: .08rem .6rem; border-bottom: 1px solid var(--line); background: rgba(0, 0, 0, .24); }
+.rhine-setting { display: flex; align-items: center; flex-wrap: wrap; gap: .12rem; font-size: .16rem; }
+.rhine-setting__label { font-weight: 700; color: var(--text-md); }
+.rhine-setting__choices { display: flex; border: 1px solid var(--line-2); }
+.rhine-setting__option { border: 0; background: transparent; color: var(--text-lo); padding: .06rem .18rem; font-size: .16rem; }
+.rhine-setting__option + .rhine-setting__option { border-left: 1px solid var(--line); }
+.rhine-setting__option.is-active { color: var(--mint-400); background: rgba(78, 216, 175, .12); box-shadow: inset 0 -2px 0 var(--mint-500); }
+.rhine-setting__option:disabled { cursor: default; }
+.rhine-setting__option:hover:not(:disabled) { color: var(--text-hi); }
+.rhine-setting__desc { font-size: .14rem; color: var(--text-lo); }
+
 /* ---- seats ------------------------------------------------------------------------------------------------ */
 .seats {
   flex: 1;
@@ -282,6 +293,9 @@
 /* The root scale stops shrinking at 40 px. Six co-op seats then need two rows so names,
    avatars and AI controls stay inside their cards on narrow landscape screens. */
 @media (max-width: 767px) {
+  .room-options { padding: .07rem .3rem; }
+  .rhine-setting { gap: .08rem; }
+  .rhine-setting__desc { font-size: .12rem; }
   .seats:not(.seats--solo) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(2.8rem, 1fr));

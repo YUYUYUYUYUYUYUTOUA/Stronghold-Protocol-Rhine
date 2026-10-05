@@ -23,6 +23,9 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 /** Default data directory. */
 export const DATA_DIR = path.join(ROOT, 'data');
 
+/** Unmodified upstream game tables used by rooms with the Rhine expansion disabled. */
+export const VANILLA_DATA_DIR = path.join(DATA_DIR, 'vanilla');
+
 /** Files the game expects (a warning lists the missing ones). */
 export const DATA_FILES = Object.freeze([
   'config', 'chess', 'bonds', 'garrisons', 'items', 'bands', 'effects', 'choices',
@@ -82,6 +85,7 @@ export function loadData(dir = DATA_DIR, { log = console, expected = DATA_FILES 
 
 /** @type {Readonly<Record<string, any>> | null} */
 let singleton = null;
+const vanillaProfiles = new Map();
 
 /**
  * Process-wide data singleton; loads on first call (later calls ignore the options).
@@ -93,8 +97,28 @@ export function getData({ dir = DATA_DIR, log = console } = {}) {
   return singleton;
 }
 
-/** Drop the singleton so the next getData() reloads (tests / hot reload). */
-export function resetData() { singleton = null; }
+/**
+ * Select an immutable game-data profile. Rhine keeps the permissive legacy loader; vanilla must have every
+ * core table and never falls back to the expansion's tables. The returned objects can be shared by rooms safely.
+ * @param {boolean} [rhineEnabled]
+ * @param {{ dir?: string, vanillaDir?: string, log?: object }} [opts]
+ */
+export function getDataProfile(rhineEnabled = true, { dir = DATA_DIR, vanillaDir = path.join(dir, 'vanilla'), log = console } = {}) {
+  if (typeof rhineEnabled !== 'boolean') throw new TypeError('rhineEnabled must be a boolean');
+  if (rhineEnabled) return getData({ dir, log });
+  const key = path.resolve(vanillaDir);
+  if (vanillaProfiles.has(key)) return vanillaProfiles.get(key);
+  const data = loadData(key, { log });
+  const missing = DATA_FILES.filter((file) => !data[file] || typeof data[file] !== 'object' || Array.isArray(data[file]));
+  if (missing.length) {
+    throw new Error(`Vanilla game data unavailable in ${key}: missing or invalid ${missing.map((file) => `${file}.json`).join(', ')}`);
+  }
+  vanillaProfiles.set(key, data);
+  return data;
+}
+
+/** Drop cached profiles so the next selection reloads (tests / hot reload). Existing matches keep their snapshot. */
+export function resetData() { singleton = null; vanillaProfiles.clear(); }
 
 // ---------------------------------------------------------------------------------------------------
 // Index getters

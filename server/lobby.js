@@ -59,9 +59,9 @@
 
 import { randomBytes, randomInt } from 'node:crypto';
 import { ERR, MAX_SEATS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
-import { checkLoadout } from '../shared/protocol.js';
+import { checkLoadout, loadoutOptions } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession } from './net.js';
-import { getData as defaultGetData, lookup } from './data.js';
+import { getData as defaultGetData, getDataProfile as defaultGetDataProfile, deepFreeze, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
 
 /** Room code alphabet: uppercase letters without I and O (and no digits, so no 0/1). */
@@ -99,13 +99,35 @@ function freezeLoadout(loadout) {
   return Object.freeze(out);
 }
 
+/** Retain only selections legal in this room's profile; invalid fields fall back independently to its defaults. */
+function sanitizeLoadout(loadout, data) {
+  const out = {};
+  const getChess = (id) => lookup('chess', id, data);
+  for (const [id, entry] of Object.entries(loadout || {})) {
+    const base = getChess(id);
+    if (!base || base.isGolden || base.visible === false || base.isHidden || base.isDiy || (base.baseId && base.baseId !== id)) continue;
+    const golden = base.goldenId ? getChess(base.goldenId) : null;
+    const options = loadoutOptions(base, golden);
+    const legal = {};
+    if (options.skills.includes(entry?.skill)) legal.skill = entry.skill;
+    if (golden && options.modules.includes(entry?.module)) legal.module = entry.module;
+    if (!Object.keys(legal).length) continue;
+    const checked = checkLoadout({ [id]: legal }, getChess);
+    if (checked.ok) Object.assign(out, checked.loadout);
+  }
+  return freezeLoadout(out);
+}
+
 /** One room: MAX_SEATS seat slots, host, difficulty, optional running match. */
 export class Room {
   /** @param {string} code @param {'solo'|'coop'} mode @param {string} difficulty @param {number} now */
-  constructor(code, mode, difficulty, now) {
+  constructor(code, mode, difficulty, now, rhineEnabled = true) {
     this.code = code;
     this.mode = mode;
     this.difficulty = difficulty;
+    this.rhineEnabled = rhineEnabled;
+    /** @type {Readonly<Record<string, any>> | null} the room's selected immutable tables */
+    this.data = null;
     /** @type {string | null} */
     this.hostId = null;
     /** @type {(Seat | null)[]} */
@@ -150,6 +172,8 @@ export class Room {
       hostId: this.hostId,
       mode: this.mode,
       difficulty: this.difficulty,
+      rhineEnabled: this.rhineEnabled,
+      dataProfile: this.rhineEnabled ? 'rhine' : 'vanilla',
       inMatch: !!this.match,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left }
@@ -166,16 +190,20 @@ export class Lobby {
    *   log?: { info: Function, warn: Function, error: Function, debug?: Function },
    *   MatchClass?: new (opts: object) => any,
    *   getData?: () => object,
+   *   getDataProfile?: (rhineEnabled: boolean) => object,
+   *   vanillaData?: object,
    *   now?: () => number,
    *   seedFn?: () => number,
    *   options?: Partial<typeof LOBBY_DEFAULTS>,
    * }} opts
    */
-  constructor({ registry, log = noopLog, MatchClass = DefaultMatch, getData = defaultGetData, now = Date.now, seedFn, options = {} }) {
+  constructor({ registry, log = noopLog, MatchClass = DefaultMatch, getData = defaultGetData, getDataProfile, vanillaData, now = Date.now, seedFn, options = {} }) {
     this.registry = registry;
     this.log = log;
     this.MatchClass = MatchClass;
     this.getData = getData;
+    this.getDataProfile = getDataProfile;
+    this.vanillaData = vanillaData;
     this.now = now;
     this.seedFn = seedFn || (() => randomInt(2 ** 32));
     this.opts = { ...LOBBY_DEFAULTS, ...options };
@@ -255,6 +283,7 @@ export class Lobby {
       case 'room.leave': return this.leave(session);
       case 'room.ready': return this.ready(session, msg);
       case 'room.setDifficulty': return this.setDifficulty(session, msg);
+      case 'room.setRhine': return this.setRhine(session, msg);
       case 'room.addBot': return this.addBot(session);
       case 'room.removeBot': return this.removeBot(session, msg);
       case 'room.start': return this.start(session);
@@ -270,7 +299,7 @@ export class Lobby {
     this.clearResync(session.playerId); // the next resume resyncs immediately
     const room = this.roomOf(session);
     // a solo run may be resumed within singleReconnectTime (24 h); everything else keeps the registry's window
-    session.resumeWindowMs = room && room.match && room.mode === 'solo' ? this.soloResumeWindowMs() : null;
+    session.resumeWindowMs = room && room.match && room.mode === 'solo' ? this.soloResumeWindowMs(room) : null;
     if (!room) return;
     const seat = room.seatOf(session.playerId);
     seat.connected = false;
@@ -306,9 +335,10 @@ export class Lobby {
   // room.* handlers
   // ---------------------------------------------------------------------------------------------------
 
-  create(session, { mode, difficulty }) {
+  create(session, { mode, difficulty, rhineEnabled = true }) {
     const cur = this.roomOf(session);
     if (cur && cur.match) return fail(ERR.ROOM_STARTED, 'leave your running match first');
+    if (typeof rhineEnabled !== 'boolean') return fail(ERR.BAD_MSG, 'rhineEnabled must be a boolean');
     if (this.rooms.size >= this.opts.maxRooms) return fail(ERR.INTERNAL, 'too many rooms');
     const key = session.limitKey || null;
     if (key && this.opts.maxRoomsPerAddr > 0) {
@@ -321,10 +351,13 @@ export class Lobby {
     }
     const code = this.genCode();
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
+    let data;
+    try { data = this.dataForProfile(rhineEnabled); } catch (e) { return fail(ERR.INTERNAL, e.message); }
     if (cur) this.removeMember(cur, session.playerId);
-    const room = new Room(code, mode, difficulty, this.now());
+    const room = new Room(code, mode, difficulty, this.now(), rhineEnabled);
+    room.data = data;
     room.ownerKey = key;
-    room.seats[0] = this.humanSeat(0, session);
+    room.seats[0] = this.humanSeat(0, session, room.data);
     room.hostId = session.playerId;
     this.rooms.set(code, room);
     session.roomCode = code;
@@ -347,7 +380,7 @@ export class Lobby {
     const idx = room.freeSeat();
     if (idx < 0) return fail(ERR.ROOM_FULL);
     if (cur) this.removeMember(cur, session.playerId);
-    room.seats[idx] = this.humanSeat(idx, session);
+    room.seats[idx] = this.humanSeat(idx, session, room.data);
     session.roomCode = room.code;
     session.notice = null;
     session.pendingResult = null;
@@ -387,6 +420,31 @@ export class Lobby {
       for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
       this.broadcastState(room);
     }
+    return OK;
+  }
+
+  /** The host may choose either ruleset only while the room is in LOBBY. */
+  setRhine(session, { enabled }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (typeof enabled !== 'boolean') return fail(ERR.BAD_MSG, 'enabled must be a boolean');
+    if (room.rhineEnabled === enabled) return OK;
+    let data;
+    try { data = this.dataForProfile(enabled); } catch (e) { return fail(ERR.INTERNAL, e.message); }
+    room.rhineEnabled = enabled;
+    room.data = data;
+    // The previous result belongs to a different profile and must not be replayed after this setting changed.
+    room.replay = null;
+    for (const seat of room.seats) {
+      if (!seat || seat.isBot) continue;
+      seat.ready = false;
+      seat.loadout = sanitizeLoadout(seat.loadout, data);
+      const member = this.registry.byId(seat.playerId);
+      if (member && member.roomCode === room.code) member.loadout = seat.loadout;
+    }
+    this.broadcastState(room);
     return OK;
   }
 
@@ -447,12 +505,13 @@ export class Lobby {
    * and — while a match runs — hand it to the match (accepted only during INFO_CHECK, see the header).
    */
   loadout(session, { entries }) {
-    const data = this.safeData();
+    const room = this.roomOf(session);
+    let data;
+    try { data = room ? this.roomData(room) : this.safeData(); } catch (e) { return fail(ERR.INTERNAL, e.message); }
     const res = checkLoadout(entries, (id) => lookup('chess', id, data));
     if (!res || res.error) return fail(res && isErrCode(res.error) ? res.error : ERR.BAD_MSG, res && res.detail);
     const loadout = freezeLoadout(res.loadout);
     session.loadout = loadout;
-    const room = this.roomOf(session);
     if (!room) return OK;
     const seat = room.seatOf(session.playerId);
     if (seat) seat.loadout = loadout;
@@ -498,7 +557,9 @@ export class Lobby {
         seed,
         // the room's match number: with the seed it keeps battleIds unique across the room's matches (DESIGN §14)
         matchNo: room.matchCount + 1,
-        data: this.safeData(),
+        data: this.roomData(room),
+        rhineEnabled: room.rhineEnabled,
+        dataProfile: room.rhineEnabled ? 'rhine' : 'vanilla',
         log: this.log,
         now: this.now,
         send: (playerId, msg) => (ctx.live ? this.matchSend(room, ctx, playerId, msg) : false),
@@ -709,11 +770,25 @@ export class Lobby {
     try { return this.getData(); } catch (e) { this.log.error('[lobby] getData failed', e); return Object.freeze({}); }
   }
 
+  /** Injected fixtures may be partial; production vanilla loading enforces every core table in server/data.js. */
+  dataForProfile(rhineEnabled) {
+    const data = typeof this.getDataProfile === 'function' ? this.getDataProfile(rhineEnabled)
+      : rhineEnabled ? this.getData()
+      : this.vanillaData !== undefined ? this.vanillaData : defaultGetDataProfile(false, { log: this.log });
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error(`${rhineEnabled ? 'Rhine' : 'Vanilla'} game data unavailable: invalid data profile`);
+    }
+    return deepFreeze(data);
+  }
+
+  /** Read this room's captured tables; even an uncaptured vanilla room must never use the default Rhine data. */
+  roomData(room) { return room.match?.data || room.data || this.dataForProfile(room.rhineEnabled); }
+
   /** How long a dropped solo run stays resumable (ms): the option, else data singleReconnectTime, else 24 h. */
-  soloResumeWindowMs() {
+  soloResumeWindowMs(room = null) {
     const o = this.opts.soloReconnectWindowMs;
     if (typeof o === 'number' && Number.isFinite(o) && o > 0) return o;
-    const sec = this.safeData()?.config?.constants?.singleReconnectTime;
+    const sec = (room ? this.roomData(room) : this.safeData())?.config?.constants?.singleReconnectTime;
     return (typeof sec === 'number' && Number.isFinite(sec) && sec > 0 ? sec : SOLO_RECONNECT_FALLBACK_SEC) * 1000;
   }
 
@@ -731,10 +806,10 @@ export class Lobby {
   }
 
   /** @returns {Seat} */
-  humanSeat(idx, session) {
+  humanSeat(idx, session, data = this.safeData()) {
     return {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
-      loadout: session.loadout || null,
+      loadout: session.loadout ? sanitizeLoadout(session.loadout, data) : null,
     };
   }
 

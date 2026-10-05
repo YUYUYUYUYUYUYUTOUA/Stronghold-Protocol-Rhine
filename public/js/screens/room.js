@@ -8,7 +8,7 @@
 // Solo rooms show a single seat.
 
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, MAX_SEATS } from '../../../shared/constants.js';
+import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, MAX_SEATS, PHASE } from '../../../shared/constants.js';
 import {
   html, Button, Icon, MicroLabel, PingPill, AvatarFrame, DifficultyTag, DifficultyIcon, Tooltip, confirmDialog, doctorNo,
 } from '../ui/components.js';
@@ -18,7 +18,8 @@ import { LoadoutButton } from './loadout.js';
 import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch } from '../store.js';
 import { difficultyInfo } from './lobby.js';
-import { useData } from '../data.js';
+import { data, dataProfileId, useData } from '../data.js';
+import { loadoutStore } from '../ui/loadoutSync.js';
 
 /**
  * Seats padded to the room's capacity (co-op MAX_SEATS, solo 1), each null or a seat record.
@@ -185,11 +186,34 @@ function DifficultyPicker({ room, isHost, busy, onPick }) {
   </div>`;
 }
 
+/** All players see the same setting; only the host can change it in the waiting room. */
+export function RhineToggle({ room, isHost, busy = false, online = true, onPick }) {
+  const enabled = room?.rhineEnabled !== false;
+  const disabled = !isHost || !!busy || !online || !!room?.inMatch || (!!room?.phase && room.phase !== PHASE.LOBBY);
+  return html`<div class="rhine-setting" data-testid="rhine-toggle">
+    <span class="rhine-setting__label">莱茵生命扩展</span>
+    <div class="rhine-setting__choices" role="group" aria-label="莱茵生命扩展">
+      ${[[true, '开启'], [false, '原版']].map(([value, label]) => html`<button key=${label} type="button"
+        class=${`rhine-setting__option${enabled === value ? ' is-active' : ''}`} disabled=${disabled}
+        data-testid=${value ? 'rhine-enabled' : 'rhine-vanilla'} aria-pressed=${enabled === value ? 'true' : 'false'}
+        onClick=${() => !disabled && enabled !== value && onPick(value)}>${label}</button>`)}
+    </div>
+    <span class="rhine-setting__desc">${enabled ? '科研装置 · 扩展干员 · 莱茵装备' : '官方原版干员与规则'}${isHost ? '' : ' · 由房主选择'}</span>
+  </div>`;
+}
+
+export function roomProfileReady(room, ui, cache = data) {
+  return !!ui?.dataReady && ui.dataProfile === dataProfileId(room?.rhineEnabled)
+    && ui.dataGeneration === cache.generation && ui.dataProfile === cache.profileId;
+}
+
 /** Room screen component. */
 export function RoomScreen() {
   const room = useStore((s) => s.room);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
+  const ui = useStore((s) => s.ui, shallowEqual);
+  const loadoutSync = useStore((s) => s.sync, Object.is, loadoutStore);
   useData('config');
   const [busy, setBusy] = useState(null);
   const alive = useRef(true);
@@ -202,6 +226,8 @@ export function RoomScreen() {
   const facts = roomFacts(room, me.playerId);
   const myReady = !!facts.mine?.ready;
   const info = difficultyInfo(room.mode, room.difficulty, facts.occupied.length);
+  const profileReady = roomProfileReady(room, ui);
+  const controlsReady = profileReady && loadoutSync === 'synced' && !busy;
 
   const run = async (kind, fn) => {
     if (inFlight.current) return;
@@ -214,11 +240,12 @@ export function RoomScreen() {
     }
   };
 
-  const toggleReady = () => run('ready', () => net.request('room.ready', { ready: !myReady }));
-  const start = () => run('start', () => net.request('room.start', {}));
+  const toggleReady = () => controlsReady && run('ready', () => net.request('room.ready', { ready: !myReady }));
+  const start = () => controlsReady && run('start', () => net.request('room.start', {}));
   const addBot = () => run('add', () => net.request('room.addBot', {}));
   const removeBot = (seat) => run(`rm${seat}`, () => net.request('room.removeBot', { seat }));
   const setDifficulty = (difficulty) => run('diff', () => net.request('room.setDifficulty', { difficulty }));
+  const setRhine = (enabled) => run('rhine', () => net.request('room.setRhine', { enabled }));
   const leave = async () => {
     if (inFlight.current) return;
     const othersHere = facts.humans.some((s) => s.playerId !== me.playerId);
@@ -242,6 +269,10 @@ export function RoomScreen() {
 
   const statusLine = !online
     ? html`<span class="t-orange"><${Icon} name="wifiOff" />连接中断，正在重连…</span>`
+    : !profileReady
+      ? html`<span class=${ui.dataError ? 't-orange' : 't-lo'} role="status">${ui.dataError || '正在载入所选模拟数据…'}</span>`
+    : loadoutSync !== 'synced'
+      ? html`<span class="t-lo" role="status">正在同步本局干员调配…</span>`
     : !coop
       ? html`<span class="t-mint">*模拟协议已就绪，准许进入模拟</span>`
     : facts.isHost
@@ -272,6 +303,10 @@ export function RoomScreen() {
         ${coop ? html`<${InviteBox} code=${room.code} />` : html`<div class="solo-note"><${MicroLabel}>SINGLE OPERATOR<//><span>仅限 1 名博士</span></div>`}
       </div>
     </header>
+
+    <div class="room-options">
+      <${RhineToggle} room=${room} isHost=${facts.isHost} busy=${busy} online=${online} onPick=${setRhine} />
+    </div>
 
     <main class=${`seats${coop ? '' : ' seats--solo'}`} style=${`--seat-count:${facts.seats.length}`}>
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
@@ -308,13 +343,13 @@ export function RoomScreen() {
         <div class="room-bar__status">${statusLine}</div>
       </div>
       <div class="room-bar__right">
-        <${LoadoutButton} from="room" size="lg" class="room-loadout" />
+        <${LoadoutButton} from="room" size="lg" class="room-loadout" disabled=${!profileReady || !!busy} />
         ${facts.isHost
           ? html`<${Tooltip} text=${facts.canStart ? null : '仍有博士未准备就绪'}>
-              <${Button} variant="primary" size="xl" icon="play" loading=${busy === 'start'} disabled=${!facts.canStart || !online} onClick=${start}>开始模拟<//>
+              <${Button} variant="primary" size="xl" icon="play" loading=${busy === 'start'} disabled=${!facts.canStart || !online || !controlsReady} onClick=${start}>开始模拟<//>
             <//>`
           : html`<${Button} variant=${myReady ? 'primary' : 'secondary'} size="xl" icon=${myReady ? 'check' : 'hourglass'} active=${myReady}
-              loading=${busy === 'ready'} disabled=${!online || !facts.mine} onClick=${toggleReady}>${myReady ? '已就绪' : '准备就绪'}<//>`}
+              loading=${busy === 'ready'} disabled=${!online || !facts.mine || !controlsReady} onClick=${toggleReady}>${myReady ? '已就绪' : '准备就绪'}<//>`}
       </div>
     </footer>
   </div>`;

@@ -196,7 +196,7 @@ test('Rhine data: Dorothy has three skills, only TRP-Y and a consistent four/fiv
   const ds=new DataSource(files,null),token='token_10025_doroth_recttp';
   for(const [suffix,count,layer,maxLayer] of [['a',4,2,24],['b',5,4,48]]){
     const id=`chess_rhine_dorothy_${suffix}`,c=files.chess[id],g=files.garrisons[c.garrisonIds[0]];
-    assert.equal(c.tier,5);assert.deepEqual(c.bonds,['rhineShip']);assert.deepEqual(c.tokens,[token]);
+    assert.equal(c.tier,4);assert.deepEqual(c.bonds,['rhineShip']);assert.deepEqual(c.tokens,[token]);
     assert.equal(c.talents[0].bb.cnt,count);assert.equal(c.talents[0].bb['attack@max_cnt'],2);
     assert.ok(c.talents[0].desc.includes(`同时最多部署${count}个`));
     assert.equal(g.effectKey,'RHINE_DOROTHY_TRAP_RESEARCH');assert.deepEqual(g.bb,{layer,max_layer:maxLayer});
@@ -214,7 +214,7 @@ test('Rhine data: Dorothy has three skills, only TRP-Y and a consistent four/fiv
   assert.equal(elite.traitBb.prob,.2);assert.equal(elite.traitBb.atk_scale,2);
   assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'none'}).traitBb.prob,undefined);
   assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'uniequip_003_doroth'}),elite,'excluded first module never loads');
-  const upgraded=structuredClone(files);upgraded.config.economy.chessStatus[5].golden.equipLevel=3;
+  const upgraded=structuredClone(files);upgraded.config.economy.chessStatus[4].golden.equipLevel=3;
   await applyRhineData(upgraded);
   const upper=new DataSource(upgraded,null).getChess('chess_rhine_dorothy_b');
   assert.equal(upper.raw.talents[0].bb.cnt,5);assert.equal(upper.raw.talents[1].bb.atk,.04);

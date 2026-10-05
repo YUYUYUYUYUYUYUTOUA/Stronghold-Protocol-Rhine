@@ -82,7 +82,7 @@ export const initialState = Object.freeze({
   ticker: [],
   emotes: [],
   clock: { offset: 0, rtt: null, synced: false },
-  ui: { pendingJoin: null, restoring: false },
+  ui: { pendingJoin: null, restoring: false, dataProfile: 'rhine', dataGeneration: 0, dataReady: false, dataError: null },
 });
 
 /** The app-wide store singleton. */

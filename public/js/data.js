@@ -29,6 +29,12 @@ export const DATA_FILES = Object.freeze({
   tokens: 'tokens.json',
   choices: 'choices.json',
   config: 'config.json',
+  effects: 'effects.json',
+  garrisons: 'garrisons.json',
+  factions: 'factions.json',
+  tuning: 'tuning.json',
+  waves: 'waves.json',
+  emotes: 'emotes.json',
   assets: 'assets.json',
   // Optional art extracted from a local game client (DESIGN §13): { groups: { '<subdir>': { name: { path, w, h } } } }.
   // The emotes and the 玩法说明 pages are in data/assets.json too (downloaded from the mirror): artUrls().
@@ -193,8 +199,79 @@ export function createDataStore(opts = {}) {
   };
 }
 
-/** Browser data store singleton. */
-export const data = createDataStore();
+/** Game records differ between profiles; art remains at its existing shared URLs. */
+export const SHARED_DATA_FILES = Object.freeze(['assets', 'local', 'emotes']);
+export const CORE_DATA_FILES = Object.freeze(['bands', 'bonds', 'bosses', 'chess', 'choices', 'config', 'effects',
+  'enemies', 'factions', 'garrisons', 'items', 'stages', 'tokens', 'tuning', 'waves']);
+export const PROFILE_CHANGE = '$profile';
+export const dataProfileId = (enabled) => enabled === false || enabled === 'vanilla' ? 'vanilla' : 'rhine';
+
+/**
+ * Stable facade over isolated caches. Selecting a profile immediately hides the old records. An old request may
+ * finish into its own cache, but cannot announce itself to the current profile's subscribers. A snapshot keeps a
+ * single profile throughout asynchronous preparation (the caller checks generation before using its result).
+ */
+export function createProfiledDataStore(opts = {}) {
+  const shared = createDataStore({ ...opts, base: opts.base ?? '/data/' });
+  const profiles = {
+    rhine: createDataStore({ ...opts, base: opts.base ?? '/data/' }),
+    vanilla: createDataStore({ ...opts, base: opts.vanillaBase ?? '/data/vanilla/' }),
+  };
+  let profileId = dataProfileId(opts.profile);
+  let generation = 0;
+  const listeners = new Set();
+  const notify = (name) => {
+    for (const fn of [...listeners]) {
+      try { fn(name); } catch (err) { console.error('[data] listener failed', err); }
+    }
+  };
+  const storeFor = (name, id = profileId) => SHARED_DATA_FILES.includes(name) ? shared : profiles[id];
+  const readyIn = (names, id) => names.flat().every((name) => {
+    const status = storeFor(name, id).status(name);
+    return status === 'ready' || (SHARED_DATA_FILES.includes(name) && status === 'missing');
+  });
+  shared.subscribe(notify);
+  for (const [id, target] of Object.entries(profiles)) target.subscribe((name) => { if (id === profileId) notify(name); });
+
+  return {
+    get profileId() { return profileId; },
+    get generation() { return generation; },
+    selectProfile(enabled) {
+      const next = dataProfileId(enabled);
+      if (next === profileId) return false;
+      profileId = next;
+      generation++;
+      notify(PROFILE_CHANGE);
+      return true;
+    },
+    load: (name) => storeFor(name).load(name),
+    loadAll: (...names) => Promise.all(names.flat().map((name) => storeFor(name).load(name))),
+    get: (name) => storeFor(name).get(name),
+    status: (name) => storeFor(name).status(name),
+    lookup: (name, id) => storeFor(name).lookup(name, id),
+    list: (name) => storeFor(name).list(name),
+    invalidate: (name) => storeFor(name).invalidate(name),
+    isReady: (...names) => readyIn(names, profileId),
+    snapshot() {
+      const id = profileId, capturedGeneration = generation;
+      return {
+        profileId: id,
+        generation: capturedGeneration,
+        load: (name) => storeFor(name, id).load(name),
+        loadAll: (...names) => Promise.all(names.flat().map((name) => storeFor(name, id).load(name))),
+        get: (name) => storeFor(name, id).get(name),
+        status: (name) => storeFor(name, id).status(name),
+        lookup: (name, key) => storeFor(name, id).lookup(name, key),
+        list: (name) => storeFor(name, id).list(name),
+        isReady: (...names) => readyIn(names, id),
+      };
+    },
+    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+  };
+}
+
+/** Browser data facade singleton. */
+export const data = createProfiledDataStore();
 
 /** @param {...string} names @returns {Promise<any[]>} */
 export const loadData = (...names) => data.loadAll(...names);
@@ -283,12 +360,13 @@ export function getMode(modeId) {
 export function useData(...names) {
   const [, force] = useReducer((c) => c + 1, 0);
   const key = names.join('|');
+  const generation = data.generation;
   useEffect(() => {
     let alive = true;
-    const unsub = data.subscribe((n) => { if (alive && names.includes(n)) force(); });
+    const unsub = data.subscribe((n) => { if (alive && (n === PROFILE_CHANGE || names.includes(n))) force(); });
     for (const n of names) data.load(n);
     return () => { alive = false; unsub(); };
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, generation]); // eslint-disable-line react-hooks/exhaustive-deps
   return names.every((n) => {
     const s = data.status(n);
     return s === 'ready' || s === 'missing';

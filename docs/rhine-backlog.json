@@ -1,7 +1,10 @@
 {
   "title": "莱茵生命扩展待修记录",
   "recordedDate": "2026-10-04",
-  "status": "已实现并通过验证",
+  "status": "历史七项已验证；2026-10-05新增三项已实施，发布验收另行记录",
+  "updatedDate": "2026-10-05",
+  "currentRelease": "v0.1.2-rhine.4",
+  "currentBranch": "codex/rhine-toggle-update",
   "items": [
     {
       "id": "mayer-summon-count",
@@ -68,6 +71,40 @@
       "title": "增强攻击反馈",
       "requestedBehavior": "增加明确的攻击特效，让玩家能够清晰判断装置已经发动攻击；发射、命中及充能状态变化应相互对应。",
       "status": "已实现并通过验证"
+    },
+    {
+      "id": "large-room-bounty-options",
+      "title": "五至六席悬赏追加三张现有目标",
+      "requestedBehavior": "仅起始参战人数五至六席时，在原六张悬赏牌后追加三张现有I/II/II阶目标，赏金分别为1/2/2，共九张。真人与AI共同计数，单人与一至四席沿用原张数。",
+      "startingPlayerCounts": [5, 6],
+      "originalCardCount": 6,
+      "extendedCardCount": 9,
+      "extraTiers": [1, 2, 2],
+      "extraCoins": [1, 2, 2],
+      "status": "已实施，发布验收另行记录",
+      "implementedDate": "2026-10-05"
+    },
+    {
+      "id": "dorothy-tier-four",
+      "operator": "多萝西",
+      "title": "多萝西普通与精锐改为四阶",
+      "requestedBehavior": "莱茵版多萝西普通与精锐从五阶调整为四阶，技能、模组、陷阱与产层机制保留。",
+      "normalTier": 4,
+      "eliteTier": 4,
+      "status": "已实施，发布验收另行记录",
+      "implementedDate": "2026-10-05"
+    },
+    {
+      "id": "room-rhine-toggle",
+      "title": "房主开局前切换莱茵扩展或原版数据",
+      "requestedBehavior": "单人与合作新房间默认开启莱茵生命扩展，房主仅在等待室开局前可切换；关闭后使用随包固定的上游v0.1.2完整原版游戏数据。各房独立，切换取消队友准备，数据加载和调配同步后才可开始，对局中及重连时保留本局固定选择。",
+      "defaultEnabled": true,
+      "hostOnly": true,
+      "allowedPhase": "LOBBY",
+      "independentPerRoom": true,
+      "vanillaUsesFullDataProfile": true,
+      "status": "已实施，发布验收另行记录",
+      "implementedDate": "2026-10-05"
     }
   ],
   "verifiedDate": "2026-10-04"

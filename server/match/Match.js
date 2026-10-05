@@ -124,6 +124,7 @@ import { Battle } from '../sim/Battle.js';
 import { DataSource } from '../sim/simdata.js';
 import { createRng, deriveSeed } from '../sim/rng.js';
 import { GameData } from './gamedata.js';
+import { deepFreeze } from '../data.js';
 import { RealScheduler } from './scheduler.js';
 import { SharedPool, drawDisabledBonds } from './pool.js';
 import { PlayerState } from './PlayerState.js';
@@ -233,7 +234,13 @@ export class Match {
     this.sendFn = opts.send;
     this.broadcastFn = opts.broadcast;
     this.onEndFn = opts.onEnd;
-    this.data = opts.data && typeof opts.data === 'object' ? opts.data : {};
+    // A match keeps the chosen tables and ruleset even if its room's next-match setting or caller options change.
+    const rhineEnabled = opts.rhineEnabled !== false;
+    Object.defineProperties(this, {
+      data: { value: deepFreeze(opts.data && typeof opts.data === 'object' ? opts.data : {}), enumerable: true },
+      rhineEnabled: { value: rhineEnabled, enumerable: true },
+      dataProfile: { value: rhineEnabled ? 'rhine' : 'vanilla', enumerable: true },
+    });
     const seen = new Set();
     const startingSeats = opts.seats.filter((s) => {
       if (!s || typeof s.playerId !== 'string' || seen.has(s.playerId)) return false;
@@ -796,6 +803,8 @@ export class Match {
   publicView() {
     const v = {
       t: 'm.public',
+      rhineEnabled: this.rhineEnabled,
+      dataProfile: this.dataProfile,
       phase: this.phase,
       round: this.round,
       lastRound: this.gd.lastRound,
@@ -1934,6 +1943,10 @@ export class Match {
     // protocol ids are ≤ 64 chars (shared/protocol.js isId): the field id is informational, the sequence is unique
     const battleId = seq.length + 1 + String(fieldId).length <= 64 ? `${seq}.${fieldId}` : seq;
     const spec = buildBattleSpec({ ...opts, battleId, fieldId, kind, content: this.battleContent, boss });
+    Object.defineProperties(spec, {
+      rhineEnabled: { value: this.rhineEnabled, enumerable: true },
+      dataProfile: { value: this.dataProfile, enumerable: true },
+    });
     let total = 0;
     for (const x of spec.spawns) if (x && x.tag !== 'boss' && x.tag !== 'part') total += Math.max(1, Math.floor(Number(x.count) || 1));
     return {
@@ -2086,6 +2099,7 @@ export class Match {
   _startMsg(f, pid, { watch = false } = {}) {
     return {
       t: 'b.start', battleId: f.battleId, fieldId: f.fieldId, kind: f.kind, spec: f.spec,
+      rhineEnabled: this.rhineEnabled, dataProfile: this.dataProfile,
       authoritative: !!(!f.done && f.mode === 'client' && f.authority === pid && !watch),
       startAt: f.startAt, serverNow: this.sched.now(), elapsed: Math.round(this._fieldElapsed(f) * 1000) / 1000,
       speed: this.gameSpeed, watch: !!watch, done: !!f.done,
