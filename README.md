@@ -1,5 +1,7 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
+**此分支是独立战斗测试版 `codex/test-lab`，基于 v0.1.3-rhine.2。** 完整测试整合包解压后双击 `启动测试模式.bat`，进入 `http://127.0.0.1:3010/dev/test-lab.html`。可调整地图、干员、装备、盟约人数与层数、科研阶段和敌人属性，暂停/单步运行真实战斗，检查动作、特效及文本；见 [测试模式说明](docs/TEST-LAB.md)。本分支的测试包标记为预发布，不替换稳定版下载。
+
 当前扩展版本：**v0.1.3-rhine.2**。
 
 本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.3**，合入官方发布标签 v0.1.3（提交 [`a0a5419`](https://github.com/sganggs/Stronghold-Protocol/commit/a0a5419)），本次扩展修改日期为 **2026-10-06**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-013`。

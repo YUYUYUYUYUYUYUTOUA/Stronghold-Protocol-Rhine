@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>战斗测试台 · 卫戍协议：盟约</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/dev/test-lab.css" />
+  <script type="importmap">{"imports":{"preact":"/vendor/preact.module.js","preact/hooks":"/vendor/hooks.module.js","htm":"/vendor/htm.module.js"}}</script>
+  <script src="/vendor/pixi.min.js"></script>
+  <script src="/vendor/pixi-spine.js"></script>
+</head>
+<body class="test-lab">
+  <header class="lab-header"><div><span class="lab-eyebrow">STRONGHOLD / LAB</span><h1>战斗测试台</h1></div>
+    <span class="lab-header-note">独立场景 · 真实战斗与地图</span>
+    <button id="lab-toggle-tools" type="button" aria-controls="lab-ui" aria-expanded="true" data-testid="lab-toggle-tools">收起工具</button>
+  </header>
+  <main class="lab-workspace" id="lab-workspace">
+    <section class="lab-stage" aria-label="真实地图与战斗画面">
+      <div id="lab-field" aria-label="战斗地图"></div>
+      <div class="lab-field-caption">点击场上单位以检查；坐标与朝向可在工具面板中编辑。</div>
+    </section>
+    <aside id="lab-ui" aria-label="测试工具" aria-busy="true"><p class="lab-loading" role="status">正在加载测试台与游戏数据…</p></aside>
+  </main>
+  <noscript>此测试台需要浏览器启用 JavaScript。</noscript>
+  <script type="module" src="/dev/lab-bootstrap.js"></script>
+</body>
+</html>

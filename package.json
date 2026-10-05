@@ -32,7 +32,8 @@
     "postinstall": "node tools/vendor.mjs",
     "setup": "node tools/setup.mjs",
     "doctor": "node tools/doctor.mjs",
-    "launch": "node scripts/launch.mjs"
+    "launch": "node scripts/launch.mjs",
+    "test-lab": "node scripts/test-lab-launch.mjs"
   },
   "engines": {
     "node": ">=22"
