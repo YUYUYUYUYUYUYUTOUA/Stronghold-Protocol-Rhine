@@ -173,10 +173,13 @@ test('renderer draws clipped circles on terrain tops, replaces them at breakthro
   assert.equal(rendered.hlGfx.polygons.length, 0);
 });
 
-test('descriptions distinguish complete cell coverage from circular splash and explain ecology timing', () => {
+test('descriptions distinguish targeting, global charging and both splash shapes, plus continuous ecology', () => {
   assert.match(researchRangeText(device('medical')), /半径 2 格.*整格区域.*13 格.*本方干员.*召唤物.*机械水獭/);
-  assert.match(researchRangeText(device('energy')), /充能干员与主目标.*半径 2 格.*整格区域.*突破Ⅰ.*实际半径 1 格.*范围外/);
-  assert.match(researchRangeText(device('ecology', 2)), /当前覆盖半径 3 格.*整格区域.*29 格.*突破Ⅱ为 3 格.*每 8 秒开启 4 秒/);
+  assert.match(researchRangeText(device('energy')), /半径 2 格内己方干员.*主目标仍须.*半径 2 格.*13 格.*一级起.*实际半径 1 格.*范围外.*满充无目标时保留/);
+  assert.match(researchRangeText(device('energy', 1)), /己方全场干员.*主目标仍须.*半径 2 格.*实际半径 1 格/);
+  assert.match(researchRangeText(device('energy', 2)), /己方全场干员.*主目标仍须.*钙质化 25 格菱形/);
+  assert.match(researchRangeText(device('ecology', 2)), /当前覆盖半径 3 格.*整格区域.*29 格.*持续减速 50%.*三级为 3 格.*每 8 秒额外束缚 1 秒/);
+  assert.doesNotMatch(researchRangeText(device('ecology', 0)), /开启 4 秒|随.*层数/);
 });
 
 // Inspect component nodes without a DOM: this verifies the label decision, not screenshot rendering.

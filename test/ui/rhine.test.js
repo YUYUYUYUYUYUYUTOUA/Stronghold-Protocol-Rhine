@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { placementContext, canPlace, dropIntent, indexPieces, boardTargets } from '../../public/js/ui/gameLogic.js';
 import { retreatSlot, underframeActions } from '../../public/js/ui/facing.js';
-import { researchTileAt, researchProgress } from '../../public/js/ui/rhineDock.js';
+import { researchTileAt, researchProgress, researchRangeSummary } from '../../public/js/ui/rhineDock.js';
 import { summonDeployHint } from '../../public/js/ui/detailPanel.js';
 import { RHINE_DEVICES, rhineAttack, rhineStage } from '../../shared/rhineResearch.js';
 const stage = JSON.parse(readFileSync(new URL('../../data/stages.json', import.meta.url))).act2autochess_m01;
@@ -57,4 +57,16 @@ test('UI shows growth thresholds and research instructions without a fictional s
   assert.equal(rhineAttack(10, false), 334);
   assert.equal(rhineStage(2), 2);
   assert.match(summonDeployHint({ tokenId: RHINE_DEVICES[0].tokenId }), /科研/);
+});
+
+test('dock range summaries separate nearby targeting from global charging and mature splash', () => {
+  const energy = RHINE_DEVICES.find(d => d.key === 'energy').tokenId;
+  assert.match(researchRangeSummary({ id: energy, stage: 0 }), /选敌 13 格.*范围内充能.*溅射半径 1/);
+  assert.match(researchRangeSummary({ id: energy, stage: 1 }), /选敌 13 格.*本方全场充能.*溅射半径 1/);
+  assert.match(researchRangeSummary({ id: energy, stage: 2 }), /选敌 13 格.*本方全场充能.*钙质化 25 格/);
+  assert.equal(researchRangeSummary({ id: energy, stage: 99 }), researchRangeSummary({ id: energy, stage: 2 }));
+  const ecology = RHINE_DEVICES.find(d => d.key === 'ecology').tokenId;
+  assert.match(researchRangeSummary({ id: ecology, stage: 0 }), /范围 13 格.*半径 2.*持续减速 50%/);
+  assert.match(researchRangeSummary({ id: ecology, stage: 2 }), /范围 29 格.*半径 3.*持续减速 50%/);
+  assert.equal(researchRangeSummary({ id: 'unrelated' }), '');
 });

@@ -2,7 +2,7 @@
 //
 // b.snap  = { fieldId, t, units: [[id, x, y, hp, maxHp, sp, spMax, flags, anim]], dp, killed, total }
 // UnitInfo = { id, kind, side, ownerId, defId, name, tier, golden, spine, avatar, x, y, facing, dir, maxHp, motion?, boss?, uid?,
-//   form?, skillIndex?, moduleId?, items?, researchStage?, sp?, spMax? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
+//   form?, skillIndex?, moduleId?, items?, researchStage?, researchActive?, sp?, spMax? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
 //   掠海漂移体 'crawl', 暴鸰 'bombed', 转译基底·α's forms …; a 傀儡师 fighting as its 替身 'doll', professions.js — a view built
 //   after the change, a field opened mid-battle, draws it: render/units.js FORMS. Research devices keep their charge bar,
 //   and Dorothy's critical traps keep their current form in a newly opened field.)
@@ -50,6 +50,8 @@ export function unitInfo(u) {
     // field shows its owner's module in the detail card)
     moduleId: u.side === 'ally' && d.golden && typeof d.loadout?.moduleId === 'string' ? d.loadout.moduleId : undefined,
     researchStage: Number.isInteger(u.researchStage) ? u.researchStage : undefined,
+    // Keep the model's stage while a device is disabled; reconnects must not restore its inactive area.
+    researchActive: typeof u.researchActive === 'boolean' ? u.researchActive : undefined,
     // Independent research charging reuses the ordinary skill-bar slots, including late joins.
     sp: Number.isFinite(u.researchCharges) ? u.researchCharges : undefined,
     spMax: Number.isFinite(u.researchChargeMax) ? u.researchChargeMax : undefined,

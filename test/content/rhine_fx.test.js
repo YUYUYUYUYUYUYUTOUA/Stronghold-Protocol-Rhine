@@ -54,10 +54,50 @@ test('Rhine visual metadata: all three spawn stages serialize and pulse/ecology 
     assert.equal(energy.eventsOf('spawn').find(e=>e[1].id===d.id)[1].researchStage,stage);
     assert.equal('researchStage' in JSON.parse(JSON.stringify(unitInfo(energy.unit('a')))),false);
     const ecology=setup('ecology',stage);ecology.run(B.ecologyInterval);
-    assert.equal(fx(ecology,'rhineEcology').length,1);
-    assert.deepEqual(fx(ecology,'rhineEcology')[0][4],{source:ecology.unit('device').id,stage,radius:B.radius+(stage>=2?1:0)});
+    assert.equal(fx(ecology,'rhineEcology').length,2);
+    for(const [i,event] of fx(ecology,'rhineEcology').entries()){
+      assert.deepEqual(event[4],{source:ecology.unit('device').id,stage,active:true,radius:B.radius+(stage>=2?1:0),
+        continuous:true,duration:B.ecologyInterval,bind:i>0&&stage>=1});
+    }
     done(energy);done(ecology);
   }
+});
+
+test('ecology active state keeps its stage for reconnects and emits one stop/restart without an immediate bind',()=>{
+  const h=setup('ecology',2), d=h.unit('device'), bond=h.b.getPlayer('p1').bonds.rhineShip;
+  const target=h.spawn('dummy',{pos:[10,7]});h.step();
+  assert.equal(unitInfo(d).researchActive,true);assert.equal(unitInfo(d).researchStage,2);
+  assert.equal(target.findBuff('slow').mods.moveMul,0.5);
+  bond.active=false;h.step(4);
+  assert.equal(unitInfo(d).researchActive,false);assert.equal(unitInfo(d).researchStage,2);
+  assert.equal(target.findBuff('slow'),null);
+  assert.deepEqual(fx(h,'rhineEcology').map(e=>[e[4].active,e[4].bind]),[[true,false],[false,false]]);
+  h.step(4);assert.equal(fx(h,'rhineEcology').length,2,'disabled ticks do not repeat stop events');
+  bond.active=true;h.step();
+  assert.equal(unitInfo(d).researchActive,true);assert.equal(unitInfo(d).researchStage,2);
+  assert.equal(target.findBuff('slow').mods.moveMul,0.5);assert.equal(!!target.s.flags.bind,false);
+  assert.deepEqual(fx(h,'rhineEcology').map(e=>[e[4].active,e[4].bind]),[[true,false],[false,false],[true,false]]);
+  bond.count=2;h.step();assert.equal(unitInfo(d).researchActive,false);
+  bond.count=3;h.step();assert.equal(unitInfo(d).researchActive,true);
+  assert.deepEqual(fx(h,'rhineEcology').slice(-2).map(e=>e[4].active),[false,true]);
+  assert.equal('researchActive' in JSON.parse(JSON.stringify(unitInfo(h.unit('a')))),false);
+  h.b.retreat(d,{permanent:true});assert.equal(unitInfo(d).researchActive,false);
+  assert.equal(fx(h,'rhineEcology').at(-1)[4].active,false);
+  done(h);
+});
+
+test('energy full charge remains visible to snapshots and late joins until a target triggers one pulse',()=>{
+  const h=setup('energy',1), d=h.unit('device');
+  for(const uid of ['a','b','c'])assert.equal(h.unit(uid).skill.activate('test',{free:true}),true);
+  h.run(B.energyContributorCooldown+0.1);
+  assert.deepEqual(unitTuple(d,h.b.time).slice(5,7),[B.energyCharges,B.energyCharges]);
+  assert.deepEqual([unitInfo(d).sp,unitInfo(d).spMax],[B.energyCharges,B.energyCharges]);
+  assert.equal(fx(h,'rhinePulse').length,0);
+  h.spawn('dummy',{pos:[10,6]});h.step();
+  assert.equal(fx(h,'rhinePulse').length,1);
+  assert.deepEqual(unitTuple(d,h.b.time).slice(5,7),[0,B.energyCharges]);
+  h.step(5);assert.equal(fx(h,'rhinePulse').length,1);
+  done(h);
 });
 
 test('energy charging serializes the actual progress for spawn, live snapshots and late joins, then resets after a pulse',()=>{

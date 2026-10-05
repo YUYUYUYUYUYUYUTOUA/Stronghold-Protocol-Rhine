@@ -5,22 +5,23 @@ export const RHINE_BALANCE = Object.freeze({
   thresholds: [3, 6, 9], baseAttack: 300, attackPerLayer: 3,
   mayerLayerStep: 5, mayerAttack: [2, 4], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
   sariaLayerStep: 3, sariaHealBonus: [0.01, 0.02], ifritInheritance: [0.30, 0.60],
+  sharingCount: 6, researchSharing: [0.15, 0.25],
   astgenneFirstSkillLayers: [3, 6], dorothyTrapLayers: [2, 4], dorothyBattleLayerCap: [24, 48], dorothyTrapLimit: [4, 5],
   successPoints: 2, failurePoints: 1, breakthroughPoints: [5, 5],
   medicalInterval: 3, medicalHealScale: 0.5, medicalShieldRatio: 0.5, medicalShieldDuration: 6,
-  energyCharges: 3, energyContributorCooldown: 3, energyPulseScale: 1.2, energySpreadRadius: 1, energyStage2Scale: 1.5,
-  ecologyInterval: 8, ecologyDuration: 4, ecologySlow: 0.25, ecologySlowPerLayer: 0.001,
-  ecologySlowCap: 0.65, ecologyBindDuration: 1, radius: 2,
+  energyCharges: 3, energyContributorCooldown: 3, energyPulseScale: 1.2, energySpreadRadius: 1,
+  ecologyInterval: 8, ecologyDuration: 8, ecologySlow: 0.5,
+  ecologyBindDuration: 1, radius: 2,
 });
 // Equipment values are shared by generated records and the combat/bot implementations.
 export const RHINE_EQUIPMENT = Object.freeze({
   terminal: Object.freeze({ key: 'chess_item_rhine_terminal', tier: 3, attack: [0.15, 0.25], layerStep: 10, attackSpeed: [2, 3], attackSpeedCap: [20, 30] }),
-  mainframe: Object.freeze({ key: 'chess_item_rhine_mainframe', tier: 6, hp: [0.45, 0.70], attackPerLayer: 1, attackCap: 100, comboAttackPerLayer: 2, comboAttackCap: 200 }),
+  mainframe: Object.freeze({ key: 'chess_item_rhine_mainframe', tier: 6, hp: [0.45, 0.70], attackPerLayer: 1, comboAttackPerLayer: 2 }),
 });
 export const RHINE_DEVICES = Object.freeze([
   { key: 'medical', tokenId: 'token_rhine_medical', name: '生命维持仪', color: '#6fe8c1', icon: '/art/rhine/medical.svg', sprite: '/art/rhine/medical-unit.png', description: '每3秒治疗范围内生命比例最低的友军。突破Ⅰ：溢出治疗转为短时护盾；突破Ⅱ：同时治疗两个目标。', breakthroughs: ['溢出治疗转为护盾', '同时治疗两个目标'] },
-  { key: 'energy', tokenId: 'token_rhine_energy', name: '能量谐振仪', color: '#ffbc70', icon: '/art/rhine/energy.svg', sprite: '/art/rhine/energy-unit.png', description: '范围内友军释放技能时充能，3次充能释放法术脉冲；同一干员3秒内至多贡献一次。突破Ⅰ：脉冲向附近扩散；突破Ⅱ：伤害提高。', breakthroughs: ['脉冲向附近扩散', '脉冲伤害提高'] },
-  { key: 'ecology', tokenId: 'token_rhine_ecology', name: '生态调控器', color: '#8bbdff', icon: '/art/rhine/ecology.svg', sprite: '/art/rhine/ecology-unit.png', description: '周期产生减速区域，减速随莱茵层数增强。突破Ⅰ：区域启动时短暂束缚；突破Ⅱ：作用范围扩大。', breakthroughs: ['区域启动时束缚敌人', '作用范围扩大'] },
+  { key: 'energy', tokenId: 'token_rhine_energy', name: '能量谐振仪', color: '#ffbc70', icon: '/art/rhine/energy.svg', sprite: '/art/rhine/energy-unit.png', description: '一级：范围内己方干员释放技能时充能，3点充能发射120%攻击的范围法术脉冲；无目标时保留满充能。同一干员3秒内至多贡献一次。二级：己方全场干员释放技能均可充能。三级：溅射扩大至塞雷娅“钙质化”的25格范围，以主目标为中心。', breakthroughs: ['己方全场技能充能', '钙质化25格溅射'] },
+  { key: 'ecology', tokenId: 'token_rhine_ecology', name: '生态调控器', color: '#8bbdff', icon: '/art/rhine/ecology.svg', sprite: '/art/rhine/ecology-unit.png', description: '一级：范围内敌人持续减速50%。二级：每8秒额外束缚范围内敌人1秒。三级：作用半径由2格扩大至3格。', breakthroughs: ['周期束缚敌人', '作用范围扩大'] },
 ]);
 export const rhineDevice = (id) => RHINE_DEVICES.find(d => d.key === id || d.tokenId === id) ?? null;
 export const isRhineDevice = (id) => rhineDevice(id) !== null;

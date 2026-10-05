@@ -3,6 +3,17 @@
 import { RHINE_BALANCE as B, rhineDevice, rhineStage } from './rhineResearch.js';
 import { GEO } from './constants.js';
 
+// Saria's skchr_demkni_3 (rangeId x-3): a 25-cell diamond, not the 29-cell radius-3 circle.
+// Keep a shared shape so the sim, low/high graphics and descriptions use the same mature pulse.
+export const CALCIFICATION_GRID = Object.freeze(Array.from({ length: 7 }, (_, i) => i - 3)
+  .flatMap(r => Array.from({ length: 7 }, (_, i) => i - 3)
+    .filter(c => Math.abs(r) + Math.abs(c) <= 3).map(c => Object.freeze([r, c]))));
+
+export function energyPulseRange(stage = 0) {
+  const tileBased = rhineStage(stage) >= 2;
+  return { radius: tileBased ? 3 : B.energySpreadRadius, grid: tileBased ? CALCIFICATION_GRID : null, tileBased };
+}
+
 export function researchRange(piece) {
   const def = rhineDevice(typeof piece === 'string' ? piece : piece?.id ?? piece?.tokenId ?? piece?.defId);
   if (!def) return null;
@@ -51,8 +62,13 @@ export function researchRangeText(piece) {
   const range = researchRange(piece);
   if (!range) return '';
   if (range.key === 'medical') return `覆盖半径 ${B.radius} 格内的整格区域（${range.grid.length} 格）；治疗本方干员及可受治疗的召唤物，包括机械水獭。突破不扩大范围。`;
-  if (range.key === 'energy') return `充能干员与主目标均在半径 ${B.radius} 格内的整格区域（${range.grid.length} 格）；突破Ⅰ起，溅射主目标周围实际半径 ${B.energySpreadRadius} 格，可波及装置范围外。`;
-  return `当前覆盖半径 ${range.radius} 格内的整格区域（${range.grid.length} 格）；原型及突破Ⅰ为 ${B.radius} 格，突破Ⅱ为 ${B.radius + 1} 格。每 ${B.ecologyInterval} 秒开启 ${B.ecologyDuration} 秒。`;
+  if (range.key === 'energy') {
+    const pulse = energyPulseRange(range.stage);
+    const charging = range.stage >= 1 ? '己方全场干员释放技能均可充能' : `半径 ${B.radius} 格内己方干员释放技能时充能`;
+    const splash = pulse.tileBased ? `主目标所在格为中心的钙质化 ${pulse.grid.length} 格菱形` : `主目标周围实际半径 ${pulse.radius} 格`;
+    return `${charging}；主目标仍须在装置半径 ${B.radius} 格内（${range.grid.length} 格）。一级起造成范围法术伤害，溅射为${splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。`;
+  }
+  return `当前覆盖半径 ${range.radius} 格内的整格区域（${range.grid.length} 格），持续减速 ${B.ecologySlow * 100}%；一级及二级为 ${B.radius} 格，三级为 ${B.radius + 1} 格。二级起每 ${B.ecologyInterval} 秒额外束缚 ${B.ecologyBindDuration} 秒。`;
 }
 
 /** Polygon clipped to a tile's square. Coordinates throughout are [column, row]. */

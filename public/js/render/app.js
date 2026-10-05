@@ -294,6 +294,7 @@ export function renderInfo(u) {
     form: typeof u.form === 'string' ? u.form : undefined,
     // Reconnecting / observing must show the device's current breakthrough before its next effect is emitted.
     researchStage: Number.isInteger(u.researchStage) && u.researchStage >= 0 && u.researchStage <= 2 ? u.researchStage : undefined,
+    researchActive: typeof u.researchActive === 'boolean' ? u.researchActive : undefined,
     // Canvas clicks carry this info directly to the detail card (including a teammate's morph-granted bonds).
     items: Array.isArray(u.items) ? u.items.filter(id => typeof id === 'string' && id.length > 0) : undefined,
     // DESIGN §16 loadout of an ally (UnitInfo.skillIndex / moduleId): the Spine actor plays that skill's clip, and a

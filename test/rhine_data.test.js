@@ -14,6 +14,23 @@ const names=['chess','bonds','garrisons','tokens','effects','config','items'];
 const files=Object.fromEntries(await Promise.all(names.map(async n=>[n,JSON.parse(await readFile(new URL(`../data/${n}.json`,import.meta.url),'utf8'))])));
 const source=JSON.parse(await readFile(new URL('../tools/rhine-data-source.json',import.meta.url),'utf8'));
 
+test('Rhine data: six-member research sharing and the new three device levels are discoverable', () => {
+  const bond = files.bonds.rhineShip;
+  assert.equal(bond.bb.sharing_count, 6);
+  assert.equal(bond.bb.sharing_atk, .15);
+  assert.equal(bond.bb.sharing_golden_atk, .25);
+  assert.match(bond.desc, /最高基础攻击力的15%/);
+  assert.match(bond.desc, /精锐25%/);
+  const energy = files.tokens.token_rhine_energy;
+  assert.match(energy.desc, /一级/);
+  assert.match(energy.desc, /范围法术脉冲/);
+  assert.match(energy.desc, /己方全场/);
+  assert.match(energy.desc, /钙质化.*25格/);
+  assert.doesNotMatch(energy.desc, /伤害提高/);
+  const ecology = files.tokens.token_rhine_ecology;
+  assert.match(ecology.desc, /持续减速50%/);
+  assert.match(ecology.desc, /每8秒/);
+});
 test('Rhine data: offline overlay is idempotent and preserves unrelated operator identities',async()=>{
   const before=JSON.stringify(files);const original=structuredClone(files.chess.chess_char_1_01_a);
   await applyRhineData(files);assert.equal(JSON.stringify(files),before);

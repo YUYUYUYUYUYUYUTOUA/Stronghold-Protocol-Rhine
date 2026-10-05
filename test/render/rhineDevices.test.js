@@ -4,7 +4,8 @@ import { installFakePixi, fakeViewCtx } from './fakepixi.js';
 import { presetCamera } from '../../public/js/render/projection.js';
 import { researchPose, RHINE_LOOK } from '../../public/js/render/rhineDevices.js';
 import { FxSystem, SHOT_HEIGHT } from '../../public/js/render/fx.js';
-import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
+import { RHINE_DEVICES, RHINE_BALANCE } from '../../shared/rhineResearch.js';
+import { energyPulseRange } from '../../shared/rhineRange.js';
 import { createAssets } from '../../public/js/assets.js';
 import { GEO } from '../../shared/constants.js';
 import { COLORS } from '../../public/js/render/style.js';
@@ -161,8 +162,8 @@ test('actual source ids animate the device while medical and pulse effects use t
   assert.deepEqual(rings[0].slice(0, 2), [3, 4]);
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 0 });
-  assert.deepEqual(rings.map(r => r.slice(0, 2)), [[1, 2], [3, 4]]);
-  assert.equal(rings[1][4], 0.38, 'prototype impact does not imply an area attack');
+  assert.deepEqual(rings.map(r => r.slice(0, 2)), [[1, 2], [3, 4], [3, 4]]);
+  assert.equal(rings[1][4], energyPulseRange(0).radius, 'the prototype already has the actual radius-one splash');
   assert.equal(beams[1][0], source, 'a visible beam starts at the firing tower');
   assert.deepEqual([beams[1][1].x, beams[1][1].y], [3, 4], 'instant hit cue terminates at the sim impact point');
   assert.equal(particles.length, 1, 'high quality adds a muzzle flare to the persistent actor pulse');
@@ -172,11 +173,15 @@ test('actual source ids animate the device while medical and pulse effects use t
     'the pulse muzzle flare shares the upstream beam launch height in screen space');
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 2 });
-  assert.equal(rings.length, 3); assert.equal(rings[1][4], 1);
-  fx.simFx('rhineEcology', 1, 2, { source: 20, stage: 2, radius: 3 });
-  assert.ok(flashes[0][0].length > 0, 'ecology activation lights complete cells instead of a round area');
-  assert.equal(flashes[0][2], 2, 'four game seconds at 2x battle speed');
-  assert.equal(flashes[0][3], true, 'the cells pulse for the active interval');
+  assert.equal(rings.length, 2);
+  assert.deepEqual(flashes[0][0], energyPulseRange(2).grid.map(([r,c]) => [4+r,3+c]), 'the mature grid centres on the struck target, not the source');
+  fx.simFx('rhineEcology', 1, 2, { source: 20, stage: 2, radius: 3, continuous: true, bind: true, duration: RHINE_BALANCE.ecologyInterval });
+  assert.ok(flashes[1][0].length > 0, 'ecology activation lights complete cells instead of a round area');
+  assert.equal(flashes[1][2], RHINE_BALANCE.ecologyInterval / 2, 'continuous field covers the full refresh interval at 2x battle speed');
+  assert.equal(flashes[1][3], false, 'the continuous field is not a periodic danger flash');
+  assert.equal(flashes[1][4].steady, true);
+  assert.equal(flashes[2][2], RHINE_BALANCE.ecologyBindDuration / 2, 'bind is a separate one-game-second cue');
+  assert.equal(flashes[2][3], true);
   assert.doesNotThrow(() => fx.simFx('rhineHeal', 3, 4, { source: 999, target: 999 }), 'missing/removed source leaves a safe point effect');
 });
 
@@ -208,6 +213,29 @@ test('energy charge uses the real skill gauge under the tower, including zero/pa
   prep.destroy();
 });
 
+test('a fully charged tower stays visibly ready without inventing firing events, including after reconnect', async () => {
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, settings: { quality: 'low' }, assets: { image: async () => ({ width: 100, height: 140 }) } });
+  const info = renderInfo({ id: 220, kind: 'token', defId: 'token_rhine_energy', side: 'ally', x: 5, y: 12,
+    maxHp: 1, sp: 3, spMax: 3, researchStage: 2 });
+  const v = new UnitView(ctx, info);
+  await tick(); await tick();
+  for (let i = 0; i <= 600; i++) v.update(1 / 60, cam, i / 60);
+  assert.equal(v.spGlow.visible, true, 'held charge does not expire with the brief firing animation');
+  assert.equal(v.spFill.tint, COLORS.spReady);
+  assert.equal(v.researchActor.core.tint, 0xffe8c4);
+  assert.equal(v.researchActor.pulse, 0, 'a full charge is not itself a successful shot');
+  assert.ok(v.researchActor.core.alpha > researchPose('energy', 10 + v.bob, 2).light);
+  v.sync({ x: 5, y: 12, hp: 1, maxHp: 1, sp: 0, spMax: 3, flags: 0, anim: 0, vx: 0 }, 1);
+  v.update(1 / 60, cam, 11);
+  assert.equal(v.spGlow.visible, false);
+  assert.equal(v.researchActor.core.tint, RHINE_LOOK.energy.tint, 'the next snapshot clears readiness after consumption');
+  v.destroy();
+  const prep = new UnitView(ctx, info, { prep: true });
+  await tick(); await tick(); prep.update(1 / 60, cam, 0);
+  assert.equal(prep.researchActor.core.tint, RHINE_LOOK.energy.tint, 'preparation does not reuse combat readiness');
+  prep.destroy();
+});
+
 test('low quality keeps the actual pulse beam and impact, and ecology visuals match the clipped field grid', () => {
   const beams = [], rings = [], flashes = [];
   const source = { id: 1, x: 6, y: 10, z: 0, onResearchFx() {} };
@@ -218,14 +246,93 @@ test('low quality keeps the actual pulse beam and impact, and ecology visuals ma
     particle: () => { throw new Error('low quality must shed the extra muzzle particle'); } });
   fx.simFx('rhinePulse', 8.4, 10.4, { source: 1, stage: 2 });
   assert.equal(beams.length, 1);
-  assert.equal(rings.length, 2, 'source firing and true splash remain clear');
+  assert.equal(rings.length, 2, 'source firing and the impact point remain clear');
+  assert.deepEqual(flashes[0][0], energyPulseRange(2).grid.map(([r,c]) => [10+r,8+c]).filter(([r,c]) => r >= 9 && r <= 12 && c >= 0 && c <= 10));
+  assert.equal(flashes[0][0].some(([r,c]) => r === 12 && c === 10), false, 'calcification is the 25-cell diamond, not the 29-cell ecology disc');
   const before = rings.length;
-  fx.simFx('rhineEcology', 6, 10, { source: 1, stage: 2, radius: 3 });
+  fx.simFx('rhineEcology', 6, 10, { source: 1, stage: 2, radius: 3, continuous: true });
   assert.equal(rings.length, before, 'ecology range no longer emits a circular boundary');
-  const tiles = flashes[0][0];
+  const tiles = flashes[1][0];
   assert.ok(tiles.every(([r,c]) => r >= 9 && r <= 12 && c >= 0 && c <= 10));
   assert.ok(tiles.some(([r,c]) => r === 10 && c === 9));
   assert.equal(tiles.some(([r,c]) => r === 12 && c === 9), false);
+});
+
+test('continuous ecology stays visible through its refresh interval and only bind events animate its activation', async () => {
+  const fills = [], fx = Object.create(FxSystem.prototype);
+  Object.assign(fx, { ctx: { cam: () => cam, heightAt: () => 0 }, tileFlashes: [], _p: {},
+    tileGfx: { clear() {}, lineStyle() {}, beginFill(c, a) { fills.push(a); }, drawPolygon() {}, endFill() {} } });
+  const field = { steady: true, key: 'rhineEcology:1' };
+  fx.tileFlash([[10,6]], 0x73dfd5, RHINE_BALANCE.ecologyInterval, false, field);
+  for (let i = 0; i < 20; i++) fx.tileFlash([[10,7]], 0xffffff, .3);
+  assert.equal(fx.tileFlashes.filter(f => f.steady).length, 1, 'ordinary hit flashes cannot evict the continuous field');
+  assert.equal(fx.tileFlashes.filter(f => !f.steady).length, 12);
+  fx._updateTileFlashes(RHINE_BALANCE.ecologyInterval - .01);
+  assert.equal(fx.tileFlashes.length, 1);
+  assert.ok(fills.at(-1) > .05, 'a continuous aura does not fade away during the last part of its cycle');
+  fx.tileFlash([[10,6]], 0x73dfd5, RHINE_BALANCE.ecologyInterval, false, field);
+  assert.equal(fx.tileFlashes.length, 1, 'refresh replaces the same field instead of stacking brightness');
+  assert.equal(fx.tileFlashes[0].t, 0);
+  fx._updateTileFlashes(RHINE_BALANCE.ecologyInterval);
+  assert.equal(fx.tileFlashes.length, 0, 'an unrefreshed field expires instead of leaking into another battle');
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
+  const v = new UnitView(ctx, { id: 230, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 1 });
+  await tick(); await tick();
+  v.onResearchFx('rhineEcology', { stage: 1, continuous: true });
+  assert.equal(v.researchActor.pulse, 0, 'the opening slow aura does not imply a bind');
+  v.onResearchFx('rhineEcology', { stage: 1, continuous: true, bind: true });
+  assert.equal(v.researchActor.pulse, 1);
+  v.destroy();
+});
+
+test('joining mid-battle restores ecology immediately from effective UnitInfo and cleans it up with the device', async () => {
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, fieldRect: () => ({ r0: 0, r1: 18, c0: 0, c1: 20 }),
+    assets: { image: async () => ({ width: 100, height: 140 }) } });
+  const fx = Object.create(FxSystem.prototype);
+  Object.assign(fx, { ctx, tileFlashes: [], _p: {}, tileGfx: new fake.P.Graphics() });
+  ctx.fx = fx;
+  const info = renderInfo({ id: 240, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 0 });
+  const v = new UnitView(ctx, info);
+  ctx.view = id => id === v.id ? v : null;
+  await tick(); await tick();
+  v.update(1 / 60, cam, 15); // no research event has been replayed
+  assert.equal(fx.tileFlashes.length, 1);
+  const field = fx.tileFlashes[0], tiles = field.tiles;
+  assert.equal(tiles.length, 13);
+  assert.equal(field.anchor, v);
+  assert.equal(field.dur, Infinity, 'effective deployed ecology is continuous rather than a stale eight-second burst');
+  for (let i = 0; i < 600; i++) { v.update(1 / 60, cam, 15 + i / 60); fx._updateTileFlashes(1 / 60); }
+  assert.equal(fx.tileFlashes.length, 1);
+  assert.equal(fx.tileFlashes[0], field);
+  assert.equal(field.tiles, tiles, 'idle updates allocate neither a new effect nor a new range array');
+  v.setResearchStage(2); v.update(1 / 60, cam, 26);
+  assert.equal(fx.tileFlashes[0], field);
+  assert.equal(field.tiles.length, 29, 'metadata refresh replaces the smaller field');
+  fx.simFx('rhineEcology', 5, 12, { source: v.id, stage: 2, continuous: true, active: false });
+  assert.equal(v.info.researchActive, false);
+  assert.equal(fx.tileFlashes.length, 0, 'an alliance shutdown removes the field immediately');
+  for (let i = 0; i < 10; i++) v.update(1 / 60, cam, 26 + i / 60);
+  assert.equal(fx.tileFlashes.length, 0, 'stage metadata alone cannot resurrect an explicitly inactive field');
+  fx.simFx('rhineEcology', 5, 12, { source: v.id, stage: 2, radius: 3, continuous: true, active: true });
+  v.update(1 / 60, cam, 26.5);
+  assert.equal(fx.tileFlashes.length, 1);
+  assert.equal(fx.tileFlashes[0].tiles.length, 29);
+  assert.equal(fx.tileFlashes[0].dur, Infinity);
+  assert.equal(v.researchActor.pulse, 0, 'reactivation resumes slow without replaying a bind');
+  v.destroy(); fx._updateTileFlashes(1 / 60);
+  assert.equal(fx.tileFlashes.length, 0, 'removed units cannot leave a persistent field behind');
+  const prep = new UnitView(ctx, info, { prep: true });
+  prep.update(1 / 60, cam, 27);
+  assert.equal(fx.tileFlashes.length, 0, 'preparation metadata never implies an active combat aura');
+  prep.destroy();
+  const inactive = new UnitView(ctx, { ...info, id: 241, researchStage: undefined });
+  inactive.update(1 / 60, cam, 27);
+  assert.equal(fx.tileFlashes.length, 0, 'an unselected device without effective stage metadata stays inert');
+  inactive.destroy();
+  const stopped = new UnitView(ctx, { ...info, id: 242, researchStage: 2, researchActive: false });
+  stopped.update(1 / 60, cam, 28);
+  assert.equal(fx.tileFlashes.length, 0, 'joining a stopped device does not restore its old effective range');
+  stopped.destroy();
 });
 
 test('an activation expires offscreen and is not replayed when its device re-enters the viewport', async () => {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { RHINE_CHARACTERS as C, RHINE_DEVICES, RHINE_BALANCE as B } from '../../shared/rhineResearch.js';
 import { deviceBaseAttack } from '../../server/sim/content/rhine.js';
+import { DATA } from '../match/harness.js';
 
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `expected ${b}, got ${a}`);
 const op = (uid, charId = 'test', row = 10, col = 4, extra = {}) => ({ uid, chessId: `${uid}_a`, charId, row, col, ...extra });
@@ -15,7 +16,8 @@ const player = (playerId, units, { count = 3, layers = 0, active = true, devices
 function battle(players, extra = {}) {
   const chess = {}, kits = {};
   for (const p of players) for (const u of p.units) if (u.kind !== 'token') {
-    chess[u.chessId] = chessRec({ id: u.chessId, charId: u.charId, golden: u.elite, stats: { atk: 100, maxHp: 2000, blockCnt: 0 }, skill: u.cast ? {} : null });
+    chess[u.chessId] = chessRec({ id: u.chessId, charId: u.charId, golden: u.elite, bonds: u.bonds,
+      profession: u.profession, dmgType: u.dmgType, stats: { atk: 100, maxHp: 2000, blockCnt: 0 }, skill: u.cast ? {} : null });
     kits[u.chessId] = () => ({ trait: { noAttack: true }, skill: u.cast ? { kind: u.passive ? 'passive' : 'instant', trigger: { rule: u.auto ? 'SP_FULL' : 'NEVER' }, spCost: u.auto ? 1 : 10 } : null });
   }
   const tokens = Object.fromEntries(RHINE_DEVICES.map((d) => [d.tokenId, { name: d.name, stats: { maxHp: 100, atk: 1, blockCnt: 5 }, rangeGrid: [[0, 0]] }]));
@@ -86,11 +88,13 @@ test('Rhine sim boundary enables the third distinct device only at count nine', 
 test('Rhine grid effects include entire highlighted tiles for moving enemies and exclude neighboring unhighlighted tiles', () => {
   const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
     op('c', 'test', 9, 5, { cast: true }), device('energy')])]);
-  const inside = h.spawn('dummy', { pos: [11.49, 6.49] });
   const outside = h.spawn('dummy', { pos: [11.51, 6.51] });
   for (const uid of ['a', 'b', 'c']) cast(h, uid);
-  close(inside.s.maxHp - inside.hp, 300 * B.energyPulseScale);
   close(outside.hp, outside.s.maxHp);
+  assert.equal(h.unit('energy').researchCharges, 3, 'an enemy outside the highlighted cells cannot trigger release');
+  const inside = h.spawn('dummy', { pos: [11.49, 6.49] });
+  h.step();
+  close(inside.s.maxHp - inside.hp, 300 * B.energyPulseScale);
   checkInvariants(h.b);
 
   const ecology = battle([player('p1', [device('ecology')])]);
@@ -135,15 +139,15 @@ test('Rhine medical breakthroughs: final overheal yields 50% timed shield; stage
   checkInvariants(h.b);
 });
 
-test('Rhine energy: actual skill starts charge once per contributor / 3s; stages add spread then damage', () => {
+test('Rhine energy: actual skill starts charge once per contributor / 3s; every stage deals 120% splash', () => {
   for (const stage of [0, 1, 2]) {
     const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }), op('c', 'test', 9, 5, { cast: true }), device('energy', 10, 5, stage)]), player('p2', [op('other', 'test', 10, 6, { cast: true })])]);
-    const e = h.spawn('dummy', { pos: [10, 6] }), nearby = h.spawn('dummy', { pos: [10, 7] }), far = h.spawn('dummy', { pos: [12, 7] });
+    const e = h.spawn('dummy', { pos: [10, 6] }), nearby = h.spawn('dummy', { pos: [10, 7] }), far = h.spawn('dummy', { pos: [12, 8] });
     cast(h, 'a'); cast(h, 'a'); cast(h, 'other'); cast(h, 'b');
     close(e.hp, e.s.maxHp);
     cast(h, 'c');
-    const damage = 300 * B.energyPulseScale * (stage >= 2 ? B.energyStage2Scale : 1);
-    close(e.s.maxHp - e.hp, damage); close(nearby.s.maxHp - nearby.hp, stage >= 1 ? damage : 0); close(far.hp, far.s.maxHp);
+    const damage = 300 * B.energyPulseScale;
+    close(e.s.maxHp - e.hp, damage); close(nearby.s.maxHp - nearby.hp, damage); close(far.hp, far.s.maxHp);
     h.run(3); cast(h, 'a'); cast(h, 'b'); cast(h, 'c');
     close(e.s.maxHp - e.hp, 2 * damage);
     assert.equal(h.hooksOf('skillStart').length, 8, 'pulses do not emit skill starts or create a charging loop');
@@ -151,17 +155,22 @@ test('Rhine energy: actual skill starts charge once per contributor / 3s; stages
   }
 });
 
-test('Rhine ecology: zone is periodic, slow scales to cap, stage I binds only at start and stage II extends range', () => {
+test('Rhine ecology: continuous 50% slow starts immediately, bind pulses every 8s, mature radius is 3', () => {
   for (const stage of [0, 1, 2]) {
     const h = battle([player('p1', [device('ecology', 10, 5, stage)], { layers: 900 })]);
     const near = h.spawn('dummy', { pos: [10, 7] }), far = h.spawn('dummy', { pos: [10, 8] });
-    h.run(7.8); assert.equal(near.findBuff('slow'), null);
+    h.step(); close(near.findBuff('slow').mods.moveMul, 0.5);
+    assert.equal(!!near.s.flags.bind, false, 'the opening aura does not bind');
+    assert.equal(!!far.findBuff('slow'), stage >= 2);
+    h.run(7.7); close(near.findBuff('slow').mods.moveMul, 0.5);
     h.run(0.3);
-    close(near.findBuff('slow').mods.moveMul, 1 - B.ecologySlowCap);
+    close(near.findBuff('slow').mods.moveMul, 0.5);
     assert.equal(!!near.s.flags.bind, stage >= 1);
     assert.equal(!!far.findBuff('slow'), stage >= 2);
     h.run(1.1); assert.equal(!!near.s.flags.bind, false, 'no perpetual bind while inside zone');
-    h.run(3.2); assert.equal(near.findBuff('slow'), null);
+    h.run(3.2); close(near.findBuff('slow').mods.moveMul, 0.5, 'slow has no four-second gap');
+    h.b.getPlayer('p1').bonds.rhineShip.active = false; h.step(4);
+    assert.equal(near.findBuff('slow'), null);
     checkInvariants(h.b);
   }
 });
@@ -174,11 +183,12 @@ test('Rhine energy: concealed and untargetable enemies cannot be primary targets
   h.b.addBuff(untargetable, { key: 'test:untargetable', flags: { untargetable: true }, persist: true });
   for (const id of ['a', 'b', 'c']) cast(h, id);
   close(concealed.hp, concealed.s.maxHp); close(untargetable.hp, untargetable.s.maxHp);
+  assert.equal(h.unit('energy').researchCharges, 3);
   h.b.addBuff(concealed, { key: 'test:reveal', flags: { reveal: true }, persist: true });
-  h.run(3.1);
-  for (const id of ['a', 'b', 'c']) cast(h, id);
+  h.step();
   close(concealed.s.maxHp - concealed.hp, 300 * B.energyPulseScale);
   close(untargetable.hp, untargetable.s.maxHp);
+  assert.equal(h.unit('energy').researchCharges, 0);
   checkInvariants(h.b);
 });
 
@@ -275,14 +285,14 @@ test('Rhine: boss mirrors and unite helpers keep independent device ATK, inherit
   }
 });
 
-test('Rhine: normal Saria healing and an active ecological zone react to live layer changes', () => {
+test('Rhine: Saria healing scales with live layers while the continuous ecology slow remains 50%', () => {
   const h = battle([player('p1', [op('s', C.saria, 10, 4), op('patient', 'test', 11, 4), device('ecology')], { layers: 2 })]);
   const target = h.spawn('dummy', { pos: [10, 7] });
-  h.run(8.1); close(target.findBuff('slow').mods.moveMul, 1 - 0.252);
+  h.step(); close(target.findBuff('slow').mods.moveMul, 0.5);
   h.unit('patient').hp = 100;
   close(h.b.heal(h.unit('s'), h.unit('patient'), 100), 100);
   h.b.addLayers('p1', 'rhineShip', 298, 'test'); h.step(2);
-  close(target.findBuff('slow').mods.moveMul, 0.45);
+  close(target.findBuff('slow').mods.moveMul, 0.5);
   close(h.b.heal(h.unit('s'), h.unit('patient'), 100), 200);
   h.b.getPlayer('p1').bonds.rhineShip.active = false; h.step(3);
   close(h.b.heal(h.unit('s'), h.unit('patient'), 100), 100);
@@ -331,4 +341,131 @@ test('Rhine real Mayer / Saria: normal and elite records carry only their replac
     close(h.unit('s').s.healingDealtMul, suffix === 'a' ? 1.05 : 1.10);
     assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
   }
+});
+
+test('Rhine sharing: damage members inherit one highest own device, while Ifrit alone inherits the sum', () => {
+  const rhine = { bonds: ['rhineShip'] };
+  const h = battle([player('p1', [
+    op('m', C.mayer, 10, 4, { ...rhine, elite: true }),
+    op('ordinary', 'test', 9, 4, rhine), op('elite', 'test', 9, 6, { ...rhine, elite: true }),
+    op('medic', 'test', 11, 4, { ...rhine, profession: 'MEDIC', dmgType: 'arts' }),
+    op('healer', 'test', 12, 4, { ...rhine, profession: 'SUPPORT', dmgType: 'heal' }),
+    op('saria', C.saria, 9, 7, rhine), op('ifrit', C.ifrit, 11, 6, { ...rhine, elite: true }),
+    op('unrelated', 'test', 12, 6), device('medical'), device('energy', 11, 5), device('ecology', 12, 5),
+  ], { count: 9, layers: 15 }), player('p2', [op('other', 'test', 10, 7, rhine), device('medical', 12, 8, 0, 'otherDevice')], { count: 6, layers: 100 })]);
+  close(h.unit('ordinary').s.atk, 100 + 357 * 0.15);
+  close(h.unit('elite').s.atk, 100 + 357 * 0.25);
+  close(h.unit('other').s.atk, 100 + 600 * 0.15);
+  close(h.unit('ifrit').s.atk, 100 + (357 + 345 + 345) * 0.6);
+  for (const uid of ['medic', 'healer', 'saria', 'unrelated', 'ifrit']) assert.equal(h.unit(uid).findBuff('rhine:sharing'), null);
+  h.b.addBuff(h.unit('medical'), { key: 'test:devicePower', mods: { atkMul: 20, atkFlat: 10000 } });
+  h.b.addBuff(h.unit('m'), { key: 'test:mayerPower', mods: { atkPct: 3 } });
+  h.b.addBuff(h.unit('ordinary'), { key: 'test:operatorPower', mods: { atkPct: 0.5 } });
+  h.run(10);
+  close(deviceBaseAttack(h.b, h.unit('medical')), 357);
+  close(h.unit('ordinary').s.atk, (100 + 357 * 0.15) * 1.5);
+  assert.equal(h.unit('ordinary').buffs.filter((b) => b.key === 'rhine:sharing').length, 1);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+});
+
+test('Rhine sharing: transformation and harmony use live membership; losing six members or a device clears the bonus', () => {
+  const morph = Object.values(DATA.items).find((it) => it.canGiveBond && !it.isGolden).id;
+  const p = player('p1', [op('native', 'test', 9, 4, { bonds: ['rhineShip'] }),
+    op('morph', 'test', 11, 4, { items: ['chess_item_rhine_terminal_a', morph] }),
+    op('harmony', 'test', 12, 4, { bonds: ['maniShip'] }), device('energy')], { count: 6 });
+  p.bonds.maniShip = { active: true, count: 2, layers: 0 };
+  const h = battle([p]), ps = h.b.getPlayer('p1');
+  for (const uid of ['native', 'morph', 'harmony']) close(h.unit(uid).findBuff('rhine:sharing').mods.atkFlat, 45);
+  h.unit('morph').items = h.unit('morph').items.filter((id) => id !== morph);
+  ps.bonds.maniShip.active = false; h.step();
+  assert.equal(h.unit('morph').findBuff('rhine:sharing'), null);
+  assert.equal(h.unit('harmony').findBuff('rhine:sharing'), null);
+  ps.bonds.rhineShip.count = 5; h.step(); close(h.unit('native').s.atk, 100);
+  ps.bonds.rhineShip.count = 6; h.b.addLayers('p1', 'rhineShip', 10, 'test'); h.step(2);
+  close(h.unit('native').s.atk, 100 + 330 * 0.15);
+  h.b.retreat(h.unit('native')); close(h.unit('native').s.atk, 100);
+  assert.equal(h.b.redeploy(h.unit('native')), true); close(h.unit('native').s.atk, 100 + 330 * 0.15);
+  h.b.retreat(h.unit('energy'), { permanent: true }); close(h.unit('native').s.atk, 100);
+  assert.equal(h.unit('native').findBuff('rhine:sharing'), null);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+});
+
+test('Rhine energy: stage one accepts distant same-owner casts, excludes foreign, passive and carried starts', () => {
+  for (const stage of [0, 1, 2]) {
+    const h = battle([player('p1', [op('a', 'test', 9, 2, { cast: true }), op('b', 'test', 12, 2, { cast: true }),
+      op('c', 'test', 9, 10, { cast: true }), device('energy', 10, 5, stage)]),
+    player('p2', [op('other', 'test', 12, 10, { cast: true })])]);
+    const target = h.spawn('dummy', { pos: [10, 6] });
+    cast(h, 'other');
+    h.b.emit('skillStart', { unit: h.unit('a'), reason: 'carry', skill: { kind: 'duration' } });
+    h.b.emit('skillStart', { unit: h.unit('b'), reason: 'passive', skill: { kind: 'passive' } });
+    assert.equal(h.unit('energy').researchCharges, 0);
+    cast(h, 'a'); cast(h, 'a'); cast(h, 'b');
+    assert.equal(h.unit('energy').researchCharges, stage >= 1 ? 2 : 0);
+    cast(h, 'c'); close(target.s.maxHp - target.hp, stage >= 1 ? 360 : 0);
+    assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+  }
+});
+
+test('Rhine energy: full charge waits without overflow or empty FX, releases on enemy entry, and never charges itself', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy', 10, 5, 1)])]);
+  for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  assert.equal(h.unit('energy').researchCharges, 3);
+  h.run(3.1); for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  assert.equal(h.unit('energy').researchCharges, 3);
+  assert.equal(h.eventsOf('fx').filter((e) => e[1] === 'rhinePulse').length, 0);
+  const outside = h.spawn('dummy', { pos: [10, 9] }); h.step();
+  assert.equal(h.unit('energy').researchCharges, 3); close(outside.hp, outside.s.maxHp);
+  const inside = h.spawn('dummy', { pos: [10, 6] }); h.step();
+  close(inside.s.maxHp - inside.hp, 360); assert.equal(h.unit('energy').researchCharges, 0);
+  h.run(10); close(inside.s.maxHp - inside.hp, 360); assert.equal(h.unit('energy').researchCharges, 0);
+  h.b.kill(inside);
+  for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  assert.equal(h.unit('energy').researchCharges, 3);
+  h.b.getPlayer('p1').bonds.rhineShip.active = false; h.step();
+  assert.equal(h.unit('energy').researchCharges, 0);
+  h.b.getPlayer('p1').bonds.rhineShip.active = true;
+  const later = h.spawn('dummy', { pos: [10, 6] }); h.step(); close(later.hp, later.s.maxHp);
+  assert.equal(h.eventsOf('fx').filter((e) => e[1] === 'rhinePulse').length, 1);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+});
+
+test('Rhine mature energy: the primary-centered Saria diamond includes whole cells and giant bodies, excluding circle corners and stealth', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy', 10, 5, 2)])]);
+  const primary = h.spawn('dummy', { pos: [10, 5] });
+  const covered = [];
+  for (let dr = -3; dr <= 3; dr++) for (let dc = -3; dc <= 3; dc++) {
+    if (10 + dr >= 9 && 10 + dr <= 12 && Math.abs(dr) + Math.abs(dc) <= 3 && (dr || dc)) {
+      covered.push(h.spawn('dummy', { pos: [10 + dr, 5 + dc] }));
+    }
+  }
+  const corners = [[2, -2], [2, 2]].map(([dr, dc]) => h.spawn('dummy', { pos: [10 + dr, 5 + dc] }));
+  const tileEdge = h.spawn('dummy', { pos: [10.49, 8.49] });
+  const giant = h.spawn('dummy', { pos: [10, 10.49] }); giant.hitArea = { w: 5, h: 1, dx: 0, dy: 0 };
+  const concealed = h.spawn('dummy', { pos: [11, 5] }), untargetable = h.spawn('dummy', { pos: [10, 7] });
+  const hidden = h.spawn('dummy', { pos: [10, 4] }); hidden.hidden = true;
+  h.b.addBuff(concealed, { key: 'test:stealth', flags: { stealth: true }, persist: true });
+  h.b.addBuff(untargetable, { key: 'test:untargetable', flags: { untargetable: true }, persist: true });
+  for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  for (const target of [primary, ...covered, tileEdge, giant]) close(target.s.maxHp - target.hp, 360);
+  for (const target of [...corners, concealed, untargetable, hidden]) {
+    assert.equal(target.hp, target.s.maxHp, `excluded enemy ${target.id} at (${target.y},${target.x})`);
+  }
+  assert.equal(h.eventsOf('fx').filter((e) => e[1] === 'rhinePulse').length, 1);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+});
+
+test('Rhine mature energy: splash follows a moving primary tile beyond device range without turning into a circle', () => {
+  const h = battle([player('p1', [op('a', 'test', 10, 4, { cast: true }), op('b', 'test', 11, 5, { cast: true }),
+    op('c', 'test', 9, 5, { cast: true }), device('energy', 10, 5, 2)])]);
+  const primary = h.spawn('dummy', { pos: [10.49, 6.49] });
+  const tip = h.spawn('dummy', { pos: [10.49, 9.49] });
+  const corner = h.spawn('dummy', { pos: [12.49, 8.49] });
+  for (const uid of ['a', 'b', 'c']) cast(h, uid);
+  close(primary.s.maxHp - primary.hp, 360);
+  close(tip.s.maxHp - tip.hp, 360);
+  close(corner.hp, corner.s.maxHp);
+  assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
 });

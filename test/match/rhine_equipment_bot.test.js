@@ -40,6 +40,27 @@ test('Rhine equipment bot uses an existing partner and never treats a full carri
   m.dispose();
 });
 
+test('Rhine equipment bot values mainframe growth beyond 100 layers while standalone terminal ASPD stays capped', () => {
+  const { h, m, ps } = prep();
+  const rhine = give(m, ps, chess(C.saria), 'board', [10, 4]);
+  give(m, ps, chess(C.silence), 'board', [11, 4]);
+  give(m, ps, chess(C.ptilopsis), 'board', [12, 4]);
+  const score = (key, layers) => {
+    ps.layers[RHINE_BOND] = layers; ps.recompute();
+    return rhineItemSynergy(m, ps, `${E[key].key}_a`);
+  };
+  const mainframe100 = score('mainframe', 100), mainframe400 = score('mainframe', 400);
+  assert.ok(mainframe400 > mainframe100);
+  assert.ok(score('mainframe', 999) > mainframe400);
+  assert.equal(score('terminal', 100), score('terminal', 400), 'terminal alone has no uncapped effect');
+  const mf = giveItem(m, ps, `${E.mainframe.key}_a`);
+  assert.equal(ps.equip(mf.uid, rhine.uid).ok, true);
+  const paired100 = score('terminal', 100), paired400 = score('terminal', 400);
+  assert.ok(paired400 > paired100, 'pairing doubles the uncapped mainframe contribution');
+  assert.ok(score('terminal', 999) > paired400);
+  assert.deepEqual(h.logs.error, []); m.dispose();
+});
+
 test('Rhine equipment bot leaves a full transformed carrier intact and chooses a free deployed Rhine member', () => {
   const { h, m, ps } = prep();
   const transformed = give(m, ps, chess('char_416_zumama'), 'board', [10, 5]);

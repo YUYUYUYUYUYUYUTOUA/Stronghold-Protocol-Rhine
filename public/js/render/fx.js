@@ -36,7 +36,7 @@
 import { fxAtlas } from './textures.js';
 import { DMG_STYLE, dmgStyleKey, HIT_TINT, PROJ, COLORS } from './style.js';
 import { RHINE_BALANCE } from '../../../shared/rhineResearch.js';
-import { researchRangeTiles } from '../../../shared/rhineRange.js';
+import { researchRange, researchRangeTiles, energyPulseRange } from '../../../shared/rhineRange.js';
 import { GEO } from '../../../shared/constants.js';
 
 /**
@@ -1744,7 +1744,16 @@ export class FxSystem {
     // Idle rigs never invent activations; these cues are tied to successful sim events only.
     if (spec.a.startsWith('research')) {
       const src = this._viewOf(ex.source ?? ex.src ?? ex.id);
+      if (spec.a === 'researchEcology' && src?.info && typeof ex.active === 'boolean') src.info.researchActive = ex.active;
       src?.onResearchFx?.(kind, ex);
+      if (spec.a === 'researchEcology' && ex.active === false) {
+        const key = `rhineEcology:${ex.source ?? ex.src ?? ex.id ?? `${at.x},${at.y}`}`;
+        for (let i = this.tileFlashes.length - 1; i >= 0; i--) {
+          const f = this.tileFlashes[i];
+          if (f.key === key || f.key === `${key}:bind` || (src && f.anchor === src)) this.tileFlashes.splice(i, 1);
+        }
+        return;
+      }
       if (spec.a === 'researchHeal') {
         const target = this._viewOf(ex.target);
         if (src && target && src !== target) this._beam(src, target, col, 0.28, 0.1);
@@ -1761,12 +1770,28 @@ export class FxSystem {
             this.particle('glow', p.x, p.y, { tint: 0xffe8c4, life: .22, s0: p.s * .5 / 128, s1: p.s / 128, a0: .95, a1: 0 });
           }
         }
-        const radius = ex.stage >= 1 ? r : 0.38;
-        this.ring(at.x, at.y, at.z, 0.1, radius, col, 0.46, 'shock');
-        if (this.rich && ex.stage >= 1) this.ring(at.x, at.y, at.z, 0.18, radius * 0.86, col, 0.65);
+        const pulse = energyPulseRange(ex.stage);
+        if (pulse.tileBased) {
+          // Calcification is a tile grid, not a larger Euclidean circle. Centre it on the
+          // struck enemy's cell exactly as the sim does; the tower still acquires nearby targets.
+          const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };
+          const row = Math.floor(at.y + .5), column = Math.floor(at.x + .5);
+          const tiles = pulse.grid.map(([dr, dc]) => [row + dr, column + dc])
+            .filter(([r, c]) => r >= bounds.r0 && r <= bounds.r1 && c >= bounds.c0 && c <= bounds.c1);
+          this.tileFlash(tiles, col, .65);
+          this.ring(at.x, at.y, at.z, .1, .38, col, .46, 'shock');
+        } else {
+          this.ring(at.x, at.y, at.z, 0.1, pulse.radius, col, 0.46, 'shock');
+          if (this.rich) this.ring(at.x, at.y, at.z, 0.18, pulse.radius * 0.86, col, 0.65);
+        }
       } else {
         const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };
-        this.tileFlash(researchRangeTiles(Math.round(at.y), Math.round(at.x), r, bounds), col, Math.max(.6, dur || 1.5), true);
+        const tiles = researchRangeTiles(Math.floor(at.y + .5), Math.floor(at.x + .5), r, bounds);
+        this.tileFlash(tiles, col, Math.max(.2, dur || RHINE_BALANCE.ecologyInterval / ts), !ex.continuous,
+          ex.continuous ? { steady: true, key: `rhineEcology:${ex.source ?? ex.src ?? ex.id ?? `${at.x},${at.y}`}` } : undefined);
+        // The persistent slow field starts immediately; only explicit periodic bind events flash.
+        if (ex.bind) this.tileFlash(tiles, 0xbaffef, RHINE_BALANCE.ecologyBindDuration / ts, true,
+          { key: `rhineEcology:${ex.source ?? ex.src ?? ex.id ?? `${at.x},${at.y}`}:bind` });
       }
       return;
     }
@@ -2123,11 +2148,37 @@ export class FxSystem {
     this.zones.length = w;
   }
 
+  /** Restore an effective ecology field from UnitInfo, without waiting for a replayed periodic event. */
+  researchArea(view, previous = null) {
+    if (!view || view.prep || !view.alive || view.remove || view.destroyed || view.researchDevice?.key !== 'ecology'
+      || view.info?.researchActive === false || !Number.isInteger(view.info?.researchStage)) return null;
+    const stage = view.info.researchStage;
+    if (stage < 0 || stage > 2) return null;
+    const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };
+    const row = Math.floor(view.y + .5), column = Math.floor(view.x + .5);
+    const key = `rhineEcology:${view.id}`;
+    const field = previous && this.tileFlashes.includes(previous) ? previous : this.tileFlashes.find(f => f.key === key);
+    const sameBounds = field?.bounds && ['r0','r1','c0','c1'].every(k => field.bounds[k] === bounds[k]);
+    if (field && field.row === row && field.column === column && field.stage === stage && sameBounds) {
+      field.anchor = view; field.dur = Infinity;
+      return field;
+    }
+    const range = researchRange({ id: view.info.defId, stage });
+    const tiles = researchRangeTiles(row, column, range.radius, bounds);
+    return this.tileFlash(tiles, FX_KINDS.rhineEcology.c, Infinity, false,
+      { steady: true, key, anchor: view, row, column, stage, bounds });
+  }
+
   /** Flash a set of tiles ([[r,c]]) on the ground (telegraphed boxes, blast tiles). */
-  tileFlash(tiles, tint, dur, warn = false) {
+  tileFlash(tiles, tint, dur, warn = false, options = undefined) {
     if (!Array.isArray(tiles) || !tiles.length) return;
-    this.tileFlashes.push({ tiles: tiles.slice(0, 60), tint, dur: Math.max(0.2, dur), t: 0, warn });
-    if (this.tileFlashes.length > 12) this.tileFlashes.shift();
+    const record = { tiles: tiles.slice(0, 60), tint, dur: Math.max(0.2, dur), t: 0, warn, ...options };
+    const previous = options?.key && this.tileFlashes.find(f => f.key === options.key);
+    if (previous) Object.assign(previous, record);
+    else this.tileFlashes.push(record);
+    // Ordinary hit flashes may churn rapidly; they must not evict a still-active research field.
+    if (this.tileFlashes.filter(f => !f.steady).length > 12) this.tileFlashes.splice(this.tileFlashes.findIndex(f => !f.steady), 1);
+    return previous || record;
   }
 
   _updateTileFlashes(dt) {
@@ -2138,10 +2189,13 @@ export class FxSystem {
     const p = this._p;
     let w = 0;
     for (const f of this.tileFlashes) {
+      if (f.anchor && (!f.anchor.alive || f.anchor.remove || f.anchor.destroyed || f.anchor.prep
+        || f.anchor.info?.researchActive === false || !Number.isInteger(f.anchor.info?.researchStage))) continue;
       f.t += dt;
       if (f.t >= f.dur) continue;
       const k = f.t / f.dur;
-      const a = (f.warn ? 0.35 + 0.35 * Math.abs(Math.sin(f.t * 7)) : 0.55 * (1 - k)) * (k > 0.85 ? (1 - k) / 0.15 : 1);
+      const a = f.steady ? .15 + .025 * Math.sin(f.t * 2)
+        : (f.warn ? 0.35 + 0.35 * Math.abs(Math.sin(f.t * 7)) : 0.55 * (1 - k)) * (k > 0.85 ? (1 - k) / 0.15 : 1);
       for (const [r, c] of f.tiles) {
         const z = (this.ctx.heightAt ? this.ctx.heightAt(r, c) : 0) + 0.015;
         const pts = [];

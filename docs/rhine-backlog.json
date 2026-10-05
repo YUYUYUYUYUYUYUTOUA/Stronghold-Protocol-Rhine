@@ -1,10 +1,10 @@
 {
   "title": "莱茵生命扩展待修记录",
   "recordedDate": "2026-10-04",
-  "status": "六人BAN、BOSS血量与信标补给已实施，全量与真实六人浏览器通过，线上切换验收另行记录",
-  "updatedDate": "2026-10-05",
-  "currentRelease": "v0.1.2-rhine.6",
-  "currentBranch": "codex/rhine-toggle-update",
+  "status": "上游0.1.3适配基础上的莱茵输出转换增强已制作，验证及发布结果见RHINE-CHANGES；线上另行切换",
+  "updatedDate": "2026-10-06",
+  "currentRelease": "v0.1.3-rhine.2",
+  "currentBranch": "codex/rhine-upstream-013",
   "items": [
     {
       "id": "mayer-summon-count",
@@ -76,11 +76,22 @@
       "id": "large-room-bounty-options",
       "title": "五至六席悬赏追加三张现有目标",
       "requestedBehavior": "仅起始参战人数五至六席时，在原六张悬赏牌后追加三张现有I/II/II阶目标，赏金分别为1/2/2，共九张。真人与AI共同计数，单人与一至四席沿用原张数。",
-      "startingPlayerCounts": [5, 6],
+      "startingPlayerCounts": [
+        5,
+        6
+      ],
       "originalCardCount": 6,
       "extendedCardCount": 9,
-      "extraTiers": [1, 2, 2],
-      "extraCoins": [1, 2, 2],
+      "extraTiers": [
+        1,
+        2,
+        2
+      ],
+      "extraCoins": [
+        1,
+        2,
+        2
+      ],
       "status": "已实施，发布验收另行记录",
       "implementedDate": "2026-10-05"
     },
@@ -105,6 +116,13 @@
       "vanillaUsesFullDataProfile": true,
       "status": "已实施，发布验收另行记录",
       "implementedDate": "2026-10-05"
+    },
+    {
+      "id": "rhine-output-conversion",
+      "title": "莱茵输出转换增强",
+      "implementedDate": "2026-10-06",
+      "requestedBehavior": "6莱茵成果共享15%/25%；能量一级AOE、二级本方全场充能、三级钙质化25格；生态持续50%减速；主机取消100/200上限。",
+      "status": "已制作，测试和发布记录见变更记录"
     }
   ],
   "verifiedDate": "2026-10-04"

@@ -1169,7 +1169,9 @@ export function rhineItemSynergy(m, ps, id) {
   const active = !!ps.bonds?.[RHINE_BOND]?.active;
   const layers = active ? Math.max(0, Number(ps.layers?.[RHINE_BOND] ?? ps.bonds[RHINE_BOND].layers) || 0) : 0;
   if (key === RE.mainframe.key && !members.length) return 0;
-  return (active ? 3 + Math.min(5, layers / 20) : 0) + (paired ? 4 : 0);
+  // A mainframe or its terminal pairing keeps gaining value after the terminal's ASPD has capped.
+  const growth = key === RE.mainframe.key || paired ? layers / 20 : Math.min(5, layers / 20);
+  return (active ? 3 + growth : 0) + (paired ? 4 : 0);
 }
 
 function context(m, ps) {

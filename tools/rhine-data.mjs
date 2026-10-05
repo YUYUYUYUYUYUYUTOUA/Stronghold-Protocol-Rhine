@@ -21,7 +21,7 @@ export const DOROTHY_TOKEN = 'token_10025_doroth_recttp';
 const clone = x => structuredClone(x);
 const BASE_STATS = { maxHp: 3000, atk: 300, def: 0, res: 0, cost: 0, blockCnt: 0, bat: 1, aspd: 100,
   respawnTime: 999, spRecovery: 0, hpRecoveryPerSec: 0, moveSpeed: 0, tauntLevel: -10, massLevel: 0, deployLimit: 1, deckStack: 0 };
-const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动一台科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台，${RHINE_BALANCE.thresholds[2]}名时三台全部启动。休整期选择生命维持仪、能量谐振仪或生态调控器。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响。`;
+const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动一台科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台，${RHINE_BALANCE.thresholds[2]}名时三台全部启动。达到${RHINE_BALANCE.sharingCount}名时，除伊芙利特和治疗干员外的莱茵输出干员获得己方已部署装置中最高基础攻击力的${RHINE_BALANCE.researchSharing[0] * 100}%，精锐${RHINE_BALANCE.researchSharing[1] * 100}%，作为额外攻击力；多个装置不重复共享。休整期选择生命维持仪、能量谐振仪或生态调控器。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响。`;
 
 // This expansion is not a sandbox/roguelike mode. Preserve the source conditions for auditing,
 // but never compile mode-restricted module parts into the live ordinary-battle blackboards.
@@ -68,7 +68,7 @@ function makeGarrison(key, gold) {
   if (key === 'copy_end') return garrison(id, '身前一格干员若为“休整期结束时”特质，本干员的特质与其相同', 'SERVER_PREP_FIN', 'SERVER_FRONT_SAME_EFFECT_PREP_FIN');
   if (key === 'mayer') return garrison(id, `战斗中，每${r.mayerLayerStep}层科研使身前一格的科研装置攻击力+${r.mayerAttack[grade]}`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { layer_step: r.mayerLayerStep, atk: r.mayerAttack[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
-  if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署科研装置基础攻击力总和的${r.ifritInheritance[grade] * 100}%作为额外攻击力`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
+  if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署科研装置基础攻击力总和的${r.ifritInheritance[grade] * 100}%作为额外攻击力，无独立继承上限`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
   if (key === 'astgenne') return garrison(id, `战斗中，首次开启技能时，使已激活的【莱茵生命】与【精准】各增加${r.astgenneFirstSkillLayers[grade]}层`, 'IN_BATTLE', 'RHINE_ASTGENNE_FIRST_SKILL', { layer: r.astgenneFirstSkillLayers[grade] }, { bond_ids: `${RHINE_BOND},preciShip` });
   if (key === 'dorothy') return garrison(id, `战斗中，自身布置的陷阱每触发一枚，使已激活的【莱茵生命】增加${r.dorothyTrapLayers[grade]}层；每场普通主战最多获得${r.dorothyBattleLayerCap[grade]}层。一枚陷阱命中多人只计一次，连锁引爆逐枚计数；双倍伤害陷阱不额外产层，撤回、搬动或未触发销毁不产层`, 'IN_BATTLE', 'RHINE_DOROTHY_TRAP_RESEARCH', { layer: r.dorothyTrapLayers[grade], max_layer: r.dorothyBattleLayerCap[grade] }, { bond_id: RHINE_BOND });
   return garrison(id, `休整期结束时，每名实际在场的莱茵生命干员使莱茵生命增加${r.ptilopsisLayersPerMember[grade]}层科研；同名干员分别计数，调和的虚拟人数不计入`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
@@ -168,7 +168,7 @@ function applyEquipment({ items, effects }) {
     const stat = terminal ? { atk: r.attack[grade] } : { max_hp: r.hp[grade] };
     const special = terminal
       ? { layer_step: r.layerStep, attack_speed: r.attackSpeed[grade], max_attack_speed: r.attackSpeedCap[grade] }
-      : { atk_per_layer: r.attackPerLayer, max_atk: r.attackCap, combo_atk_per_layer: r.comboAttackPerLayer, combo_max_atk: r.comboAttackCap };
+      : { atk_per_layer: r.attackPerLayer, combo_atk_per_layer: r.comboAttackPerLayer };
     const specialStrings = { key: `rhine_${spec.key}`, ...(terminal ? {} : { equip_chess_id: RHINE_EQUIPMENT.terminal.key }) };
     const buffs = [
       { key: 'env_gbuff_new_with_verify', countType: 'NONE', bb: stat, bbStr: { key: 'attr_common_global_buff' } },
@@ -176,7 +176,7 @@ function applyEquipment({ items, effects }) {
     ];
     const desc = terminal
       ? `攻击力+${r.attack[grade] * 100}%；己方【莱茵生命】盟约激活时，携带者每${r.layerStep}层科研获得${r.attackSpeed[grade]}攻击速度，最多${r.attackSpeedCap[grade]}。`
-      : `生命上限+${r.hp[grade] * 100}%；携带者属于【莱茵生命】且在场时，己方每台已部署科研装置每层科研额外获得${r.attackPerLayer}点基础攻击力，最多${r.attackCap}。携带者同时装备“莱茵实验终端”时，变为每层${r.comboAttackPerLayer}点，最多${r.comboAttackCap}。多个主机只取最强效果，不叠加。该增益计入伊芙利特的继承。`;
+      : `生命上限+${r.hp[grade] * 100}%；携带者属于【莱茵生命】且在场时，己方每台已部署科研装置每层科研额外获得${r.attackPerLayer}点基础攻击力。携带者同时装备“莱茵实验终端”时，变为每层${r.comboAttackPerLayer}点。该额外攻击无数值上限；多个主机只取最强效果，不叠加。该增益计入伊芙利特的继承与科研成果共享。`;
     const effectId = `eff_rhine_${spec.key}_${gold ? 'b' : 'a'}`;
     effects[effectId] = { effectId, effectType: 'EQUIP', name: spec.name, desc, descRaw: desc,
       counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0,
@@ -189,7 +189,7 @@ function applyEquipment({ items, effects }) {
       effectId, effectName: spec.name, desc, descRaw: desc, buffs, params: clone(effects[effectId].params),
       category: 'BOND_SIGNATURE', kind: 'passive', family: 'rhine',
       implFormula: terminal ? 'ATK% += atk. If own Rhine bond is active, ASPD += min(floor(layers / layer_step) * attack_speed, max_attack_speed).'
-        : 'HP% += max_hp. Each deployed research device gains the strongest live Rhine carrier contribution: min(layers * atk_per_layer, max_atk), or combo values when that carrier also equips the terminal. This enters device base ATK before Ifrit inheritance and never reads device ATK.',
+        : 'HP% += max_hp. Each deployed research device gains the strongest live Rhine carrier contribution: layers * atk_per_layer, or combo_atk_per_layer when that carrier also equips the terminal, without an attack cap. This enters device base ATK before inheritance/sharing and never reads device ATK.',
       rangeGrid: [[0, 0]], flavor: null };
   }
   // The ordinary grant mechanism already reads the OTHER item's giveBondId. Explain the new
@@ -228,7 +228,7 @@ export async function applyRhineData(files, source = null) {
   const bond = { ...clone(bonds.yanShip), bondId: RHINE_BOND, name: '莱茵生命', identifier: 24, bondOrder: 24,
     isCore: true, bondType: 'SEASON', iconId: 'rhineShip', activeCount: RHINE_BALANCE.thresholds[0], thresholds: [...RHINE_BALANCE.thresholds], maxCount: null,
     layerMilestones: [], powerIdList: [], desc: TEXT, descRaw: TEXT, effectId: 'bondeffect_rhine', effectName: '莱茵生命',
-    effectDesc: TEXT, effectDescRaw: TEXT, effectDescParams: [], bb: { base_atk: RHINE_BALANCE.baseAttack, atk_per_stack: RHINE_BALANCE.attackPerLayer },
+    effectDesc: TEXT, effectDescRaw: TEXT, effectDescParams: [], bb: { base_atk: RHINE_BALANCE.baseAttack, atk_per_stack: RHINE_BALANCE.attackPerLayer, sharing_count: RHINE_BALANCE.sharingCount, sharing_atk: RHINE_BALANCE.researchSharing[0], sharing_golden_atk: RHINE_BALANCE.researchSharing[1] },
     bbStr: { key: 'rhine_research' }, buffs: [], baseParams: {}, perStackParams: {}, spec: { researchDevices: RHINE_DEVICES.map(d => d.tokenId) } };
   bonds[RHINE_BOND] = bond;
   for (const b of Object.values(bonds)) {
@@ -236,7 +236,7 @@ export async function applyRhineData(files, source = null) {
     b.visibleMembers = b.members.filter(id => chess[id].visible);
   }
   effects.bondeffect_rhine = { effectId: 'bondeffect_rhine', effectType: 'BOND', name: '莱茵生命', desc: TEXT, descRaw: TEXT,
-    counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0, buffs: [], params: { base_atk: RHINE_BALANCE.baseAttack, atk_per_stack: RHINE_BALANCE.attackPerLayer } };
+    counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0, buffs: [], params: { base_atk: RHINE_BALANCE.baseAttack, atk_per_stack: RHINE_BALANCE.attackPerLayer, sharing_count: RHINE_BALANCE.sharingCount, sharing_atk: RHINE_BALANCE.researchSharing[0], sharing_golden_atk: RHINE_BALANCE.researchSharing[1] } };
   for (const m of Object.values(config.modes)) {
     if (!m.activeBondIds.includes(RHINE_BOND)) m.activeBondIds.push(RHINE_BOND);
     m.inactiveBondIds = m.inactiveBondIds.filter(id => id !== RHINE_BOND);

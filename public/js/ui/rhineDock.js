@@ -2,8 +2,8 @@ import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html } from './components.js';
 import { boardTargets } from './gameLogic.js';
 import { GEO } from '../../../shared/constants.js';
-import { RHINE_DEVICES, RHINE_BALANCE, rhineAttack } from '../../../shared/rhineResearch.js';
-import { researchRange, researchRangeText } from '../../../shared/rhineRange.js';
+import { RHINE_DEVICES, RHINE_BALANCE, rhineAttack, rhineStage } from '../../../shared/rhineResearch.js';
+import { researchRange, researchRangeText, energyPulseRange } from '../../../shared/rhineRange.js';
 import { showRange } from './facingWheel.js';
 
 export function containsPoint(poly, x, y) {
@@ -29,6 +29,17 @@ export function researchTileAt(view, x, y) {
 export function researchProgress(points = 0, stage = 0) {
   const goal = RHINE_BALANCE.breakthroughPoints[stage];
   return goal == null ? '阶段突破已完成' : `研究 ${points}/${goal} · 成功+${RHINE_BALANCE.successPoints} / 失败+${RHINE_BALANCE.failurePoints}`;
+}
+
+/** Keep target acquisition, skill charging and splash distinct in the compact bench card. */
+export function researchRangeSummary(piece) {
+  const range = researchRange(piece);
+  if (!range) return '';
+  if (range.key === 'energy') {
+    const pulse = energyPulseRange(range.stage);
+    return `选敌 ${range.grid.length} 格 · ${range.stage >= 1 ? '本方全场充能' : '范围内充能'} · ${pulse.tileBased ? `钙质化 ${pulse.grid.length} 格` : `溅射半径 ${pulse.radius}`}`;
+  }
+  return `范围 ${range.grid.length} 格 · 半径 ${range.radius}${range.key === 'ecology' ? ` · 持续减速 ${Math.round(RHINE_BALANCE.ecologySlow * 100)}%` : ''}`;
 }
 
 /** Three reserved bench slots. Pointer dragging and click-then-place work in either renderer. */
@@ -77,15 +88,14 @@ export function RhineDock({ research, editable, view, placeCtx, onDeploy, onReca
       const piece = research.hand?.[index];
       const uid = status.uid ?? piece?.uid;
       const canDeploy = editable && research.capacity > deployed && !status.onBoard && uid != null;
-      const stage = status.stage || 0;
-      const range = researchRange({ id: def.tokenId, stage });
+      const stage = rhineStage(status.stage);
       return html`<article key=${def.key} class=${`rhine-card${armed === uid ? ' is-armed' : ''}${status.onBoard ? ' is-deployed' : ''}`} style=${`--research-color:${def.color}`} data-research=${def.key}>
         <button type="button" class="rhine-card__select" disabled=${!canDeploy} aria-label=${`部署${def.name}`} title=${def.description}
           onPointerDown=${() => { if (canDeploy) setArmed(uid); }} onClick=${() => { if (canDeploy) setArmed(uid); }}>
           <img src=${def.sprite || def.icon} alt="" draggable="false" /><strong>${def.name}</strong><small>${['原型', '改良型', '成熟型'][stage]}</small>
         </button>
         <div class="rhine-card__stats">攻击 ${Math.round(status.attack ?? rhineAttack(research.layers))}${status.onBoard ? ' · 已部署' : ''}</div>
-        <div class="rhine-card__range" title=${researchRangeText({id:def.tokenId,stage})}>范围 ${range.grid.length} 格 · 半径 ${range.radius}${def.key==='energy' && stage>=1 ? ` · 溅射 ${RHINE_BALANCE.energySpreadRadius}` : ''}</div>
+        <div class="rhine-card__range" title=${researchRangeText({id:def.tokenId,stage})}>${researchRangeSummary({id:def.tokenId,stage})}</div>
         <div class="rhine-card__progress" title="每阶段需要5点；突破后研究点清零，溢出不保留。">${researchProgress(status.points || 0, stage)}</div>
         <div class="rhine-card__next">${stage < 2 ? `下次：${def.breakthroughs[stage]}` : def.breakthroughs.join(' · ')}</div>
         <div class="rhine-card__actions"><button type="button" onClick=${() => uid != null && onDetail?.(uid)}>详情</button>

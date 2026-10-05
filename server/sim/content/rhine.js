@@ -1,18 +1,21 @@
 // Rhine research devices and the battle-side protocol traits. Device experience belongs to Match;
 // this module consumes its frozen selection and reads the owner's live bond layers only.
 import { RHINE_BALANCE as B, RHINE_BOND, RHINE_CHARACTERS as C, RHINE_DEVICES, rhineDevice, rhineCapacity, rhineAttack } from '../../../shared/rhineResearch.js';
-import { researchContainsTile } from '../../../shared/rhineRange.js';
+import { energyPulseRange, researchContainsTile } from '../../../shared/rhineRange.js';
 import { frontOf } from '../dir.js';
-import { bodyDist } from '../body.js';
+import { bodyDist, bodyInKeys } from '../body.js';
+import { absoluteRangeKeys } from '../targeting.js';
 import { canReceiveHeal } from '../damage.js';
 import { TICK } from '../constants.js';
-import { rhineEquipmentAttack } from './items/battle.js';
+import { memberOf, rhineEquipmentAttack } from './items/battle.js';
 
 const alive = (u) => !!u?.alive && u.deployed && !u.removed && !u.hidden;
 const charId = (u) => u.def?.charId ?? u.def?.raw?.charId;
 const elite = (u) => !!u.def?.golden;
 const layersOf = (ps) => ps?.bonds?.[RHINE_BOND]?.active ? Math.max(0, Number(ps.bonds[RHINE_BOND].layers) || 0) : 0;
 const healCapture = Symbol('rhineMedicalHeal');
+const damageOperator = (u) => u.def?.profession !== 'MEDIC' && charId(u) !== C.saria
+  && ['phys', 'arts', 'true'].includes(u.profile?.dmgType ?? u.dmgType);
 
 function inertDevice() {
   return {
@@ -71,19 +74,26 @@ export function install(battle) {
     const entries = selectedDevices(ps);
     for (const entry of entries) {
       entry.unit.researchStage = entry.stage;
+      entry.unit.researchActive = false;
       if (entry.key === 'energy') {
         entry.unit.researchCharges = 0;
         entry.unit.researchChargeMax = B.energyCharges;
       }
-      states.push({ ...entry, ps, charges: 0, contributors: new Map(), zoneUntil: -1 });
+      states.push({ ...entry, ps, charges: 0, contributors: new Map(), active: false });
     }
   }
   const enabled = (s) => alive(s.unit) && selectedDevices(s.ps).some((d) => d.unit === s.unit);
+  let ready = false;
+  const ecologyFx = (s, active, bind = false) => battle.fx('rhineEcology', {
+    x: s.unit.x, y: s.unit.y, source: s.unit.id, stage: s.stage, active,
+    radius: B.radius + (s.stage >= 2 ? 1 : 0), continuous: true, duration: B.ecologyInterval, bind,
+  });
   // Use the engine's ally-side selector: unrevealed, unblocked stealth enemies cannot be selected by a device.
   const targets = (s, radius = B.radius) => battle.foesInRadius(s.unit.x, s.unit.y, radius + Math.SQRT1_2)
     .filter(u => researchContainsTile(u, s.unit.x, s.unit.y, radius));
   const setCharges = (s, charges) => {
-    s.charges = charges;
+    s.charges = Math.min(B.energyCharges, Math.max(0, charges));
+    charges = s.charges;
     if (s.key === 'energy' && s.unit.researchCharges !== charges) {
       s.unit.researchCharges = charges;
       s.unit.markDirty();
@@ -94,15 +104,29 @@ export function install(battle) {
     for (const s of states) {
       const atk = deviceBaseAttack(battle, s.unit);
       if (s.unit.base.atk !== atk) { s.unit.base.atk = atk; s.unit.markDirty(); }
-      if (!enabled(s)) { setCharges(s, 0); s.contributors.clear(); s.zoneUntil = -1; }
+      const active = enabled(s);
+      if (s.active !== active) {
+        s.active = active;
+        s.unit.researchActive = active;
+        s.unit.markDirty();
+        if (ready && s.key === 'ecology') ecologyFx(s, active);
+      }
+      if (!active) { setCharges(s, 0); s.contributors.clear(); }
     }
     for (const ps of battle.players) {
       const layers = layersOf(ps);
-      const inherited = states.filter((s) => s.ps === ps && enabled(s)).reduce((n, s) => n + deviceBaseAttack(battle, s.unit), 0);
+      const deviceAttacks = states.filter((s) => s.ps === ps && enabled(s)).map((s) => deviceBaseAttack(battle, s.unit));
+      const inherited = deviceAttacks.reduce((n, atk) => n + atk, 0);
+      const highest = Math.max(0, ...deviceAttacks);
+      const sharing = ps.bonds?.[RHINE_BOND]?.active && ps.bonds[RHINE_BOND].count >= B.sharingCount;
       for (const u of ps.units) {
         if (u.kind !== 'op') continue;
         if (charId(u) === C.saria) setPassive(battle, u, 'rhine:saria', { healingDealtMul: 1 + Math.floor(layers / B.sariaLayerStep) * B.sariaHealBonus[elite(u) ? 1 : 0] });
         if (charId(u) === C.ifrit) setPassive(battle, u, 'rhine:ifrit', { atkFlat: inherited * B.ifritInheritance[elite(u) ? 1 : 0] });
+        const shared = sharing && alive(u) && charId(u) !== C.ifrit && damageOperator(u) && memberOf(battle, u, RHINE_BOND)
+          ? highest * B.researchSharing[elite(u) ? 1 : 0] : 0;
+        if (shared > 0) setPassive(battle, u, 'rhine:sharing', { atkFlat: shared });
+        else if (u.findBuff('rhine:sharing')) battle.removeBuff(u, 'rhine:sharing');
       }
     }
   };
@@ -138,11 +162,18 @@ export function install(battle) {
   };
 
   const pulse = (s) => {
+    if (!enabled(s) || s.charges < B.energyCharges) return;
     const enemies = targets(s).sort((a, b) => bodyDist(a, s.unit.x, s.unit.y) - bodyDist(b, s.unit.x, s.unit.y) || a.id - b.id);
     if (!enemies.length) return;
     const primary = enemies[0];
-    const hit = s.stage >= 1 ? battle.foesInRadius(primary.x, primary.y, B.energySpreadRadius ?? 1, true) : [primary];
-    const amount = deviceBaseAttack(battle, s.unit) * B.energyPulseScale * (s.stage >= 2 ? (B.energyStage2Scale ?? 1.5) : 1);
+    const range = energyPulseRange(s.stage);
+    const row = Math.round(primary.y), col = Math.round(primary.x);
+    const keys = range.tileBased ? absoluteRangeKeys(range.grid, row, col, 'RIGHT') : null;
+    const hit = keys ? battle.foesInRadius(col, row, range.radius + Math.SQRT1_2).filter((u) => bodyInKeys(u, keys))
+      : battle.foesInRadius(primary.x, primary.y, range.radius, true);
+    const amount = deviceBaseAttack(battle, s.unit) * B.energyPulseScale;
+    // Consume only after finding a selectable primary, before damage hooks can cause another skill start.
+    setCharges(s, 0);
     for (const target of hit) battle.dealDamage(s.unit, target, { type: 'arts', amount, canDodge: false, tags: ['rhinePulse'] });
     battle.fx('rhinePulse', { x: primary.x, y: primary.y, fromX: s.unit.x, fromY: s.unit.y, source: s.unit.id, target: primary.id, stage: s.stage });
   };
@@ -151,28 +182,32 @@ export function install(battle) {
     if (unit?.kind !== 'op' || !alive(unit) || reason === 'carry' || skill?.kind === 'passive') return;
     refresh();
     for (const s of states) {
-      if (s.key !== 'energy' || !enabled(s) || unit.ownerId !== s.unit.ownerId || !researchContainsTile(unit, s.unit.x, s.unit.y, B.radius)) continue;
+      if (s.key !== 'energy' || !enabled(s) || unit.ownerId !== s.unit.ownerId
+        || (s.stage < 1 && !researchContainsTile(unit, s.unit.x, s.unit.y, B.radius))) continue;
       const last = s.contributors.get(unit.id) ?? -Infinity;
       if (battle.time - last < B.energyContributorCooldown - 1e-9) continue;
       s.contributors.set(unit.id, battle.time);
       setCharges(s, s.charges + 1);
-      if (s.charges >= B.energyCharges) { setCharges(s, s.charges - B.energyCharges); pulse(s); }
+      pulse(s);
     }
   });
 
-  const ecology = (s) => {
+  const ecology = (s, bind = true) => {
     if (!enabled(s)) return;
-    s.zoneUntil = battle.time + B.ecologyDuration;
-    if (s.stage >= 1) for (const target of targets(s, B.radius + (s.stage >= 2 ? 1 : 0))) {
+    if (bind && s.stage >= 1) for (const target of targets(s, B.radius + (s.stage >= 2 ? 1 : 0))) {
       battle.applyStatus(target, 'bind', { duration: B.ecologyBindDuration, source: s.unit });
     }
-    battle.fx('rhineEcology', { x: s.unit.x, y: s.unit.y, source: s.unit.id, stage: s.stage, radius: B.radius + (s.stage >= 2 ? 1 : 0) });
+    ecologyFx(s, true, bind && s.stage >= 1);
   };
+  battle.on('battleStart', () => {
+    ready = true;
+    for (const s of states) if (s.key === 'ecology') ecology(s, false);
+  });
   battle.on('tick', () => {
     for (const s of states) {
-      if (s.key !== 'ecology' || !enabled(s) || battle.time >= s.zoneUntil) continue;
-      const slow = Math.min(B.ecologySlowCap, B.ecologySlow + layersOf(s.ps) * B.ecologySlowPerLayer);
-      for (const target of targets(s, B.radius + (s.stage >= 2 ? 1 : 0))) battle.applyStatus(target, 'slow', { value: slow, duration: TICK * 2, source: s.unit });
+      if (s.key === 'energy') { pulse(s); continue; }
+      if (s.key !== 'ecology' || !enabled(s)) continue;
+      for (const target of targets(s, B.radius + (s.stage >= 2 ? 1 : 0))) battle.applyStatus(target, 'slow', { value: B.ecologySlow, duration: TICK * 2, source: s.unit });
     }
   });
   for (const s of states) {

@@ -38,6 +38,18 @@ function* walk(node) {
   yield* walk(node.props?.children);
 }
 
+test('renderer metadata retains research shutdown separately from the breakthrough when joining a battle', () => {
+  const unit = { id: 500, kind: 'token', side: 'ally', defId: 'token_rhine_ecology', researchStage: 2 };
+  for (const active of [true, false]) {
+    const info = renderInfo({ ...unit, researchActive: active });
+    assert.equal(info.researchStage, 2);
+    assert.equal(info.researchActive, active, 'false is an explicit shutdown rather than absent metadata');
+  }
+  for (const invalid of [undefined, null, 'false', 0, 1]) {
+    assert.equal(renderInfo({ ...unit, researchActive: invalid }).researchActive, undefined);
+  }
+});
+
 test('clicking a teammate rendered on the canvas retains equipment and the Rhine morph-granted chip', () => {
   // render/app emits this exact `unit` in pieceClick; game.js uses it directly instead of looking up field meta.
   const raw = { id: 501, kind: 'op', side: 'ally', ownerId: 'p2', defId: stranger,

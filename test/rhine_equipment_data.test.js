@@ -13,7 +13,9 @@ import { addRhineArt } from '../tools/assets/rhine-plan.mjs';
 const data = getData(), gd = new GameData(data, 'mode_single_normal');
 const item = (key, gold = false) => `${RHINE_EQUIPMENT[key].key}_${gold ? 'b' : 'a'}`;
 
-test('Rhine equipment: normal and elite effects preserve approved stats, layer limits and upgrade links', () => {
+test('Rhine equipment: normal and elite effects preserve stats, uncapped mainframe growth and upgrade links', () => {
+  assert.equal(Object.hasOwn(RHINE_EQUIPMENT.mainframe, 'attackCap'), false);
+  assert.equal(Object.hasOwn(RHINE_EQUIPMENT.mainframe, 'comboAttackCap'), false);
   for (const [key, r] of Object.entries(RHINE_EQUIPMENT)) for (const gold of [false, true]) {
     const it = data.items[item(key, gold)], e = data.effects[it.effectId];
     assert.equal(it.itemType, 'EQUIP'); assert.equal(it.tier, r.tier); assert.equal(it.isGolden, gold);
@@ -26,7 +28,7 @@ test('Rhine equipment: normal and elite effects preserve approved stats, layer l
     assert.deepEqual(stat.bb, key === 'terminal' ? { atk: gold ? .25 : .15 } : { max_hp: gold ? .70 : .45 });
     assert.deepEqual(extra.bb, key === 'terminal'
       ? { layer_step: 10, attack_speed: gold ? 3 : 2, max_attack_speed: gold ? 30 : 20 }
-      : { atk_per_layer: 1, max_atk: 100, combo_atk_per_layer: 2, combo_max_atk: 200 });
+      : { atk_per_layer: 1, combo_atk_per_layer: 2 });
     assert.equal(it.canGiveBond, false);
     assert.equal(it.giveBondId, key === 'terminal' ? 'rhineShip' : null);
     assert.equal(it.requiresBondId, key === 'mainframe' ? 'rhineShip' : null);

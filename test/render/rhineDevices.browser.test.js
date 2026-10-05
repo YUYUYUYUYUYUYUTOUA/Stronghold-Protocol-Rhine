@@ -116,16 +116,62 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
       });
       assert.ok(Math.abs(partial.share - 2 / 3) < .001); assert.equal(partial.below, true); assert.equal(partial.tint, 0xffbc70);
       await page.screenshot({ path: path.join(OUT, 'rhine-charge-partial.png') });
-      const activation = await page.evaluate(() => {
+      await page.evaluate(() => window.__demo.view.pushSnapshot({ gt: .5, units: [[701,6,10,1,1,3,3,0,0], [702,8,10,1000,1000,0,0,0,0]] }));
+      await page.waitForFunction('window.__demo.view.debug.views.get(701).spGlow.visible && window.__demo.view.debug.views.get(701).researchActor.core.tint === 0xffe8c4');
+      const readyAt = await page.evaluate(() => performance.now());
+      await page.waitForFunction(start => performance.now() - start > 5000 && window.__demo.view.debug.views.get(701).spGlow.visible,
+        { timeout: 10000 }, readyAt);
+      assert.equal(await page.evaluate(() => window.__demo.view.debug.views.get(701).researchActor.pulse), 0, 'full charge waits without pretending to fire');
+      await page.screenshot({ path: path.join(OUT, 'rhine-charge-ready.png') });
+      const activation = await page.evaluate(async () => {
+        const { energyPulseRange } = await import('/shared/rhineRange.js');
         const v = window.__demo.view, fx = v.debug.fx;
         fx.simFx('rhinePulse', 8, 10, { source: 701, stage: 2 });
-        return { beams: fx.beamList.length, rings: fx.rings.length, pulse: v.debug.views.get(701).researchActor.pulse };
+        const rect = fx.ctx.fieldRect();
+        return { beams: fx.beamList.length, rings: fx.rings.length, pulse: v.debug.views.get(701).researchActor.pulse,
+          tiles: fx.tileFlashes.at(-1).tiles,
+          expected: energyPulseRange(2).grid.map(([r,c]) => [10+r,8+c]).filter(([r,c]) => r >= rect.r0 && r <= rect.r1 && c >= rect.c0 && c <= rect.c1) };
       });
       assert.equal(activation.beams, 1); assert.ok(activation.rings >= 2); assert.equal(activation.pulse, 1);
+      assert.deepEqual(activation.tiles, activation.expected);
       await page.screenshot({ path: path.join(OUT, 'rhine-pulse-low-quality.png') });
       await page.evaluate(() => window.__demo.view.pushSnapshot({ gt: 1, units: [[701,6,10,1,1,0,3,0,0], [702,8,10,900,1000,0,0,0,0]] }));
       await page.waitForFunction('window.__demo.view.debug.views.get(701).sp < .01');
       await page.waitForFunction('window.__demo.view.debug.fx.beamList.length === 0 && window.__demo.view.debug.views.get(701).researchActor.pulse === 0');
+      assert.deepEqual(problems, []);
+    } finally { await page.close(); }
+  });
+
+  test('a mid-battle ecology UnitInfo restores the continuous grid without any periodic fx replay', async () => {
+    const { page, problems } = await open('dev/render-demo.html?scene=prep&paused=1&board=2d&quality=low&panel=0',
+      'window.__demo?.ready');
+    try {
+      await page.evaluate(() => {
+        const v = window.__demo.view;
+        v.setCamera('normal', { instant: true });
+        v.enterBattle({ fieldId: 'rhine-join-test', kind: 'normal', stageId: 'act2autochess_m01',
+          units: [{ id: 703, kind: 'token', side: 'ally', defId: 'token_rhine_ecology', x: 5, y: 10, maxHp: 1, researchStage: 2, researchActive: true },
+            { id: 704, kind: 'token', side: 'ally', defId: 'token_rhine_ecology', x: 9, y: 11, maxHp: 1, researchStage: 2, researchActive: false }] });
+        v.pushSnapshot({ gt: 15, units: [[703,5,10,1,1,0,0,0,0], [704,9,11,1,1,0,0,0,0]] });
+      });
+      await page.waitForFunction('window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703")');
+      const area = await page.evaluate(async () => {
+        const { researchRangeTiles } = await import('/shared/rhineRange.js');
+        const fx = window.__demo.view.debug.fx, field = fx.tileFlashes.find(f => f.key === 'rhineEcology:703');
+        return { tiles: field.tiles, expected: researchRangeTiles(10, 5, 3, fx.ctx.fieldRect()),
+          persistent: field.dur === Infinity, pulse: field.anchor.researchActor.pulse,
+          stoppedField: fx.tileFlashes.some(f => f.key === 'rhineEcology:704') };
+      });
+      assert.deepEqual(area.tiles, area.expected);
+      assert.equal(area.persistent, true);
+      assert.equal(area.pulse, 0, 'restoring the continuous slow does not replay a bind');
+      assert.equal(area.stoppedField, false, 'inactive UnitInfo must not restore a stale field after reconnect');
+      await page.waitForFunction('window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703" && f.t > 5)', { timeout: 10000 });
+      await page.screenshot({ path: path.join(OUT, 'rhine-ecology-reconnect.png') });
+      await page.evaluate(() => window.__demo.view.debug.fx.simFx('rhineEcology', 5, 10, { source: 703, stage: 2, continuous: true, active: false }));
+      await page.waitForFunction('window.__demo.view.debug.views.get(703).info.researchActive === false && !window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703")');
+      await page.evaluate(() => window.__demo.view.debug.fx.simFx('rhineEcology', 5, 10, { source: 703, stage: 2, radius: 3, continuous: true, active: true }));
+      await page.waitForFunction('window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703" && f.dur === Infinity)');
       assert.deepEqual(problems, []);
     } finally { await page.close(); }
   });

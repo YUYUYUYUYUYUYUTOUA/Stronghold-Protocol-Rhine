@@ -46,16 +46,25 @@ export class ResearchDeviceActor {
   trigger(kind, extra) {
     if (kind !== { medical: 'rhineHeal', energy: 'rhinePulse', ecology: 'rhineEcology' }[this.key]) return;
     if (extra?.stage != null) this.setStage(extra.stage);
+    if (this.key === 'ecology' && extra?.active === false) { this.pulse = 0; return; }
+    if (this.key === 'ecology' && extra?.continuous && !extra.bind) return;
     this.pulse = 1;
   }
 
   // Kept separate from drawing so an offscreen device never replays an expired activation on re-entry.
-  advance(dt) { this.pulse = Math.max(0, this.pulse - Math.max(0, dt) * 2.2); }
+  advance(dt) {
+    this.pulse = Math.max(0, this.pulse - Math.max(0, dt) * 2.2);
+    if (this.key === 'ecology') this.field = this.view.ctx.fx?.researchArea?.(this.view, this.field);
+  }
 
   update(time, tileSize) {
     const v = this.view, sp = v.fallback, l = this.look;
     this.root.visible = v.alive && v._pic?.state === 'img';
     const pose = researchPose(this.key, time + v.bob, this.stage, this.pulse);
+    // A charged tower can wait indefinitely for a target. Keep that state distinct from the
+    // short firing pulse; snapshots (including reconnects) are the sole source of charge.
+    const charge = this.key === 'energy' && !v.prep && v.spMax > 0 ? Math.max(0, Math.min(1, v.sp / v.spMax)) : 0;
+    const ready = charge >= 1;
     const scale = Math.min(l.width / sp.texture.width, l.height / sp.texture.height) * tileSize;
     sp.scale.set(scale * pose.scaleX, scale * pose.scaleY);
     sp.position.set(0, tileSize * pose.y); sp.rotation = pose.rotation;
@@ -64,7 +73,8 @@ export class ResearchDeviceActor {
     this.root.rotation = sp.rotation;
     this.core.position.set(l.core[0] * w, -l.core[1] * h);
     this.core.scale.set(tileSize * (this.key === 'energy' ? 0.29 : 0.33) / 128, tileSize * (this.key === 'energy' ? 0.5 : 0.29) / 128);
-    this.core.alpha = pose.light;
+    this.core.alpha = pose.light + charge * .09 + (ready ? .12 : 0);
+    this.core.tint = ready ? 0xffe8c4 : l.tint;
     // One/two/three small lamps indicate prototype / breakthrough I / II without making the body larger.
     this.lights.forEach((light, i) => {
       light.visible = i <= this.stage;
@@ -86,7 +96,7 @@ export class ResearchDeviceActor {
       } else {
         detail.position.set(w * 0.045, -h * (0.39 + i * 0.11));
         detail.scale.set(tileSize * 0.032 / 32);
-        detail.alpha = 0.15 + (Math.sin(time * 3.2 - i * 1.1) + 1) * 0.18 + this.pulse * 0.35;
+        detail.alpha = 0.15 + (Math.sin(time * 3.2 - i * 1.1) + 1) * 0.18 + this.pulse * 0.35 + charge * .12;
       }
     });
   }

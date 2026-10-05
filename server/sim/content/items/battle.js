@@ -171,8 +171,7 @@ export function rhineEquipmentAttack(battle, ownerId, layers) {
       const p = bp(itemRecord(grant.id), 'rhine_mainframe');
       if (!p) continue;
       const rate = num(combo ? p.combo_atk_per_layer : p.atk_per_layer);
-      const cap = num(combo ? p.combo_max_atk : p.max_atk);
-      best = Math.max(best, Math.min(Math.max(0, cap), Math.max(0, num(layers)) * Math.max(0, rate)));
+      best = Math.max(best, Math.max(0, num(layers)) * Math.max(0, rate));
     }
   }
   return best;
