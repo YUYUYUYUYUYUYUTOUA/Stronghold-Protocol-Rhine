@@ -6,6 +6,7 @@ import { validateC2S } from '../../shared/protocol.js';
 import { buildBattleSpec, createBattleFromSpec, compactResult, fitResult } from '../../server/sim/spec.js';
 import { validateClientResult } from '../../server/match/fields.js';
 import { bossPoolHp, pairPlayers } from '../../server/match/finalAssault.js';
+import { GameData } from '../../server/match/gamedata.js';
 import { buildResult } from '../../server/match/results.js';
 import { DATA, makeMatch, checkInvariants, give, legalTileFor, chessOfTier } from './harness.js';
 import { FakeBattle } from './fakeBattle.js';
@@ -144,7 +145,7 @@ test('six-player unite attributes the sixth leaker and publishes all five leaker
 });
 
 for (const clientCombat of [false, true]) {
-  test(`six-player Final Assault ${clientCombat ? 'client' : 'server'}: 2+2+2, unchanged boss HP and six result rows`, () => {
+  test(`six-player Final Assault ${clientCombat ? 'client' : 'server'}: 2+2+2, twice the four-player boss HP and six result rows`, () => {
     const h = makeMatch({ mode: 'coop', difficulty: 'FUNNY', humans: 6, seed: 16004, fake: true, clientCombat,
       script: (b) => b.kind === 'boss' ? { bossDps: b.sharedBoss.maxHp / 30,
         leakEvents: b.fieldId === 'b3' ? [{ at: 1, lpr: 7 }] : [] } : {},
@@ -160,7 +161,7 @@ for (const clientCombat of [false, true]) {
       const opts = m.fields.map((f) => clientCombat ? f.spec : f.battle.opts);
       assert.deepEqual(opts.map((o) => o.players.map((p) => p.side)), [['L', 'R'], ['L', 'R'], ['L', 'R']]);
       assert.ok(opts.every((o) => !/_s$/.test(o.waveId)), 'all six survivors use paired boss templates');
-      assert.equal(m.bossPool.maxHp, bossPoolHp(m.gd, m.bossId, 4), 'six seats preserve the existing boss balance');
+      assert.equal(m.bossPool.maxHp, 2 * bossPoolHp(new GameData(DATA, m.modeId, 4), m.bossId, 4), 'six-seat pool is 200% of a four-seat match');
       assert.equal(m.bossPool.maxHp, bossPoolHp(m.gd, m.bossId, 6));
       assert.ok(opts.every((o) => o.flags.layerGainsEnabled === false));
       if (clientCombat) {
@@ -205,7 +206,7 @@ for (const clientCombat of [false, true]) {
       h.drive(() => m.phase === PHASE.HIDDEN_CORE);
       assert.deepEqual(m.fields.map((f) => f.players), pairs);
       assert.equal(m.teamLp, teamLp);
-      assert.equal(m.bossPool.maxHp, bossPoolHp(m.gd, m.hiddenBossId, 4));
+      assert.equal(m.bossPool.maxHp, 2 * bossPoolHp(new GameData(DATA, m.modeId, 4), m.hiddenBossId, 4));
       if (clientCombat) assert.equal(h.lastTo('p_5', 'b.start').fieldId, 'b3');
       const result = h.runToEnd();
       assert.equal(result.hiddenCleared, true);

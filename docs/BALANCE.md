@@ -1,5 +1,7 @@
 # BALANCE.md — difficulty model and measurement (official numbers, no custom tuning)
 
+六人扩展补充（2026-10-05，v0.1.2-rhine.6）：仅起始六席的合作对局共享领袖生命池设为同规则四人局的 200%，覆盖最终攻势与隐秘核心；其余人数保留本文基础数值。核心 BAN 为五人减一、六人减二；第 10、12、14 回合每位存活玩家获得信标，第 14 回合奖励实例即时转赠。详见 [多人规则](MULTIPLAYER.md)。
+
 Owner: match / balance. Tools: `tools/balance.mjs` (competent-board model — now a **measuring** tool only),
 `tools/matchrun.mjs` (bot matches). Tests: `test/match/balance.test.js`, `test/match/waves-official.test.js`,
 `test/match/waves.test.js`, `test/sim/pathing.test.js`.

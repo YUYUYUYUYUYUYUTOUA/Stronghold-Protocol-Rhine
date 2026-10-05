@@ -95,9 +95,11 @@ export function difficultyInfo(roomMode, difficulty, playerCount = null) {
   const knownCount = roomMode === 'solo' ? 1 : Number.isInteger(playerCount) && playerCount > 0 ? playerCount : null;
   const configuredBans = getConfig()?.bans;
   const openingBans = openingBanCounts(difficulty, knownCount ?? 1, configuredBans);
-  const largeRoomBans = openingBanCounts(difficulty, 6, configuredBans);
-  const conditional = knownCount == null && largeRoomBans.core !== openingBans.core
-    ? `；5–6 人（含 AI）时核心 ${largeRoomBans.core}` : '';
+  const largeRoomNotes = knownCount == null ? [5, 6].map(count => {
+    const bans = openingBanCounts(difficulty, count, configuredBans);
+    return bans.core !== openingBans.core ? `${count} 人（含 AI）时核心 ${bans.core}` : '';
+  }).filter(Boolean) : [];
+  const conditional = largeRoomNotes.length ? `；${largeRoomNotes.join('；')}` : '';
   return {
     code: typeof m?.code === 'string' ? m.code : fallback.code,
     desc: typeof m?.desc === 'string' ? m.desc : fallback.desc,

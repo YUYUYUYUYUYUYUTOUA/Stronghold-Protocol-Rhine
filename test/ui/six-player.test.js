@@ -43,23 +43,24 @@ test('sixth AI fills capacity and contributes to the room BAN count without huma
   assert.equal(facts.humans.length, 5);
   assert.equal(facts.readyHumans, 5);
   assert.equal(facts.canStart, true);
-  assert.deepEqual(difficultyInfo('coop', 'NORMAL', facts.occupied.length).openingBans, { core: 3, addon: 4 });
+  assert.deepEqual(difficultyInfo('coop', 'NORMAL', facts.occupied.length).openingBans, { core: 2, addon: 4 });
 });
 
 test('lobby BAN notes are conditional until a room supplies its occupied member count', () => {
   const lobby = difficultyInfo('coop', 'NORMAL');
   assert.deepEqual(lobby.openingBans, { core: 4, addon: 4 });
-  assert.match(lobby.openingBanNote, /5–6 人（含 AI）时核心 3/);
+  assert.match(lobby.openingBanNote, /5 人（含 AI）时核心 3；6 人（含 AI）时核心 2/);
   for (const count of [5, 6]) {
     const room = difficultyInfo('coop', 'NORMAL', count);
-    assert.deepEqual(room.openingBans, { core: 3, addon: 4 });
-    assert.equal(room.openingBanNote, '开局 BAN：核心 3 / 附加 4');
+    const core = count === 6 ? 2 : 3;
+    assert.deepEqual(room.openingBans, { core, addon: 4 });
+    assert.equal(room.openingBanNote, `开局 BAN：核心 ${core} / 附加 4`);
     assert.deepEqual(difficultyInfo('coop', 'FUNNY', count).openingBans, { core: 0, addon: 1 });
   }
   assert.deepEqual(difficultyInfo('coop', 'NORMAL', 4).openingBans, { core: 4, addon: 4 });
   const solo = difficultyInfo('solo', 'NORMAL', 6);
   assert.deepEqual(solo.openingBans, { core: 4, addon: 4 });
-  assert.doesNotMatch(solo.openingBanNote, /5–6/);
+  assert.doesNotMatch(solo.openingBanNote, /[56] 人/);
 });
 
 test('all six room and match avatars use distinct stable seat colours', () => {

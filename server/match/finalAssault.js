@@ -13,8 +13,9 @@
 //     "敌方领袖的总生命值不变" is about the mirrored copies of a pair field sharing it, not about that number); config
 //     bossHpScale.aliveScaling true scales it × alive / 4 (巴哈姆特 12294 "聯機隊友(撤退/死掉)變少，最後boss血條也會變少" — one
 //     community note, no proportion; off until the user confirms it); solo = bloodPoint × config bossHpScale.solo (0.25,
-//     flagged unknown); × the tuning bossHpMul when data/tuning.json still has one (docs/BALANCE.md); bosses are never
-//     scaled by enemyScale.
+//     flagged unknown); matches that started with six occupied seats use twice the equivalent four-seat pool. The
+//     six-seat multiplier is applied only by bossPoolShare, before the pool reaches server fields / client specs;
+//     bosses are never scaled by enemyScale.
 //   * Overtime: bossTurnHpReduceTime counts REAL seconds like the level's 120 s maxPlayTime (which runs out first; the
 //     battle goes on): from 150 real s (300 game s on the 2× field clock) the team loses bossOvertimeDrainPerSec (1) LP
 //     per real second (gamedata.js bossOvertimeDue); m.public.deadline = the 120 s countdown, m.public.overtimeAt = the

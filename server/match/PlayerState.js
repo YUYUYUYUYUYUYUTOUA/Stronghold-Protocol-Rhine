@@ -1675,6 +1675,7 @@ export class PlayerState {
       ownerUid: p.kind === 'token' ? p.ownerUid ?? null : null,
     };
     if (rc) { v.row = rc[0]; v.col = rc[1]; v.dir = pieceDir(p); }
+    if (p.kind === 'item' && p.id === 'chess_item_5_04_e_a' && p.meta?.sixPlayerBeaconRound === 14) v.giftTiming = 'immediate';
     if (p.research) { v.research = true; v.researchKey = p.researchKey; v.points = this.research.points[p.researchKey] || 0; v.stage = rhineStage(this.research.stages[p.researchKey]); }
     return v;
   }

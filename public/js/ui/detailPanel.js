@@ -460,6 +460,10 @@ export function ChessDetail({ chess, piece, unit, snapHp, editable, onSell, bond
  */
 export function ItemDetail({ item, piece, editable, onDestroy, offBonds = null }) {
   const m = data.get('assets');
+  const immediateGift = item.id === 'chess_item_5_04_e_a' && piece?.giftTiming === 'immediate';
+  const effectText = immediateGift
+    ? (item.descRaw || item.desc || '').replace('下个休整期', '立即')
+    : item.descRaw || item.desc;
   return html`
     <div class="dhead dhead--item">
       <div class=${cx('dhead__icon', item.isGolden && 'is-golden')}><${Img} src=${itemIconUrl(m, item)} fallback=${html`<${GIcon} name="bolt" />`} /></div>
@@ -470,7 +474,8 @@ export function ItemDetail({ item, piece, editable, onDestroy, offBonds = null }
         ${item.flavor ? html`<span class="dhead__flavor">${item.flavor}</span>` : null}
       </div>
     </div>
-    <${Section} title="效果" micro="EFFECT"><${RichText} as="p" text=${item.descRaw || item.desc} class="dtext" /><//>
+    <${Section} title="效果" micro="EFFECT"><${RichText} as="p" text=${effectText} class="dtext" /><//>
+    ${immediateGift ? html`<p class="dhint dhint--rule"><${Icon} name="info" />第14回合六人补给信标 · 使用后立即转赠</p>` : null}
     ${item.canGiveBond ? html`<${Section} title="天赋" micro="TALENT" class="dsec--morph"><${MorphPairings} off=${offBonds} /><//>` : null}
     ${!item.canGiveBond && item.giveBondId ? html`<${MorphGrantLine} item=${item} off=${offBonds} />` : null}
     ${item.note ? html`<p class="dhint dhint--rule"><${Icon} name="info" />${item.note}</p>` : null}

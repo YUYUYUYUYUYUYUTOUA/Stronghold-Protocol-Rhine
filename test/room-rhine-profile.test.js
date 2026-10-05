@@ -175,7 +175,7 @@ test('two six-seat real matches keep distinct frozen profiles and opening bans, 
       assert.equal(m.phase, PHASE.INFO_CHECK);
       assert.strictEqual(m.data, data);
       assert.equal(m.startingPlayerCount, 6);
-      assert.deepEqual(m.openingBans, { core: data.config.bans.NORMAL.core - 1, addon: data.config.bans.NORMAL.addon });
+      assert.deepEqual(m.openingBans, { core: Math.max(0, data.config.bans.NORMAL.core - 2), addon: data.config.bans.NORMAL.addon });
       assert.equal(m.publicView().rhineEnabled, enabled);
       assert.equal(m.publicView().dataProfile, enabled ? 'rhine' : 'vanilla');
       assert.equal(h.send(host, { t: 'room.setRhine', enabled: !enabled }).error, ERR.ROOM_STARTED);

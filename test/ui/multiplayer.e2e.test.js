@@ -54,7 +54,7 @@ async function createCoop(clients) {
       return { count: pub.startingPlayerCount, bans: pub.openingBans };
     });
     assert.equal(opening.count, count, 'BAN rule captures starting participant count');
-    assert.deepEqual(opening.bans, { core: 0, addon: 1 }, '5–6 players ban one fewer core in standard mode');
+    assert.deepEqual(opening.bans, { core: 0, addon: 1 }, 'five/six-seat core reductions keep standard mode at zero');
   }
   for (const c of clients) await c.click('.brief__foot .btn--primary', '准备就绪');
   const picked = new Set();

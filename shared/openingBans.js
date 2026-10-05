@@ -1,5 +1,5 @@
-// Base rotation for one to four starting seats. A match with five or six occupied seats
-// keeps one more core roster available; add-on draws and guided training are unchanged.
+// Base rotation for one to four starting seats. Five occupied seats keep one more core
+// roster available, six keep two; add-on draws and guided training are unchanged.
 export const OPENING_BANS = Object.freeze({
   FUNNY: Object.freeze({ core: 1, addon: 1 }),
   NORMAL: Object.freeze({ core: 4, addon: 4 }),
@@ -22,8 +22,8 @@ export function openingBanCounts(difficulty, startingPlayerCount = 1, configured
     ? configuredBans[difficulty] : null;
   const core = Number.isInteger(configured?.core) && configured.core >= 0 ? configured.core : defaults.core;
   const addon = Number.isInteger(configured?.addon) && configured.addon >= 0 ? configured.addon : defaults.addon;
-  const extraCoreRoster = difficulty !== 'TRAINING' && (startingPlayerCount === 5 || startingPlayerCount === 6);
-  return { core: Math.max(0, core - (extraCoreRoster ? 1 : 0)), addon };
+  const coreReduction = difficulty === 'TRAINING' ? 0 : startingPlayerCount === 6 ? 2 : startingPlayerCount === 5 ? 1 : 0;
+  return { core: Math.max(0, core - coreReduction), addon };
 }
 
 /** Idempotent overlay, shared by incremental Rhine updates and a full upstream data rebuild. */

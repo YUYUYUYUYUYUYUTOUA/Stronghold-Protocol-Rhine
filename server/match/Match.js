@@ -146,6 +146,9 @@ import { buildResult } from './results.js';
 import { botPrepBeginSteps, botPrepEndSteps, botPickBand, botPickCard } from './bot.js';
 
 const BOT_REHEARSAL_DEFAULT = 3;
+/** Six-seat cooperation supplies an ordinary, usable 信标 to each surviving seat before R10/R12/R14 prep. */
+const SIX_PLAYER_BEACON_ROUNDS = new Set([10, 12, 14]);
+const ROUND_BEACON_ITEM = 'chess_item_5_04_e_a';
 /** Wall-clock ms of bot layout rehearsal per scheduler callback (real time; virtual time runs it in one go). */
 const BOT_SLICE_MS = 8;
 /**
@@ -1391,6 +1394,17 @@ export class Match {
     }
     for (const ps of alive) ps.startRound(r);
     for (const ps of alive) this.dispatch(ps, 'onRoundStart', { round: r });
+    if (!this.isSolo && this.startingPlayerCount === 6 && SIX_PLAYER_BEACON_ROUNDS.has(r)) {
+      for (const ps of alive) {
+        // Persistent per-player markers: reconnects or a repeated round entry must never duplicate the supply.
+        const key = `sixPlayerBeacon:${r}`;
+        if (ps.counters[key]) continue;
+        ps.counters[key] = 1;
+        // Use the existing reward path: normal hand placement, overflow temp, onGain and full-inventory warning.
+        const beacon = ps.acquireItem(ROUND_BEACON_ITEM, { source: 'sixPlayerBeacon' });
+        if (beacon) beacon.meta.sixPlayerBeaconRound = r;
+      }
+    }
     for (const ps of alive) ps.recompute();
     this.setDeadline(DELAYS.ROUND_START / 1000, () => this.afterRoundStart(), { silent: this.soloUntimed });
     this.markPublic();

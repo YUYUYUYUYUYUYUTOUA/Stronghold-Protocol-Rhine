@@ -162,7 +162,15 @@ const ITEM_HANDLERS = {
         if (score > best) { best = score; pick = [t]; } else if (score === best) pick.push(t);
       }
       const to = ctx.rng.pick(pick);
-      if (to) ctx.addEffect({ id: `gift:${ev.item.uid}`, key: 'effect:builtin_gift', hidden: true, battle: false, params: { toPlayerId: to.playerId, chessId: original } });
+      if (to) {
+        // Only the concrete R14 six-seat supply is immediate: the final assault need not have a next prep.
+        // Bought/ordinary beacons, including those used during R14, retain the original next-round timing.
+        if (ev.item.meta?.sixPlayerBeaconRound === 14) {
+          if (to.grantChess(original)) to.giftTicker(ctx.name, original);
+        } else {
+          ctx.addEffect({ id: `gift:${ev.item.uid}`, key: 'effect:builtin_gift', hidden: true, battle: false, params: { toPlayerId: to.playerId, chessId: original } });
+        }
+      }
     },
   },
   sell_char_count_gain_equip_owner_bond: {
