@@ -1,8 +1,8 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
-当前扩展版本：**v0.1.3-rhine.2**。
+当前扩展版本：**v0.1.3-rhine.3**。
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.3**，合入官方发布标签 v0.1.3（提交 [`a0a5419`](https://github.com/sganggs/Stronghold-Protocol/commit/a0a5419)），本次扩展修改日期为 **2026-10-06**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-013`。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.3**，合入官方发布标签 v0.1.3（提交 [`a0a5419`](https://github.com/sganggs/Stronghold-Protocol/commit/a0a5419)），本次扩展修改日期为 **2026-10-07**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-013`。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
@@ -13,6 +13,7 @@
 - 等待室的“莱茵生命扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.1.3 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
 - 五至六人悬赏决策保留原六张牌并追加三张现有目标，合计九张；追加牌为 I / II / II 阶，赏金分别为 1 / 2 / 2。一至四人的悬赏张数保持原规则。
 - 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
+- 梅尔使身前装置有效工作产层（普通 1 / 精锐 2），溯光星源资金特质增加莱茵层数；装置每层 4 点基础攻击，伊芙利特继承最高单台有效装置的 100% / 精锐 150%。
 - 梅尔、乌啾、森蚺、伊芙利特、星源、多萝西及其全部可选技能、适用模组；多萝西调整为 IV 阶；调整白面鸮、塞雷娅等干员的盟约与特质。
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
 - 装置放置预览、整格范围、充能条、攻击反馈和突破后范围变化；联机同步、机器人选择及相关测试。
@@ -85,7 +86,7 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.2-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.3-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 
@@ -276,7 +277,7 @@ RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–6 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.1.3 plus fixes through `a0a5419`. Modified on 2026-10-06. It is not an upstream or official game release; report expansion issues to this fork.
+- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.1.3 plus fixes through `a0a5419`. Modified on 2026-10-07. It is not an upstream or official game release; report expansion issues to this fork.
 - **Run this expansion:** clone this fork, install Node.js 22 or 24, then run `npm ci`, `npm run setup`, and `npm start`. Setup includes the Rhine resource plan; `node tools/fetch-rhine-assets.mjs` can supplement an existing asset download. The [upstream all-in-one bundle](https://github.com/sganggs/Stronghold-Protocol/releases/latest) contains the original game only, not this expansion. The official 3D board needs a local Arknights client to extract; otherwise the 2D board is used.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.

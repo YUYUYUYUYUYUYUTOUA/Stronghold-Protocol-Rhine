@@ -33,6 +33,8 @@ import { TICK, SNAPSHOT_EVERY } from '../sim/constants.js';
 import { layerGainRoom } from '../../shared/constants.js';
 import { uniteLeft } from '../sim/spec.js';
 import { GRANTED_CAP_OVERRIDE } from '../sim/content/garrisons/battle.js';
+import { frontOf } from '../sim/dir.js';
+import { RHINE_BOND, RHINE_CHARACTERS, rhineCapacity, rhineDevice } from '../../shared/rhineResearch.js';
 
 export const MAX_TICKS_PER_INTERVAL = 8;
 export const INTERVAL_MS = 1000 / 30;
@@ -572,6 +574,26 @@ function layerBondsOf(p, gd) {
   return out;
 }
 
+/** Frozen research selection, with the same type, ownership, uniqueness and capacity checks as rhine.js. */
+function researchDeviceTilesOf(p, gd) {
+  const out = new Set();
+  const bond = p.bonds?.[RHINE_BOND];
+  const capacity = rhineCapacity(bond);
+  if (!capacity || !p.research?.active || !Array.isArray(p.research.devices) || typeof gd.token !== 'function') return out;
+  const units = Array.isArray(p.units) ? p.units : [];
+  const seen = new Set();
+  for (const entry of p.research.devices) {
+    const device = rhineDevice(entry?.key);
+    if (!device || !entry.onBoard || entry.tokenId !== device.tokenId || seen.has(device.key) || !gd.token(device.tokenId)) continue;
+    const unit = units.find((u) => u && u.uid === entry.uid && u.kind === 'token' && u.tokenId === device.tokenId);
+    if (!unit || !Number.isInteger(unit.row) || !Number.isInteger(unit.col)) continue;
+    seen.add(device.key);
+    out.add(`${unit.row},${unit.col}`);
+    if (seen.size >= capacity) break;
+  }
+  return out;
+}
+
 /**
  * What the player's IN_BATTLE layer 特质 can add to each bond in one battle on top of the flat 60 + 4·round (DESIGN
  * §21.26): the traits of its units (garrisons with `bond_add_count` / `bond_add_count_multi`) and the ones their ADD_BOND
@@ -580,13 +602,16 @@ function layerBondsOf(p, gd) {
  * units), up to the per-battle cap the sim applies (content/garrisons/battle.js: `max_add_count_per_battle`, the handed-out
  * 华法琳 trait's GRANTED_CAP_OVERRIDE). A trait the data gives no cap (初雪 / 银灰's freeze trait, 菲莱 / 百炼嘉维尔's per-skill
  * 萨尔贡, 斯卡蒂's per-kill …) — or a 魔王, whose +extra on every trait gain counts toward no cap — leaves its bonds bounded
- * only by the room under 999 (Infinity here): such boards legitimately gain hundreds of layers a battle.
+ * only by the room under 999 (Infinity here): such boards legitimately gain hundreds of layers a battle. Mayer's
+ * device work likewise has no per-battle cap, but only an enabled normal field with a selected device in front can
+ * authorize extra Rhine layers; it never expands the allowance of another bond.
  * @returns {Map<string, number>} bondId → extra allowance (Infinity: uncapped)
  */
-function layerAllowanceOf(p, gd) {
+function layerAllowanceOf(p, gd, spec) {
   const out = new Map();
   if (typeof gd.garrison !== 'function' || typeof gd.chess !== 'function' || typeof gd.bond !== 'function') return out;
   const units = (Array.isArray(p.units) ? p.units : []).filter((u) => u && u.kind !== 'token' && typeof u.chessId === 'string');
+  const researchTiles = spec?.kind === 'normal' && spec.flags?.layerGainsEnabled !== false ? researchDeviceTilesOf(p, gd) : new Set();
   const lineup = new Set(Object.keys(p.bonds && typeof p.bonds === 'object' ? p.bonds : {}));
   for (const u of units) for (const b of gd.chess(u.chessId)?.bonds || []) lineup.add(b);
   let extra = false;
@@ -604,6 +629,14 @@ function layerAllowanceOf(p, gd) {
     for (const gid of gd.chess(u.chessId)?.garrisonIds || []) {
       const g = gd.garrison(gid);
       if (!g || g.eventType !== 'IN_BATTLE') continue;
+      if (g.effectKey === 'RHINE_MAYER_RESEARCH') {
+        if (gd.chess(u.chessId)?.charId === RHINE_CHARACTERS.mayer && Number.isFinite(g.bb?.device_layers) && g.bb.device_layers > 0
+          && Number.isInteger(u.row) && Number.isInteger(u.col)) {
+          const [row, col] = frontOf(u.row, u.col, u.dir);
+          if (researchTiles.has(`${row},${col}`)) out.set(RHINE_BOND, Infinity);
+        }
+        continue;
+      }
       if (g.effectKey !== 'ADD_BOND') { credit(g, 1, false); continue; }
       const given = gd.garrison(g.bbStr?.give_garrison_id);
       if (given && given.eventType === 'IN_BATTLE') credit(given, units.length, true);
@@ -682,7 +715,7 @@ export function specBounds(spec, gd = null) {
       const v = Number(b && b.layers);
       if (Number.isFinite(v) && v > 0) startLayers.set(id, v);
     }
-    players.set(p.playerId, { chess, all, defIds, bonds: gd ? layerBondsOf(p, gd) : null, startLayers, layerAllow: gd ? layerAllowanceOf(p, gd) : new Map() });
+    players.set(p.playerId, { chess, all, defIds, bonds: gd ? layerBondsOf(p, gd) : null, startLayers, layerAllow: gd ? layerAllowanceOf(p, gd, spec) : new Map() });
   }
   const round = Number(spec && spec.round) || 0;
   return {

@@ -31,6 +31,37 @@ test('Rhine data: six-member research sharing and the new three device levels ar
   assert.match(ecology.desc, /持续减速50%/);
   assert.match(ecology.desc, /每8秒/);
 });
+test('Rhine data: device production, single-device inheritance and four attack per layer match the approved rules', () => {
+  assert.equal(files.bonds.rhineShip.bb.atk_per_stack, 4);
+  assert.match(files.bonds.rhineShip.desc, /每层科研增加4点/);
+  for (const [suffix, layers, scale] of [['a', 1, 1], ['b', 2, 1.5]]) {
+    const mayer = files.garrisons[`garrison_rhine_mayer_${suffix}`];
+    assert.deepEqual(mayer.bb, { device_layers: layers });
+    assert.match(mayer.desc, /身前一格.*有效工作/);
+    assert.match(mayer.desc, /护盾净增加/);
+    assert.match(mayer.desc, /累计3秒/);
+    assert.doesNotMatch(mayer.desc, /每5层|装置攻击力\+/);
+    const ifrit = files.garrisons[`garrison_rhine_ifrit_${suffix}`];
+    assert.equal(ifrit.bb.atk_scale, scale);
+    assert.match(ifrit.desc, new RegExp(`最高基础攻击力的${scale * 100}%`));
+    assert.match(ifrit.desc, /多台不相加/);
+    assert.doesNotMatch(ifrit.desc, /总和/);
+  }
+});
+test('Rhine data: Solstice Astgenne adds Rhine to the existing spending trait without changing vanilla', async () => {
+  const vanilla = JSON.parse(await readFile(new URL('../data/vanilla/garrisons.json', import.meta.url), 'utf8'));
+  for (const suffix of ['a', 'b']) {
+    const id = `garrison_121_${suffix}`, original = vanilla[id], expanded = files.garrisons[id];
+    assert.equal(original.bbStr.bond, 'skillfulShip,arcaneShip');
+    assert.doesNotMatch(original.desc, /莱茵生命/);
+    assert.deepEqual(expanded, {
+      ...original,
+      desc: original.desc.replace('【奥术】', '【奥术】【莱茵生命】'),
+      descRaw: original.descRaw.replace('【奥术】', '【奥术】【莱茵生命】'),
+      bbStr: { ...original.bbStr, bond: 'skillfulShip,arcaneShip,rhineShip' },
+    });
+  }
+});
 test('Rhine data: offline overlay is idempotent and preserves unrelated operator identities',async()=>{
   const before=JSON.stringify(files);const original=structuredClone(files.chess.chess_char_1_01_a);
   await applyRhineData(files);assert.equal(JSON.stringify(files),before);

@@ -2,15 +2,15 @@
 export const RHINE_BOND = 'rhineShip';
 export const RHINE_CHARACTERS = Object.freeze({ mayer: 'char_242_otter', silence: 'char_108_silent', ptilopsis: 'char_128_plosis', saria: 'char_202_demkni', ifrit: 'char_134_ifrit', muelsyse: 'char_249_mlyss', halo2: 'char_1047_halo2', astgenne: 'char_135_halo', dorothy: 'char_4048_doroth' });
 export const RHINE_BALANCE = Object.freeze({
-  thresholds: [3, 6, 9], baseAttack: 300, attackPerLayer: 3,
-  mayerLayerStep: 5, mayerAttack: [2, 4], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
-  sariaLayerStep: 3, sariaHealBonus: [0.01, 0.02], ifritInheritance: [0.30, 0.60],
+  thresholds: [3, 6, 9], baseAttack: 300, attackPerLayer: 4,
+  mayerDeviceLayers: [1, 2], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
+  sariaLayerStep: 3, sariaHealBonus: [0.01, 0.02], ifritInheritance: [1, 1.5],
   sharingCount: 6, researchSharing: [0.15, 0.25],
   astgenneFirstSkillLayers: [3, 6], dorothyTrapLayers: [2, 4], dorothyBattleLayerCap: [24, 48], dorothyTrapLimit: [4, 5],
   successPoints: 2, failurePoints: 1, breakthroughPoints: [5, 5],
   medicalInterval: 3, medicalHealScale: 0.5, medicalShieldRatio: 0.5, medicalShieldDuration: 6,
   energyCharges: 3, energyContributorCooldown: 3, energyPulseScale: 1.2, energySpreadRadius: 1,
-  ecologyInterval: 8, ecologyDuration: 8, ecologySlow: 0.5,
+  ecologyInterval: 8, ecologyDuration: 8, ecologySlow: 0.5, ecologyResearchInterval: 3,
   ecologyBindDuration: 1, radius: 2,
 });
 // Equipment values are shared by generated records and the combat/bot implementations.
@@ -39,7 +39,7 @@ export function advanceRhineResearch({ stage = 0, points = 0 } = {}, gain = 0) {
   const nextPoints = nonnegativeInteger(points) + nonnegativeInteger(gain);
   return nextPoints >= goal ? { stage: currentStage + 1, points: 0 } : { stage: currentStage, points: nextPoints };
 }
-export function rhineAttack(layers = 0, mayerElite = null) {
+export function rhineAttack(layers = 0) {
   const n = Math.max(0, Number(layers) || 0);
-  return RHINE_BALANCE.baseAttack + n * RHINE_BALANCE.attackPerLayer + (mayerElite == null ? 0 : Math.floor(n / RHINE_BALANCE.mayerLayerStep) * RHINE_BALANCE.mayerAttack[mayerElite ? 1 : 0]);
+  return RHINE_BALANCE.baseAttack + n * RHINE_BALANCE.attackPerLayer;
 }

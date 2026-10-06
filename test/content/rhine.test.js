@@ -26,38 +26,172 @@ function battle(players, extra = {}) {
   return h;
 }
 const cast = (h, uid) => assert.equal(h.unit(uid).skill.activate('test', { free: true }), true);
+const researchLayers = h => h.b.getPlayer('p1').bonds.rhineShip.layers;
+const valid = h => { assert.deepEqual(h.b.errors, []); checkInvariants(h.b); };
 
-test('Rhine: two devices read live layers; strongest front Mayer only; Ifrit inherits base ATK without a feedback loop', () => {
+test('Rhine Mayer energy work: one complete pulse rewards the strongest facing copy, independent of targets', () => {
+  for (const targetCount of [1, 5]) {
+    const h = battle([player('p1', [op('normal', C.mayer, 10, 4),
+      op('elite', C.mayer, 9, 5, { dir: 'UP', elite: true }), op('elite2', C.mayer, 10, 6, { dir: 'LEFT', elite: true }),
+      op('a', 'test', 9, 4, { cast: true }), op('b', 'test', 11, 4, { cast: true }), op('c', 'test', 12, 4, { cast: true }),
+      device('energy', 10, 5, 2)])], { captureNoisy: true });
+    const foes = Array.from({ length: targetCount }, () => h.spawn('dummy', { pos: [10, 7] }));
+    cast(h, 'a'); cast(h, 'b'); close(researchLayers(h), 0);
+    cast(h, 'c'); close(researchLayers(h), 2);
+    for (const foe of foes) close(foe.s.maxHp - foe.hp, 360);
+    assert.equal(h.eventsOf('fx').filter(e => e[1] === 'rhinePulse').length, 1);
+    assert.equal(h.hooksOf('layerGain').length, 1);
+    assert.equal(h.hooksOf('layerGain')[0].source, h.unit('elite'));
+    h.b.retreat(h.unit('elite'), { permanent: true }); h.b.retreat(h.unit('elite2'), { permanent: true });
+    h.run(3); for (const uid of ['a', 'b', 'c']) cast(h, uid);
+    close(researchLayers(h), 3);
+    valid(h);
+  }
+});
+
+test('Rhine Mayer energy work: full charge waits for a target and reentrant casts wait for the complete pulse', () => {
+  const units = [op('m', C.mayer, 10, 4), ...['a','b','c','d','e','f'].map((uid, i) => op(uid, 'test', 9 + Math.floor(i / 3), 1 + i % 3, { cast: true })),
+    device('energy', 10, 5, 2)];
+  const h = battle([player('p1', units)], { captureNoisy: true });
+  for (const uid of ['a','b','c']) cast(h, uid);
+  h.step(90); close(researchLayers(h), 0); assert.equal(h.unit('energy').researchCharges, 3);
+  const foes = [h.spawn('dummy', { pos: [10, 6] }), h.spawn('dummy', { pos: [11, 6] })];
+  let reentered = false;
+  h.b.on('damaged', ({ source }) => {
+    if (source !== h.unit('energy') || reentered) return;
+    reentered = true;
+    for (const uid of ['d','e','f']) cast(h, uid);
+    close(researchLayers(h), 0, 'the unfinished outer pulse has not earned layers');
+    assert.equal(h.unit('energy').researchCharges, 3);
+  });
+  h.step(); close(researchLayers(h), 1);
+  assert.equal(h.eventsOf('fx').filter(e => e[1] === 'rhinePulse').length, 1);
+  for (const foe of foes) close(foe.s.maxHp - foe.hp, 360);
+  h.step(); close(researchLayers(h), 2);
+  assert.equal(h.eventsOf('fx').filter(e => e[1] === 'rhinePulse').length, 2);
+  for (const foe of foes) close(foe.s.maxHp - foe.hp, 360 + 304 * 1.2);
+  assert.equal(h.unit('energy').researchCharges, 0);
+  valid(h);
+});
+
+test('Rhine Mayer medical work: empty/full/no-heal/zero heals do not count; two actual heals are one cycle', () => {
+  const h = battle([player('p1', [op('m', C.mayer, 10, 4), op('patient', 'test', 11, 5), device('medical')])]);
+  h.step(90); close(researchLayers(h), 0);
+  const patient = h.unit('patient'); patient.hp = 500;
+  h.b.addBuff(patient, { key: 'noHeal', flags: { noHeal: true } }); h.step(90); close(researchLayers(h), 0);
+  h.b.removeBuff(patient, 'noHeal');
+  const cancel = h.b.on('heal', c => { c.amount = 0; }); h.step(90); close(researchLayers(h), 0);
+  h.b.off(cancel); h.step(90); close(patient.hp, 650); close(researchLayers(h), 1);
+  valid(h);
+
+  const two = battle([player('p1', [op('m', C.mayer, 10, 4, { elite: true }), op('patient', 'test', 11, 5), device('medical', 10, 5, 2)])]);
+  two.unit('m').hp = 500; two.unit('patient').hp = 500;
+  two.step(90); close(two.unit('m').hp, 650); close(two.unit('patient').hp, 650); close(researchLayers(two), 2);
+  assert.equal(two.hooksOf('layerGain').length, 1);
+  valid(two);
+});
+
+test('Rhine Mayer medical shields: net increase counts once, capped duration refresh does not, replenishment does', () => {
+  const h = battle([player('p1', [op('m', C.mayer, 10, 4), op('patient', 'test', 11, 5), device('medical', 10, 5, 2)])]);
+  h.step(90); close(researchLayers(h), 1);
+  for (const uid of ['m','patient']) close(h.unit(uid).s.shield, 75);
+  const key = `rhine:overheal:${h.unit('medical').id}`;
+  for (const uid of ['m','patient']) h.b.addBuff(h.unit(uid), { key, shield: h.unit(uid).s.maxHp, duration: 6 });
+  h.step(90); close(researchLayers(h), 1);
+  const patient = h.unit('patient'); assert.ok(patient.findBuff(key).timeLeft > 5.9);
+  h.b.dealDamage(null, patient, { amount: 50, type: 'true', canDodge: false });
+  close(patient.hp, patient.s.maxHp); close(patient.s.shield, patient.s.maxHp - 50);
+  h.step(90); close(researchLayers(h), 2); close(patient.s.shield, patient.s.maxHp);
+  h.step(90); close(researchLayers(h), 2);
+  valid(h);
+});
+
+test('Rhine Mayer ecology: accumulates three seconds of selectable targets, pauses empty time, never counts entry or ticks', () => {
+  for (const stage of [0, 1, 2]) {
+    const h = battle([player('p1', [op('m', C.mayer, 10, 4), device('ecology', 10, 5, stage)])]);
+    const foe = h.spawn('dummy', { pos: [10, 6] });
+    h.step(60); close(researchLayers(h), 0);
+    foe.hidden = true; h.step(300); close(researchLayers(h), 0);
+    foe.hidden = false; h.step(29); close(researchLayers(h), 0);
+    h.step(); close(researchLayers(h), 1);
+    foe.x = 10; h.step(90); close(researchLayers(h), 1);
+    foe.x = 6;
+    const second = h.spawn('dummy', { pos: [11, 6] }); h.step(45); close(researchLayers(h), 1);
+    h.b.kill(foe); h.step(44); close(researchLayers(h), 1);
+    h.step(); close(researchLayers(h), 2);
+    assert.ok(second.findBuff('slow')); assert.equal(h.hooksOf('layerGain').length, 2);
+    valid(h);
+  }
+});
+
+test('Rhine Mayer ecology: hidden/untargetable foes and disabled/removed devices cannot create or retain work', () => {
+  const h = battle([player('p1', [op('m', C.mayer, 10, 4, { elite: true }), device('ecology')])]);
+  const foe = h.spawn('dummy', { pos: [10, 6] });
+  h.b.addBuff(foe, { key: 'stealth', flags: { stealth: true }, persist: true }); h.step(90); close(researchLayers(h), 0);
+  h.b.removeBuff(foe, 'stealth'); h.b.addBuff(foe, { key: 'untargetable', flags: { untargetable: true } });
+  h.step(90); close(researchLayers(h), 0); h.b.removeBuff(foe, 'untargetable');
+  h.step(60);
+  const ps = h.b.getPlayer('p1'); ps.input.research.active = false; h.step(); ps.input.research.active = true;
+  h.step(60); close(researchLayers(h), 0); h.step(30); close(researchLayers(h), 2);
+  h.b.retreat(h.unit('ecology'), { permanent: true }); h.step(180); close(researchLayers(h), 2);
+  valid(h);
+});
+
+test('Rhine Mayer work: gainLayers respects field flags, owner state, absent/dead sources and the 999 cap', () => {
+  for (const [kind, flags] of [['boss', {}], ['hidden', {}], ['unite', {}], ['normal', { layerGainsEnabled: false }]]) {
+    const h = battle([player('p1', [op('m', C.mayer, 10, 4), device('medical')])], { kind, flags });
+    h.unit('m').hp = 500; h.step(90); assert.ok(h.unit('m').hp > 500); close(researchLayers(h), 0); valid(h);
+  }
+  for (const state of ['absent','dead','wrongDirection','inactive']) {
+    const h = battle([player('p1', [op('m', state === 'absent' ? 'test' : C.mayer, 10, 4), op('patient', 'test', 11, 5), device('medical')])]);
+    if (state === 'dead') h.b.kill(h.unit('m'));
+    if (state === 'wrongDirection') h.unit('m').dir = 'LEFT';
+    if (state === 'inactive') h.b.getPlayer('p1').bonds.rhineShip.active = false;
+    h.unit('patient').hp = 500; h.step(90); close(researchLayers(h), 0); valid(h);
+  }
+  const capped = battle([player('p1', [op('m', C.mayer, 10, 4, { elite: true }), op('i', C.ifrit, 11, 4, { elite: true }), device('medical')], { layers: 998 })]);
+  capped.unit('m').hp = 500; capped.step(90); close(researchLayers(capped), 999);
+  assert.equal(capped.eventsOf('layer').at(-1)[3], 1);
+  capped.unit('m').hp = 500; capped.step(90); close(researchLayers(capped), 999); close(capped.unit('i').s.atk, 100 + 4296 * 1.5);
+  valid(capped);
+});
+
+test('Rhine: devices read four ATK per layer without old Mayer ATK; Ifrit inherits one highest base without feedback', () => {
   const h = battle([player('p1', [
     op('m1', C.mayer, 10, 4), op('m2', C.mayer, 9, 5, { dir: 'UP', elite: true }),
     op('s', C.saria, 11, 4, { elite: true }), op('i', C.ifrit, 12, 4, { elite: true }),
     device('medical'), device('energy', 11, 5), device('ecology', 12, 5),
   ], { count: 6, layers: 10 })]);
-  close(h.unit('medical').base.atk, 338);
-  close(h.unit('energy').base.atk, 330);
-  close(h.unit('i').s.atk, 100 + (338 + 330) * 0.6);
+  close(h.unit('medical').base.atk, 340);
+  close(h.unit('energy').base.atk, 340);
+  close(h.unit('i').s.atk, 100 + 340 * 1.5);
   close(h.unit('s').s.healingDealtMul, 1.06);
   h.b.addBuff(h.unit('medical'), { key: 'externalAttack', mods: { atkMul: 10, atkFlat: 5000 } });
   h.b.addLayers('p1', 'rhineShip', 5, 'test'); h.step(2);
-  close(h.unit('medical').base.atk, 357);
-  close(h.unit('i').s.atk, 100 + (357 + 345) * 0.6);
+  close(h.unit('medical').base.atk, 360);
+  close(h.unit('i').s.atk, 100 + 360 * 1.5);
   close(h.unit('s').s.healingDealtMul, 1.10);
   h.run(10);
-  close(h.unit('i').s.atk, 100 + (357 + 345) * 0.6);
+  close(h.unit('i').s.atk, 100 + 360 * 1.5);
   assert.equal(h.unit('i').buffs.filter((b) => b.key === 'rhine:ifrit').length, 1);
   checkInvariants(h.b);
 });
 
-test('Rhine: front tile honors all four deployment directions and ignores other owners', () => {
+test('Rhine Mayer: effective work honors all four directions and ignores other owners', () => {
   for (const [dir, row, col] of [['RIGHT', 10, 4], ['LEFT', 10, 6], ['UP', 9, 5], ['DOWN', 11, 5]]) {
     const h = battle([player('p1', [op('m', C.mayer, row, col, { dir }), device('medical')], { layers: 10 })]);
-    close(deviceBaseAttack(h.b, h.unit('medical')), 334);
+    h.unit('m').hp = 500; h.run(3);
+    close(h.b.getPlayer('p1').bonds.rhineShip.layers, 11);
+    close(deviceBaseAttack(h.b, h.unit('medical')), 344);
     h.unit('m').dir = dir === 'RIGHT' ? 'LEFT' : 'RIGHT'; h.step();
-    close(deviceBaseAttack(h.b, h.unit('medical')), 330);
+    h.run(3); close(h.b.getPlayer('p1').bonds.rhineShip.layers, 11);
+    close(deviceBaseAttack(h.b, h.unit('medical')), 344);
     checkInvariants(h.b);
   }
-  const h = battle([player('p1', [device('medical')], { layers: 10 }), player('p2', [op('foreign', C.mayer, 10, 4, { elite: true })], { layers: 100 })]);
-  close(deviceBaseAttack(h.b, h.unit('medical')), 330);
+  const h = battle([player('p1', [op('patient', 'test', 11, 5), device('medical')], { layers: 10 }), player('p2', [op('foreign', C.mayer, 10, 4, { elite: true })], { layers: 100 })]);
+  h.unit('patient').hp = 500; h.run(3);
+  close(h.b.getPlayer('p1').bonds.rhineShip.layers, 10);
+  close(deviceBaseAttack(h.b, h.unit('medical')), 340);
 });
 
 test('Rhine: inactive, forged capacity and duplicated type inputs cannot activate excess devices', () => {
@@ -68,9 +202,9 @@ test('Rhine: inactive, forged capacity and duplicated type inputs cannot activat
   }
   const units = [op('i', C.ifrit, 10, 4), device('medical'), device('medical', 11, 5, 2, 'duplicate'), device('energy', 12, 5)];
   const h = battle([player('p1', units, { count: 3 })]);
-  close(h.unit('i').s.atk, 190);
+  close(h.unit('i').s.atk, 400);
   const both = battle([player('p1', units, { count: 6 })]);
-  close(both.unit('i').s.atk, 280);
+  close(both.unit('i').s.atk, 400);
   const forged = battle([player('p1', [op('i', C.ifrit), device('medical')], { devices: [{ key: 'medical', tokenId: 'token_rhine_medical', uid: 'wrong', onBoard: true, stage: 2 }] })]);
   close(forged.unit('i').s.atk, 100);
   checkInvariants(both.b);
@@ -79,7 +213,7 @@ test('Rhine: inactive, forged capacity and duplicated type inputs cannot activat
 test('Rhine sim boundary enables the third distinct device only at count nine', () => {
   for (const count of [8, 9, 12]) {
     const h = battle([player('p1', [op('i', C.ifrit), device('medical'), device('energy', 11, 5), device('ecology', 12, 5)], { count })]);
-    close(h.unit('i').s.atk, 100 + 300 * (count < 9 ? 2 : 3) * B.ifritInheritance[0]);
+    close(h.unit('i').s.atk, 100 + 300 * B.ifritInheritance[0]);
     assert.equal(Number.isInteger(h.unit('ecology').researchStage), count >= 9);
     checkInvariants(h.b);
   }
@@ -274,13 +408,13 @@ test('Rhine: boss mirrors and unite helpers keep independent device ATK, inherit
     const p1 = player('p1', [op('left_m', C.mayer, 10, 4), op('left_i', C.ifrit, 11, 4), device('medical', 10, 5, 0, 'left_dev')], { layers: 10 });
     const p2 = player('p2', [op('right_m', C.mayer, 10, 4, { elite: true }), op('right_i', C.ifrit, 11, 4), device('medical', 10, 5, 0, 'right_dev')], { layers: 20, side: 'R', colOffset: kind === 'unite' ? 8 : 0 });
     const h = battle([p1, p2], { kind });
-    close(h.unit('left_dev').base.atk, 334); close(h.unit('right_dev').base.atk, 376);
-    close(h.unit('left_i').s.atk, 100 + 334 * 0.3); close(h.unit('right_i').s.atk, 100 + 376 * 0.3);
+    close(h.unit('left_dev').base.atk, 340); close(h.unit('right_dev').base.atk, 380);
+    close(h.unit('left_i').s.atk, 440); close(h.unit('right_i').s.atk, 480);
     h.b.kill(h.unit('left_m')); h.step();
     assert.equal(h.unit('left_dev').alive, true);
-    close(h.unit('left_i').s.atk, 199); close(h.unit('right_i').s.atk, 100 + 376 * 0.3);
+    close(h.unit('left_i').s.atk, 440); close(h.unit('right_i').s.atk, 480);
     h.b.retreat(h.unit('right_m')); h.step();
-    assert.equal(h.unit('right_dev').alive, true); close(h.unit('right_i').s.atk, 208);
+    assert.equal(h.unit('right_dev').alive, true); close(h.unit('right_i').s.atk, 480);
     checkInvariants(h.b);
   }
 });
@@ -307,7 +441,7 @@ test('Rhine real Ifrit: inherited flat ATK feeds the authored burn skill once an
       defs: { enemies: { dummy: enemyRec({ key: 'dummy', hp: 100000, speed: 0, res: 50 }) } }, captureNoisy: true });
     h.step();
     const u = h.unit('ifrit'), d = h.unit('medical');
-    const inherit = (390 + 390) * B.ifritInheritance[suffix === 'b' ? 1 : 0];
+    const inherit = 420 * B.ifritInheritance[suffix === 'b' ? 1 : 0];
     close(u.findBuff('rhine:ifrit').mods.atkFlat, inherit);
     close(u.s.atk, u.base.atk + inherit);
     h.b.addBuff(d, { key: 'temporaryDevicePower', mods: { atkMul: 20, atkFlat: 10000 } });
@@ -337,13 +471,13 @@ test('Rhine real Mayer / Saria: normal and elite records carry only their replac
     h.step();
     assert.deepEqual(h.unit('m').def.raw.garrisonIds, [`garrison_rhine_mayer_${suffix}`]);
     assert.deepEqual(h.unit('s').def.raw.garrisonIds, [`garrison_rhine_saria_${suffix}`]);
-    close(h.unit('medical').base.atk, suffix === 'a' ? 351 : 357);
+    close(h.unit('medical').base.atk, 360);
     close(h.unit('s').s.healingDealtMul, suffix === 'a' ? 1.05 : 1.10);
     assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
   }
 });
 
-test('Rhine sharing: damage members inherit one highest own device, while Ifrit alone inherits the sum', () => {
+test('Rhine sharing: damage members and Ifrit read one highest own device with independent scales', () => {
   const rhine = { bonds: ['rhineShip'] };
   const h = battle([player('p1', [
     op('m', C.mayer, 10, 4, { ...rhine, elite: true }),
@@ -353,17 +487,17 @@ test('Rhine sharing: damage members inherit one highest own device, while Ifrit 
     op('saria', C.saria, 9, 7, rhine), op('ifrit', C.ifrit, 11, 6, { ...rhine, elite: true }),
     op('unrelated', 'test', 12, 6), device('medical'), device('energy', 11, 5), device('ecology', 12, 5),
   ], { count: 9, layers: 15 }), player('p2', [op('other', 'test', 10, 7, rhine), device('medical', 12, 8, 0, 'otherDevice')], { count: 6, layers: 100 })]);
-  close(h.unit('ordinary').s.atk, 100 + 357 * 0.15);
-  close(h.unit('elite').s.atk, 100 + 357 * 0.25);
-  close(h.unit('other').s.atk, 100 + 600 * 0.15);
-  close(h.unit('ifrit').s.atk, 100 + (357 + 345 + 345) * 0.6);
+  close(h.unit('ordinary').s.atk, 100 + 360 * 0.15);
+  close(h.unit('elite').s.atk, 100 + 360 * 0.25);
+  close(h.unit('other').s.atk, 100 + 700 * 0.15);
+  close(h.unit('ifrit').s.atk, 100 + 360 * 1.5);
   for (const uid of ['medic', 'healer', 'saria', 'unrelated', 'ifrit']) assert.equal(h.unit(uid).findBuff('rhine:sharing'), null);
   h.b.addBuff(h.unit('medical'), { key: 'test:devicePower', mods: { atkMul: 20, atkFlat: 10000 } });
   h.b.addBuff(h.unit('m'), { key: 'test:mayerPower', mods: { atkPct: 3 } });
   h.b.addBuff(h.unit('ordinary'), { key: 'test:operatorPower', mods: { atkPct: 0.5 } });
   h.run(10);
-  close(deviceBaseAttack(h.b, h.unit('medical')), 357);
-  close(h.unit('ordinary').s.atk, (100 + 357 * 0.15) * 1.5);
+  close(deviceBaseAttack(h.b, h.unit('medical')), 360);
+  close(h.unit('ordinary').s.atk, (100 + 360 * 0.15) * 1.5);
   assert.equal(h.unit('ordinary').buffs.filter((b) => b.key === 'rhine:sharing').length, 1);
   assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
 });
@@ -382,9 +516,9 @@ test('Rhine sharing: transformation and harmony use live membership; losing six 
   assert.equal(h.unit('harmony').findBuff('rhine:sharing'), null);
   ps.bonds.rhineShip.count = 5; h.step(); close(h.unit('native').s.atk, 100);
   ps.bonds.rhineShip.count = 6; h.b.addLayers('p1', 'rhineShip', 10, 'test'); h.step(2);
-  close(h.unit('native').s.atk, 100 + 330 * 0.15);
+  close(h.unit('native').s.atk, 100 + 340 * 0.15);
   h.b.retreat(h.unit('native')); close(h.unit('native').s.atk, 100);
-  assert.equal(h.b.redeploy(h.unit('native')), true); close(h.unit('native').s.atk, 100 + 330 * 0.15);
+  assert.equal(h.b.redeploy(h.unit('native')), true); close(h.unit('native').s.atk, 100 + 340 * 0.15);
   h.b.retreat(h.unit('energy'), { permanent: true }); close(h.unit('native').s.atk, 100);
   assert.equal(h.unit('native').findBuff('rhine:sharing'), null);
   assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
