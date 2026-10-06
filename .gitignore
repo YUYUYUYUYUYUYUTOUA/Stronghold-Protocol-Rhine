@@ -31,6 +31,7 @@ logs/
 
 # --- per-machine config (scripts/install-service-windows.ps1) ------------------------------------
 scripts/service.env.cmd
+.rhine-updates/
 .env
 .env.*
 

@@ -44,7 +44,7 @@ function portablePath(relative) {
 export function excludedFromBundle(relative) {
   const parts = relative.toLowerCase().split('/');
   const name = parts.at(-1);
-  if (parts.some(part => ['.git', '.cache', '.npm', '.yarn', '__pycache__', 'logs', '.idea', '.vscode', '.claude'].includes(part))) return true;
+  if (parts.some(part => ['.git', '.cache', '.rhine-updates', '.npm', '.yarn', '__pycache__', 'logs', '.idea', '.vscode', '.claude'].includes(part))) return true;
   if (name === '.env' || name.startsWith('.env.') || ['.npmrc', '.netrc', '.pypirc', '.ds_store', 'thumbs.db', 'desktop.ini'].includes(name)) return true;
   if (/\.(?:log|pyc|pyo|swp)$/i.test(name) || /(?:^|[-_.])verification(?:[-_.].*)?\.json$/i.test(name)) return true;
   return ['scripts/service.env.cmd', 'tools/deploy-rhine-update.ps1'].includes(relative.toLowerCase())

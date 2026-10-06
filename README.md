@@ -1,6 +1,6 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
-当前扩展版本：**v0.1.3-rhine.3**。
+当前扩展版本：**v0.1.3-rhine.4**。
 
 本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.1.3**，合入官方发布标签 v0.1.3（提交 [`a0a5419`](https://github.com/sganggs/Stronghold-Protocol/commit/a0a5419)），本次扩展修改日期为 **2026-10-07**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-013`。
 
@@ -86,11 +86,11 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.3-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.4-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 
-适用于 Windows x64。它是完整安装包，不是覆盖补丁；不要覆盖旧目录。若旧版正在使用 3000 端口，启动器会提示先结束旧版对局并关闭旧服务，或选择其他端口。关闭启动窗口会结束服务及当前全部对局。更多联机、端口和使用说明见 [整合包说明](docs/RHINE-BUNDLE.md)。素材和第三方组件的许可及声明随包保留，详见 [NOTICE.md](NOTICE.md) 与 [第三方声明](THIRD-PARTY-NOTICES.md)。
+适用于 Windows x64。首次安装解压到新目录；已有旧莱茵包时，先结束对局并关闭旧服务，再从新包运行 **更新旧版.bat**，按提示选择旧目录。它按清单更新、自动备份并保留配置；不要直接解压覆盖。具体步骤与冲突处理见 [保配置更新说明](docs/RHINE-UPDATE.md)。若旧版正在使用 3000 端口，启动器会提示先关闭旧服务，或选择其他端口。关闭启动窗口会结束服务及当前全部对局。更多联机、端口和使用说明见 [整合包说明](docs/RHINE-BUNDLE.md)。素材和第三方组件的许可及声明随包保留，详见 [NOTICE.md](NOTICE.md) 与 [第三方声明](THIRD-PARTY-NOTICES.md)。
 
 ### 本扩展：从源码运行
 

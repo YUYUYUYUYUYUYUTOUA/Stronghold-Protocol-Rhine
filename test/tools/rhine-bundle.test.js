@@ -30,7 +30,7 @@ function fixture(t) {
   for (const relative of tracked) put(source, relative);
   put(source, '.gitignore', 'public/assets/\npublic/fonts/\npublic/vendor/\nnode_modules/\ndata/local-assets.json\n.cache/\n');
   // Deliberately track forbidden paths too: Git membership alone must not bypass bundle exclusions.
-  const forbidden = ['.env', '.env.production', '.cache/private.txt', 'logs/session.txt', 'server.log', 'rhine-public-verification.json',
+  const forbidden = ['.env', '.env.production', '.cache/private.txt', '.rhine-updates/last/files/server/index.js', 'logs/session.txt', 'server.log', 'rhine-public-verification.json',
     'tools/deploy-rhine-update.ps1', 'scripts/service.env.cmd', 'test/e2e/out/screenshot.png', '.npmrc'];
   for (const relative of forbidden) put(source, relative, 'do not publish');
   git(source, ['init', '-q']);
