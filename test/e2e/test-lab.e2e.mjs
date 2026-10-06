@@ -82,6 +82,32 @@ test('real browser laboratory edits and renders actual combat without creating a
    assert.equal(await page.$eval('#lab-profile',e=>e.value),'rhine');
    await fill('lab-json',exported);await commit('lab-import');
   });
+  await t.test('layer-gain checkbox controls real skills and survives local storage, profile switching and legacy JSON',async()=>{
+   assert.equal(await page.$eval('#lab-layer-gains',e=>e.checked),true);
+   const initial=(await state()).scenario.bonds.rhineShip.layers;
+   await click('lab-layer-gains');await sleep(300);
+   assert.equal(await page.$eval('#lab-layer-gains',e=>e.checked),false,'periodic notifications preserve an unapplied draft');
+   await commit('lab-apply-scene');
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.flags.layerGainsEnabled),false);
+   await select('lab-unit-select',3);await click('lab-cast');
+   assert.equal((await state()).error,'');
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.getPlayer('lab').bonds.rhineShip.layers),initial);
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.allyUnits.find(u=>u.uid===8).researchCharges),1,'real skills still charge research');
+   await click('lab-export');const saved=JSON.parse(await page.$eval('#lab-json',e=>e.value));
+   assert.equal(saved.layerGainsEnabled,false);await click('lab-save');
+   await select('lab-profile','vanilla');await page.waitForFunction(()=>__lab.controller.scenario.profile==='vanilla');
+   assert.equal(await page.$eval('#lab-layer-gains',e=>e.checked),false);
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.flags.layerGainsEnabled),false);
+   await click('lab-load');await page.waitForFunction(()=>__lab.controller.scenario.profile==='rhine');
+   assert.deepEqual((await state()).scenario,saved);assert.equal(await page.$eval('#lab-layer-gains',e=>e.checked),false);
+   await click('lab-layer-gains');await commit('lab-apply-scene');await click('lab-cast');
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.flags.layerGainsEnabled),true);
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.getPlayer('lab').bonds.rhineShip.layers),initial+3);
+   delete saved.layerGainsEnabled;await fill('lab-json',JSON.stringify(saved));await commit('lab-import');
+   assert.equal(await page.$eval('#lab-layer-gains',e=>e.checked),true);
+   assert.equal(await page.evaluate(()=>__lab.controller.battle.flags.layerGainsEnabled),true);
+   assert.equal((await state()).stats.errors,0);
+  });
   await t.test('ecology preset deploys an active device, canvas unit clicks select it, and the tools can collapse',async()=>{
    await select('lab-preset','rhine-ecology');await commit('lab-load-preset');const s=await state();const device=s.scenario.units.find(u=>u.id==='token_rhine_ecology');
    assert.ok(device);assert.equal(await page.evaluate(()=>__lab.controller.battle.allyUnits.find(u=>u.defId==='token_rhine_ecology').researchActive),true);

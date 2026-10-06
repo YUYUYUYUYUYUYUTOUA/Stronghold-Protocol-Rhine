@@ -53,8 +53,8 @@ test('UI shows growth thresholds and research instructions without a fictional s
   assert.match(researchProgress(3, 1), /3\/5/);
   assert.match(researchProgress(0, 1), /0\/5/);
   assert.match(researchProgress(0, 2), /已完成/);
-  assert.equal(rhineAttack(10), 330);
-  assert.equal(rhineAttack(10, false), 334);
+  assert.equal(rhineAttack(10), 340);
+  assert.equal(rhineAttack(10, false), 340, 'Mayer now produces layers instead of a separate attack bonus');
   assert.equal(rhineStage(2), 2);
   assert.match(summonDeployHint({ tokenId: RHINE_DEVICES[0].tokenId }), /科研/);
 });

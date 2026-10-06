@@ -71,6 +71,8 @@ export function normalizeLabScenario(input, records) {
   known(records, 'stages', chosenStage, 'stageId');
   const seed = number(optional(input.seed, 1), 'seed', 1, 0xffffffff, true);
   const round = number(optional(input.round, 1), 'round', 1, 16, true);
+  const layerGainsEnabled = optional(input.layerGainsEnabled, true);
+  if (typeof layerGainsEnabled !== 'boolean') fail('layerGainsEnabled', 'expected a boolean');
   const unitsIn = optional(input.units, []), enemiesIn = optional(input.enemies, []), bondsIn = optional(input.bonds, {});
   if (!Array.isArray(unitsIn) || unitsIn.length > 44) fail('units', 'expected at most 44 units');
   if (!Array.isArray(enemiesIn) || enemiesIn.length > 600) fail('enemies', 'expected at most 600 entries');
@@ -139,7 +141,7 @@ export function normalizeLabScenario(input, records) {
     bonds[id] = { layers: number(optional(state.layers, 0), `bonds.${id}.layers`, 0, 999, true),
       count: state.count == null ? null : number(state.count, `bonds.${id}.count`, 0, 20, true) };
   }
-  return { version: 1, profile, stageId: chosenStage, seed, round, units, enemies, bonds };
+  return { version: 1, profile, stageId: chosenStage, seed, round, layerGainsEnabled, units, enemies, bonds };
 }
 
 // The exact interface consumed by computeBonds. This is a raw-record view, not a second counting implementation.
@@ -210,7 +212,7 @@ export function buildLabSpec(input, records) {
     devices: s.units.filter((u) => rhineDevice(u.id)).map((u) => ({ key: rhineDevice(u.id).key, tokenId: u.id, uid: u.uid, stage: u.stage, points: 0, onBoard: true })) };
   return { v: 1, battleId: 'lab', fieldId: 'lab', kind: 'normal', seed: s.seed, modeId: 'mode_single_normal', round: s.round,
     stageId: s.stageId, rect: { ...GEO.NORMAL_RECT }, timeLimit: 3600, players: [player], spawns, routes,
-    flags: { startOpCooldown: 0 }, enemyOverrides, waveId: null, bossId: null, content: 'full', boss: null };
+    flags: { startOpCooldown: 0, layerGainsEnabled: s.layerGainsEnabled }, enemyOverrides, waveId: null, bossId: null, content: 'full', boss: null };
 }
 
 /** Six distinct Rhine operators and two research devices; vanilla starts with a regular unmodified squad. */

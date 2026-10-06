@@ -74,3 +74,29 @@ test('profile switching is isolated and failed cross-profile import restores the
   assert.deepEqual(c.battle.errors,[]);assert.ok(c.battle.allyUnits.find(u=>u.defId==='token_rhine_ecology').researchActive);
  }finally{c.destroy();}
 });
+
+test('layer-gain control survives reset, JSON and profile switching, and old scenes restore default gains in the real engine',async()=>{
+ const {controller:c}=setup();
+ try{
+  assert.equal(c.scenario.layerGainsEnabled,true);
+  const next=c.exportScenario();next.layerGainsEnabled=false;c.setScenario(next);
+  assert.equal(c.battle.flags.layerGainsEnabled,false);
+  assert.equal(c.castSkill(3),true);
+  assert.equal(c.battle.getPlayer('lab').bonds.rhineShip.layers,100);
+  assert.equal(c.battle.allyUnits.find(u=>u.uid===8).researchCharges,1,'disabling layer gains preserves real skill hooks');
+  c.reset();assert.equal(c.battle.flags.layerGainsEnabled,false);
+  const saved=JSON.stringify(c.exportScenario());
+  await c.changeProfile('vanilla');
+  assert.equal(c.scenario.layerGainsEnabled,false);assert.equal(c.battle.flags.layerGainsEnabled,false);
+  await c.changeProfile('rhine');
+  assert.equal(c.scenario.layerGainsEnabled,false);assert.equal(c.battle.flags.layerGainsEnabled,false);
+  await c.importScenario(saved);
+  assert.equal(c.scenario.layerGainsEnabled,false);assert.equal(c.battle.flags.layerGainsEnabled,false);
+  const legacy=JSON.parse(saved);delete legacy.layerGainsEnabled;
+  await c.changeProfile('vanilla');await c.importScenario(JSON.stringify(legacy));
+  assert.equal(c.scenario.layerGainsEnabled,true);assert.equal(c.battle.flags.layerGainsEnabled,true);
+  assert.equal(c.castSkill(3),true);
+  assert.equal(c.battle.getPlayer('lab').bonds.rhineShip.layers,103);
+  assert.deepEqual(c.battle.errors,[]);
+ }finally{c.destroy();}
+});

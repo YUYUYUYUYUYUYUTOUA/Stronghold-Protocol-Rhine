@@ -23,6 +23,9 @@ test('laboratory defaults deploy real six-member Rhine and vanilla squads with a
   for (const [profile, records] of [['rhine', rhine], ['vanilla', vanilla]]) {
     const s = defaultLabScenario(records, profile), spec = buildLabSpec(s, records), b = start(s, records);
     assert.equal(s.profile, profile);
+    assert.equal(s.layerGainsEnabled, true);
+    assert.equal(spec.flags.layerGainsEnabled, true);
+    assert.equal(b.flags.layerGainsEnabled, true);
     assert.deepEqual(s.units.map((u) => u.uid), profile === 'rhine' ? [1,2,3,4,5,6,7,8] : [1,2,3,4,5,6]);
     assert.equal(b.allyUnits.filter((u) => u.uid && u.alive).length, s.units.length);
     const map = buildDeployMap(records.stages[s.stageId]);
@@ -38,7 +41,7 @@ test('laboratory defaults deploy real six-member Rhine and vanilla squads with a
       const devices = b.allyUnits.filter((u) => u.researchStage != null);
       assert.equal(devices.length, 2); assert.ok(devices.every((u) => u.researchActive));
       assert.equal(b.allyUnits.find((u) => u.uid === 8).researchStage, 2);
-      assert.equal(b.allyUnits.find((u) => u.uid === 8).base.atk, 640, 'front Mayer contributes to the selected device');
+      assert.equal(b.allyUnits.find((u) => u.uid === 8).base.atk, 700, '100 configured research layers contribute four attack each');
     } else {
       assert.equal('research' in spec.players[0], false);
       assert.equal(labBonds(s, records).rhineShip, undefined);
@@ -127,21 +130,41 @@ test('research selection consumes true counts and stage state without injecting 
   assert.ok(spec.players[0].units.every((u) => !('stats' in u) && !('bonds' in u)));
 });
 
-test('default laboratory real skill activations charge and release the mature energy device against its target', () => {
-  const s = defaultLabScenario(rhine);
-  s.units.find((u) => u.uid === 2).skillIndex = 2;
-  s.units.find((u) => u.uid === 5).skillIndex = 2;
-  const b = start(s), pulses = [];
-  b.on('damaged', (ctx) => { if (ctx.dmg.tags?.includes('rhinePulse')) pulses.push(ctx); });
-  for (const uid of [3, 5, 2]) {
-    assert.equal(b.allyUnits.find((u) => u.uid === uid).skill.activate('lab', { free: true }), true);
+test('lab layer-gain flag gates real Astgenne and Mayer gains while skills and energy damage still work', () => {
+  for (const setting of ['legacy', true, false]) {
+    const s = defaultLabScenario(rhine), enabled = setting !== false;
+    if (setting === 'legacy') delete s.layerGainsEnabled;
+    else s.layerGainsEnabled = setting;
+    s.units.find((u) => u.uid === 2).skillIndex = 2;
+    s.units.find((u) => u.uid === 5).skillIndex = 2;
+    const b = start(s), pulses = [];
+    b.on('damaged', (ctx) => { if (ctx.dmg.tags?.includes('rhinePulse')) pulses.push(ctx); });
+    assert.equal(b.flags.layerGainsEnabled, enabled);
+    for (const uid of [3, 5, 2]) {
+      assert.equal(b.allyUnits.find((u) => u.uid === uid).skill.activate('lab', { free: true }), true);
+    }
+    assert.equal(pulses.length, 1);
+    assert.equal(pulses[0].target.tag, 'lab:9');
+    assert.equal(b.getPlayer('lab').bonds.rhineShip.layers, enabled ? 104 : 100,
+      'Astgenne first cast adds three; Mayer device work adds one only when gains are enabled');
+    assert.equal(pulses[0].dmg.amount, (enabled ? 712 : 700) * 1.2,
+      'the real pulse uses configured attack plus only gains earned before that action');
+    assert.equal(b.allyUnits.find((u) => u.uid === 8).researchCharges, 0);
+    assert.equal(s.bonds.rhineShip.layers, 100, 'battle gains never mutate the saved starting layers');
+    assert.deepEqual(b.errors, []);
   }
-  assert.equal(pulses.length, 1);
-  assert.equal(pulses[0].target.tag, 'lab:9');
-  assert.equal(b.getPlayer('lab').bonds.rhineShip.layers, 103, 'Astgenne retains her real first-cast research gain');
-  assert.equal(pulses[0].dmg.amount, 649 * 1.2);
-  assert.equal(b.allyUnits.find((u) => u.uid === 8).researchCharges, 0);
-  assert.deepEqual(b.errors, []);
+});
+
+test('version-one JSON preserves an explicit layer-gain setting and defaults older scenes to enabled in both profiles', () => {
+  for (const [profile, records] of [['rhine', rhine], ['vanilla', vanilla]]) {
+    const s = defaultLabScenario(records, profile);
+    s.layerGainsEnabled = false;
+    assert.equal(normalizeLabScenario(JSON.stringify(s), records).layerGainsEnabled, false);
+    assert.equal(buildLabSpec(s, records).flags.layerGainsEnabled, false);
+    delete s.layerGainsEnabled;
+    assert.equal(normalizeLabScenario(JSON.stringify(s), records).layerGainsEnabled, true);
+    assert.equal(buildLabSpec(s, records).flags.layerGainsEnabled, true);
+  }
 });
 
 test('the same lab spec and profile restart with identical real engine state and events', () => {
@@ -196,6 +219,8 @@ test('malformed scenario IDs, coordinates, numeric ranges, slots and JSON values
     [s => { s.bonds.rhineShip.count = 21; }, /count/], [s => { s.bonds.missing = { count: null, layers: 0 }; }, /unknown bonds/],
     [s => { s.seed = 0; }, /seed/], [s => { s.seed = NaN; }, /NaN/], [s => { s.seed = null; }, /seed/],
     [s => { s.round = 17; }, /round/], [s => { s.units = null; }, /units/],
+    [s => { s.layerGainsEnabled = 'false'; }, /layerGainsEnabled/], [s => { s.layerGainsEnabled = 0; }, /layerGainsEnabled/],
+    [s => { s.layerGainsEnabled = null; }, /layerGainsEnabled/],
     [s => { s.extra = { lost: NaN }; }, /NaN/], [s => { s.profile = 'vanilla'; }, /Rhine extension/],
   ];
   for (const [change, expected] of cases) {

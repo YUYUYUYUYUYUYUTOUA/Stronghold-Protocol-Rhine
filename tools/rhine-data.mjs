@@ -66,9 +66,9 @@ function makeGarrison(key, gold) {
   const grade = gold ? 1 : 0, r = RHINE_BALANCE;
   if (key === 'copy_start') return garrison(id, '身前一格干员若为“进入休整期时”特质，本干员的特质与其相同', 'SERVER_PREP_START', 'SERVER_FRONT_SAME_EFFECT_PREP_START');
   if (key === 'copy_end') return garrison(id, '身前一格干员若为“休整期结束时”特质，本干员的特质与其相同', 'SERVER_PREP_FIN', 'SERVER_FRONT_SAME_EFFECT_PREP_FIN');
-  if (key === 'mayer') return garrison(id, `战斗中，每${r.mayerLayerStep}层科研使身前一格的科研装置攻击力+${r.mayerAttack[grade]}`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { layer_step: r.mayerLayerStep, atk: r.mayerAttack[grade] });
+  if (key === 'mayer') return garrison(id, `战斗中，身前一格科研装置每完成一次有效工作，使已激活的【莱茵生命】增加${r.mayerDeviceLayers[grade]}层。能量装置每次实际发射脉冲计一次；医疗装置每${r.medicalInterval}秒治疗轮次有实际治疗或护盾净增加时计一次，多个目标不重复计数；生态装置累计${r.ecologyResearchInterval}秒范围内有可选敌人时计一次，无敌人时暂停累计。同一装置只取最强的一名梅尔`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { device_layers: r.mayerDeviceLayers[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
-  if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署科研装置基础攻击力总和的${r.ifritInheritance[grade] * 100}%作为额外攻击力，无独立继承上限`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
+  if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署且有效的单台科研装置中最高基础攻击力的${r.ifritInheritance[grade] * 100}%作为额外攻击力，多台不相加，无独立继承上限`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
   if (key === 'astgenne') return garrison(id, `战斗中，首次开启技能时，使已激活的【莱茵生命】与【精准】各增加${r.astgenneFirstSkillLayers[grade]}层`, 'IN_BATTLE', 'RHINE_ASTGENNE_FIRST_SKILL', { layer: r.astgenneFirstSkillLayers[grade] }, { bond_ids: `${RHINE_BOND},preciShip` });
   if (key === 'dorothy') return garrison(id, `战斗中，自身布置的陷阱每触发一枚，使已激活的【莱茵生命】增加${r.dorothyTrapLayers[grade]}层；每场普通主战最多获得${r.dorothyBattleLayerCap[grade]}层。一枚陷阱命中多人只计一次，连锁引爆逐枚计数；双倍伤害陷阱不额外产层，撤回、搬动或未触发销毁不产层`, 'IN_BATTLE', 'RHINE_DOROTHY_TRAP_RESEARCH', { layer: r.dorothyTrapLayers[grade], max_layer: r.dorothyBattleLayerCap[grade] }, { bond_id: RHINE_BOND });
   return garrison(id, `休整期结束时，每名实际在场的莱茵生命干员使莱茵生命增加${r.ptilopsisLayersPerMember[grade]}层科研；同名干员分别计数，调和的虚拟人数不计入`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
@@ -223,6 +223,20 @@ export async function applyRhineData(files, source = null) {
       garrisons[g.garrisonId] = g; c.garrisonIds = [g.garrisonId];
     }
     if ([RHINE_CHARACTERS.silence, RHINE_CHARACTERS.muelsyse, RHINE_CHARACTERS.halo2].includes(c.charId) && !c.bonds.includes(RHINE_BOND)) c.bonds.push(RHINE_BOND);
+  }
+  // Extend only the Rhine profile's existing Solstice Astgenne trait. Its event, spending
+  // arithmetic and copy/retrigger behavior remain those of the upstream handler.
+  for (const c of Object.values(chess).filter(c => c.charId === RHINE_CHARACTERS.halo2)) {
+    for (const id of c.garrisonIds) {
+      const g = garrisons[id];
+      if (g?.effectKey !== 'SERVER_ADD_BOND_ROUND_COIN_COST') continue;
+      const ids = String(g.bbStr.bond || '').split(',').filter(Boolean);
+      if (!ids.includes(RHINE_BOND)) ids.push(RHINE_BOND);
+      g.bbStr.bond = ids.join(',');
+      for (const field of ['desc', 'descRaw']) {
+        if (!g[field].includes('【莱茵生命】')) g[field] = g[field].replace('【奥术】', '【奥术】【莱茵生命】');
+      }
+    }
   }
   for (const g of Object.values(garrisons)) g.owners = Object.values(chess).filter(c => c.garrisonIds.includes(g.garrisonId)).map(c => c.chessId);
   const bond = { ...clone(bonds.yanShip), bondId: RHINE_BOND, name: '莱茵生命', identifier: 24, bondOrder: 24,

@@ -438,6 +438,24 @@ test('regression: POSITION — a bond shared by 断崖 and the operator behind h
   onlyGains(t, { lateranoShip: 3, skillfulShip: 3 });
 });
 
+test('Solstice Astgenne spending adds Rhine only when active and preserves full-spending retriggers', () => {
+  for (const [suffix, amount] of [['a', 10], ['b', 20]]) {
+    const s = setup();
+    give(s.m, s.ps, `chess_char_6_16_${suffix}`, 'board', [10, 4]);
+    s.activate('rhineShip');
+    s.ps.round.spent = 15;
+    s.prepEnd();
+    onlyGains(s, { rhineShip: amount }, `first ${suffix} spending settlement`);
+    s.prepEnd();
+    onlyGains(s, { rhineShip: amount * 2 }, 'original repeated-dispatch arithmetic is preserved');
+    const inactive = setup();
+    give(inactive.m, inactive.ps, `chess_char_6_16_${suffix}`, 'board', [10, 4]);
+    inactive.ps.round.spent = 15;
+    inactive.prepEnd();
+    onlyGains(inactive, {}, 'unactivated Rhine does not receive spending layers');
+  }
+});
+
 test('coin / refresh counters: 溯光星源 121 per 3 spent, 阿罗玛 122 / 安洁莉娜 147 refreshes × multiplier (capped), 拉普兰德 123', () => {
   for (const { gid, g, owners } of idsOf('SERVER_PREP_FIN', 'SERVER_ADD_BOND_ROUND_COIN_COST')) {
     for (const owner of owners) {

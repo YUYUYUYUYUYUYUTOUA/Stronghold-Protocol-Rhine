@@ -99,7 +99,8 @@ export function mountLabUI({ root, controller, records = {} }) {
     <p class="lab-reset-note">应用配置将重置并暂停战斗；播放与单步使用真实模拟。</p>
   </div>
   ${section('场景与地图', `<div class="lab-grid">${select('数据版本','lab-profile')}${select('预设场景','lab-preset')}</div>${button('lab-load-preset','载入预设')}
-    ${select('地图（启用地图）','lab-stage')}<div class="lab-grid">${number('随机种子 seed','lab-seed',1,4294967295)}${number('回合 round','lab-round',1,16)}</div>${button('lab-apply-scene','应用场景配置','primary')}`, true)}
+    ${select('地图（启用地图）','lab-stage')}<div class="lab-grid">${number('随机种子 seed','lab-seed',1,4294967295)}${number('回合 round','lab-round',1,16)}</div>
+    <label class="lab-check"><input id="lab-layer-gains" type="checkbox" checked>允许战斗叠层</label><p class="lab-small">关闭后保留设定层数，战斗内不再获得盟约层数；点击应用后重置战斗。</p>${button('lab-apply-scene','应用场景配置','primary')}`, true)}
   ${section('场上单位 <span id="lab-roster-count" class="lab-count"></span>', `${select('选择 UID（也可点击地图）','lab-unit-select')}<p id="lab-selection-note" class="lab-small">尚未选择单位</p>${button('lab-delete','删除所选单位','danger')}`, true)}
   ${section('干员与召唤物', `${search('搜索干员 / 召唤物','lab-unit-search')}${select('单位','lab-unit-kind')}
     <div class="lab-grid">${select('普通 / 精锐','lab-quality')}${select('朝向','lab-dir')}</div>
@@ -266,6 +267,7 @@ export function mountLabUI({ root, controller, records = {} }) {
     if (changed) {
       if (tables !== lastTables) catalogs();
       $('lab-profile').value = s.profile; $('lab-stage').value = s.stageId; $('lab-seed').value = s.seed; $('lab-round').value = s.round;
+      $('lab-layer-gains').checked = s.layerGainsEnabled !== false;
       options($('lab-unit-select'), [['','未选择'], ...(s.units || []).map(u => [u.uid,`#${u.uid} ${recOf(u.id)?.name || u.id}`]), ...(s.enemies || []).map(e => [e.uid,`#${e.uid} 敌 · ${tables.enemies?.[e.enemyKey]?.name || e.enemyKey} ×${e.count || 1}`])],state.selectedUid ?? '');
       put('lab-roster-count', `${s.units?.length || 0} 友方 / ${s.enemies?.length || 0} 敌群`);
       researchFields(); bondFields();
@@ -285,7 +287,7 @@ export function mountLabUI({ root, controller, records = {} }) {
   listen($('lab-speed'),'change',() => run(() => controller.setSpeed(Number(value('lab-speed')))));
   listen($('lab-profile'),'change',() => run(() => controller.changeProfile(value('lab-profile')),'数据版本已切换；战斗已重置。'));
   listen($('lab-load-preset'),'click',() => run(() => controller.preset(value('lab-preset')),'预设已载入；战斗已暂停。'));
-  listen($('lab-apply-scene'),'click',() => run(() => commit(s => Object.assign(s,{stageId:value('lab-stage'),seed:numeric('lab-seed',1),round:numeric('lab-round',1)})),'场景配置已应用；战斗已重置。'));
+  listen($('lab-apply-scene'),'click',() => run(() => commit(s => Object.assign(s,{stageId:value('lab-stage'),seed:numeric('lab-seed',1),round:numeric('lab-round',1),layerGainsEnabled:$('lab-layer-gains').checked})),'场景配置已应用；战斗已重置。'));
   listen($('lab-unit-select'),'change',() => run(() => { const u = [...scenario().units,...scenario().enemies].find(u => String(u.uid) === value('lab-unit-select')); return controller.select(u?.uid ?? null); }));
   listen($('lab-delete'),'click',() => run(() => commit(s => { s.units=s.units.filter(u => u.uid !== state.selectedUid); s.enemies=s.enemies.filter(u => u.uid !== state.selectedUid); }).then(() => controller.select(null)),'单位已删除；战斗已重置。'));
   listen($('lab-unit-search'),'input',() => { catalog('lab-unit-kind',{...tables.chess,...tables.tokens},value('lab-unit-search'),r => !r.isGolden && (r.chessId ? r.visible !== false : r.placeable !== false)); unitChoices(); });

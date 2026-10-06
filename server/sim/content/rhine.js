@@ -8,6 +8,7 @@ import { absoluteRangeKeys } from '../targeting.js';
 import { canReceiveHeal } from '../damage.js';
 import { TICK } from '../constants.js';
 import { memberOf, rhineEquipmentAttack } from './items/battle.js';
+import { gainLayers } from './support/index.js';
 
 const alive = (u) => !!u?.alive && u.deployed && !u.removed && !u.hidden;
 const charId = (u) => u.def?.charId ?? u.def?.raw?.charId;
@@ -49,17 +50,11 @@ function selectedDevices(ps) {
   return out;
 }
 
-/** Only layer-derived research, Mayer and mainframe bonuses enter base ATK; no ordinary buffs or inherited ATK. */
+/** Only layer-derived research and mainframe bonuses enter base ATK; no buffs or inherited ATK. */
 export function deviceBaseAttack(battle, unit) {
   const ps = battle.getPlayer(unit.ownerId);
-  let bestMayer = null;
-  for (const u of ps?.units ?? []) {
-    if (u.kind !== 'op' || !alive(u) || charId(u) !== C.mayer) continue;
-    const [r, c] = frontOf(u.tileR, u.tileC, u.dir);
-    if (r === unit.tileR && c === unit.tileC) bestMayer = bestMayer === true || elite(u);
-  }
   const layers = layersOf(ps);
-  return rhineAttack(layers, bestMayer) + rhineEquipmentAttack(battle, unit.ownerId, layers);
+  return rhineAttack(layers) + rhineEquipmentAttack(battle, unit.ownerId, layers);
 }
 
 function setPassive(battle, unit, key, mods) {
@@ -79,7 +74,7 @@ export function install(battle) {
         entry.unit.researchCharges = 0;
         entry.unit.researchChargeMax = B.energyCharges;
       }
-      states.push({ ...entry, ps, charges: 0, contributors: new Map(), active: false });
+      states.push({ ...entry, ps, charges: 0, contributors: new Map(), active: false, ecologyWork: 0, pulsing: false });
     }
   }
   const enabled = (s) => alive(s.unit) && selectedDevices(s.ps).some((d) => d.unit === s.unit);
@@ -111,18 +106,17 @@ export function install(battle) {
         s.unit.markDirty();
         if (ready && s.key === 'ecology') ecologyFx(s, active);
       }
-      if (!active) { setCharges(s, 0); s.contributors.clear(); }
+      if (!active) { setCharges(s, 0); s.contributors.clear(); s.ecologyWork = 0; }
     }
     for (const ps of battle.players) {
       const layers = layersOf(ps);
       const deviceAttacks = states.filter((s) => s.ps === ps && enabled(s)).map((s) => deviceBaseAttack(battle, s.unit));
-      const inherited = deviceAttacks.reduce((n, atk) => n + atk, 0);
       const highest = Math.max(0, ...deviceAttacks);
       const sharing = ps.bonds?.[RHINE_BOND]?.active && ps.bonds[RHINE_BOND].count >= B.sharingCount;
       for (const u of ps.units) {
         if (u.kind !== 'op') continue;
         if (charId(u) === C.saria) setPassive(battle, u, 'rhine:saria', { healingDealtMul: 1 + Math.floor(layers / B.sariaLayerStep) * B.sariaHealBonus[elite(u) ? 1 : 0] });
-        if (charId(u) === C.ifrit) setPassive(battle, u, 'rhine:ifrit', { atkFlat: inherited * B.ifritInheritance[elite(u) ? 1 : 0] });
+        if (charId(u) === C.ifrit) setPassive(battle, u, 'rhine:ifrit', { atkFlat: highest * B.ifritInheritance[elite(u) ? 1 : 0] });
         const shared = sharing && alive(u) && charId(u) !== C.ifrit && damageOperator(u) && memberOf(battle, u, RHINE_BOND)
           ? highest * B.researchSharing[elite(u) ? 1 : 0] : 0;
         if (shared > 0) setPassive(battle, u, 'rhine:sharing', { atkFlat: shared });
@@ -138,6 +132,19 @@ export function install(battle) {
   battle.on('layerGain', ({ bondId }) => { if (bondId === RHINE_BOND) battle.after(0, refresh); });
   battle.on('tick', refresh, { priority: 100 });
 
+  // One completed device action credits the strongest live Mayer facing that device, never each target/copy.
+  const worked = (s) => {
+    if (!enabled(s)) return;
+    let source = null, n = 0;
+    for (const u of s.ps.units) {
+      if (u.kind !== 'op' || !alive(u) || charId(u) !== C.mayer) continue;
+      const [r, c] = frontOf(u.tileR, u.tileC, u.dir);
+      const amount = B.mayerDeviceLayers[elite(u) ? 1 : 0];
+      if (r === s.unit.tileR && c === s.unit.tileC && amount > n) { source = u; n = amount; }
+    }
+    if (source) gainLayers(battle, { playerId: s.unit.ownerId, bonds: RHINE_BOND, n, source, reason: 'garrison' });
+  };
+
   // Observe the final heal amount without healing inside a heal hook or bypassing noHeal/other modifiers.
   battle.on('heal', (ctx) => { if (ctx.opts?.[healCapture]) ctx.opts[healCapture].amount = ctx.amount; }, { priority: -100000 });
   const medical = (s) => {
@@ -146,23 +153,29 @@ export function install(battle) {
     const eligible = s.ps.units.filter((u) => alive(u) && battle.allySelectable(u, s.unit) && !rhineDevice(u.defId) && !u.bossPool && canReceiveHeal(s.unit, u)
       && researchContainsTile(u, s.unit.x, s.unit.y, B.radius) && (s.stage >= 1 || u.hp < u.s.maxHp));
     eligible.sort((a, b) => a.hp / a.s.maxHp - b.hp / b.s.maxHp || a.id - b.id);
+    let effective = false;
+    const amount = deviceBaseAttack(battle, s.unit) * B.medicalHealScale;
     for (const target of eligible.slice(0, s.stage >= 2 ? 2 : 1)) {
       const capture = { amount: 0 };
-      const actual = battle.heal(s.unit, target, deviceBaseAttack(battle, s.unit) * B.medicalHealScale, { [healCapture]: capture });
+      const actual = battle.heal(s.unit, target, amount, { [healCapture]: capture });
       const extra = Math.max(0, capture.amount - actual) * B.medicalShieldRatio;
       let shielded = false;
       if (s.stage >= 1 && extra > 0 && alive(target)) {
         const key = `rhine:overheal:${s.unit.id}`;
-        const shield = Math.min(target.s.maxHp, (target.findBuff(key)?.shield ?? 0) + extra);
+        const previousShield = target.findBuff(key)?.shield ?? 0;
+        const shield = Math.min(target.s.maxHp, previousShield + extra);
         battle.addBuff(target, { key, shield, duration: B.medicalShieldDuration, source: s.unit });
         shielded = true;
+        effective ||= (target.findBuff(key)?.shield ?? 0) > previousShield;
       }
+      effective ||= actual > 0;
       if (actual > 0 || shielded) battle.fx('rhineHeal', { x: target.x, y: target.y, source: s.unit.id, target: target.id, stage: s.stage });
     }
+    if (effective) worked(s);
   };
 
   const pulse = (s) => {
-    if (!enabled(s) || s.charges < B.energyCharges) return;
+    if (!enabled(s) || s.pulsing || s.charges < B.energyCharges) return;
     const enemies = targets(s).sort((a, b) => bodyDist(a, s.unit.x, s.unit.y) - bodyDist(b, s.unit.x, s.unit.y) || a.id - b.id);
     if (!enemies.length) return;
     const primary = enemies[0];
@@ -173,9 +186,13 @@ export function install(battle) {
       : battle.foesInRadius(primary.x, primary.y, range.radius, true);
     const amount = deviceBaseAttack(battle, s.unit) * B.energyPulseScale;
     // Consume only after finding a selectable primary, before damage hooks can cause another skill start.
+    s.pulsing = true;
     setCharges(s, 0);
-    for (const target of hit) battle.dealDamage(s.unit, target, { type: 'arts', amount, canDodge: false, tags: ['rhinePulse'] });
-    battle.fx('rhinePulse', { x: primary.x, y: primary.y, fromX: s.unit.x, fromY: s.unit.y, source: s.unit.id, target: primary.id, stage: s.stage });
+    try {
+      for (const target of hit) battle.dealDamage(s.unit, target, { type: 'arts', amount, canDodge: false, tags: ['rhinePulse'] });
+      battle.fx('rhinePulse', { x: primary.x, y: primary.y, fromX: s.unit.x, fromY: s.unit.y, source: s.unit.id, target: primary.id, stage: s.stage });
+      worked(s);
+    } finally { s.pulsing = false; }
   };
   battle.on('skillStart', ({ unit, skill, reason }) => {
     // A carried active skill merely resumes in a unite field; passive deployment is not a cast either.
@@ -207,7 +224,15 @@ export function install(battle) {
     for (const s of states) {
       if (s.key === 'energy') { pulse(s); continue; }
       if (s.key !== 'ecology' || !enabled(s)) continue;
-      for (const target of targets(s, B.radius + (s.stage >= 2 ? 1 : 0))) battle.applyStatus(target, 'slow', { value: B.ecologySlow, duration: TICK * 2, source: s.unit });
+      const inRange = targets(s, B.radius + (s.stage >= 2 ? 1 : 0));
+      for (const target of inRange) battle.applyStatus(target, 'slow', { value: B.ecologySlow, duration: TICK * 2, source: s.unit });
+      if (inRange.length) {
+        s.ecologyWork += TICK;
+        if (s.ecologyWork >= B.ecologyResearchInterval - 1e-9) {
+          s.ecologyWork = Math.max(0, s.ecologyWork - B.ecologyResearchInterval);
+          worked(s);
+        }
+      }
     }
   });
   for (const s of states) {

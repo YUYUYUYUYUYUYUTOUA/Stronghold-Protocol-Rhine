@@ -102,7 +102,7 @@ export function createLabController({ records: initialRecords, view, sim, loadPr
     try {
       const nextRecords=await loadProfile(profile);
       records=nextRecords;
-      const next=normalizeLabScenario(input??defaultLabScenario(records,profile),records);
+      const next=normalizeLabScenario(input??{...defaultLabScenario(records,profile),layerGainsEnabled:previousScenario?.layerGainsEnabled??true},records);
       return rebuild(next);
     } catch(e) {
       records=previousRecords;
