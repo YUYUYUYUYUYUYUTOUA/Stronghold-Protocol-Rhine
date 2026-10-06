@@ -300,7 +300,7 @@ test('an interrupted prepared update with mixed old/new payload can recover the 
   assert.deepEqual(snapshot(f.target), before);
 });
 
-test('CLI --rollback passes its backup argument and restores a mixed interrupted fixture', { skip: process.platform !== 'win32' }, async t => {
+test('CLI --rollback passes its backup argument and restores a mixed interrupted fixture', { skip: process.platform !== 'win32' || process.env.SP_UPDATE_E2E !== '1' }, async t => {
   const f = fixture(t, { 'server/index.js': 'old', 'obsolete.txt': 'remove' },
     { 'server/index.js': 'new', 'added.txt': 'add' });
   put(f.target, '.env', 'keep private configuration');

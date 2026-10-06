@@ -141,7 +141,7 @@ export async function planUpdate({ source, target }) {
 
 export async function assertBundleStopped(target) {
   if (process.platform !== 'win32') throw new Error('The CLI process check supports Windows only');
-  const script = "$ProgressPreference='SilentlyContinue'; [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); $OutputEncoding=[Console]::OutputEncoding; @(Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object { $_.Name -match '^(node|cmd|powershell|pwsh)(\\.exe)?$' } | Select-Object Name,CommandLine,ExecutablePath) | ConvertTo-Json -Compress";
+  const script = "$ProgressPreference='SilentlyContinue'; [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); $OutputEncoding=[Console]::OutputEncoding; @(Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object { $_.Name -match '^(node|cmd|powershell|pwsh)(\\.exe)?$' } | Select-Object Name,CommandLine,ExecutablePath,ProcessId) | ConvertTo-Json -Compress";
   const executable = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   let processes;
   try {
@@ -159,7 +159,15 @@ export async function assertBundleStopped(target) {
     if (ownNode || managedScript || entries.some(entry => line.includes(entry)) || (/^node(?:\.exe)?$/i.test(item.Name) && /(?:^|\s)"?(?:\.\\)?(?:server\\)?index\.js"?(?:\s|$)/i.test(line))) {
       throw new Error('The target service (or an unidentified relative-path game service) is still running. Finish matches and stop it manually first.');
     }
-    if (!item.CommandLine && /^node(?:\.exe)?$/i.test(item.Name)) throw new Error('A Node process cannot be inspected; update refused while service identity is unknown');
+    if (!item.CommandLine && /^node(?:\.exe)?$/i.test(item.Name)) {
+      // A process may exit between CIM enumeration and property collection.
+      // Signal 0 only probes existence; it never stops or signals a live process.
+      let gone = false;
+      if (Number.isSafeInteger(item.ProcessId) && item.ProcessId > 0) {
+        try { process.kill(item.ProcessId, 0); } catch (error) { gone = error.code === 'ESRCH'; }
+      }
+      if (!gone) throw new Error('A Node process cannot be inspected; update refused while service identity is unknown');
+    }
   }
 }
 function store(file, value) {
