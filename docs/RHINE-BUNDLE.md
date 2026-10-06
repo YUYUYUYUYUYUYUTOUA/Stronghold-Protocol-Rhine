@@ -1,8 +1,8 @@
 # 莱茵生命扩展整合包使用说明
 
-当前版本 `v0.1.3-rhine.4`，修改日期 2026-10-07，源码分支 `codex/rhine-upstream-013`。
+当前版本 `v0.1.3-rhine.5`，修改日期 2026-10-07，源码分支 `codex/rhine-upstream-013`。
 
-下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.4-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
+下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.1.3-rhine.5-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
 
 ## 解压并开始
 
@@ -12,7 +12,7 @@
 4. 选择“独立模拟”开始单人游戏，或选择“同盟模拟”创建房间，与朋友一起玩。
 5. 新房间的“莱茵生命扩展”默认开启。房主可在等待室选择“原版”，使用随包固定的上游 v0.1.3 原版数据；只有开局前可切换，各房间独立设置。切换后队友需重新准备，数据与本局调配完成后才允许开局。
 
-这是**完整安装包**。首次安装放到新目录；更新旧莱茵包时，先结束对局并关闭旧服务，从新包双击 **更新旧版.bat**，输入旧目录，工具会按清单备份并更新，保留本机配置和清单外文件。完成后从原旧目录启动，沿用原来的访问地址。步骤、冲突处理与回退见 [保配置更新说明](RHINE-UPDATE.md)；不要直接解压覆盖已有文件。若已有服务占用 3000 端口，先关闭它再启动更新后的服务；仅打开相同网址不会自动切换版本。
+这是**完整安装包**。首次安装放到新目录；后续先结束对局并关闭旧服务，双击原目录的 **更新旧版.bat** 或 **联网更新.bat**，工具自动从 GitHub 下载正式最新版、校验、备份和原地更新，保留本机配置与清单外文件。较早版本用户只需另下载小体积 **Rhine-Update-Tool-Windows.zip** 一次，首次指定旧目录。完成后从原目录启动，沿用原来的访问地址。步骤、冲突处理与回退见 [保配置更新说明](RHINE-UPDATE.md)；不要直接解压覆盖已有文件。若已有服务占用 3000 端口，先关闭它再启动更新后的服务；仅打开相同网址不会自动切换版本。
 
 ## 和朋友一起玩
 
@@ -32,6 +32,6 @@
 
 ## 版本与来源
 
-本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.1.3** 的非官方莱茵生命扩展，包含上游提交 `a0a5419` 及其之前的修复。Release 标记 `v0.1.3-rhine.4` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.1.3`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。
+本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.1.3** 的非官方莱茵生命扩展，包含上游提交 `a0a5419` 及其之前的修复。Release 标记 `v0.1.3-rhine.5` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.1.3`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。
 
 游戏源代码随包提供，代码许可见 [LICENSE](../LICENSE)。游戏素材、数据、官方标识及非商业使用说明继续按 [NOTICE.md](../NOTICE.md) 区分，不因打包而获得额外授权。Node.js 原文许可随包位于 `runtime/node/LICENSE`；其内置组件及其他依赖的许可见 [第三方声明](../THIRD-PARTY-NOTICES.md)。本包不代表上游作者、《明日方舟》官方或 Node.js 项目的认可。
