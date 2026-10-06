@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { selectRelease, prepareOnlineUpdate, runOnlineUpdate, extractArchive as extractWindowsArchive } from '../scripts/rhine-online-update.mjs';
 
 const REPOSITORY = 'YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine';
@@ -491,4 +493,26 @@ test('real Windows ZIP extraction accepts safe nested package files', { skip: pr
   await extractWindowsArchive({ archive, destination });
   assert.equal(fs.readFileSync(path.join(destination, 'Stronghold-Protocol-Rhine/server/index.js'), 'utf8'), 'fixture source');
   assert.equal(fs.readFileSync(path.join(destination, 'Stronghold-Protocol-Rhine/开始游戏.txt'), 'utf8'), 'fixture instructions');
+});
+
+test('actual root updater batch entries preserve PowerShell exit codes in Chinese, space and metacharacter paths', { skip: process.platform !== 'win32' }, t => {
+  const f = fixture(t);
+  const launcherRoot = path.join(f.temporary, '中文 更新入口 & !');
+  fs.mkdirSync(launcherRoot);
+  put(launcherRoot, 'scripts/rhine-online-update.ps1', 'param([int]$FixtureExit)\r\nexit $FixtureExit\r\n');
+  const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
+  const windowsRoot = process.env.SystemRoot || 'C:\\Windows';
+  const cmd = path.join(windowsRoot, 'System32', 'cmd.exe');
+  for (const name of ['联网更新.bat', '更新旧版.bat']) {
+    const launcher = path.join(launcherRoot, name);
+    fs.copyFileSync(path.join(repositoryRoot, name), launcher);
+    for (const code of [0, 1, 7]) {
+      const execution = spawnSync(cmd, ['/d', '/s', '/c', `""${launcher}" ${code}"`], {
+        windowsHide: true, windowsVerbatimArguments: true, timeout: 15000, encoding: 'utf8',
+        cwd: path.join(windowsRoot, 'System32'),
+      });
+      assert.equal(execution.error, undefined, `${name}, fixture exit ${code}: ${execution.error?.message}`);
+      assert.equal(execution.status, code, `${name}, fixture exit ${code}: ${execution.stdout}\n${execution.stderr}`);
+    }
+  }
 });
