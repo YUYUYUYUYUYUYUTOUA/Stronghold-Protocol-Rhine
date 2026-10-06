@@ -52,11 +52,16 @@ export function excludedFromBundle(relative) {
 }
 
 // Reject links instead of following them: npm links/junctions and asset links can escape the allowed roots.
+function linked(file, stat) {
+  if (stat.isSymbolicLink()) return true;
+  const real = fs.realpathSync.native(file), absolute = path.resolve(file);
+  return process.platform === 'win32' ? real.toLowerCase() !== absolute.toLowerCase() : real !== absolute;
+}
 function checkChain(root, relative, directory = false) {
   let current = root;
   for (const part of portablePath(relative).split('/')) {
     current = path.join(current, part);
-    if (fs.lstatSync(current).isSymbolicLink()) throw new Error(`Symlink/junction is not allowed in bundle inputs: ${relative}`);
+    if (linked(current, fs.lstatSync(current))) throw new Error(`Symlink/junction is not allowed in bundle inputs: ${relative}`);
   }
   const stat = fs.lstatSync(current);
   if (directory ? !stat.isDirectory() : !stat.isFile()) throw new Error(`Bundle input is not a regular ${directory ? 'directory' : 'file'}: ${relative}`);
@@ -67,7 +72,7 @@ function walk(root, relative, visit) {
   if (excludedFromBundle(relative)) return;
   const source = path.join(root, ...portablePath(relative).split('/'));
   const stat = fs.lstatSync(source);
-  if (stat.isSymbolicLink()) throw new Error(`Symlink/junction is not allowed in bundle inputs: ${relative}`);
+  if (linked(source, stat)) throw new Error(`Symlink/junction is not allowed in bundle inputs: ${relative}`);
   if (stat.isDirectory()) {
     for (const name of fs.readdirSync(source).sort()) walk(root, `${relative}/${name}`, visit);
   } else if (stat.isFile()) visit(relative, source, stat);
@@ -81,7 +86,7 @@ function resolveOutput(out) {
     current = path.join(current, part);
     if (!fs.existsSync(current)) continue;
     const stat = fs.lstatSync(current);
-    if (stat.isSymbolicLink()) throw new Error('The output directory or its ancestors must not be a symlink/junction');
+    if (linked(current, stat)) throw new Error('The output directory or its ancestors must not be a symlink/junction; use full directory paths');
     if (!stat.isDirectory()) throw new Error('The output path must be a directory');
     current = fs.realpathSync.native(current); // Normalize Windows short (8.3) names before containment checks.
   }

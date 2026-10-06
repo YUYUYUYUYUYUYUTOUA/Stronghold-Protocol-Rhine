@@ -25,6 +25,12 @@ function protectedPath(relative) {
     || name === '.env' || name.startsWith('.env.') || ['.npmrc', '.netrc', '.pypirc'].includes(name)
     || /\.log$/i.test(name) || relative.toLowerCase() === 'scripts/service.env.cmd';
 }
+function linked(file, stat) {
+  if (stat.isSymbolicLink()) return true;
+  // Some Windows Node builds report junctions as directories in lstat.
+  const real = fs.realpathSync.native(file), absolute = path.resolve(file);
+  return process.platform === 'win32' ? real.toLowerCase() !== absolute.toLowerCase() : real !== absolute;
+}
 function checkedPath(root, relative) {
   let current = root;
   for (const part of portable(relative).split('/')) {
@@ -32,7 +38,7 @@ function checkedPath(root, relative) {
     let st;
     try { st = fs.lstatSync(current); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     if (st) {
-      if (st.isSymbolicLink()) throw new Error(`Symlink/junction is not allowed for managed files: ${relative}`);
+      if (linked(current, st)) throw new Error(`Symlink/junction is not allowed for managed files: ${relative}`);
       if (current !== path.join(root, ...relative.split('/')) && !st.isDirectory()) throw new Error(`Parent is not a directory: ${relative}`);
     }
   }
@@ -47,7 +53,7 @@ function directory(input) {
   for (const part of path.relative(current, absolute).split(path.sep)) {
     if (!part) continue;
     current = path.join(current, part);
-    if (fs.lstatSync(current).isSymbolicLink()) throw new Error('Bundle directories and ancestors must not be symlinks/junctions');
+    if (linked(current, fs.lstatSync(current))) throw new Error('Bundle directories and ancestors must not be symlinks/junctions; use full directory paths');
   }
   if (!fs.statSync(absolute).isDirectory()) throw new Error('Bundle path must be a directory');
   return fs.realpathSync.native(absolute);
