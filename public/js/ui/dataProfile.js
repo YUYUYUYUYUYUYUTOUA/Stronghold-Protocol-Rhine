@@ -1,5 +1,6 @@
 // Room and match preparation share one profile barrier. Older asynchronous loads never unlock a newer profile.
 import { dataProfileId } from '../data.js';
+import { t } from '../../../shared/i18n.js';
 
 /** A match's fixed profile also works when m.public arrives before the restored room.state. */
 export function profileFromState(s) {
@@ -33,7 +34,7 @@ export function createDataProfilePreparation({ cache, target, files }) {
       if (generation !== cache.generation || id !== cache.profileId) return false;
       const missing = files.filter((name) => snapshot.status(name) === 'missing' && !snapshot.isReady(name));
       const ready = snapshot.isReady(files);
-      update({ ...base, dataReady: ready, dataError: missing.length ? `模拟数据载入失败：${missing.join('、')}` : null });
+      update({ ...base, dataReady: ready, dataError: missing.length ? t('模拟数据载入失败：{files}', { files: missing }) : null });
       return ready;
     });
     return pending;

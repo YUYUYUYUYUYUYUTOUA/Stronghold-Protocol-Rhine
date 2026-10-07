@@ -165,7 +165,7 @@ test('Dorothy: withdrawal and owner departure give no research; every attached t
   h.b.retreat(u); assert.ok(!c.alive); assert.equal(c.removeReason, 'ownerGone'); assert.deepEqual(gain(h), {}); valid(h);
 });
 
-for (const elite of [false, true]) test(`Dorothy: actual trap consumptions reach exactly ${elite ? 48 : 24} research and Dreamer caps at ten`, () => {
+for (const elite of [false, true]) test(`Dorothy: actual trap consumptions reach exactly ${elite ? 48 : 24} research and full-potential Dreamer caps at twelve`, () => {
   const h = run('dorothy', { elite, bonds: { rhineShip: { ...active } },
     units: [{ chessId: cid('dorothy', elite), uid: 'owner', row: 10, col: 4, skillIndex: 0, moduleId: 'none' }] });
   const u = h.unit('owner'), e = h.spawn('e', { pos: [12, 9] });
@@ -175,8 +175,8 @@ for (const elite of [false, true]) test(`Dorothy: actual trap consumptions reach
     e.x = 7; e.y = 12; triggerResonator(h.b, t, e);
     assert.equal(gain(h).rhineShip, Math.min(i + 1, 12) * (elite ? 4 : 2));
   }
-  assert.equal(u.mem.dorothyDream, 10);
-  close(u.findBuff('dorothy:dreamer').mods.atkMul, 1.2); valid(h);
+  assert.equal(u.mem.dorothyDream, 12);
+  close(u.findBuff('dorothy:dreamer').mods.atkMul, 1.24); valid(h);
 });
 
 test('Dorothy: same-name copies have separate trap ownership and research budgets', () => {
@@ -188,7 +188,7 @@ test('Dorothy: same-name copies have separate trap ownership and research budget
     e.x = 9; e.y = 12; const t = h.b.spawnToken(u, RESONATOR, 12, 7);
     e.x = 7; e.y = 12; triggerResonator(h.b, t, e);
   }
-  assert.equal(gain(h).rhineShip, 48); assert.equal(first.mem.dorothyDream, 10); assert.equal(second.mem.dorothyDream, 10); valid(h);
+  assert.equal(gain(h).rhineShip, 48); assert.equal(first.mem.dorothyDream, 12); assert.equal(second.mem.dorothyDream, 12); valid(h);
 });
 
 test('Dorothy: runtime cap resists oversized injected token limits; direct spawns reject an occupied enemy tile', () => {

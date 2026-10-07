@@ -5,13 +5,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getData } from '../../server/data.js';
-import { GRANTED_CAP_OVERRIDE } from '../../server/sim/content/garrisons/battle.js';
 
 const D = getData({ log: { warn() {}, error() {}, info() {} } });
 const GR = (gid) => D.garrisons[gid];
 const ids = (s) => String(s ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 const num = (v, d = 0) => (Number.isFinite(+v) && v !== '' && v != null ? +v : d);
-const capOf = (gid) => GRANTED_CAP_OVERRIDE[gid] ?? (num(GR(gid).bb.max_add_count_per_battle) > 0 ? num(GR(gid).bb.max_add_count_per_battle) : Infinity);
+const capOf = (gid) => (num(GR(gid).bb.max_add_count_per_battle) > 0 ? num(GR(gid).bb.max_add_count_per_battle) : Infinity);
 
 /** IN_BATTLE garrison ids carried by visible chess, and the ids those grant. */
 const VISIBLE_IDS = new Set();
@@ -302,11 +301,66 @@ test('allyenemy_sleepstun_inrange (缇缇 125): enemies or operators entering �
   assert.equal(capOf('garrison_125_b'), 48);
 });
 
+test('缇缇 125 + S2 封护 (GitHub #162): every 0.25 s sleep pulse of the ward is a new entry — 8 s climb to the cap; a sleeper outside her range does not count', () => {
+  // the reporter's memory of the official mode: 「攻击范围内有陷入沉睡就开始迅速增加直至上限」; the pulse timing is [ASSUMED]
+  for (const id of ['chess_char_5_02_a', 'chess_char_5_02_b']) {
+    const gid = D.chess[id].garrisonIds.find((g) => GR(g).effectKey === 'act2autochess_gar_event_allyenemy_sleepstun_inrange');
+    const per = num(GR(gid).bb.bond_add_count), cap = capOf(gid);
+    const s2 = D.chess[id].skills.find((x) => x.skillId === 'skchr_titi_2').index;
+    // 缇缇 (10,4) facing right: range 3-3 = rows 9–11, cols 4–7. The ward ally (10,6) is the only operator in it; the
+    // enemy (10,5) stands beside both wards (in her range), the one at (10,3) beside her back (out of her range)
+    const run = (enemies) => {
+      const h = makeBattle({
+        seed: 3, autoFinish: false, timeLimit: 400, hooks: ['statusApplied'],
+        defs: { chess: { ward: rec('ward', []) }, enemies: { e_dummy: dummy() } },
+        units: [{ chessId: id, skillIndex: s2, row: 10, col: 4 }, { chessId: 'ward', row: 10, col: 6 }],
+        bonds: { sargonShip: B(0), preciShip: B(0) }, enemies,
+      });
+      h.step(1);
+      const tt = h.unit(id);
+      tt.skill.gainSp(1000);
+      assert.ok(tt.skill.activate('test'), `${id}: S2 cast`);
+      assert.equal(tt.skill.id, 'skchr_titi_2');
+      return { h, tt };
+    };
+    // out of range only: the pulses sleep it (each one an entry for the engine) but her trait ignores it
+    {
+      const { h, tt } = run([{ key: 'e_dummy', pos: [10, 3] }]);
+      const back = h.enemies()[0];
+      expectAll(h, ['sargonShip', 'preciShip'], 2 * per, `${id}: the ward's two operators fall asleep in her range`);
+      h.run(8);
+      assert.ok(tt.skill.active && back.s.flags.sleep, `${id}: the enemy at her back sleeps`);
+      const pulses = h.hooksOf('statusApplied').filter((c) => c.target === back && c.source === tt && c.entered);
+      assert.ok(pulses.length >= 30, `${id}: ${pulses.length} pulse entries in 8 s`);
+      expectAll(h, ['sargonShip', 'preciShip'], 2 * per, `${id}: an out-of-range sleeper does not count`);
+      checkInvariants(h.b);
+    }
+    // in range: one entry per pulse (beside both wards: still one), the cap within the 8 s
+    {
+      const { h, tt } = run([{ key: 'e_dummy', pos: [10, 5] }, { key: 'e_dummy', pos: [10, 3] }]);
+      const near = h.enemies().find((e) => Math.round(e.x) === 5);
+      let capAt = null;
+      for (let t = 0; t < 8 - 1e-9; t += 0.25) {
+        h.run(0.25);
+        if (capAt == null && (gains(h).sargonShip ?? 0) >= cap) capAt = t + 0.25;
+      }
+      assert.ok(tt.skill.active && near.s.flags.sleep, `${id}: still asleep after 8 s`);
+      const mine = h.hooksOf('statusApplied').filter((c) => c.target === near && c.source === tt && c.status === 'sleep');
+      assert.equal(mine.filter((c) => c.entered).length * 2, mine.length, `${id}: two wards, one entry per pulse`);
+      expectAll(h, ['sargonShip', 'preciShip'], cap, `${id}: the cap (${cap})`);
+      assert.ok(capAt != null && capAt <= 6.5, `${id}: capped after ${capAt} s`);
+      checkInvariants(h.b);
+    }
+  }
+});
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ADD_BOND grants
 
-test('ADD_BOND 华法琳 72: the front operator gets garrison_95 (own active bonds +1 / +2), cap overridden to 12 / 24', () => {
-  for (const [gid, per, cap] of [['garrison_72_a', 1, 12], ['garrison_72_b', 2, 24]]) {
+// PRTS 卫戍协议：盟约 下半, 3月27日更新#2: 「[Ⅳ阶]华法琳：赋予的特质的叠层上限从 初始12/精锐24 降低至 初始7/精锐14」 — the
+// data's 7 / 14 (GitHub #175; from PR #192 by @kukiC)
+test('ADD_BOND 华法琳 72: the front operator gets garrison_95 (own active bonds +1 / +2), capped at the data\'s 7 / 14 (GitHub #175)', () => {
+  for (const [gid, per, cap] of [['garrison_72_a', 1, 7], ['garrison_72_b', 2, 14]]) {
     const give = GR(gid).bbStr.give_garrison_id;
     const h = battle({
       units: [{ id: 'warfarin', g: [gid], row: 10, col: 4 }, { id: 'front', row: 10, col: 5, bonds: ['yanShip', 'kjeragShip', 'egirShip'] }, { id: 'side', row: 11, col: 4, bonds: ['yanShip'] }],
@@ -316,8 +370,13 @@ test('ADD_BOND 华法琳 72: the front operator gets garrison_95 (own active bon
     assert.equal(num(GR(give).bb.bond_add_count), per);
     skill(h, f);
     assert.deepEqual(gains(h), { yanShip: per, kjeragShip: per });
+    assert.equal(num(GR(give).bb.max_add_count_per_battle), cap, `${give}: the data cap`);
+    for (let i = 1; i < 7; i++) skill(h, f);
+    assert.deepEqual(gains(h), { yanShip: cap, kjeragShip: cap }, `${gid}: the seventh activation reaches the cap`);
+    skill(h, f);
+    assert.deepEqual(gains(h), { yanShip: cap, kjeragShip: cap }, `${gid}: the eighth adds no layers`);
     for (let i = 0; i < 30; i++) skill(h, f);
-    assert.deepEqual(gains(h), { yanShip: cap, kjeragShip: cap }, `${gid}: 12/24 override, not the data's 7/14`);
+    assert.deepEqual(gains(h), { yanShip: cap, kjeragShip: cap }, `${gid}: later activations stay capped`);
     skill(h, h.unit('warfarin'));
     skill(h, h.unit('side'));
     assert.equal(gains(h).yanShip, cap, '华法琳 herself / other operators do not carry the trait');

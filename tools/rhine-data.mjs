@@ -3,7 +3,7 @@ import { readFile, writeFile, rename } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildSkill, statsFrom, interpolateAttrs, baseTalentList, traitRecord, rangeGrid, immunitiesOf,
-  unlocked, bestCandidate, moduleAttr, moduleTalentChanges, splitModuleParts, tokenVariant } from './build-data.mjs';
+  unlocked, bestCandidate, moduleAttr, moduleTalentChanges, splitModuleParts, tokenVariant, OPERATOR_POTENTIAL, withPotential } from './build-data.mjs';
 import { RHINE_BOND, RHINE_CHARACTERS, RHINE_BALANCE, RHINE_DEVICES, RHINE_EQUIPMENT } from '../shared/rhineResearch.js';
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
 import { applyOpeningBans } from '../shared/openingBans.js';
@@ -36,23 +36,23 @@ function moduleChoices(ctx, char, status, label, spec) {
     const meta = ctx.uniequipTable.equipDict[id], ph = ordinaryModulePhase(ctx, id, equipLevel);
     if (meta.type === 'INITIAL' || !ph || spec.excludedModuleIds?.includes(id)) return [];
     const { op } = splitModuleParts(ph);
-    const hasTrait = op.some(p => bestCandidate(p.overrideTraitDataBundle?.candidates, phase, level));
+    const hasTrait = op.some(p => bestCandidate(p.overrideTraitDataBundle?.candidates, phase, level, OPERATOR_POTENTIAL));
     const restrictedModes = [...new Set(ctx.battleEquipTable[id].phases.flatMap(p => p.parts.map(x => x.validInGameTag).filter(Boolean)))];
     const scopeNote = meta.isSpecialEquip ? '仅应用基础属性；生息演算限定的技力限制解除、食物、引敌、额外阻挡、群攻和物理脆弱效果在卫戍协议中不生效。'
       : id === 'uniequip_002_otter' ? '首个召唤物不占部署位；不过卫戍召唤物本来就不占人口，所以这条效果没了XP' : null;
-    const traitOverride = hasTrait ? traitRecord(ctx, char, phase, level, op, label).trait : null;
+    const traitOverride = hasTrait ? traitRecord(ctx, char, phase, level, op, label, OPERATOR_POTENTIAL).trait : null;
     // RA-alpha's source trait part has no tag, but its own description explicitly scopes the
     // SP unlock to sandbox mode. Keep that original explanation while retaining the ordinary
     // blocking-only SP rule; the condition is semantic, not safely inferred from a null tag.
     if (id === 'uniequip_004_zumama' && traitOverride) {
-      const baseTrait = traitRecord(ctx, char, phase, level, [], label).trait;
+      const baseTrait = traitRecord(ctx, char, phase, level, [], label, OPERATOR_POTENTIAL).trait;
       traitOverride.bb = clone(baseTrait.bb); traitOverride.bbStr = clone(baseTrait.bbStr);
     }
     return [{ uniEquipId: id, name: meta.uniEquipName,
       typeName: `${meta.typeName1}-${({ A: 'α', D: 'Δ' })[meta.typeName2] || meta.typeName2}`,
       typeIcon: meta.typeIcon, icon: meta.uniEquipIcon || id, isDefault: id === spec.defaultModuleId, level: equipLevel,
       attr: moduleAttr(ph), traitOverride,
-      talentChanges: moduleTalentChanges(ctx, op, phase, level, label),
+      talentChanges: moduleTalentChanges(ctx, op, phase, level, label, OPERATOR_POTENTIAL),
       ...(scopeNote ? { scopeNote } : {}), ...(meta.isSpecialEquip ? { isSpecialEquip: true, restrictedModes } : {}) }];
   });
 }
@@ -77,19 +77,19 @@ function makeGarrison(key, gold) {
 function adaptMayerTalent(talent, count) {
   if (talent.bb?.cnt == null) return;
   talent.bb.cnt = count;
-  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用\d+个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗';
+  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用.*?个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗';
 }
 
 function adaptDorothyTalent(talent, count) {
   if (talent.bb?.cnt == null || talent.tokenKey !== DOROTHY_TOKEN) return;
   talent.bb.cnt = count;
-  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用\d+个共振装置（最多拥有\d+个）/, `可以使用${count}个共振装置（最多拥有${count}个，同时最多部署${count}个）`);
+  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用.*?个共振装置（最多拥有\d+个）/, `可以使用${count}个共振装置（最多拥有${count}个，同时最多部署${count}个）`);
 }
 
 function compileDorothyToken(ctx, chess) {
   const t = ctx.charTable[DOROTHY_TOKEN], variants = {}, owners = ['chess_rhine_dorothy_a', 'chess_rhine_dorothy_b'];
   for (const id of owners) {
-    const c = chess[id], opts = { ...c.status, skillIndex: c.skill.index, label: id };
+    const c = chess[id], opts = { ...c.status, potRank: OPERATOR_POTENTIAL, skillIndex: c.skill.index, label: id };
     if (c.module?.active) {
       opts.modulePhase = ordinaryModulePhase(ctx, c.module.id, c.module.level);
       opts.moduleTokenParts = splitModuleParts(opts.modulePhase).token;
@@ -102,8 +102,8 @@ function compileDorothyToken(ctx, chess) {
       if (v.skill) v.skill.trigger = { rule: 'DOROTHY_TRAP', rawRule: 'DEFAULT', customRangeGrid: null };
       return v;
     };
-    const v = variants[id] = { ...variant(), count, sources: ['talent'], bySkill: {} };
-    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count, sources: ['talent'] };
+    const v = variants[id] = { ...variant(), count, sources: ['talent', 'display'], bySkill: {} };
+    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count, sources: ['talent', 'display'] };
     if (c.isGolden) {
       const mv = variant({ modulePhase: null, moduleTokenParts: [] });
       v.byModule = { none: { stats: mv.stats, immunities: mv.immunities, trait: mv.trait, talents: mv.talents } };
@@ -122,8 +122,8 @@ function compileChess(ctx, config, spec, gold, index) {
   const chessId = gold ? goldenId : baseId;
   const st = config.economy.chessStatus[spec.tier][gold ? 'golden' : 'normal'];
   const status = { phase: st.phase, level: st.level, skillLevel: st.skillLevel, equipLevel: st.equipLevel };
-  const attrs = interpolateAttrs(c, status.phase, status.level);
-  const { trait, classify } = traitRecord(ctx, c, status.phase, status.level, [], chessId);
+  const attrs = withPotential(c, interpolateAttrs(c, status.phase, status.level), OPERATOR_POTENTIAL, chessId);
+  const { trait, classify } = traitRecord(ctx, c, status.phase, status.level, [], chessId, OPERATOR_POTENTIAL);
   const skills = c.skills.flatMap((s, index) => {
     if (!unlocked(s.unlockCond, status.phase, status.level)) return [];
     const skill = buildSkill(ctx, s.skillId, status.skillLevel, null, chessId);
@@ -134,7 +134,7 @@ function compileChess(ctx, config, spec, gold, index) {
   });
   const skill = clone(skills.find(s => s.isDefault)); delete skill.isDefault;
   const g = makeGarrison(spec.trait, gold);
-  const statsBase = statsFrom(attrs), talentsBase = baseTalentList(ctx, c, status.phase, status.level, chessId);
+  const statsBase = statsFrom(attrs), talentsBase = baseTalentList(ctx, c, status.phase, status.level, chessId, OPERATOR_POTENTIAL);
   if (spec.key === 'mayer') for (const t of talentsBase) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
   if (spec.key === 'dorothy') for (const t of talentsBase) adaptDorothyTalent(t, RHINE_BALANCE.dorothyTrapLimit[gold ? 1 : 0]);
   const modules = gold ? moduleChoices(ctx, { ...c, charId: spec.charId }, status, chessId, spec) : [];
@@ -143,6 +143,7 @@ function compileChess(ctx, config, spec, gold, index) {
   const mod = modules.find(m => m.isDefault);
   return { chessId, baseId, goldenId, isGolden: gold, tier: spec.tier, identifier: 200 + index,
     isHidden: false, isDiy: false, visible: true, chessType: 'PRESET', shopSortId: 200 + index,
+    backup: { charId: spec.charId, tmplId: null, skillIndex: skill.index, uniEquipId: spec.defaultModuleId, potRank: OPERATOR_POTENTIAL },
     charId: spec.charId, name: c.name, appellation: c.appellation, rarity: Number(c.rarity.replace('TIER_', '')),
     profession: c.profession, subProfessionId: c.subProfessionId, subProfessionName: spec.subName, position: c.position,
     nationId: c.nationId, bonds: [...spec.bonds], garrisonIds: [g.garrisonId],
@@ -257,7 +258,7 @@ export async function applyRhineData(files, source = null) {
   }
   const t = ctx.charTable[TOKEN], variants = {}, owners = ['chess_rhine_mayer_a', 'chess_rhine_mayer_b'];
   for (const id of owners) {
-    const c = chess[id], opts = { ...c.status, skillIndex: c.skill.index, label: id };
+    const c = chess[id], opts = { ...c.status, potRank: OPERATOR_POTENTIAL, skillIndex: c.skill.index, label: id };
     if (c.module?.active) {
       opts.modulePhase = ordinaryModulePhase(ctx, c.module.id, c.module.level);
       opts.moduleTokenParts = splitModuleParts(opts.modulePhase).token;
@@ -269,8 +270,8 @@ export async function applyRhineData(files, source = null) {
       for (const talent of v.talents) if (talent.bb.max_deploy_count != null) talent.bb.max_deploy_count = v.stats.deployLimit;
       return v;
     };
-    const v = variants[id] = { ...variant(), count: c.talents[0].bb.cnt, sources: ['talent'], bySkill: {} };
-    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count: v.count, sources: ['talent'] };
+    const v = variants[id] = { ...variant(), count: c.talents[0].bb.cnt, sources: ['talent', 'display'], bySkill: {} };
+    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count: v.count, sources: ['talent', 'display'] };
     if (c.isGolden) {
       v.byModule = {};
       for (const m of [...c.modules.filter(m => !m.isDefault), ...(c.module?.active ? [null] : [])]) {
@@ -327,5 +328,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const errors = validateRhineData(files);
   if (errors.length) throw new Error(errors.join('\n'));
   for (const n of names) { const dest = join(out, `${n}.json`), tmp = `${dest}.tmp-${process.pid}`; await writeFile(tmp, JSON.stringify(files[n])); await rename(tmp, dest); }
+  const { refreshRhineTranslations } = await import('./rhine-i18n.mjs');
+  await refreshRhineTranslations(out);
   console.log('Rhine overlay complete: 6 operators, 9 Rhine members, 3 research devices, 2 equipment pairs.');
 }

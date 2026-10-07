@@ -1,4 +1,4 @@
-// Operator loadouts (DESIGN §16) for the tier-2 kits (server/sim/content/kits/tier2.js): every selectable NON-default
+// Operator loadouts (DESIGN §16) for the tier-2 kits (server/sim/content/kits/ops/): every selectable NON-default
 // skill of every visible tier-2 chess is hand-authored (tools/kit-coverage.mjs) and shows its signature effect for the
 // normal (Lv4) and the elite (Lv7) chess — numbers from the selected skill's blackboard (data/chess.json skills[]) —
 // and the elite's module choice ('none' instead of the default module) changes what the kit / profile does.
@@ -342,26 +342,36 @@ test('2_12 砾 S1 影袭: at deployment DEF +def decaying to 0 over `duration` s
     h.run(0.5);
     approx(u.s.def, u.base.def * (1 + aura + bb.def), `${id} full bonus`);
     assert.equal(u.s.shield, 0, 'no 鼠群 barrier');
+    assert.equal(u.skill.kind, 'duration');
+    assert.equal(u.skill.active, true);
+    assert.equal(u.skill.ready, false);
+    assert.equal(h.snapshot().units.find((t) => t[0] === u.id)[6], bb.duration);
     h.run(1);
     approx(u.s.def, u.base.def * (1 + aura + bb.def * (bb.duration - 1) / bb.duration), 'one step down after 1 s');
     h.run(0.4);
     approx(u.s.def, u.base.def * (1 + aura + bb.def * (bb.duration - 1) / bb.duration), 'steps once per second');
     h.run(bb.duration);
     approx(u.s.def, u.base.def * (1 + aura), 'gone');
+    assert.equal(u.skill.active, false);
+    assert.equal(u.skill.ready, false);
+    assert.equal(u.findBuff('gravel:shadow'), null);
+    assert.equal(h.hooksOf('skillEnd').filter((c) => c.unit === u && c.reason === 'duration').length, 1);
     done(h);
   }
 });
 
-test('2_13 蒂比 S1 专业喷绘技巧: DEFAULT trigger, takes off (skill range, ATK +atk, blocks flyers), single shots; hits never set it off', () => {
+test('2_13 蒂比 S1 专业喷绘技巧: ACTIVE_RANGE trigger (an enemy in its 2-3 only), takes off (skill range, ATK +atk, blocks flyers), single shots; hits never set it off', () => {
   for (const id of both('chess_char_2_13')) {
     const bb = bbAlt(id);
-    const h = run({ defs: { enemies: { e: dummy('e'), f: dummy('f', { motion: 'FLY' }) } }, units: [U(id, 9, 5, { carryState: READY })], enemies: [{ key: 'e', pos: [9, 6] }] });
+    // (10,5) = [1,0]: inside S1's 2-3, outside her own 2-2 — the owner's rule of 2026-10-05 (data trigger ACTIVE_RANGE)
+    const h = run({ defs: { enemies: { e: dummy('e'), f: dummy('f', { motion: 'FLY' }) } }, units: [U(id, 9, 5, { carryState: READY })], enemies: [{ key: 'e', pos: [10, 5] }] });
     const u = h.unit(id);
     usesAlt(u, id);
     h.step();
     const range0 = u.baseRangeKeys.length;
+    assert.ok(!u.baseRangeKeys.includes(h.b.grid.key(10, 5)), 'the enemy is outside her own range');
     h.runUntil(() => u.skill.active, 3);
-    assert.equal(started(h, u)[0].reason, 'DEFAULT');
+    assert.equal(started(h, u)[0].reason, 'ACTIVE_RANGE');
     assert.equal(u.s.flags.liftoff, true, 'airborne (起飞)');
     assert.equal(u.ground, true, 'still a ground unit on her low tile');
     approx(u.s.atk, u.base.atk * (1 + bb.atk));

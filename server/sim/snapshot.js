@@ -1,8 +1,12 @@
 // server/sim/snapshot.js — compact serialization for clients (DESIGN §8.2).
 //
 // b.snap  = { fieldId, t, units: [[id, x, y, hp, maxHp, sp, spMax, flags, anim]], dp, killed, total }
+//   (hp of a countdown summon — unit.countdown, content/tokens.js startCountdown — is maxHp × the share of its life left)
 // UnitInfo = { id, kind, side, ownerId, defId, name, tier, golden, spine, avatar, x, y, facing, dir, maxHp, motion?, boss?, uid?,
-//   form?, skillIndex?, moduleId?, items?, researchStage?, researchActive?, sp?, spMax? }  (form = the unit's current model form — an enemy's, content/enemies.js setForm:
+//   form?, skillIndex?, moduleId?, items?, researchStage?, researchActive?, sp?, spMax?, standInFor?, diy? }
+//   (standInFor = the replaced operator's charId of a 补位
+//   stand-in; diy = a 自选 piece's pick { charId, skillIndex, uniEquipId } — defId is its slot, spine / avatar the operator's;
+//   form = the unit's current model form — an enemy's, content/enemies/helpers.js setForm:
 //   掠海漂移体 'crawl', 暴鸰 'bombed', 转译基底·α's forms …; a 傀儡师 fighting as its 替身 'doll', professions.js — a view built
 //   after the change, a field opened mid-battle, draws it: render/units.js FORMS. Research devices keep their charge bar,
 //   and Dorothy's critical traps keep their current form in a newly opened field.)
@@ -40,7 +44,7 @@ export function unitInfo(u) {
     maxHp: Math.max(1, Math.round(u.s.maxHp)),
     motion: u.motion === 'FLY' ? 'FLY' : undefined,
     boss: u.isBoss ? true : undefined,
-    // the unit's current model form (an enemy's content/enemies.js setForm, a 傀儡师's 替身 — render/units.js FORMS): a
+    // the unit's current model form (an enemy's content/enemies/helpers.js setForm, a 傀儡师's 替身 — render/units.js FORMS): a
     // view built mid-battle (fieldMeta — a watched teammate's field, 联防 observers, a reconnect) starts on that clip set
     form: typeof u.form === 'string' ? u.form : undefined,
     uid: u.uid ?? undefined,
@@ -58,6 +62,11 @@ export function unitInfo(u) {
     // an ally operator's equipped item ids (display: a 变形同构体 wearer counts for the bond it grants — the bond popup's
     // member list and the detail card's bond chips of a teammate's unit)
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
+    // 补位: the replaced operator's charId when the chess fights as its stand-in (spine / avatar are the stand-in's; the
+    // detail card composes the stand-in record, shared/standIn.js standInRecord)
+    standInFor: u.side === 'ally' && u.kind === 'op' && typeof d.standInFor === 'string' ? d.standInFor : undefined,
+    // 自选: the pick of a DIY slot's piece (the detail card composes its record, shared/diy.js diyRecord)
+    diy: u.side === 'ally' && u.kind === 'op' && d.diyFor && d.loadout?.diy ? { ...d.loadout.diy } : undefined,
   };
 }
 
@@ -97,17 +106,24 @@ export function animOf(u, t) {
 export function unitTuple(u, t) {
   const sk = u.skill;
   const research = Number.isFinite(u.researchChargeMax);
-  const spMax = research ? u.researchChargeMax : sk && !sk.noSkill ? sk.spCost : 0;
+  let spMax = research ? u.researchChargeMax : sk && !sk.noSkill ? sk.spCost : 0;
   let sp = research ? u.researchCharges : sk && !sk.noSkill ? sk.sp : 0;
   if (sk && sk.active && sk.isTimed) {
     // show remaining duration/ammo as a draining bar — ammo out of the activation's real total (base + bullets added:
     // 拉特兰, 逃犯引渡手续, refills; community report #35), so every bullet shortens it
     if (sk.kind === 'ammo') sp = spMax * (sk.ammoLeft / Math.max(1, sk.ammoMax || sk.ammo || 0, sk.ammoLeft));
-    else if (Number.isFinite(sk.timeLeft) && sk.duration > 0) sp = spMax * (sk.timeLeft / sk.duration);
+    else if (Number.isFinite(sk.timeLeft) && sk.duration > 0) {
+      if (spMax === 0) spMax = sk.duration;
+      sp = spMax * (sk.timeLeft / sk.duration);
+    }
   }
-  // hp is rounded up (a living unit never shows 0) but never above the rounded max HP
+  // hp is rounded up (a living unit never shows 0) but never above the rounded max HP. A countdown summon (医疗探机, 海嗣 …:
+  // content/tokens.js startCountdown) shows the share of its life left instead — its bar runs down like a timer and it
+  // leaves when it is empty (community report of 2026-10-06; its HP itself never moves: 无敌, 禁疗)
   const maxHp = Math.max(1, Math.round(u.s.maxHp));
-  const hp = u.alive ? Math.min(Math.max(1, Math.ceil(u.hp)), maxHp) : 0;
+  const cd = u.alive ? u.countdown : null;
+  const left = cd ? Math.max(0, Math.min(1, (cd.until - t) / Math.max(1e-9, cd.until - cd.from))) : 1;
+  const hp = u.alive ? Math.min(Math.max(1, Math.ceil(cd ? maxHp * left : u.hp)), maxHp) : 0;
   return [u.id, r2(u.x), r2(u.y), hp, maxHp, r1(sp), spMax, flagsOf(u), animOf(u, t)];
 }
 

@@ -365,6 +365,38 @@ test('boss research grows once from the shared victory, not separately for each 
   }
 });
 
+for (const hidden of [false, true]) for (const mixed of [false, true]) {
+  test(`${hidden ? 'hidden' : 'final'} boss research excludes failed fields${mixed ? ' even when another field wins' : ' from failure growth'}`, () => {
+    const h = setup({ mode: 'coop', difficulty: hidden ? 'NORMAL' : 'FUNNY', humans: 4,
+      script: (b) => b.kind === 'boss' || b.kind === 'hidden'
+        ? (mixed && b.fieldId !== 'b1' ? { bossDps: 1e9 } : { throwInCtor: true }) : {} });
+    try {
+      for (const ps of h.m.players.values()) {
+        IDS.slice(0, 3).forEach((_, i) => member(h, ps, i));
+        assert.deepEqual(deploy(h, ps, 'medical'), { ok: true });
+      }
+      h.m.round = hidden ? h.m.gd.hiddenRound : 14;
+      h.m.bossId = 'boss_1'; h.m.hiddenBossId = hidden ? 'boss_1' : null;
+      if (hidden) {
+        h.m.teamLp = [...h.m.players.values()].reduce((sum, ps) => sum + ps.lp, 0);
+        for (const ps of h.m.players.values()) ps.lpAtFinal = ps.lp;
+      }
+      h.m.startFinalAssault(hidden);
+      h.runToEnd();
+      assert.equal(h.m.fields.length, 2);
+      let failedPlayers = 0, actualPlayers = 0;
+      for (const field of h.m.fields) for (const pid of field.players) {
+        const ps = h.ps(pid), synthetic = field.battle.result().synthetic === true;
+        assert.equal(device(ps, 'medical').points, synthetic ? 0 : 2, `${pid} research follows their actual field`);
+        assert.equal(ps.research.settled.has(h.m.round), !synthetic, `${pid} synthetic results do not settle research`);
+        if (synthetic) failedPlayers++; else actualPlayers++;
+      }
+      assert.equal(failedPlayers, mixed ? 2 : 4);
+      assert.equal(actualPlayers, mixed ? 2 : 0);
+    } finally { h.m.dispose(); }
+  });
+}
+
 test('Ptilopsis research trait counts duplicate real pieces but excludes the harmony virtual member', () => {
   const data = fixture(), registry = new MetaRegistry(); registerMeta(registry);
   data.garrisons.garrison_rhine_test = { garrisonId: 'garrison_rhine_test', eventType: 'SERVER_PREP_FIN', effectKey: 'RHINE_RESEARCH_BY_MEMBER', bb: { layer: 2 }, bbStr: { conditionkey: 'character_target_inboard' } };

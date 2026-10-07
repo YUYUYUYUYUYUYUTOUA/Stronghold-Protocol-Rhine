@@ -204,16 +204,16 @@ test('Wuhoo S1 raises ASPD and adds one jump; a self jump carries its multiplied
     close(h.owner.s.aspd, aspd + (elite ? 55 : 40));
     const chain = directChain(h, h.owner, 100);
     assert.equal(chain.length, 5);
-    close(chain.find(c => c.target === h.owner).amount, 120);
-    assert.deepEqual(chain.filter(c => c.opts?.rhineBounce).map(c => c.amount), [120, 90, 67.5, 50.625]);
+    close(chain.find(c => c.target === h.owner).amount, 125);
+    assert.deepEqual(chain.filter(c => c.opts?.rhineBounce).map(c => c.amount), [125, 93.75, 70.3125, 52.734375]);
     h.owner.skill.end('test'); close(h.owner.s.aspd, aspd);
     assert.equal(directChain(h, h.owner, 100).length, 4);
     done(h);
   }
 });
 
-test('Wuhoo XAH-X Lv1 changes 75% decay to 85%, retaining its actual 120% talent without repeating healing modifiers', () => {
-  for (const [moduleId, scale, self] of [['none', 0.75, 1.2], [mods.wuhoo, 0.85, 1.2]]) {
+test('Wuhoo XAH-X Lv1 changes 75% decay to 85%, retaining its full-potential 125% talent without repeating healing modifiers', () => {
+  for (const [moduleId, scale, self] of [['none', 0.75, 1.25], [mods.wuhoo, 0.85, 1.25]]) {
     const h = healer({ elite: true, moduleId });
     for (const a of h.b.allyUnits) a.hp = a.s.maxHp * 0.3;
     h.b.addBuff(h.owner, { key: 'sourceBonus', mods: { healingDealtMul: 1.5 } });
@@ -246,7 +246,7 @@ test('Wuhoo self amplification also carries forward when she is reached in the m
   const chain = directChain(h, first, 100), bounce = chain.filter(c => c.opts?.rhineBounce);
   assert.equal(bounce[0].target, u);
   assert.equal(chain.length, 4);
-  [90, 90, 67.5].forEach((amount, i) => close(bounce[i].amount, amount));
+  [93.75, 93.75, 70.3125].forEach((amount, i) => close(bounce[i].amount, amount));
   done(h);
 });
 

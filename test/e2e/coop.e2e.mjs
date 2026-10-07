@@ -193,23 +193,29 @@ async function levelUp(c, { shot = null } = {}) {
 }
 
 async function refreshKey(c) {
-  const s = await c.st();
-  if (s.funds < s.refreshPrice) return false;
-  const shop = () => c.page.evaluate(() => { const sh = globalThis.__SP__.store.get().match.private.shop; return { ids: JSON.stringify(sh.slots.map((x) => x && x.id)), free: sh.freeRefreshes }; });
+  // phase, funds, price, free counter and slots from ONE store snapshot: the m.private that answers R carries them all,
+  // and two separate reads could straddle it — the new slots with the old funds, a false "refresh cost" under load
+  const shop = () => c.page.evaluate(() => {
+    const st = globalThis.__SP__.store.get();
+    const priv = st.match.private;
+    const sh = priv.shop;
+    return { phase: st.match.public?.phase ?? null, funds: priv.funds, price: sh.refreshPrice, free: sh.freeRefreshes, ids: JSON.stringify(sh.slots.map((x) => x && x.id)) };
+  });
   const before = await shop();
+  if (before.funds < before.price) return false;
   await c.page.mouse.click(c.w / 2, c.h * 0.3); // focus the page (not a text field)
   await c.page.keyboard.press('KeyR');
   // a free refresh (机变 补给 …) changes the free counter, a paid one the funds; the slots are rerolled either way
   const t0 = Date.now();
-  let after = null; let now = null;
+  let now = null;
   while (Date.now() - t0 < 6000) {
-    after = await c.st(); now = await shop();
-    if (after.phase !== 'PREP' || after.funds !== s.funds || now.free !== before.free || now.ids !== before.ids) break;
+    now = await shop();
+    if (now.phase !== 'PREP' || now.funds !== before.funds || now.free !== before.free || now.ids !== before.ids) break;
     await sleep(150);
   }
-  assert.ok(after.funds !== s.funds || now.free !== before.free || now.ids !== before.ids, `${c.label}: R refreshed the shop`);
-  if (s.refreshPrice > 0) assert.equal(after.funds, s.funds - s.refreshPrice, `${c.label}: refresh cost`);
-  c.note(`refresh (R) ${s.refreshPrice ? `funds ${s.funds} → ${after.funds}` : `free (${before.free} → ${now.free})`}, slots ${before.ids === now.ids ? 'same ids' : 'rerolled'}`);
+  assert.ok(now.funds !== before.funds || now.free !== before.free || now.ids !== before.ids, `${c.label}: R refreshed the shop`);
+  if (before.price > 0) assert.equal(now.funds, before.funds - before.price, `${c.label}: refresh cost`);
+  c.note(`refresh (R) ${before.price ? `funds ${before.funds} → ${now.funds}` : `free (${before.free} → ${now.free})`}, slots ${before.ids === now.ids ? 'same ids' : 'rerolled'}`);
   return true;
 }
 
@@ -600,7 +606,8 @@ async function ready(c, { key = false } = {}) {
   if (!(await c.isEditable())) return;
   const s = await c.st();
   if (!s.canReady) { c.note(`temp not empty (${s.temp}) — ready blocked`); return; }
-  if (key) { await c.page.mouse.click(c.w / 2, c.h * 0.3); await c.page.keyboard.press('Space'); } else await c.click('.readybtn');
+  // Space asks about leftover funds like the button does (剩余资金, DESIGN §23.11); the button path confirms inside c.click
+  if (key) { await c.page.mouse.click(c.w / 2, c.h * 0.3); await c.page.keyboard.press('Space'); await c.confirmFundsLeft(); } else await c.click('.readybtn');
   await c.waitFor((x) => x.ready || x.phase !== 'PREP', 'ready', 8000);
 }
 
@@ -1191,6 +1198,16 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
           } else if (hs.phase === 'UNITE') {
             const rs = await runnerState(host);
             assert.ok(rs && rs.kind === 'unite', 'every human simulates the 联防 field locally');
+            // 0.2.1 (the owner's decision of 2026-10-07): the 联防 field is the round's battlefield, terrain and crates
+            // included — the field meta names the match stage and the view draws it (0.2.0 drew the escaped levels' road)
+            for (const c of both) {
+              const drawn = await c.page.evaluate(() => {
+                const s = globalThis.__SP__.store.get();
+                return { match: s.match.public?.stageId ?? null, field: s.match.field?.stageId ?? null, shown: globalThis.__SP_VIEW__?.raw?.debug?.tiles?.stage?.id ?? null };
+              });
+              assert.ok(drawn.match && drawn.field === drawn.match && drawn.shown === drawn.match, `${c.label}: the 联防 field shows the round's battlefield (${JSON.stringify(drawn)})`);
+              c.note(`联防 round ${hs.round} drawn on ${drawn.shown}`);
+            }
           }
           if (hs.round >= ROUNDS && hs.phase === 'COMBAT') { await sleep(2000); break; }
         } else if (hs.phase === 'SETTLE' && !seen.has(`settle-${hs.round}`)) {

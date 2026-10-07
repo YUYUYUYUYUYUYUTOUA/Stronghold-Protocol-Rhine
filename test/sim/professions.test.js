@@ -96,7 +96,7 @@ test('splash casters hit enemies around the target; chain casters bounce with fa
   assert.deepEqual(hit.slice().sort((x, y) => y - x), [1000, 850, 723, 614]);
 });
 
-test('ring healers heal three allies; bards heal everyone in range every second', () => {
+test('ring healers heal three allies; bards give everyone in range 生命回复速度 +10 % of their ATK (PRTS 分支特性信息 吟游者)', () => {
   const ally = (id) => chessRec({ id, profession: 'TANK', skill: null, stats: { maxHp: 10000, atk: 0 } });
   const h = makeBattle({
     defs: {
@@ -119,10 +119,12 @@ test('ring healers heal three allies; bards heal everyone in range every second'
     content: 'none',
   });
   h2.step();
+  h2.run(0.3);
+  for (const id of ['a1', 'a2', 't_bard']) approx(h2.unit(id).s.hpRegen, 100); // an hpRegen buff, not a heal
   h2.unit('a1').hp = 1000; h2.unit('a2').hp = 1000;
-  h2.run(3.05);
-  approx(h2.unit('a1').hp, 1000 + 3 * 100);
-  approx(h2.unit('a2').hp, 1000 + 3 * 100);
+  h2.run(3);
+  // the regeneration lands as the HP ticks over (at most 1 HP pending)
+  for (const id of ['a1', 'a2']) assert.ok(Math.abs(h2.unit(id).hp - (1000 + 3 * 100)) <= 1.5, `${id}: ${h2.unit(id).hp}`);
   assert.equal(h2.unit('t_bard').stats.attacks, 0);
 });
 
@@ -348,6 +350,16 @@ test('incantation medics heal an ally for 50 % of damage dealt; wandermedics cle
   h.unit('t_tank').hp = 1000;
   h.run(0.5);
   approx(h.unit('t_tank').hp, 1000 + 500, 1e-6);
+  // …and not only for attacks: the official trait buff is ON_AFTER_OUTPUT_DAMAGE (`vendla_tr` / `reed2_tr` / `titi_tr`),
+  // so ANY damage the 咒愈师 deals heals. The sim used to run the trait from the attack path (`profile.afterHit`) only,
+  // which is why 缇缇's 凝固的时光 ticks — and every 咒愈师 skill that damages without an attack — healed nothing.
+  h.unit('t_tank').hp = 1000;
+  h.b.dealDamage(h.unit('t_inc'), h.enemy('enemy_dummy'), { amount: 400, type: 'arts', isSkill: true });
+  approx(h.unit('t_tank').hp, 1000 + 200, 1e-6, 'skill damage heals 50 %');
+  // a gauge fill removes no HP: it is not "伤害" for the trait
+  h.unit('t_tank').hp = 1000;
+  h.b.emit?.('damaged', { source: h.unit('t_inc'), target: h.enemy('enemy_dummy'), amount: 400, type: 'element', dmg: null });
+  approx(h.unit('t_tank').hp, 1000, 1e-6, 'element 损伤 does not heal');
   const wm = chessRec({ id: 't_wm', profession: 'MEDIC', subProfessionId: 'wandermedic', attackKind: 'heal', dmgType: 'heal', rangeGrid: R3, skill: null, stats: { atk: 400 } });
   const h2 = makeBattle({ defs: { chess: { t_wm: wm, t_tank: tank } }, units: [{ chessId: 't_wm', row: 10, col: 4 }, { chessId: 't_tank', row: 10, col: 5 }], content: 'none' });
   h2.step();

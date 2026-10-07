@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
+import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { DataSource } from '../../server/sim/simdata.js';
 import { compactResult, createBattleFromSpec, resultDigest } from '../../server/sim/spec.js';
@@ -281,7 +281,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         assert.deepEqual(live, { enabled, profile: profileId(enabled), authoritative: true,
           ptilopsisTier: enabled ? 3 : 4, sariaTier: enabled ? 3 : 5, dorothyTier: enabled ? 4 : null });
       }
-      for (const client of clients) await client.page.waitForFunction(() => globalThis.__profileCombat.uploads.length > 0, { timeout: 90000 });
+      for (const client of clients) await waitForFunctionLong(client.page, () => globalThis.__profileCombat.uploads.length > 0, { timeout: 90000 });
       for (const [client, enabled] of [[vanillaHost, false], [guest, false], [rhineHost, true]]) {
         const captured = await client.page.evaluate(() => globalThis.__profileCombat);
         assert.deepEqual(captured.errors, [], `${client.label}: no rejected combat report`);

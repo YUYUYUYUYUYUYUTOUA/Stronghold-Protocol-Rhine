@@ -5,7 +5,7 @@ import { createProfiledDataStore, CORE_DATA_FILES, PROFILE_CHANGE } from '../../
 import { createStore } from '../../public/js/store.js';
 import { createDataProfilePreparation, profileFromState } from '../../public/js/ui/dataProfile.js';
 import { RhineToggle, roomProfileReady } from '../../public/js/screens/room.js';
-import { installLoadoutSync, loadoutStore, loadoutPreferenceKey } from '../../public/js/ui/loadoutSync.js';
+import { installLoadoutSync, installOwnershipSync, installDiySync, loadoutStore, loadoutPreferenceKey } from '../../public/js/ui/loadoutSync.js';
 import { ChoiceView, cardPickable, spTap } from '../../public/js/ui/choiceOverlay.js';
 import { checkLoadout } from '../../shared/protocol.js';
 
@@ -95,7 +95,7 @@ test('a complete profile barrier waits for every required file and ignores an ol
   assert.equal(await prepare(true), true, 'a complete cached profile can be restored immediately');
 });
 
-test('all 15 core files use the selected endpoint; a missing core file keeps controls blocked while optional art may be absent', async () => {
+test('all 16 core files including stand-in/DIY backups use the selected endpoint; a missing core file keeps controls blocked while optional art may be absent', async () => {
   const calls = [];
   const cache = createProfiledDataStore({ profile: false, retryDelays: [], fetch: async (url) => {
     calls.push(url);
@@ -105,7 +105,7 @@ test('all 15 core files use the selected endpoint; a missing core file keeps con
   const target = createStore({ ui: {} });
   const prepare = createDataProfilePreparation({ cache, target, files: [...CORE_DATA_FILES, 'assets', 'local'] });
   assert.equal(await prepare(false), false);
-  assert.equal(CORE_DATA_FILES.length, 15);
+  assert.equal(CORE_DATA_FILES.length, 16);
   for (const name of CORE_DATA_FILES) assert.ok(calls.includes(`/data/vanilla/${name}.json`));
   assert.ok(calls.includes('/data/local-assets.json'));
   assert.equal(cache.isReady('assets'), true, 'missing art retains normal fallback behavior');
@@ -208,4 +208,52 @@ test('nine bounty cards render in a scrollable grid and index eight follows the 
   assert.deepEqual(spTap(8, 8, true), { armed: null, pick: 8 });
   const css = readFileSync(new URL('../../public/css/screens/game-panels.css', import.meta.url), 'utf8');
   assert.match(css, /\.spov__grid--many\s*\{[^}]*overflow:\s*auto/);
+});
+
+test('profile switching retains the selected language, raw Chinese records and independent stand-in/DIY data', async () => {
+  const calls = [];
+  const cache = createProfiledDataStore({ retryDelays: [], fetch: async url => {
+    calls.push(url);
+    return response(JSON.parse(readFileSync(new URL(`../../${url.slice(1)}`, import.meta.url), 'utf8')));
+  } });
+  await cache.loadAll('chess', 'backups');
+  const rhine = cache.snapshot();
+  await cache.setLocale('en', [{ code: 'en', url: '/data/i18n/en.json' }]);
+  assert.equal(cache.locale(), 'en');
+  assert.equal(cache.lookup('chess', 'chess_char_3_04_a').name, 'Swire the Elegant Wit');
+  assert.equal(cache.lookupRaw('chess', 'chess_char_3_04_a').name, '琳琅诗怀雅');
+  assert.equal(cache.getRaw('chess').chess_char_3_04_a.name, '琳琅诗怀雅');
+  const rhineTier = cache.lookup('chess', 'chess_char_5_13_a').tier;
+  cache.selectProfile(false);
+  await cache.loadAll('chess', 'backups');
+  assert.equal(cache.locale(), 'en', 'the inactive profile received the language before it loaded its records');
+  assert.equal(cache.lookup('chess', 'chess_char_3_04_a').name, 'Swire the Elegant Wit');
+  assert.equal(cache.lookup('chess', 'chess_rhine_ifrit_a'), null);
+  assert.ok(cache.get('backups').units.char_134_ifrit, 'the upstream DIY operator remains available');
+  assert.ok(rhine.lookup('chess', 'chess_rhine_ifrit_a'), 'the old snapshot keeps its Rhine record');
+  assert.equal(rhine.lookup('chess', 'chess_char_5_13_a').tier, rhineTier);
+  assert.ok(calls.includes('/data/vanilla/i18n/en.json'), 'vanilla keeps its original official game translations');
+  assert.ok(calls.includes('/data/i18n/en.json'), 'Rhine uses its own compatible game translations');
+  await cache.setLocale('zh');
+  cache.selectProfile(true);
+  assert.equal(cache.lookup('chess', 'chess_char_3_04_a').name, '琳琅诗怀雅');
+});
+
+test('ownership and DIY choices resync on profile switches without overwriting the stored preferences', async () => {
+  const { cache } = deferredCache();
+  const target = createStore({ entries: {}, notOwned: ['chess_char_5_13_a'], diy: {}, open: false, ownSync: 'idle', diySync: 'idle' });
+  const net = fakeNet();
+  const timers = { setTimeout: () => 1, clearTimeout: () => {} };
+  const own = installOwnershipSync({ net, target, timers, cache });
+  const diy = installDiySync({ net, target, timers, cache });
+  try {
+    await Promise.all([own.flush(), diy.flush()]);
+    assert.equal(net.sent.length, 2);
+    cache.selectProfile(false);
+    await Promise.all([own.flush(), diy.flush()]);
+    assert.equal(net.sent.length, 4, 'identical preferences must be sent to the new room profile again');
+    assert.deepEqual(target.get().notOwned, ['chess_char_5_13_a']);
+    assert.deepEqual(target.get().diy, {});
+    assert.deepEqual(net.sent.map(x => x.t).sort(), ['room.diy', 'room.diy', 'room.ownership', 'room.ownership']);
+  } finally { own.dispose(); diy.dispose(); }
 });

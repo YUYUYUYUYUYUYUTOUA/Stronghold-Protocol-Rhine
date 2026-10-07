@@ -14,6 +14,20 @@ const names=['chess','bonds','garrisons','tokens','effects','config','items'];
 const files=Object.fromEntries(await Promise.all(names.map(async n=>[n,JSON.parse(await readFile(new URL(`../data/${n}.json`,import.meta.url),'utf8'))])));
 const source=JSON.parse(await readFile(new URL('../tools/rhine-data-source.json',import.meta.url),'utf8'));
 
+test('Rhine data: full-potential operator stats match the same official DIY forms without changing research limits', async () => {
+  const backups=JSON.parse(await readFile(new URL('../data/backups.json',import.meta.url),'utf8'));
+  for(const name of ['ifrit','eunectes','dorothy'])for(const suffix of ['a','b']){
+    const c=files.chess[`chess_rhine_${name}_${suffix}`];
+    const key=['phase','level','skillLevel','equipLevel'].map(k=>c.status[k]).join('/');
+    const official=backups.units[c.charId].forms[key];
+    assert.ok(official,`${name} ${key} exists in the pinned upstream forms`);
+    assert.deepEqual(c.statsBase||c.stats,official.stats,`${name} ${suffix}: no missing potential attribute bonuses`);
+  }
+  assert.equal(files.chess.chess_rhine_dorothy_b.talents[1].bb.max_stack_cnt,12);
+  assert.equal(files.chess.chess_rhine_dorothy_b.talents[0].bb.cnt,5,'research roster trap limit remains explicitly overridden');
+  assert.equal(files.chess.chess_rhine_mayer_b.talents[0].bb.cnt,2);
+});
+
 test('Rhine data: six-member research sharing and the new three device levels are discoverable', () => {
   const bond = files.bonds.rhineShip;
   assert.equal(bond.bb.sharing_count, 6);
@@ -190,7 +204,7 @@ test('Rhine data: both Mayer skills keep deployable otters with correct module v
     assert.equal(v.skill.skillId,'sktok_motter_1');assert.deepEqual(Object.keys(v.bySkill),['1']);
     assert.equal(v.bySkill[1].skill.skillId,'sktok_motter_2');
     assert.equal(v.stats.deployLimit,suffix==='a'?1:2);
-    assert.deepEqual((v.bySkill[skillIndex]||v).sources,['talent']);assert.equal((v.bySkill[skillIndex]||v).count,suffix==='a'?1:2);
+    assert.deepEqual((v.bySkill[skillIndex]||v).sources,['talent','display']);assert.equal((v.bySkill[skillIndex]||v).count,suffix==='a'?1:2);
     for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_otter']){
       const token=ds.getToken(id,owner,{skillIndex,moduleId});
       assert.equal(token.talents[0].bb.max_deploy_count,suffix==='a'?1:2);

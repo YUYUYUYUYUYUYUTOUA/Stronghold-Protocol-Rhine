@@ -1,6 +1,6 @@
 // Selectable Rhine support kits. Skill/talent/module numbers come from the resolved loadout records.
 // PRTS: https://prts.wiki/w/梅尔 · https://prts.wiki/w/乌啾
-import { num, talentBb, skillRec, freeTileAround, enemiesInGrid, alliesInGridOf, up } from './tier1.js';
+import { num, talentBb, skillRec, freeTileAround, enemiesInGrid, alliesInGridOf, up } from './shared/tier1.js';
 import { RHINE_BALANCE as B } from '../../../../shared/rhineResearch.js';
 import { canReceiveHeal } from '../../damage.js';
 

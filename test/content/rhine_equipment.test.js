@@ -21,6 +21,7 @@ function fight(players) {
   for (const p of players) for (const u of p.units) if (u.kind !== 'token' && !u.real) {
     chess[u.chessId] = chessRec({ id: u.chessId, bonds: u.bonds ?? [RHINE_BOND], charId: u.charId ?? 'test',
       golden: u.elite, stats: { maxHp: 2000, atk: 500, blockCnt: 0 }, skill: null });
+    chess[u.chessId].garrisonIds = u.charId === C.ifrit ? [`garrison_rhine_ifrit_${u.elite ? 'b' : 'a'}`] : [];
     kits[u.chessId] = () => ({ trait: { noAttack: true }, skill: null });
   }
   const tokens = Object.fromEntries(RHINE_DEVICES.map((d) => [d.tokenId, { name: d.name, stats: { maxHp: 100, atk: 300, blockCnt: 0 }, rangeGrid: [[0, 0]] }]));

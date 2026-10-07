@@ -1,13 +1,18 @@
 {
   "schemaVersion": 1,
   "profile": "vanilla",
-  "upstreamVersion": "0.1.3",
-  "source": "a0a5419eb875fb24de62e4dfb32b78cfcb3090be",
+  "upstreamVersion": "0.2.1",
+  "source": "c2a2ef778cf728ff29b953b9842b2a39b1e9cbea",
   "files": [
     {
       "path": "assets.json",
-      "size": 677491,
-      "sha256": "45d2666379bcea3fa7c5ac628c3e372325d063a0d84e9b3405113508b31968df"
+      "size": 1114330,
+      "sha256": "52551174da55b55f6e4c9d43d1bb8fd9165dd889c16ae4b78faa8a3644cf3008"
+    },
+    {
+      "path": "backups.json",
+      "size": 1883848,
+      "sha256": "7b528a931577556716d935d0c9509eb05c1f6a2f24464ad500ac8f2a795a806f"
     },
     {
       "path": "bands.json",
@@ -16,8 +21,8 @@
     },
     {
       "path": "bonds.json",
-      "size": 84560,
-      "sha256": "97fe4ffb602a5a617465023fa755a239b43a03f3c71cebeeac44496b7c6c03b6"
+      "size": 85693,
+      "sha256": "53a22f4724771b6ff40041635e907c0af39790731f661b0439fc593f5a91c94c"
     },
     {
       "path": "bosses.json",
@@ -26,18 +31,18 @@
     },
     {
       "path": "chess.json",
-      "size": 1657610,
-      "sha256": "16ff1ceeae13a17bd3e024660d21ec3b746fea25a9dcc8461a3e90ac7ead30d6"
+      "size": 1712670,
+      "sha256": "34338e7cd766981ce43d3e4049d9a60b3d2aea017e00f5cfea8682bcfe54461b"
     },
     {
       "path": "choices.json",
-      "size": 124385,
-      "sha256": "c0b43cfdb03bac3964ce398a4d94e313d2de2e89926a55e7337cec5a19ce193a"
+      "size": 124363,
+      "sha256": "995a9d2a5e3aaf7bbf00df017a2796dcee12f27b1d8c04c33d637e4130eeae35"
     },
     {
       "path": "config.json",
-      "size": 63347,
-      "sha256": "a8e1fc4cf9bd33626d3aa8fd9628fdd9bad57d7656d1825647e3b9ce48fb4511"
+      "size": 63217,
+      "sha256": "e25fb7e7f79aee7e349e06ab976568ec225d77b59f1dbf4ca24d1ab5787fa656"
     },
     {
       "path": "effects.json",
@@ -51,8 +56,8 @@
     },
     {
       "path": "enemies.json",
-      "size": 407198,
-      "sha256": "2539f78f06e276829299234d38e273bfd0fcabd3432f3158bb8abac70d9c5712"
+      "size": 407255,
+      "sha256": "043fdad2dd0dc210f285355d6a4db70f5466c898c6bbcd0d56ee9b219f6e1f45"
     },
     {
       "path": "factions.json",
@@ -65,19 +70,39 @@
       "sha256": "f5b1f5558a263c95abcf36411c31e781efd3ebb1bebdced99ad1f242c2a960e3"
     },
     {
+      "path": "i18n/en.json",
+      "size": 2274454,
+      "sha256": "c274adcf856cd06060605d69823e85a0d3f43ae4f857d8829f5755698f7f36d7"
+    },
+    {
+      "path": "i18n/ja.json",
+      "size": 2613640,
+      "sha256": "8b2ab9ca1aa4387a36f43eb36a498ca287abd8ee438fad985a218f6dee5ca255"
+    },
+    {
+      "path": "i18n/ko.json",
+      "size": 2436671,
+      "sha256": "f989a7d4487ed1ed301eea2f77d349188290a63cfc65be2149928b3164382a7f"
+    },
+    {
+      "path": "i18n/zh-TW.json",
+      "size": 2040328,
+      "sha256": "970abdcf0be49fc7171eb7cf12c9d5cb64c6d435cdc340534c42f94105e00935"
+    },
+    {
       "path": "items.json",
       "size": 170806,
       "sha256": "6122a3cd75531f551a03082f000426a2d6b8028788fbd1abbaea5286592fbba4"
     },
     {
       "path": "stages.json",
-      "size": 256804,
-      "sha256": "8d02f00f7a862c26d1375e6377ad13824c536a19771866587f10c17c66d54701"
+      "size": 266095,
+      "sha256": "1939b85b5b34bd943a334244ae62806b296f5a5a614b3e0876a84ef801be40df"
     },
     {
       "path": "tokens.json",
-      "size": 133722,
-      "sha256": "c2a85310c22fcc306937ac877927b660a20d481290266d307f2c8bb77c6d3636"
+      "size": 133951,
+      "sha256": "ca98a1189d62c3221e3bc9d149f8ba67d44cab5a6c5e780251fb162177d6519c"
     },
     {
       "path": "tuning.json",

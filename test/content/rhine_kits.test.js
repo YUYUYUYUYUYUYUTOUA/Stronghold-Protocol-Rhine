@@ -33,7 +33,7 @@ test('Eunectes: SP requires blocking; S3 grants ATK, DEF, three blocks, regenera
   u.skill.gainSp(999,'test');u.skill.activate('test');
   assert.equal(u.s.blockCnt,3);assert.ok(u.s.atk>u.base.atk*2);assert.ok(u.s.def>u.base.def);
   u.hp=u.s.maxHp*0.3;h.run(1);assert.ok(u.hp>u.s.maxHp*0.3);assert.ok(u.findBuff('eunectes:shelter'));
-  assert.equal(u.s.physTakenMul,0.8);assert.equal(u.s.artsTakenMul,0.8);assert.equal(u.s.trueTakenMul,1);
+  assert.equal(u.s.physTakenMul,0.78);assert.equal(u.s.artsTakenMul,0.78);assert.equal(u.s.trueTakenMul,1);
   u.skill.end('test');assert.ok(u.s.flags.stun);assert.equal(u.s.blockCnt,1);done(h);
 });
 
@@ -83,10 +83,10 @@ test('Wuhoo: starting a heal on herself also strengthens it and grants the extra
       ...[[10,5],[11,4],[11,5]].map(([row,col],i)=>({chessId:'patient',uid:`a${i}`,row,col}))]});
   h.run(0.1);const u=h.unit('doc');for(const a of h.b.allyUnits)a.hp=a.s.maxHp*0.1;
   const before=u.hp;h.b.heal(u,u,u.s.atk);
-  assert.ok(Math.abs((u.hp-before)-u.s.atk*1.2)<1e-6);
+  assert.ok(Math.abs((u.hp-before)-u.s.atk*1.25)<1e-6);
   const chain=h.hooksOf('heal').filter(c=>c.opts?.rhineBounce);assert.equal(chain.length,3);
   // PRTS: her self-heal multiplier carries forward; the extra next jump keeps that strengthened amount.
-  assert.ok(Math.abs(chain[0].amount-u.s.atk*1.2)<1e-6);done(h);
+  assert.ok(Math.abs(chain[0].amount-u.s.atk*1.25)<1e-6);done(h);
 });
 
 for(const key of ['mayer','wuhoo','eunectes','ifrit'])test(`${key}: normal and elite install without generic skill fallback`,()=>{

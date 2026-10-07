@@ -26,7 +26,7 @@ const privFor = board => ({ board, hand: [], temp: [] });
 
 globalThis.fetch = async url => {
   const name = String(url).split('/').pop().replace(/\.json$/, '');
-  try { return { ok: true, status: 200, json: async () => load(name) }; }
+  try { const body = load(name); return { ok: true, status: 200, json: async () => body }; }
   catch { return { ok: false, status: 404, json: async () => ({}) }; }
 };
 await data.loadAll('chess', 'bonds', 'items', 'assets', 'garrisons');

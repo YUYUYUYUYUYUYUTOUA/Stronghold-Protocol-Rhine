@@ -11,7 +11,7 @@ import { applyRhineData } from '../tools/rhine-data.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const VANILLA = path.join(ROOT, 'data', 'vanilla');
-const PIN = 'a0a5419eb875fb24de62e4dfb32b78cfcb3090be';
+const PIN = 'c2a2ef778cf728ff29b953b9842b2a39b1e9cbea';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const git = (...args) => {
   try { return execFileSync('git', ['-C', ROOT, ...args], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 }); }
@@ -21,13 +21,13 @@ async function validateManifest(directory) {
   const manifest = JSON.parse(await fs.readFile(path.join(directory, 'manifest.json'), 'utf8'));
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.profile, 'vanilla');
-  assert.equal(manifest.upstreamVersion, '0.1.3');
+  assert.equal(manifest.upstreamVersion, '0.2.1');
   const entries = manifest.files.map((entry) => entry.path);
   assert.equal(new Set(entries).size, entries.length);
-  const disk = (await fs.readdir(directory)).filter((name) => name.endsWith('.json') && name !== 'manifest.json').sort();
+  const disk = (await fs.readdir(directory,{recursive:true})).map(name=>name.split(path.sep).join('/')).filter((name) => name.endsWith('.json') && name !== 'manifest.json').sort();
   assert.deepEqual(entries.slice().sort(), disk, 'manifest covers every data JSON exactly once');
   for (const entry of manifest.files) {
-    assert.match(entry.path, /^[a-z][a-z-]*\.json$/);
+    assert.match(entry.path, /^(?:i18n\/)?[a-z][a-zA-Z-]*\.json$/);
     const bytes = await fs.readFile(path.join(directory, entry.path));
     assert.equal(entry.size, bytes.length, `${entry.path} byte size`);
     assert.equal(entry.sha256, digest(bytes), `${entry.path} SHA256`);
@@ -38,17 +38,17 @@ async function validateManifest(directory) {
 
 test('the entire shipped vanilla manifest covers valid files with exact byte sizes and SHA256 checksums', async () => {
   const manifest = await validateManifest(VANILLA);
-  assert.equal(manifest.files.length, 17, 'the fixed upstream release has 17 data files');
+  assert.equal(manifest.files.length, 22, 'the fixed upstream release has 22 data files including backups and four languages');
   assert.equal(manifest.source, PIN);
 });
 
-test('every shipped vanilla snapshot is byte-identical to the fixed v0.1.3 commit', async (t) => {
+test('every shipped vanilla snapshot is byte-identical to the fixed v0.2.1 commit', async (t) => {
   assert.equal(VANILLA_UPSTREAM_COMMIT, PIN);
   try { git('cat-file', '-t', PIN); } catch { t.skip('fixed upstream Git object unavailable in the portable package or shallow checkout'); return; }
   assert.equal(git('cat-file', '-t', PIN).toString('utf8').trim(), 'commit');
   const upstreamPackage = JSON.parse(git('show', `${PIN}:package.json`).toString('utf8'));
-  assert.equal(upstreamPackage.version, '0.1.3');
-  const paths = git('ls-tree', '--name-only', PIN, 'data/').toString('utf8').trim().split(/\r?\n/);
+  assert.equal(upstreamPackage.version, '0.2.1');
+  const paths = git('ls-tree', '-r', '--name-only', PIN, 'data/').toString('utf8').trim().split(/\r?\n/);
   const manifest = JSON.parse(await fs.readFile(path.join(VANILLA, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest.files.map((entry) => 'data/' + entry.path).sort(), paths.slice().sort());
   for (const entry of manifest.files) {

@@ -167,6 +167,24 @@ test('炎国短刀: each skill activation ATK +5 % / +8 % (one multiplier), at m
   }
 });
 
+test('炎国短刀: timed deployment skill adds one stack per deployment, including carry.skillActive', () => {
+  const id = 'chess_char_1_19_a';
+  for (const [item, per] of [[A('3_04'), 0.05], [B('3_04'), 0.08]]) {
+    const h = makeBattle({ units: [{ chessId: id, row: 10, col: 4, skillIndex: 0, items: [item], carryState: { skillActive: true } }] });
+    h.b.start();
+    const u = h.unit(id);
+    assert.equal(u.skill.activations, 1);
+    close(u.s.atk, u.base.atk * (1 + per), 'one deployment stack');
+    h.run(u.skill.duration + 1);
+    close(u.s.atk, u.base.atk * (1 + per), 'no extra stack on end');
+    h.b.retreat(u);
+    assert.ok(h.b.redeploy(u, { free: true }));
+    assert.equal(u.skill.activations, 2);
+    close(u.s.atk, u.base.atk * (1 + per * 2), 'one more on redeployment');
+    checkInvariants(h.b);
+  }
+});
+
 test('迅捷作战粮: on deploy SP +3 / +6, plus as much per other operator sharing a bond', () => {
   for (const [id, each] of [[A('3_05'), 3], [B('3_05'), 6]]) {
     const ops = { t_op: op('t_op', { bonds: ['swiftShip'] }), t_a: op('t_a', { bonds: ['swiftShip'] }), t_b: op('t_b', { bonds: ['yanShip'] }) };
@@ -926,6 +944,49 @@ test('拟态物质: owning 2 copies gives the 3rd (→ elite); otherwise a rando
   assert.equal(got.length, 1);
   assert.ok(!DATA.chess[got[0]].isGolden && DATA.chess[got[0]].bonds.some((b) => DATA.chess[cid].bonds.includes(b)));
   cover(A('5_05'), B('5_05'));
+});
+
+test('拟态物质 with 2 copies owned and none left in the pool gives nothing — never a same-bond operator; with copies left the 3rd still merges (GitHub #207)', () => {
+  // the report: an elite 溯光星源 (3 of the Ⅵ阶's 5 copies) and 2 normal ones — the pool is empty, the item text's 否则
+  // (a random same-bond operator) is only for fewer than 2 owned
+  const cid = 'chess_char_6_16_a';
+  const elite = DATA.chess[cid].goldenId;
+  const chessIn = (ps) => [...ps.board.values(), ...ps.hand, ...ps.temp].filter((p) => p && p.kind === 'chess').map((p) => p.id).sort();
+  for (const item of [A('5_05'), B('5_05')]) {
+    const { m, ps, equip } = setup({ seed: 9 });
+    give(m, ps, elite, 'hand');
+    const t = give(m, ps, cid, 'hand');
+    give(m, ps, cid, 'hand');
+    assert.equal(m.pool.left(cid), 0, 'elite 3 + 2 normal = the pool cap 5');
+    const before = chessIn(ps);
+    const got = spyGrants(ps);
+    const it = giveItem(m, ps, item);
+    assert.deepEqual(equip(it, t), OK, item);
+    assert.deepEqual(got, [], `${item}: nothing granted`);
+    assert.deepEqual(chessIn(ps), before, `${item}: no other operator, no second elite`);
+    assert.ok(!ps.find(it.uid), `${item}: consumed`);
+  }
+  // 2 normal copies, no elite, the pool drained by other players: nothing either
+  {
+    const { m, ps, equip } = setup({ seed: 9 });
+    const t = give(m, ps, cid, 'hand');
+    give(m, ps, cid, 'hand');
+    m.pool.take(cid, m.pool.left(cid));
+    const got = spyGrants(ps);
+    assert.deepEqual(equip(giveItem(m, ps, A('5_05')), t), OK);
+    assert.deepEqual(got, []);
+    assert.deepEqual(chessIn(ps), [cid, cid]);
+  }
+  // 2 normal copies with copies left: the 3rd merges into the elite
+  {
+    const { m, ps, equip } = setup({ seed: 9 });
+    const t = give(m, ps, cid, 'hand');
+    give(m, ps, cid, 'hand');
+    assert.equal(m.pool.left(cid), 3);
+    assert.deepEqual(equip(giveItem(m, ps, A('5_05')), t), OK);
+    assert.deepEqual(chessIn(ps), [elite]);
+    assert.equal(m.pool.left(cid), 2, 'the elite holds 3 copies');
+  }
 });
 
 test('博士投影: golden promotes at once; normal stays equipped and promotes at the next round start', () => {

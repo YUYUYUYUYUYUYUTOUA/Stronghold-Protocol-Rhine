@@ -49,5 +49,8 @@ export function addRhineArt(manifest) {
   for (const d of RHINE_DEVICES) manifest.tokens[d.tokenId] = { avatar: d.sprite || d.icon };
   manifest.items.trap_rhine_terminal = '/art/rhine/terminal.png';
   manifest.items.trap_rhine_mainframe = '/art/rhine/mainframe.png';
+  if (manifest.stats) for (const key of ['chars', 'tokens', 'bonds', 'items', 'skills', 'modules']) {
+    if (manifest[key]) manifest.stats[key] = Object.keys(manifest[key]).length;
+  }
   return manifest;
 }

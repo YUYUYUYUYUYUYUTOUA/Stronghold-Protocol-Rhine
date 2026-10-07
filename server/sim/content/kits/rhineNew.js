@@ -1,6 +1,6 @@
 // 星源 / 多萝西: native selectable skills and the owner's resolved module blackboards.
 // Trap damage and chain reactions are explicit physical activations, never inferred from damage/kill events.
-import { num, talentBb, traitBb, skillRec, up } from './tier1.js';
+import { num, talentBb, traitBb, skillRec, up } from './shared/tier1.js';
 import { RHINE_BALANCE as B } from '../../../../shared/rhineResearch.js';
 import { absoluteRangeKeys } from '../../targeting.js';
 import { bodyOnTile, bodyInKeys, bodyInRadius } from '../../body.js';

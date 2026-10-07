@@ -64,6 +64,23 @@
 //     (or outside a room) it simply replaces the stored one; while the room's match runs it is also handed to
 //     match.setLoadout(playerId, loadout), which accepts it only during INFO_CHECK (the 干员调配 entry of the briefing)
 //     and refuses it afterwards (WRONG_PHASE: the match's loadout is locked, the stored one applies to the next match).
+//   * Operator ownership (干员持有, 0.2.0 补位, owner's decision 2026-10-05): room.ownership { notOwned } — the base chess
+//     ids the player marked as not owned — is checked leniently (shared/protocol.js checkNotOwned: anything that is not
+//     a droppable NORMAL chess is dropped, never the whole list; only a malformed list is BAD_MSG) and stored on the
+//     session and the seat like the loadout. The match receives seats[].notOwned when it starts (bots: none — they own
+//     every operator) and keeps it for its whole length: the setting is out of match ("局外设置，下一局生效"), so while
+//     the room's match runs a new list is only stored for the next match (ROOM_STARTED 'stored for the next match',
+//     never handed to the match). A spectator's list stays on its session.
+//   * 自选编队 (0.2.0 DIY, the owner's decisions of 2026-10-05): room.diy { picks } — the player's picks for the four DIY
+//     slots ({ [slotBaseId]: { charId, skillIndex?, uniEquipId? } | null }) — is checked leniently (shared/protocol.js
+//     checkDiyPicks against the game data and the kit registry, server/sim/content/kits/index.js KITTED_CHARS: an
+//     illegal pick — an operator without a kit, another tier's prototype, a prototype off its locked skill, a second slot
+//     of one owned operator, the same operator twice in a tier, an unknown slot / skill / module — is dropped, never the
+//     whole roster; only malformed picks are BAD_MSG) and stored on the session and the seat exactly like the
+//     not-owned list: the match receives seats[].diy when it starts (bots: none — they field no 自选 piece [ASSUMED]),
+//     and a change while it runs is stored for the next match (ROOM_STARTED 'stored for the next match'). Every
+//     `welcome` carries `diyKitted` (welcomeInfo): the operators a DIY slot may field, so the client's picker offers
+//     exactly what the server accepts.
 //   * Spectator seats (community report #26, owner's decision 2026-10-04 — a remake feature, the official room has none):
 //     room.spectate { code } takes one of a co-op room's MAX_SPECTATORS (2) spectator seats, in its lobby or while its
 //     match runs (▸ solo rooms: ROOM_FULL). A spectator is not a player: never in `seats`, never counted for the 1–6 players
@@ -71,18 +88,19 @@
 //     {empty} for its spectators). It receives room.state (`spectators: [{ playerId, name, connected }]`) and every match
 //     broadcast (m.public, m.ticker, m.emote, b.pool — public data); the match registers it (opts.spectators /
 //     addSpectator) and shows it fields like an eliminated player (b.start watch / m.field), never an m.private. It may
-//     only g.watch (the heavy bucket, like every watcher), g.leave / room.leave, and room.loadout (stored for its session,
-//     never handed to the match); anything else → SPECTATOR (▸ emotes too). Host: room.removeSpectator { playerId } any
+//     only g.watch (the heavy bucket, like every watcher), g.leave / room.leave, and room.loadout / room.ownership /
+//     room.diy (stored for its session, never handed to the match); anything else → SPECTATOR (▸ emotes too). Host: room.removeSpectator { playerId } any
 //     time → room.closed {kicked} to it. A spectator in a LOBBY room may take a free player seat with room.join of the same
 //     code; a player never switches to spectating in place (ALREADY). Disconnect / grace / reconnect / expiry work as for
 //     a player seat (the seat is kept and given back on resume).
 
 import { randomBytes, randomInt } from 'node:crypto';
 import { ERR, MAX_SEATS, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
-import { checkLoadout, loadoutOptions } from '../shared/protocol.js';
+import { checkLoadout, loadoutOptions, checkNotOwned, checkDiyPicks } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession } from './net.js';
 import { getData as defaultGetData, getDataProfile as defaultGetDataProfile, deepFreeze, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
+import { KITTED_CHARS } from './sim/content/kits/index.js';
 
 /** Room code alphabet: uppercase letters without I and O (and no digits, so no 0/1). */
 export const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -101,7 +119,7 @@ export const LOBBY_DEFAULTS = Object.freeze({
 export const SOLO_RECONNECT_FALLBACK_SEC = 86_400;
 
 /** Display names for AI teammates (the tutorial NPCs first, then a few familiar faces). */
-export const BOT_NAMES = Object.freeze(['AI·华法琳', 'AI·阿米娅', 'AI·惊蛰', 'AI·杜宾', 'AI·凯尔希', 'AI·可露希尔']);
+export const BOT_NAMES = Object.freeze(['AI·华法琳', 'AI·阿米娅', 'AI·惊蛰', 'AI·杜宾', 'AI·凯尔希', 'AI·可露希尔']); // i18n-ignore: player names (docs/I18N.md)
 
 const OK = Object.freeze({ ok: true });
 const fail = (code, detail) => (detail ? { error: code, detail } : { error: code });
@@ -109,7 +127,9 @@ const noopLog = { info() {}, warn() {}, error() {}, debug() {} };
 
 /**
  * @typedef {{ seat: number, playerId: string, name: string, isBot: boolean, ready: boolean,
- *             connected: boolean, left: boolean, loadout?: Record<string, { skill: number, module: string|null }> | null }} Seat
+ *             connected: boolean, left: boolean, loadout?: Record<string, { skill: number, module: string|null }> | null,
+ *             notOwned?: readonly string[] | null, diy?: Readonly<Record<string, DiyLoadout>> | null }} Seat
+ * @typedef {{ charId: string, skillIndex: number, uniEquipId: string|null }} DiyLoadout
  */
 
 /** Deep-frozen copy of a checked loadout (shared by the session, the seat and the match's PlayerState). */
@@ -136,6 +156,13 @@ function sanitizeLoadout(loadout, data) {
     if (checked.ok) Object.assign(out, checked.loadout);
   }
   return freezeLoadout(out);
+}
+
+/** Deep-frozen copy of checked 自选 picks (shared by the session, the seat and the match's PlayerState). */
+function freezeDiy(picks) {
+  const out = {};
+  for (const [id, p] of Object.entries(picks || {})) out[id] = Object.freeze({ charId: p.charId, skillIndex: p.skillIndex, uniEquipId: p.uniEquipId ?? null });
+  return Object.freeze(out);
 }
 
 /** One room: MAX_SEATS seat slots, host, difficulty, optional running match. */
@@ -318,6 +345,8 @@ export class Lobby {
       case 'room.kick': return this.kick(session, msg);
       case 'room.start': return this.start(session);
       case 'room.loadout': return this.loadout(session, msg);
+      case 'room.ownership': return this.ownership(session, msg);
+      case 'room.diy': return this.diy(session, msg);
       case 'room.spectate': return this.spectate(session, msg);
       case 'room.removeSpectator': return this.removeSpectator(session, msg);
       default:
@@ -634,6 +663,50 @@ export class Lobby {
     return OK;
   }
 
+  /**
+   * room.ownership (0.2.0 补位): keep the droppable chess of the not-owned list, store it on the session and the seat
+   * (see the header). A running match never takes it: it keeps the list its seat had at its start.
+   */
+  ownership(session, { notOwned }) {
+    const room = this.roomOf(session);
+    let data;
+    try { data = room ? this.roomData(room) : this.safeData(); } catch (e) { return fail(ERR.INTERNAL, e.message); }
+    const res = checkNotOwned(notOwned, (id) => lookup('chess', id, data));
+    if (!res || res.error) return fail(ERR.BAD_MSG, res && res.detail);
+    const list = Object.freeze(res.notOwned.slice());
+    session.notOwned = list;
+    if (!room) return OK;
+    const seat = room.seatOf(session.playerId);
+    if (seat) seat.notOwned = list;
+    if (room.match && seat) return fail(ERR.ROOM_STARTED, 'stored for the next match');
+    return OK;
+  }
+
+  /**
+   * room.diy (0.2.0 自选编队): keep the legal picks (checkDiyPicks against the data and KITTED_CHARS), store them on the
+   * session and the seat (see the header). A running match never takes them: it keeps the picks its seat had at its
+   * start.
+   */
+  diy(session, { picks }) {
+    const room = this.roomOf(session);
+    let data;
+    try { data = room ? this.roomData(room) : this.safeData(); } catch (e) { return fail(ERR.INTERNAL, e.message); }
+    const res = checkDiyPicks(picks, { data, kitted: KITTED_CHARS });
+    if (!res || !('ok' in res)) return fail(ERR.BAD_MSG, res && res.detail);
+    const kept = freezeDiy(res.picks);
+    session.diy = kept;
+    if (!room) return OK;
+    const seat = room.seatOf(session.playerId);
+    if (seat) seat.diy = kept;
+    if (room.match && seat) return fail(ERR.ROOM_STARTED, 'stored for the next match');
+    return OK;
+  }
+
+  /** Extra fields of every `welcome` (net.js): the operators a 自选 slot may field (shared/diy.js `kitted`). */
+  welcomeInfo() {
+    return { diyKitted: KITTED_CHARS };
+  }
+
   // ---------------------------------------------------------------------------------------------------
   // Match wiring
   // ---------------------------------------------------------------------------------------------------
@@ -646,6 +719,10 @@ export class Lobby {
       seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, connected: s.connected,
       // DESIGN §16: the human's checked operator loadout (bots fight with the defaults)
       loadout: s.isBot ? null : s.loadout || null,
+      // 0.2.0 补位: the chess the human marked as not owned (bots own every operator)
+      notOwned: s.isBot ? null : s.notOwned || null,
+      // 0.2.0 自选编队: the human's checked DIY picks (bots field no 自选 piece [ASSUMED])
+      diy: s.isBot ? null : s.diy || null,
     }));
     // lastPublic / results: the latest m.public broadcast and the m.result frames (encoded), kept for the replay.
     const ctx = { live: true, ended: false, disposed: false, match: null, lastPublic: null, sharedResult: null, results: new Map() };
@@ -920,6 +997,8 @@ export class Lobby {
     return {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
       loadout: session.loadout ? sanitizeLoadout(session.loadout, data) : null,
+      notOwned: session.notOwned || null,
+      diy: session.diy || null,
     };
   }
 

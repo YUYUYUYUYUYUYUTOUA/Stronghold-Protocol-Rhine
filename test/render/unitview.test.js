@@ -5,10 +5,16 @@
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { installFakePixi, fakeViewCtx } from './fakepixi.js';
 import { presetCamera } from '../../public/js/render/projection.js';
 import { createAssets } from '../../public/js/assets.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ASSETS = JSON.parse(readFileSync(path.join(ROOT, 'data/assets.json'), 'utf8'));
 
 let fake, UnitView, T;
 before(async () => {
@@ -324,5 +330,162 @@ describe('enemy preview pen figures (lod idle)', () => {
     assert.ok(v.imp && v.imp.slot, 'atlas slot');
     assert.equal(renders.length, 0, 'drawn by the atlas flush, no per-figure render call');
     assert.ok(steps() <= 12, `idle loop stepped ≈ every 3rd frame (${steps()} of 30)`);
+  });
+});
+
+// Player report 2026-10-05: 「无人机等飞行单位贴图位置明显偏低」, and the follow-up "绝对不止 0.35" with an official
+// screenshot of 帝国炮火先兆者 over a tile (PR #211 by @xcdoge; the owner's decision of 2026-10-06). The lift is the
+// official client's own single constant — Vector3(0, 0.35, 0) written by Torappu.Battle.CharacterAnimator's constructor
+// (docs/research/12-flying-visuals-official.md) — measured in the client's character space, whose unit is the standard
+// battle-prefab scale 0.27, so the tile-space lift is 0.35 / 0.27 ≈ 1.3 tiles (the screenshot measures 1.2–1.4). The
+// client applies it to the model's root transform and nothing per model (its battle prefabs carry no flyer-specific
+// vertical offset), so a model whose art hangs below its origin keeps that hang and flies with it — 妖怪 at ≈ 0.9 tiles
+// of rotor clearance. The previous flat 0.32 left every flyer ~1 tile too low (the two 妖怪 drones even had their art
+// under the tile).
+describe('flying units hover FLY_HOVER above the ground, whatever their model', () => {
+  const boundsOf = (key) => { const sp = ASSETS.enemies[key].spine; return (sp.front || sp).bounds; };
+  const MODEL_K = { enemy_1005_yokai: 0.7407, enemy_1005_yokai_2: 0.8148, enemy_1040_bombd: 0.7407, enemy_1042_frostd: 0.6667 };
+  /** Independent algorithm: tiles the art bottom hangs below the unit's ground point. */
+  const sinkOf = (key) => (-boundsOf(key).y / 320) * MODEL_K[key];
+
+  test('FLY_HOVER is the client constant 0.35 in character space, i.e. 0.35 / 0.27 tiles', async () => {
+    const { FLY_HOVER } = await import('../../public/js/render/units.js');
+    const STANDARD_PREFAB_SCALE = 0.27;   // enemies.json modelScale is a multiple of it (units.js enemyModelScale)
+    const want = 0.35 / STANDARD_PREFAB_SCALE;
+    assert.ok(Math.abs(FLY_HOVER - want) < 0.02, `FLY_HOVER ${FLY_HOVER} ≈ 0.35 / ${STANDARD_PREFAB_SCALE} = ${want.toFixed(3)} 格`);
+  });
+
+  test('every flyer of this mode gets the same lift, whatever its model hangs below its origin', async () => {
+    const { FLY_HOVER } = await import('../../public/js/render/units.js');
+    for (const key of Object.keys(MODEL_K)) {
+      const sink = sinkOf(key);
+      assert.ok(sink > 0, `${key}: the model does hang ${sink.toFixed(3)} tiles below its pivot`);
+      // the lift is model-independent, so a flyer's visible clearance is FLY_HOVER − sink, and it differs per model
+      assert.ok(FLY_HOVER - sink > 0.8, `${key}: 净高度 ${(FLY_HOVER - sink).toFixed(3)} 格（修复前 0.32 − sink 为负 → 贴地）`);
+    }
+    // with the old flat 0.32 the two 妖怪 drones had a negative clearance = art under the tile, and 寒霜 floated 0.25
+    assert.ok(0.32 - sinkOf('enemy_1005_yokai') < 0, 'before: 妖怪 −0.06 tiles');
+    assert.ok(0.32 - sinkOf('enemy_1042_frostd') > 0.2, 'before: 寒霜 floated 0.25 tiles (inconsistent)');
+    // a model whose art starts above its pivot (帝国炮火先兆者) gets the plain FLY_HOVER
+    assert.equal(boundsOf('enemy_1112_emppnt').y > 0, true, '帝国炮火先兆者 art bottom is above the origin');
+    assert.ok(FLY_HOVER > 1.2, 'the sub-tile 0.35 left every flyer about one tile low');
+  });
+
+  test('a flying UnitView lifts by FLY_HOVER — its body and HP bar ride it, its shadow stays on the ground; a ground view keeps its feet on the tile', async () => {
+    const { FLY_HOVER } = await import('../../public/js/render/units.js');
+    const bounds = boundsOf('enemy_1005_yokai');
+    const entry = { skel: '/s/x.skel', atlas: '/s/x.atlas', textures: ['/s/x.png'], anims: { idle: 'Idle' }, animations: { Idle: 1 }, bounds };
+    const assets = {
+      picture: () => null, image: async () => null, spineEntry: () => entry,
+      spine: { acquire: async () => ({ animations: [{ name: 'Idle' }] }), release() {} },
+    };
+    const ctx = fakeViewCtx(fake.P, { assets, cam: cam, lookupDef: () => ({ modelScale: MODEL_K.enemy_1005_yokai }) });
+    const fly = new UnitView(ctx, { id: 1, side: 'enemy', kind: 'enemy', defId: 'enemy_1005_yokai', x: 5, y: 12, maxHp: 100, motion: 'FLY' }, {});
+    await tick(); await tick();
+    for (let i = 0; i < 180; i++) fly.update(1 / 60, cam(), i / 60);
+    assert.ok(Math.abs(fly.hover - FLY_HOVER) < 1e-3, `hover ${fly.hover.toFixed(3)} ≈ FLY_HOVER ${FLY_HOVER}`);
+    const ground = new UnitView(ctx, { id: 2, side: 'enemy', kind: 'enemy', defId: 'enemy_1005_yokai', x: 5, y: 12, maxHp: 100 }, {});
+    await tick(); await tick();
+    for (let i = 0; i < 60; i++) ground.update(1 / 60, cam(), i / 60);
+    assert.equal(ground.hover, 0, 'a ground unit is not lifted');
+    // the same tile: the flyer's body (and the bar above it) is FLY_HOVER higher on screen, the shadows coincide
+    const c = cam();
+    const lift = c.project(5, 12, 0).y - c.project(5, 12, fly.hover).y;
+    assert.ok(lift > 0);
+    assert.ok(Math.abs((ground.screen.y - fly.screen.y) - lift) < 1e-6, `body lifted by the projected FLY_HOVER (${ground.screen.y - fly.screen.y} vs ${lift})`);
+    // the bar sits the head height above the body (the projected scale at the body's height, so not exactly `lift`)
+    assert.ok(fly.screen.top < fly.screen.y && Math.abs((fly.screen.y - fly.screen.top) - (ground.screen.y - ground.screen.top)) < 0.1 * (ground.screen.y - ground.screen.top), 'the HP bar keeps its head height over the body');
+    assert.ok(ground.screen.top - fly.screen.top > 0.9 * lift, `the HP bar rides the body (${ground.screen.top - fly.screen.top} vs ${lift})`);
+    assert.ok(Math.abs(fly.shadow.position.y - ground.shadow.position.y) < 1e-9, 'the shadow stays on the ground');
+  });
+});
+
+// GitHub #277 (@FrogThai): 飞机经过一格方块时会跟走楼梯一样，有高低差 — a flyer crossing one raised tile (high ground,
+// a forbidden block) rose onto the block and dropped back like a step, because the view added the tile's height under
+// it before its FLY_HOVER. The official lift is one constant over the route (docs/research/12: Vector3(0, 0.35, 0) added
+// while flying), so an enemy flyer hovers from the road (z 0) whatever tile it crosses; its shadow lies on the tile top
+// under it. Ground enemies keep to the road as before, and an operator on high ground keeps standing on the block.
+describe('an enemy flyer crossing a raised tile keeps its height (GitHub #277)', () => {
+  const RAISED = { row: 12, col: 6, h: 0.42 };   // one high-ground block ('h', TILE_H.wall) on the flyer's row
+  const heightAt = (r, c) => (r === RAISED.row && c === RAISED.col ? RAISED.h : 0);
+  const sample = (x, flags) => ({ x, y: 12, hp: 100, maxHp: 100, sp: 0, spMax: 0, flags, anim: 1, vx: 0.5 });
+
+  test('the body stays FLY_HOVER above the road over the block; the shadow lies on the block top', async () => {
+    const { FLY_HOVER } = await import('../../public/js/render/units.js');
+    const ctx = fakeViewCtx(fake.P, { assets: store(), cam, heightAt });
+    const fly = new UnitView(ctx, { id: 1, side: 'enemy', kind: 'enemy', defId: 'enemy_1005_yokai', x: 4, y: 12, maxHp: 100, motion: 'FLY' }, {});
+    await tick(); await tick();
+    let t = 0;
+    const step = (x) => { fly.sync(sample(x, 512), t); fly.update(1 / 60, cam(), t); t += 1 / 60; };
+    for (let i = 0; i < 180; i++) step(4);                       // settle the lift on the road
+    const heights = [];
+    for (let i = 0; i <= 80; i++) { step(4 + i * 0.05); heights.push(fly.z + fly.hover); }   // x 4 → 8 across col 6
+    const rise = Math.max(...heights) - Math.min(...heights);
+    assert.ok(rise < 1e-6, `the body height never changes over the block (rose ${rise.toFixed(3)} tiles; before: +${RAISED.h})`);
+    assert.ok(Math.abs(heights[0] - FLY_HOVER) < 1e-3, `FLY_HOVER above the road (${heights[0].toFixed(3)})`);
+    for (let i = 0; i < 60; i++) step(6);                        // hold over the block
+    assert.equal(fly.z, 0, 'the flyer hovers from the road plane');
+    const c = cam();
+    assert.ok(Math.abs(fly.screen.y - c.project(6, 12, FLY_HOVER).y) < 1e-6, 'drawn FLY_HOVER above the road, not above the block');
+    assert.ok(Math.abs(fly.shadow.position.y - c.project(6, 12, RAISED.h).y) < 0.05, 'its shadow lies on the block top under it');
+    for (let i = 0; i < 60; i++) step(8);                        // back over the road
+    assert.ok(Math.abs(fly.shadow.position.y - c.project(8, 12, 0).y) < 0.05, 'and on the road again past it');
+  });
+
+  test('ground enemies stay on the road and an operator on the block stands on its top', async () => {
+    const ctx = fakeViewCtx(fake.P, { assets: store(), cam, heightAt });
+    const walker = new UnitView(ctx, { id: 2, side: 'enemy', kind: 'enemy', defId: 'enemy_1007_slime', x: 6, y: 12, maxHp: 100 }, {});
+    const op = new UnitView(ctx, { id: 3, side: 'ally', kind: 'chess', defId: 'char_x', tier: 1, x: 6, y: 12, maxHp: 100 }, {});
+    await tick(); await tick();
+    for (let i = 0; i < 60; i++) {
+      walker.sync(sample(6, 0), i / 60); walker.update(1 / 60, cam(), i / 60);
+      op.sync({ ...sample(6, 0), anim: 0, vx: 0 }, i / 60); op.update(1 / 60, cam(), i / 60);
+    }
+    assert.equal(walker.z, 0, 'a ground enemy is never popped onto a block');
+    assert.ok(Math.abs(op.z - RAISED.h) < 1e-6, `the operator stands on the high ground (${op.z})`);
+  });
+});
+
+// PR #275 (@xcdoge): 猎狗pro ships Move_Loop 0.80 s next to Run_Loop 0.53 s and its moveSpeed is 1.9, so a fast enemy
+// walks on its model's own Run cycle (anims.run) while a standard one keeps Move; the cast slot composes with it.
+describe('a fast enemy walks on its Run cycle (PR #275)', () => {
+  const entry = {
+    skel: '/s/x.skel', atlas: '/s/x.atlas', textures: ['/s/x.png'],
+    anims: {
+      idle: 'Idle', deploy: 'Idle', die: 'Die', attack: null,
+      move: { begin: 'Move_Begin', loop: 'Move_Loop', end: 'Move_End' },
+      run: { begin: 'Run_Begin', loop: 'Run_Loop', end: 'Run_End' },
+      skill: { begin: null, loop: 'Skill_01', end: null, index: 0, idle: null },
+      skills: { 0: { begin: null, loop: 'Skill_01', end: null, index: 0, idle: null }, 1: { begin: null, loop: 'Skill_02', end: null, index: 1, idle: null } },
+    },
+    animations: { Idle: 1, Die: 0.67, Move_Begin: 0.17, Move_Loop: 0.8, Move_End: 0.17, Run_Begin: 0.17, Run_Loop: 0.53, Run_End: 0.17, Skill_01: 1, Skill_02: 1 },
+  };
+  const assets = {
+    picture: () => null, image: async () => null, spineEntry: () => entry,
+    spine: { acquire: async () => ({ animations: Object.keys(entry.animations).map((name) => ({ name })) }), release() {} },
+  };
+  const enemyView = async (id, speed, side = 'enemy') => {
+    const ctx = fakeViewCtx(fake.P, { assets, cam, lookupDef: () => ({ stats: { moveSpeed: speed } }) });
+    const v = new UnitView(ctx, { id, side, kind: side === 'enemy' ? 'enemy' : 'op', defId: 'enemy_1000_gopro_2', x: 5, y: 12, maxHp: 100 }, {});
+    await tick(); await tick();
+    assert.ok(v.actor, 'spine actor built');
+    return v;
+  };
+
+  test('moveSpeed 1.9 moves on Run, 1 on Move; the cast slot and the Run cycle compose', async () => {
+    const hound = await enemyView(1, 1.9);
+    assert.equal(hound.actor.roles.move.loop, 'Run_Loop');
+    const slug = await enemyView(2, 1);
+    assert.equal(slug.actor.roles.move.loop, 'Move_Loop');
+    // the MOVE anim code plays it
+    hound.sync({ x: 5, y: 12, hp: 100, maxHp: 100, sp: 0, spMax: 0, flags: 0, anim: 1, vx: 0.5 }, 1);
+    for (let i = 0; i < 20; i++) hound.update(1 / 60, cam(), i / 60);
+    assert.match(String(hound.actor.current), /^Run/, `playing ${hound.actor.current}`);
+    hound.setSkillSlot(1);
+    assert.equal(hound.actor.roles.skill.loop, 'Skill_02', 'the cast slot');
+    assert.equal(hound.actor.roles.move.loop, 'Run_Loop', 'and the Run cycle survives it');
+    hound.actor.setRunMode(false);
+    assert.equal(hound.actor.roles.move.loop, 'Move_Loop');
+    assert.equal(hound.actor.roles.skill.loop, 'Skill_02', 'the cast slot survives that too');
   });
 });

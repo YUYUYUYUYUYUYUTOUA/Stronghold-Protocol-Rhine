@@ -8,13 +8,22 @@ import { absoluteRangeKeys } from '../targeting.js';
 import { canReceiveHeal } from '../damage.js';
 import { TICK } from '../constants.js';
 import { memberOf, rhineEquipmentAttack } from './items/battle.js';
-import { gainLayers } from './support/index.js';
+import { gainLayers, garrisonRecord } from './support/index.js';
 
 const alive = (u) => !!u?.alive && u.deployed && !u.removed && !u.hidden;
 const charId = (u) => u.def?.charId ?? u.def?.raw?.charId;
 const elite = (u) => !!u.def?.golden;
 const layersOf = (ps) => ps?.bonds?.[RHINE_BOND]?.active ? Math.max(0, Number(ps.bonds[RHINE_BOND].layers) || 0) : 0;
 const healCapture = Symbol('rhineMedicalHeal');
+// Protocol traits belong to the chess identity. A stand-in keeps them; a same-name DIY body does not.
+function researchTrait(unit, effectKey) {
+  const ids = unit.def?.raw?.garrisonIds ?? unit.def?.garrisonIds ?? [];
+  for (const id of ids) {
+    const g = garrisonRecord(id);
+    if (g?.eventType === 'IN_BATTLE' && g.effectKey === effectKey) return g.bb ?? {};
+  }
+  return null;
+}
 const damageOperator = (u) => u.def?.profession !== 'MEDIC' && charId(u) !== C.saria
   && ['phys', 'arts', 'true'].includes(u.profile?.dmgType ?? u.dmgType);
 
@@ -115,9 +124,11 @@ export function install(battle) {
       const sharing = ps.bonds?.[RHINE_BOND]?.active && ps.bonds[RHINE_BOND].count >= B.sharingCount;
       for (const u of ps.units) {
         if (u.kind !== 'op') continue;
-        if (charId(u) === C.saria) setPassive(battle, u, 'rhine:saria', { healingDealtMul: 1 + Math.floor(layers / B.sariaLayerStep) * B.sariaHealBonus[elite(u) ? 1 : 0] });
-        if (charId(u) === C.ifrit) setPassive(battle, u, 'rhine:ifrit', { atkFlat: highest * B.ifritInheritance[elite(u) ? 1 : 0] });
-        const shared = sharing && alive(u) && charId(u) !== C.ifrit && damageOperator(u) && memberOf(battle, u, RHINE_BOND)
+        const healing = researchTrait(u, 'RHINE_SARIA_HEALING');
+        const inheritance = researchTrait(u, 'RHINE_IFRIT_INHERITANCE');
+        if (healing) setPassive(battle, u, 'rhine:saria', { healingDealtMul: 1 + Math.floor(layers / Math.max(1, Number(healing.layer_step) || B.sariaLayerStep)) * (Number(healing.heal) || 0) });
+        if (inheritance) setPassive(battle, u, 'rhine:ifrit', { atkFlat: highest * (Number(inheritance.atk_scale) || 0) });
+        const shared = sharing && alive(u) && !inheritance && charId(u) !== C.ifrit && damageOperator(u) && memberOf(battle, u, RHINE_BOND)
           ? highest * B.researchSharing[elite(u) ? 1 : 0] : 0;
         if (shared > 0) setPassive(battle, u, 'rhine:sharing', { atkFlat: shared });
         else if (u.findBuff('rhine:sharing')) battle.removeBuff(u, 'rhine:sharing');
@@ -137,9 +148,11 @@ export function install(battle) {
     if (!enabled(s)) return;
     let source = null, n = 0;
     for (const u of s.ps.units) {
-      if (u.kind !== 'op' || !alive(u) || charId(u) !== C.mayer) continue;
+      if (u.kind !== 'op' || !alive(u)) continue;
+      const research = researchTrait(u, 'RHINE_MAYER_RESEARCH');
+      if (!research) continue;
       const [r, c] = frontOf(u.tileR, u.tileC, u.dir);
-      const amount = B.mayerDeviceLayers[elite(u) ? 1 : 0];
+      const amount = Math.max(0, Number(research.device_layers) || 0);
       if (r === s.unit.tileR && c === s.unit.tileC && amount > n) { source = u; n = amount; }
     }
     if (source) gainLayers(battle, { playerId: s.unit.ownerId, bonds: RHINE_BOND, n, source, reason: 'garrison' });

@@ -2,6 +2,7 @@
 // against the cell containing their centre, so placement highlights and live effects share a boundary.
 import { RHINE_BALANCE as B, rhineDevice, rhineStage } from './rhineResearch.js';
 import { GEO } from './constants.js';
+import { t } from './i18n.js';
 
 // Saria's skchr_demkni_3 (rangeId x-3): a 25-cell diamond, not the 29-cell radius-3 circle.
 // Keep a shared shape so the sim, low/high graphics and descriptions use the same mature pulse.
@@ -61,14 +62,14 @@ export function researchRangeTiles(row, col, radius, bounds = GEO.NORMAL_RECT) {
 export function researchRangeText(piece) {
   const range = researchRange(piece);
   if (!range) return '';
-  if (range.key === 'medical') return `覆盖半径 ${B.radius} 格内的整格区域（${range.grid.length} 格）；治疗本方干员及可受治疗的召唤物，包括机械水獭。突破不扩大范围。`;
+  if (range.key === 'medical') return t('覆盖半径 {radius} 格内的整格区域（{tiles} 格）；治疗本方干员及可受治疗的召唤物，包括机械水獭。突破不扩大范围。', { radius: B.radius, tiles: range.grid.length });
   if (range.key === 'energy') {
     const pulse = energyPulseRange(range.stage);
-    const charging = range.stage >= 1 ? '己方全场干员释放技能均可充能' : `半径 ${B.radius} 格内己方干员释放技能时充能`;
-    const splash = pulse.tileBased ? `主目标所在格为中心的钙质化 ${pulse.grid.length} 格菱形` : `主目标周围实际半径 ${pulse.radius} 格`;
-    return `${charging}；主目标仍须在装置半径 ${B.radius} 格内（${range.grid.length} 格）。一级起造成范围法术伤害，溅射为${splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。`;
+    const charging = range.stage >= 1 ? t('己方全场干员释放技能均可充能') : t('半径 {radius} 格内己方干员释放技能时充能', { radius: B.radius });
+    const splash = pulse.tileBased ? t('主目标所在格为中心的钙质化 {tiles} 格菱形', { tiles: pulse.grid.length }) : t('主目标周围实际半径 {radius} 格', { radius: pulse.radius });
+    return t('{charging}；主目标仍须在装置半径 {radius} 格内（{tiles} 格）。一级起造成范围法术伤害，溅射为{splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。', { charging, radius: B.radius, tiles: range.grid.length, splash });
   }
-  return `当前覆盖半径 ${range.radius} 格内的整格区域（${range.grid.length} 格），持续减速 ${B.ecologySlow * 100}%；一级及二级为 ${B.radius} 格，三级为 ${B.radius + 1} 格。二级起每 ${B.ecologyInterval} 秒额外束缚 ${B.ecologyBindDuration} 秒。`;
+  return t('当前覆盖半径 {radius} 格内的整格区域（{tiles} 格），持续减速 {slow}%；一级及二级为 {baseRadius} 格，三级为 {matureRadius} 格。二级起每 {interval} 秒额外束缚 {duration} 秒。', { radius: range.radius, tiles: range.grid.length, slow: B.ecologySlow * 100, baseRadius: B.radius, matureRadius: B.radius + 1, interval: B.ecologyInterval, duration: B.ecologyBindDuration });
 }
 
 /** Polygon clipped to a tile's square. Coordinates throughout are [column, row]. */

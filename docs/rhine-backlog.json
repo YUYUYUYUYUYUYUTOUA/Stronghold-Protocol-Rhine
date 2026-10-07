@@ -1,10 +1,10 @@
 {
   "title": "莱茵生命扩展待修记录",
   "recordedDate": "2026-10-04",
-  "status": "上游0.1.3适配基础上的莱茵输出转换增强已制作，验证及发布结果见RHINE-CHANGES；线上另行切换",
-  "updatedDate": "2026-10-06",
-  "currentRelease": "v0.1.3-rhine.2",
-  "currentBranch": "codex/rhine-upstream-013",
+  "status": "已适配上游正式0.2.1，保留莱茵强化及六人规则；验证及发布结果见RHINE-CHANGES，线上另行切换",
+  "updatedDate": "2026-10-07",
+  "currentRelease": "v0.2.1-rhine.1",
+  "currentBranch": "codex/rhine-upstream-021",
   "items": [
     {
       "id": "mayer-summon-count",

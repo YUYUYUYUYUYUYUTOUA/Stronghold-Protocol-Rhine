@@ -68,7 +68,7 @@ test('Eunectes S1 is passive ATK / DEF; high-HP talent changes actual attack dam
     assert.equal(u.skill.kind, 'passive'); close(u.s.atk, u.base.atk * (1 + bb.atk));
     close(u.s.def, u.base.def * (1 + bb.def));
     const e = enemy(h), before = e.hp; h.b.forceAttack(u, [e]);
-    close(before - e.hp, u.s.atk * 1.15, 'healthy talent');
+    close(before - e.hp, u.s.atk * 1.17, 'full-potential healthy talent');
     u.hp = u.s.maxHp * 0.5; h.run(0.1);
     const low = e.hp; h.b.forceAttack(u, [e]); close(low - e.hp, u.s.atk, 'low HP attack');
     done(h);
@@ -150,10 +150,10 @@ test('Ifrit S2 charges three times, applies DEF reduction to every target and bu
 
 test('Ifrit S3 targets ground only, loses HP and applies both aura RES multiplier and flat skill reduction', () => {
   const h = run('ifrit', { enemyDefs: { e: dummy('e', { res: 50 }), fly: dummy('fly', { motion: 'FLY', res: 50 }) } });
-  const u = ready(h), e = enemy(h), fly = enemy(h, [10, 6], 'fly'); h.run(0.2); close(e.s.res, 30); close(fly.s.res, 30);
+  const u = ready(h), e = enemy(h), fly = enemy(h, [10, 6], 'fly'); h.run(0.2); close(e.s.res, 28); close(fly.s.res, 28);
   cast(u); const hp = u.hp, enemyHp = e.hp, flyHp = fly.hp; h.run(1);
-  close(u.hp, hp - u.s.maxHp * 0.02); close(e.s.res, 24); close(fly.hp, flyHp);
-  close(enemyHp - e.hp, u.s.atk * 1.1 * 0.76);
+  close(u.hp, hp - u.s.maxHp * 0.02); close(e.s.res, 22.4); close(fly.hp, flyHp);
+  close(enemyHp - e.hp, u.s.atk * 1.1 * 0.776);
   const burns = h.hooksOf('damaged').filter(c => c.dmg?.tags?.includes('ifritBurn')); assert.equal(burns.length, 1);
   assert.equal(burns[0].dmg.isAttack, false); assert.ok(burns[0].dmg.tags.includes('dot')); done(h);
 });
@@ -206,10 +206,10 @@ test('Ifrit talent returns 2 SP at six seconds; advanced X probabilistic +5 is r
 
 test('Ifrit Delta uses 8% actual arts damage for the real burn gauge, including S2 DOT, and respects shields', () => {
   const h = run('ifrit', { module: 'uniequip_003_ifrit', enemyDefs: { e: dummy('e', { res: 50 }) } }), u = ready(h), e = enemy(h);
-  h.run(0.2); close(e.s.res, 30);
-  h.b.dealDamage(u, e, { type: 'arts', amount: 1000, tags: ['dot', 'ifritScorch'] }); close(e.elem.burn, 700 * 0.08);
+  h.run(0.2); close(e.s.res, 28);
+  h.b.dealDamage(u, e, { type: 'arts', amount: 1000, tags: ['dot', 'ifritScorch'] }); close(e.elem.burn, 720 * 0.08);
   h.b.addBuff(e, { key: 'shield', shield: 500 });
-  h.b.dealDamage(u, e, { type: 'arts', amount: 1000, isAttack: true }); close(e.elem.burn, 900 * 0.08);
+  h.b.dealDamage(u, e, { type: 'arts', amount: 1000, isAttack: true }); close(e.elem.burn, 940 * 0.08);
   const before = e.elem.burn; h.b.dealDamage(u, e, { type: 'phys', amount: 1000 }); close(e.elem.burn, before);
   h.b.retreat(u, { reason: 'test', permanent: true });
   h.b.dealDamage(u, e, { type: 'arts', amount: 1000, tags: ['dot', 'ifritScorch'] }); close(e.elem.burn, before); done(h);

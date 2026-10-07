@@ -196,9 +196,9 @@ test('特性 and 天赋 follow the chosen module: 隐现\'s trait upgrade is MAR
   const rows = (id, level, entries) => kitRows(section(id, level, entries));
   const { golden } = slot(INSIDE);
   const traitOf = (rs) => rs.find((r) => r.k === '特性');
-  // default module: the module's upgraded trait text; 不装备: the plain class trait
-  assert.equal(traitOf(rows(INSIDE, 'elite', {})).text, golden.trait.moduleDescRaw);
-  assert.match(traitOf(rows(INSIDE, 'elite', {})).text, /110%/);
+  // default module: the class trait, then the module's added line (item 16.2 of 2026-10-06); 不装备: the plain class trait
+  assert.equal(traitOf(rows(INSIDE, 'elite', {})).text, `${golden.trait.descRaw}\n${golden.trait.moduleDescRaw}`);
+  assert.match(traitOf(rows(INSIDE, 'elite', {})).text, /^优先攻击空中单位\n[^\n]*110%/);
   assert.equal(traitOf(rows(INSIDE, 'elite', { [INSIDE]: { module: 'none' } })).text, golden.traitBase.descRaw);
   assert.equal(traitOf(rows(INSIDE, 'normal', {})).text, slot(INSIDE).base.trait.descRaw, '普通: its own trait');
   // 天赋: named and not hidden, the record's list
@@ -250,8 +250,8 @@ test('the 普通 / 精锐 toggle: 精锐 is the shown variant, the tabs say so, 
 test('place in the detail: after the skills, before the modules; the first .lo-seg stays the skill level toggle (e2e selector)', () => {
   const src = read('public/js/screens/loadout.js');
   const detail = src.slice(src.indexOf('function Detail('), src.indexOf('// ---- filters'));
-  const toggle = detail.indexOf('aria-label="技能等级"');
-  const skills = detail.indexOf('aria-label="选择技能"');
+  const toggle = detail.indexOf("aria-label=${t('技能等级')}");
+  const skills = detail.indexOf("aria-label=${t('选择技能')}");
   const stats = detail.indexOf('<${LoadoutStats} base=${chess}');
   const mods = detail.indexOf('<section class="lo-sec lo-sec--mod">');
   assert.ok(toggle > 0 && skills > toggle && stats > skills && mods > stats, 'skills (and their level toggle) → 局内数值 → modules');
@@ -292,14 +292,14 @@ test('特性 follows the chosen module also when the skill or the module differs
   const chess = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
   const get = (id) => chess[id];
   const shown = (id, lo) => traitText(get(id), true, chessLoadout(get(id), lo, get));
-  // 隐现 (MAR-X): its other skill keeps the module's line, not the class trait 优先攻击空中单位
-  assert.match(shown('chess_char_1_01_b', { chess_char_1_01_a: { skill: 0, module: null } }), /攻击空中单位时攻击力提升至/);
+  // 隐现 (MAR-X): its other skill keeps the module's line after the class trait 优先攻击空中单位 (item 16.2)
+  assert.match(shown('chess_char_1_01_b', { chess_char_1_01_a: { skill: 0, module: null } }), /^优先攻击空中单位\n攻击空中单位时攻击力提升至/);
   // 信仰搅拌机: SPT-Y shows its own line; 不装备 shows the class trait
   assert.match(shown('chess_char_4_01_b', { chess_char_4_01_a: { skill: get('chess_char_4_01_b').skill.index, module: 'uniequip_003_rmixer' } }), /攻击距离\+1/);
   assert.match(shown('chess_char_4_01_b', { chess_char_4_01_a: { skill: get('chess_char_4_01_b').skill.index, module: 'none' } }), /能够阻挡三个敌人/);
 });
 
-test('all six added operators keep every skill and permitted module in 0.1.2 stats, traits and card ranges', () => {
+test('all six added operators keep every skill and permitted module in 0.2.1 stats, full traits and card ranges', () => {
   const keys = ['mayer', 'wuhoo', 'eunectes', 'ifrit', 'astgenne', 'dorothy'];
   for (const key of keys) {
     const id = `chess_rhine_${key}_a`;
@@ -313,7 +313,9 @@ test('all six added operators keep every skill and permitted module in 0.1.2 sta
       assert.equal(pv.lo.module.id, module, `${key}: module ${module}`);
       const mod = golden.modules.find(m => m.uniEquipId === module);
       assert.equal(pv.record.stats.atk, golden.statsBase.atk + (mod?.attr?.atk || 0), `${key}: one module bonus`);
-      assert.equal(pv.trait, mod?.traitOverride?.moduleDescRaw || mod?.traitOverride?.descRaw || golden.traitBase.descRaw, `${key}: module trait survives cloned skill record`);
+      const trait = mod?.traitOverride;
+      const expectedTrait = [trait?.descRaw || golden.traitBase.descRaw, trait?.moduleDescRaw].filter(Boolean).join('\n');
+      assert.equal(pv.trait, expectedTrait, `${key}: the complete module trait survives cloned skill record`);
       const card = ChessDetail({ chess: golden, piece: null, editable: false, bonds: [], loadout: entries }).find(b => b.key === 'stats');
       const shown = statsBlock(section(id, 'elite', entries));
       assert.equal(textOf(shown), textOf(card), `${key}: stats agree with detail card`);

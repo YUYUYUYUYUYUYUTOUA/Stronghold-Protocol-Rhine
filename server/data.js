@@ -2,7 +2,7 @@
 //
 // Every `*.json` file in the data directory becomes a top-level key named after its basename
 // (config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages,
-// bosses, tokens, assets, …). The result is deep-frozen so no module can mutate shared data by accident.
+// bosses, tokens, assets, backups, …). The result is deep-frozen so no module can mutate shared data by accident.
 // Missing or unparsable files are tolerated with a warning (data is generated in parallel with the
 // server); consumers must cope with an absent key.
 //
@@ -29,7 +29,7 @@ export const VANILLA_DATA_DIR = path.join(DATA_DIR, 'vanilla');
 /** Files the game expects (a warning lists the missing ones). */
 export const DATA_FILES = Object.freeze([
   'config', 'chess', 'bonds', 'garrisons', 'items', 'bands', 'effects', 'choices',
-  'enemies', 'factions', 'waves', 'stages', 'bosses', 'tokens', 'assets',
+  'enemies', 'factions', 'waves', 'stages', 'bosses', 'tokens', 'assets', 'backups',
 ]);
 
 /**

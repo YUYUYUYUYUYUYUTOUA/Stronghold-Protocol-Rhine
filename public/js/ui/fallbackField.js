@@ -16,6 +16,8 @@
 // Final Assault prep) keeps the own board layout here — every coordinate the UI exchanges is a board coordinate anyway —
 // but draws the tiles of the player's half of the boss field (gameLogic fieldTile, the legality the highlights use: act2
 // m01's fence tiles are floor there, not the normal field's walls; user playtest #5 item 7).
+// A tap on the ground itself emits tileClick { row, col } like render/app.js does, so a special terrain tile
+// explains itself on this board too (GitHub issue #184).
 
 import { render } from '../../vendor/preact.module.js';
 import { html, TierChip } from './components.js';
@@ -23,7 +25,8 @@ import { GEO } from '../../../shared/constants.js';
 import { circleRangeSections } from '../../../shared/rhineRange.js';
 import { rhineDevice } from '../../../shared/rhineResearch.js';
 import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './assetUrls.js';
-import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile } from './gameLogic.js';
+import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile, ownStandIn, ownDiyRecord } from './gameLogic.js';
+import { t } from '../../../shared/i18n.js';
 
 const DRAG_PX = 6;
 const DMG_TTL = 900;
@@ -125,12 +128,22 @@ export function createFallbackView(host, opts = {}) {
     const mm = m();
     if (p.kind === 'item') return itemIconUrl(mm, lookup('items', p.id));
     if (p.kind === 'token') return tokenAvatarUrl(mm, p.id);
-    return chessAvatarUrl(mm, lookup('chess', p.id));
+    const chess = lookup('chess', p.id);
+    return chessAvatarUrl(mm, ownSi(chess) || ownDiy(chess) || chess);
+  }
+  /** 0.2.0 补位: the player's own piece of a chess it does not own is its stand-in, bench and board alike (render/app.js pieceInfo) */
+  function ownSi(chess) {
+    return chess ? ownStandIn(chess, st.priv, dataStore?.get?.('backups') ?? null) : null;
+  }
+  /** 0.2.0 自选编队: the player's own piece of a DIY slot it filled is its operator (gameLogic ownDiyRecord) */
+  function ownDiy(chess) {
+    return chess ? ownDiyRecord(chess, st.priv, { chess: dataStore?.get?.('chess') ?? null, backups: dataStore?.get?.('backups') ?? null }) : null;
   }
   function pieceName(p) {
-    if (p.kind === 'item') return lookup('items', p.id)?.name || '道具';
-    if (p.kind === 'token') return lookup('tokens', p.id)?.name || '召唤物';
-    return lookup('chess', p.id)?.name || '干员';
+    if (p.kind === 'item') return lookup('items', p.id)?.name || t('道具');
+    if (p.kind === 'token') return lookup('tokens', p.id)?.name || t('召唤物');
+    const chess = lookup('chess', p.id);
+    return (ownSi(chess) || ownDiy(chess) || chess)?.name || t('干员');
   }
 
   function Piece({ p, x, y, L, area }) {
@@ -250,7 +263,7 @@ export function createFallbackView(host, opts = {}) {
         onPointerDown=${(e) => { if (e.button === 0) emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
         onContextMenu=${(e) => { e.preventDefault(); emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 2, clientX: e.clientX, clientY: e.clientY }); }}>
       <div class="ff-unit__art">${src ? html`<img src=${src} alt="" draggable=${false} />` : html`<span>${[...(info.name || '?')][0]}</span>`}</div>
-      <div class="ff-unit__bars"><i class="hp" style=${`width:${hpPct}%`}></i>${!enemy && spMax > 0 ? html`<i class="sp" role=${device?.key === 'energy' ? 'progressbar' : undefined} aria-label=${device?.key === 'energy' ? '科研装置充能' : undefined} aria-valuenow=${device?.key === 'energy' ? sp : undefined} aria-valuemin=${device?.key === 'energy' ? 0 : undefined} aria-valuemax=${device?.key === 'energy' ? spMax : undefined} style=${`width:${spPct}%`}></i>` : null}</div>
+      <div class="ff-unit__bars"><i class="hp" style=${`width:${hpPct}%`}></i>${!enemy && spMax > 0 ? html`<i class="sp" role=${device?.key === 'energy' ? 'progressbar' : undefined} aria-label=${device?.key === 'energy' ? t('科研装置充能') : undefined} aria-valuenow=${device?.key === 'energy' ? sp : undefined} aria-valuemin=${device?.key === 'energy' ? 0 : undefined} aria-valuemax=${device?.key === 'energy' ? spMax : undefined} style=${`width:${spPct}%`}></i>` : null}</div>
     </div>`;
   }
 
@@ -294,7 +307,7 @@ export function createFallbackView(host, opts = {}) {
     });
     return html`<div class="ff-board ff-board--pen" style=${`left:${left}px;top:${top}px;width:${bw}px;height:${tile * rows}px;--tile:${tile}px`}>
       ${cells}${figs}
-      ${models.length ? null : html`<p class="ff-pen__empty">暂无敌方情报</p>`}
+      ${models.length ? null : html`<p class="ff-pen__empty">${t('暂无敌方情报')}</p>`}
     </div>`;
   }
 
@@ -313,6 +326,7 @@ export function createFallbackView(host, opts = {}) {
         const hov = st.hoverTarget?.area === 'board' && st.hoverTarget.row === row && st.hoverTarget.col === col ? dropState(st.hoverTarget) : null;
         tiles.push(html`<div key=${k} class=${cx('ff-tile', `ff-tile--${tileClass(row, col)}`, hl && `is-${hl}`, hov && `is-hover-${hov}`)}
           data-drop="board" data-row=${row} data-col=${col}
+          onPointerDown=${(e) => { if (e.button === 0) emit('tileClick', { row, col, button: 0, clientX: e.clientX, clientY: e.clientY }); }}
           style=${`transform:translate(${p.x}px,${p.y}px);width:${L.tile}px;height:${L.tile}px`}></div>`);
       }
     }
@@ -362,7 +376,7 @@ export function createFallbackView(host, opts = {}) {
     })() : null;
     if (st.camera === 'pen') { render(html`${penView()}<div class="ff-badge">SIMPLIFIED VIEW</div>`, root); return; }
     render(html`<div class=${cx('ff-board', `ff-board--${st.mode}`, `ff-cam--${st.camera}`)} style=${`left:${L.left}px;top:${L.top}px;width:${L.bw}px;height:${L.bh}px;--tile:${L.tile}px`}>
-      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>整备区</span><i></i></div>` : null}
+      ${st.mode === 'prep' ? html`<div class="ff-hand-label" style=${`top:${(L.rows + 0.18) * L.tile}px`}><span>${t('整备区')}</span><i></i></div>` : null}
       ${tiles}${hand}${[...st.hlGroups.values()].filter(g=>g.circle).map(g=>{
         const {row,col,radius}=g.circle, color=`#${(g.color??0xff9c33).toString(16).padStart(6,'0')}`;
         const point=([x,y])=>`${(x-r.c0+.5)*L.tile},${(r.r1-y+.5)*L.tile}`;
