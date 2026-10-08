@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { applyKazdelData, validateKazdelData, KAZDEL_ADDITIONS, KAZDEL_EXISTING, WISDEL_TOKEN, kazdelGarrison } from '../tools/kazdel-data.mjs';
 import { applyRhineData } from '../tools/rhine-data.mjs';
 import { composeStats, loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
@@ -163,7 +164,7 @@ test('Kazdel data: the preserved official snapshot rebuilds the complete expansi
   for (const n of names) assert.deepEqual(rebuilt[n], files[n], `${n} from the untouched official snapshot`);
 });
 
-test('Kazdel data: all native portraits, skill/module icons and faction art resolve to installed files', async () => {
+async function kazdelArtPaths() {
   const assets = await read('data/assets'), paths = new Set([assets.bonds[KAZDEL_BOND]]);
   for (const id of Object.values(KAZDEL_CHARACTERS)) {
     const c = assets.chars[id]; assert.ok(c, id);
@@ -180,6 +181,19 @@ test('Kazdel data: all native portraits, skill/module icons and faction art reso
   }
   for (const path of paths) {
     assert.equal(typeof path, 'string'); assert.ok(path.startsWith('/'), path);
+  }
+  return paths;
+}
+
+test('Kazdel data: native portraits, skill/module icons and faction art all have asset mappings', async () => {
+  const paths = await kazdelArtPaths();
+  assert.ok(paths.size > 100);
+});
+
+test('Kazdel data: all mapped native art resolves to installed files', {
+  skip: !existsSync(new URL('../public/assets/', import.meta.url)) && 'download game art to check installed files',
+}, async () => {
+  for (const path of await kazdelArtPaths()) {
     const bytes = await readFile(new URL(`../public${path}`, import.meta.url)); assert.ok(bytes.length > 0, path);
   }
 });

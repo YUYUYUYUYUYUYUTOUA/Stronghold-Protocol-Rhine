@@ -9,8 +9,32 @@ import { verifyRhineDeviceRelease, verifyKazdelRelease, verifyOpeningBanRelease 
 const packageRoot = new URL('../../', import.meta.url);
 const data = () => Object.fromEntries(['tokens', 'bonds', 'assets', 'chess', 'garrisons', 'config'].map(name => [name,
   JSON.parse(fs.readFileSync(new URL(`data/${name}.json`, packageRoot), 'utf8'))]));
-const get = async url => fs.readFileSync(new URL(url.startsWith('/shared/') ? url.slice(1)
-  : url.startsWith('/sim/') ? `server${url}` : `public${url}`, packageRoot));
+const artifactPath = url => url.startsWith('/shared/') ? url.slice(1)
+  : url.startsWith('/sim/') ? `server${url}` : `public${url}`;
+const get = async url => fs.readFileSync(new URL(artifactPath(url), packageRoot));
+
+/** HTTP hash tests need predictable package bytes, not the optional downloaded game-art cache. */
+function kazdelPackageFixture(t) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-kazdel-verifier-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const fixtureRoot = pathToFileURL(`${directory}${path.sep}`);
+  fs.mkdirSync(new URL('data/', fixtureRoot));
+  fs.copyFileSync(new URL('data/bonds.json', packageRoot), new URL('data/bonds.json', fixtureRoot));
+  return {
+    packageRoot: fixtureRoot,
+    async get(url) {
+      const file = new URL(artifactPath(url), fixtureRoot);
+      if (!fs.existsSync(file)) {
+        // Retain actual tracked code and the SVG so semantic assertions are exercised. Binary artwork is
+        // opaque to this verifier: distinct URL-derived bytes test both local and HTTP SHA comparisons.
+        const bytes = url.startsWith('/assets/') ? Buffer.from(`Kazdel asset fixture: ${url}\n`) : await get(url);
+        fs.mkdirSync(new URL('./', file), { recursive: true });
+        fs.writeFileSync(file, bytes);
+      }
+      return fs.readFileSync(file);
+    },
+  };
+}
 
 test('release smoke verifies the shipped laser gate, fixed stage and all five HTTP artifact mounts', async () => {
   const artifacts = {}, requested = [];
@@ -59,11 +83,12 @@ test('release smoke remains compatible with a package predating the laser device
     get: async () => { throw new Error('old release should not request laser artifacts'); } }), { laser: false });
 });
 
-test('release smoke verifies all ten Kazdel members, native loadouts, Tinman S2 and served artwork/code', async () => {
+test('release smoke verifies all ten Kazdel members, native loadouts, Tinman S2 and served artwork/code', async t => {
+  const fixture = kazdelPackageFixture(t);
   const artifacts = {}, requested = [];
-  const result = await verifyKazdelRelease({ fetched: data(), artifacts, get: async url => {
+  const result = await verifyKazdelRelease({ fetched: data(), artifacts, packageRoot: fixture.packageRoot, get: async url => {
     requested.push(url);
-    return get(url);
+    return fixture.get(url);
   } });
   assert.equal(result.enabled, true);
   assert.equal(result.tinmanSoulHealing, true);
@@ -113,14 +138,17 @@ test('release smoke rejects missing native skills, modules and their art instead
   }
 });
 
-test('release smoke catches stale Kazdel combat, cannon provenance, interface and icon HTTP bytes', async () => {
+test('release smoke catches stale Kazdel combat, cannon provenance, interface and icon HTTP bytes', async t => {
+  const fixture = kazdelPackageFixture(t);
   for (const stale of ['/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
     '/sim/kazdelOrigin.js', '/sim/content/kits/ops/chess_char_1_16-tinman.js', '/shared/kazdel.js',
     '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/css/screens/kazdel.css', '/art/kazdel/bond.svg',
     '/assets/skill/skchr_odda_2.png', '/assets/module/ham-x.png',
     '/assets/spine/op/char_4131_odda/front/char_4131_odda.skel']) {
-    await assert.rejects(verifyKazdelRelease({ fetched: data(), get: async url => url === stale
-      ? Buffer.from('obsolete package') : get(url) }), /served Kazdel artifact mismatch/);
+    await assert.rejects(verifyKazdelRelease({ fetched: data(), packageRoot: fixture.packageRoot, get: async url => {
+      const bytes = await fixture.get(url);
+      return url === stale ? Buffer.from('obsolete package') : bytes;
+    } }), /served Kazdel artifact mismatch/);
   }
 });
 
