@@ -1,9 +1,9 @@
 {
   "title": "莱茵生命扩展待修记录",
   "recordedDate": "2026-10-04",
-  "status": "已适配上游正式0.2.1，保留莱茵强化及六人规则；验证及发布结果见RHINE-CHANGES，线上另行切换",
-  "updatedDate": "2026-10-07",
-  "currentRelease": "v0.2.1-rhine.1",
+  "status": "装置重做已并入正式版0.2.1-rhine.2，保留六人规则；发行验收见Release，线上另行切换。后续常规改动直接维护正式开发分支。",
+  "updatedDate": "2026-10-08",
+  "currentRelease": "v0.2.1-rhine.2",
   "currentBranch": "codex/rhine-upstream-021",
   "items": [
     {
@@ -128,7 +128,7 @@
       "id": "rhine-device-rework-20261008",
       "title": "生态治疗合并、能量全范围与九莱茵单级激光钻机",
       "requestedDate": "2026-10-08",
-      "status": "实验分支已实现并通过验证，尚未发布到正式包或线上服务",
+      "status": "已并入正式版v0.2.1-rhine.2并通过源码验证，正式包验收另行记录",
       "requestedBehavior": "生态二三级范围内干员接受任意来源治疗均加盾；一级能量保留3点充能，发射命中装置范围全部敌人，能量一/二/三级采用180/240/300分档方案；钻机只有一级，仅九莱茵，全场锁定面板最大生命值最高的敌人至死亡，150%A/s每秒加算5%初始伤害，20秒封顶300%A/s后每秒追加最大HP0.5%真实，BOSS按本战场分摊血量。",
       "verification": { "tests": 5683, "passed": 5658, "failed": 0, "conditionalSkipped": 25, "browserPassed": 6 }
     }

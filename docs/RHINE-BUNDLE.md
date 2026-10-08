@@ -1,8 +1,10 @@
 # 莱茵生命扩展整合包使用说明
 
-当前版本 `v0.2.1-rhine.1`，修改日期 2026-10-07，源码分支 `codex/rhine-upstream-021`。
+当前版本 `v0.2.1-rhine.2`，修改日期 2026-10-08，正式开发分支 `codex/rhine-upstream-021`。
 
-下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.2.1-rhine.1-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
+下载 [本扩展的 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases) 中的 **`Stronghold-Protocol-Rhine-v0.2.1-rhine.2-Windows-x64.zip`**。这是适用于 Windows 64 位电脑的完整便携包，包含莱茵扩展、运行依赖、素材和官方 Node.js 24 运行时，无需另外安装 Node.js。
+
+本版将治疗与减速合并为生态维持仪，二、三级支持范围内己方干员接受任意来源治疗生成护盾；一级能量谐振仪保留3点充能并命中整个范围；9莱茵新增单级激光钻机，锁定最大生命值最高的敌人，20秒增伤至300%A/秒后追加每秒0.5%最大生命值真实伤害。完整数值、暂停与BOSS分摊口径见 [科研装置说明](RHINE.md#科研装置)。
 
 ## 解压并开始
 
@@ -32,6 +34,6 @@
 
 ## 版本与来源
 
-本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.2.1** 的非官方莱茵生命扩展，包含上游提交 `c2a2ef7` 及其之前的修复。Release 标记 `v0.2.1-rhine.1` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.2.1`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。
+本包是基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) **0.2.1** 的非官方莱茵生命扩展，包含上游提交 `c2a2ef7` 及其之前的修复。Release 标记 `v0.2.1-rhine.2` 用于区分本扩展整合包；游戏显示的基础版本仍为 `0.2.1`。莱茵盟约、科研装置和装备等内容见 [扩展说明](RHINE.md)。上游原版整合包不包含这些扩展内容。后续常规更新直接在正式开发分支维护，玩家继续使用联网更新工具获取正式版。
 
 游戏源代码随包提供，代码许可见 [LICENSE](../LICENSE)。游戏素材、数据、官方标识及非商业使用说明继续按 [NOTICE.md](../NOTICE.md) 区分，不因打包而获得额外授权。Node.js 原文许可随包位于 `runtime/node/LICENSE`；其内置组件及其他依赖的许可见 [第三方声明](../THIRD-PARTY-NOTICES.md)。本包不代表上游作者、《明日方舟》官方或 Node.js 项目的认可。

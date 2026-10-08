@@ -1,8 +1,8 @@
 # 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
 
-当前扩展版本：**v0.2.1-rhine.1**。
+当前扩展版本：**v0.2.1-rhine.2**。
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.2.1**，合入官方发布标签 v0.2.1（提交 [`c2a2ef7`](https://github.com/sganggs/Stronghold-Protocol/commit/c2a2ef7)），本次扩展修改日期为 **2026-10-07**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。扩展分支为 `codex/rhine-upstream-021`。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.2.1**，合入官方发布标签 v0.2.1（提交 [`c2a2ef7`](https://github.com/sganggs/Stronghold-Protocol/commit/c2a2ef7)），本次扩展修改日期为 **2026-10-08**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护，不再要求先更新装置实验分支。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
@@ -14,7 +14,8 @@
 - 六人局最终攻势与隐秘核心共享 BOSS 血量为同规则四人局的 200%，其他属性不变；第 10、12、14 回合每位存活玩家各获得一个信标，第 14 回合奖励信标使用后立即转赠，10、12 回合仍在下个休整期送达。
 - 等待室的“莱茵生命扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.2.1 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
 - 五至六人悬赏决策保留原六张牌并追加三张现有目标，合计九张；追加牌为 I / II / II 阶，赏金分别为 1 / 2 / 2。一至四人的悬赏张数保持原规则。
-- 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位、三种可选择的科研装置；层数提供数值，参战研究点用于阶段突破。
+- 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位：3人获得生态与能量装置、6人可部署两种、9人解锁单级激光钻机并可部署三种；层数提供数值，生态与能量的参战研究点用于阶段突破。
+- 生态维持仪合并治疗与持续减速，二、三级让范围内己方干员接受任意来源治疗时获得护盾；一级能量谐振仪保留3点充能，发射命中装置整个范围。9莱茵的激光钻机锁定全场最大生命值最高的敌人，持续输出从150%A/秒增至300%A/秒，满20秒后每秒追加0.5%最大生命值真实伤害，领袖按本战场分摊生命计算。
 - 梅尔使身前装置有效工作产层（普通 1 / 精锐 2），溯光星源资金特质增加莱茵层数；装置每层 4 点基础攻击，伊芙利特继承最高单台有效装置的 100% / 精锐 150%。
 - 梅尔、乌啾、森蚺、伊芙利特、星源、多萝西及其全部可选技能、适用模组；多萝西调整为 IV 阶；调整白面鸮、塞雷娅等干员的盟约与特质。
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
@@ -61,7 +62,7 @@ English summary: [below](#english).
 
 - **独立模拟**（单人）与**同盟模拟**（1–6 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
-- 上游基础版本为 0.1.3，其修复记录见 [CHANGELOG.md](CHANGELOG.md)；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
+- 上游基础版本为 0.2.1，其修复记录见 [CHANGELOG.md](CHANGELOG.md)；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
 
 ## 原版功能一览
 
@@ -88,7 +89,7 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.2.1-rhine.1-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.2.1-rhine.2-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 

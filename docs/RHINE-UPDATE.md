@@ -11,6 +11,8 @@
 
 同一安装一次只开一个更新窗口。已是最新版时提示无需更新。更新工具自身也随完整包更新。
 
+当前正式版为 **v0.2.1-rhine.2**，包括生态与能量装置重做及9莱茵单级激光钻机。兼容清单的 **v0.2.1-rhine.1** 和更早莱茵包可按上述步骤直接更新，配置保护规则不变。后续常规改动在正式开发分支维护，玩家无需切换实验分支或安装测试包。
+
 ### 较早版本如何接入
 
 较早包没有联网入口，或“更新旧版.bat”仍需手动选择新包。只需从 [最新 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载小体积 **Rhine-Update-Tool-Windows.zip**，完整解压后双击 **联网更新.bat**，首次输入原安装目录。目录内应直接有 `bundle-manifest.json` 和 `runtime/node/node.exe`。
