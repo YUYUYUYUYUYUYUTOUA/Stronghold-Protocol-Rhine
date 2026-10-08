@@ -55,6 +55,7 @@ import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan } from './assets/plan.mjs';
 import { rhineArtInput, addRhineArt } from './assets/rhine-plan.mjs';
+import { kazdelArtInput, addKazdelArt } from './assets/kazdel-plan.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
   LOCAL_TOKEN_SPINES_FILE, LOCAL_ENEMY_SPINE_DIR, LOCAL_TOKEN_SPINE_DIR,
@@ -329,7 +330,7 @@ async function main() {
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const plan = buildPlan({
-    ...rhineArtInput(assets07, ops03), enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
+    ...kazdelArtInput(rhineArtInput(assets07, ops03)), enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
     extraEnemyIds: Object.keys(dataEnemies || {}),
@@ -383,7 +384,7 @@ async function main() {
 
   // Manifest
   const resolved = resolveTemplate(plan.template, { root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url });
-  const body = addRhineArt(resolved.value);
+  const body = addKazdelArt(addRhineArt(resolved.value));
   tidyManifest(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;

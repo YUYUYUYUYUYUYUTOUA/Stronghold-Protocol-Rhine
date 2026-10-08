@@ -1,4 +1,16 @@
 {
+  "卡兹戴尔战争巨炮": "Kazdel War Cannon",
+  "战争巨炮": "War Cannon",
+  "战争巨炮充能": "War Cannon Charge",
+  "仅伤敌军": "Enemies Only",
+  "敌我均伤 · 亡魂免疫": "Friendly Fire · Souls Immune",
+  "九宫格轰击预警 · {seconds}秒": "3×3 Bombardment Warning · {seconds}s",
+  "亡魂": "Soul",
+  "众魂归来": "Souls Return",
+  "继承本体的普通攻击与攻击范围，默认不继承主动技能与触发效果；不占人口，不再产生死亡层数。": "Inherits the owner's normal attacks and attack range, but normally no active skills or triggered effects. Uses no deployment capacity and grants no further death stacks.",
+  "亡魂仅接受亡魂之间的治疗及锡人二技能治疗；医疗亡魂不治疗本体。战争巨炮不会伤害亡魂。持续至被击败或本体重新部署，无时间限制。": "Souls can only be healed by other souls or Tin Man's second skill; Medic souls cannot heal living operators. Immune to the War Cannon. Remains until defeated or its owner redeploys, with no time limit.",
+  "莱茵／卡兹戴尔扩展": "Rhine / Kazdel Expansion",
+  "莱茵科研装置与装备 · 卡兹戴尔众魂与战争巨炮": "Rhine Research Devices and Equipment · Kazdel Souls and War Cannon",
   "_meta": {
     "type": "lang",
     "lang": "en",

@@ -74,14 +74,14 @@ test('numbers: every stats/bb/enemyScale object holds only finite numbers (no nu
   assert.deepEqual(bad.slice(0, 10), [], `${bad.length} bad numeric fields`);
 });
 
-test('chess: base roster plus six Rhine expansion operators and two tier migrations', () => {
-  assert.equal(Object.keys(chess).length, 278);
-  assert.equal(visible.length, 118);
+test('chess: base roster plus Rhine and Kazdel expansions, including restored Vigna', () => {
+  assert.equal(Object.keys(chess).length, 290);
+  assert.equal(visible.length, 125);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
-  assert.deepEqual(perTier, { 1: 17, 2: 18, 3: 21, 4: 23, 5: 20, 6: 19 });
+  assert.deepEqual(perTier, { 1: 18, 2: 20, 3: 22, 4: 24, 5: 21, 6: 20 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
-  assert.equal(normalChess.filter((c) => c.isHidden).length, 17);
+  assert.equal(normalChess.filter((c) => c.isHidden).length, 16);
 });
 
 test('chess: ids, golden pairs and references resolve', () => {
@@ -128,9 +128,9 @@ test('chess: every non-DIY chess has stats, range, classification and a resolvab
   assert.equal(chess.chess_char_1_01_a.targetPriority, 'fly');
 });
 
-test('bonds: 24 bonds including Rhine, with valid members, thresholds and effects', () => {
-  assert.equal(Object.keys(bonds).length, 24);
-  assert.equal(Object.values(bonds).filter((b) => b.isCore).length, 9);
+test('bonds: 25 bonds including Rhine and Kazdel, with valid members, thresholds and effects', () => {
+  assert.equal(Object.keys(bonds).length, 25);
+  assert.equal(Object.values(bonds).filter((b) => b.isCore).length, 10);
   const modes = new Set(['BOARD', 'BOARD_AND_DECK', 'BOARD_ALL_CHESS']);
   for (const b of Object.values(bonds)) {
     assert.ok(modes.has(b.countMode), `${b.bondId}: countMode ${b.countMode}`);
@@ -153,9 +153,9 @@ test('bonds: 24 bonds including Rhine, with valid members, thresholds and effect
   for (const c of normalChess) for (const b of c.bonds) assert.ok(bonds[b].members.includes(c.chessId), `${c.chessId} not in ${b}.members`);
 });
 
-test('garrisons: all referenced exist; 49 distinct effect keys including six Rhine traits', () => {
+test('garrisons: all referenced exist; 58 distinct effect keys including nine Kazdel traits', () => {
   const keys = new Set(Object.values(garrisons).map((g) => g.effectKey));
-  assert.equal(keys.size, 49);
+  assert.equal(keys.size, 58);
   for (const g of Object.values(garrisons)) {
     assert.ok(typeof g.eventType === 'string' && typeof g.desc === 'string', g.garrisonId);
     for (const o of g.owners) assert.ok(chess[o], `${g.garrisonId}: owner ${o}`);
@@ -510,8 +510,8 @@ test('chess: skills[] = every skill unlocked at the status, at the chess skill l
     assert.ok(wider(s.trigger.customRangeGrid, c.rangeGrid), `${c.chessId} ${s.skillId}: its running range strictly contains ${c.rangeId}`);
     if (s.rangeGrid) assert.deepEqual(s.trigger.customRangeGrid, s.rangeGrid, `${c.chessId} ${s.skillId}: the skill's own grid`);
   }
-  assert.equal(active.length, 78, '39 skills, normal + elite');
-  assert.equal(new Set(active.map(([c, s]) => `${c.baseId} ${s.skillId}`)).size, 39);
+  assert.equal(active.length, 82, '41 skills including Hoederer/Logos S3, normal + elite');
+  assert.equal(new Set(active.map(([c, s]) => `${c.baseId} ${s.skillId}`)).size, 41);
   // from the SEARCH row (解放者 / 阵法术师 / 安洁莉娜) and 深巡 S2's deviation: the owner's decisions of 2026-10-05
   const fromSearch = active.filter(([, s]) => s.trigger.rawRule === 'SEARCH').map(([c, s]) => `${c.baseId} ${s.skillId}`);
   assert.deepEqual([...new Set(fromSearch)].sort(), ['chess_char_3_08_a skchr_mint_1', 'chess_char_4_05_a skchr_beewax_1', 'chess_char_4_24_a skchr_billro_3', 'chess_char_5_19_a skchr_mlynar_2', 'chess_char_5_20_a skchr_aglina_3']);

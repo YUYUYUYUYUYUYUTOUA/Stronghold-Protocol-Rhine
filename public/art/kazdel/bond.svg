@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 100 100">
+  <title>Kazdel</title>
+  <!-- Original monochrome faction glyph: a broken citadel shelters a soul flame. -->
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="miter">
+    <path d="M14 79V40H25V26H35V40H43M57 40H65V26H75V40H86V79M14 79H35M65 79H86"/>
+    <path d="M15 22L29 12L35 26M85 22L71 12L65 26"/>
+  </g>
+  <path fill="#fff" d="M50 21C59 37 49 38 59 47C69 58 65 71 54 77L50 88L46 77C32 71 30 57 38 49C37 61 45 59 45 52C44 41 57 37 50 21ZM49 60L44 70L50 76L56 70L52 57Z" fill-rule="evenodd"/>
+</svg>

@@ -1269,6 +1269,7 @@ export async function createFieldView(host, options = {}) {
     tiles.setBattleRect(rect);
     board3d?.setBattleRect(rect);
     for (const u of Array.isArray(meta.units) ? meta.units : []) addInfo(u);
+    fx.syncKazdel(meta.kazdel, Number(meta.gt ?? meta.t) || 0);
     return true;
   }
 
@@ -1430,7 +1431,7 @@ export async function createFieldView(host, options = {}) {
         const late = form !== undefined ? LATE.get(e) || 0 : 0;
         if (form !== undefined) {
           const inf = infos.get(e[4].id);
-          if (inf && (form === null || FORMS[inf.spine || inf.defId]?.[form])) inf.form = form;
+          if (inf && (form === null || (form === 'kazdelSoul' && inf.kazdelSoul) || FORMS[inf.spine || inf.defId]?.[form])) inf.form = form;
           const x = late > 0 ? { ...e[4], late, ...(Number(e[4].dur) > 0 ? { dur: Math.max(0, Number(e[4].dur) - late) } : {}) } : e[4];
           views.get(e[4].id)?.setForm?.(form, x);
         }
@@ -1476,6 +1477,7 @@ export async function createFieldView(host, options = {}) {
   function syncBattle(renderT) {
     if (renderT0Battle == null) renderT0Battle = renderT;
     interp.sample(renderT, sample);
+    fx.syncKazdel(interp.rawAt(renderT)?.kazdel, renderT);
     for (const [id, s] of sample) {
       let v = views.get(id);
       if (!v && gone.has(id)) {

@@ -47,6 +47,8 @@ export function unitInfo(u) {
     // the unit's current model form (an enemy's content/enemies/helpers.js setForm, a 傀儡师's 替身 — render/units.js FORMS): a
     // view built mid-battle (fieldMeta — a watched teammate's field, 联防 observers, a reconnect) starts on that clip set
     form: typeof u.form === 'string' ? u.form : undefined,
+    kazdelSoul: u.kazdelSoul || undefined,
+    soulOf: u.kazdelSoul ? u.ownerUnit?.id : undefined,
     uid: u.uid ?? undefined,
     // DESIGN §16: the equipped skill's index (the renderer / audio pick that skill's Spine clip and sound)
     skillIndex: u.side === 'ally' && Number.isInteger(d.skill?.index) ? d.skill.index : undefined,

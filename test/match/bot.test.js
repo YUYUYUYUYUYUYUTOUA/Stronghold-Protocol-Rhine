@@ -140,8 +140,10 @@ test('rehearsal runs in bounded slices between scheduler callbacks and plays exa
 
 test('the prep routine itself (shop, lineup, layout planning) runs in bounded slices and plays exactly like the one-shot run', () => {
   const seats = [0, 1].map((i) => ({ seat: i, playerId: `ai_${i}`, name: `AI${i}`, isBot: true, connected: true }));
+  // Exercise a full candidate pool so BAN rotation cannot remove the planning work this test measures.
+  const data = { ...DATA, config: { ...DATA.config, bans: { ...DATA.config.bans, NORMAL: { core: 0, addon: 0 } } } };
   const run = (botSliceMs) => {
-    const h = makeMatch({ mode: 'coop', difficulty: 'NORMAL', seats, seed: 13, fake: true, botRehearsal: 3, botSliceMs }).start();
+    const h = makeMatch({ mode: 'coop', difficulty: 'NORMAL', data, seats, seed: 13, fake: true, botRehearsal: 3, botSliceMs }).start();
     const m = h.m;
     /** `${bot}:${round}` → the scheduler callbacks in which the bot acted */
     const cbs = new Map();

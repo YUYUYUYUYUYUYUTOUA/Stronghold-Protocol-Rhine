@@ -1,0 +1,8 @@
+.kazdel-cannon-hud{position:absolute;right:.18rem;top:2.25rem;display:grid;gap:.08rem;width:2.6rem;max-width:28vw;pointer-events:none;z-index:17;color:#f5e4dd;font-size:max(.115rem,10px)}
+.kazdel-cannon{padding:.09rem .10rem;background:rgba(30,15,20,.94);border:1px solid #78444c;border-left:3px solid #d76769;box-shadow:0 5px 16px #0006}
+.kazdel-cannon header{display:flex;align-items:center;gap:.06rem}.kazdel-cannon header img{width:.22rem;height:.22rem;flex:none}.kazdel-cannon header b{font-size:max(.14rem,11px);white-space:nowrap}.kazdel-cannon header small{max-width:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d1aaa5}.kazdel-cannon header span{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kazdel-cannon__bar{height:max(.045rem,3px);margin:.07rem 0;background:#4a2830;overflow:hidden}.kazdel-cannon__bar i{display:block;height:100%;background:#e38176;box-shadow:0 0 8px #d95c66}
+.kazdel-cannon p{margin:0;line-height:1.4;color:#d3aaa5}.kazdel-cannon.is-warning{border-color:#ff846c;background:rgba(61,22,25,.96)}.kazdel-cannon.is-warning p{color:#ffc6a2}
+.ff-unit.is-kazdel-soul .ff-unit__art{opacity:.6;filter:brightness(.35) sepia(1) saturate(3) hue-rotate(315deg);box-shadow:0 0 12px #d03b5270;border-color:#da5d69}
+.dtag-kazdel-soul{color:#ffafad;border-color:#975b65;background:#311923}
+@media(max-width:900px){.kazdel-cannon-hud{top:2.3rem;width:2.4rem;max-width:27vw}.kazdel-cannon{padding:.065rem}.kazdel-cannon header small{display:none}}

@@ -15,13 +15,14 @@ const SIEGE = 'char_112_siege'; // 推进之王 (维多利亚)
 const PICK = { charId: SIEGE, skillIndex: 2, uniEquipId: 'uniequip_002_siege' };
 
 /** A co-op match: p_0 slots 推进之王 at T5A, p_1 slots nothing; first prep. */
-function prep(seed = 911) {
+function prep(seed = 910) {
   const seats = [
     { seat: 0, playerId: 'p_0', name: 'P0', isBot: false, connected: true, diy: { [T5A]: PICK } },
     { seat: 1, playerId: 'p_1', name: 'P1', isBot: false, connected: true },
   ];
   const h = makeMatch({ mode: 'coop', difficulty: 'NORMAL', seats, seed }).start();
   h.toPrep(1);
+  assert.equal(h.ps('p_0').diyStock.left(T5A), 8, 'fixture requires Victoria/Siege outside the opening BAN set');
   return { h, m: h.m, p0: h.ps('p_0'), p1: h.ps('p_1') };
 }
 /** Take every shared-pool copy of the chess `pred` admits (the draw then sees only what is left); m.restore() gives them back. */

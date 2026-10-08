@@ -41,7 +41,7 @@ function battle(units, o = {}) {
 
 test('tier4 loadouts: every selectable skill of every visible chess is hand-authored (normal + elite)', () => {
   const rep = kitCoverage({ tier: 4 });
-  assert.equal(rep.summary.chess, 23);
+  assert.equal(rep.summary.chess, 24);
   assert.equal(rep.summary.covered, rep.summary.skills, JSON.stringify(rep.chess.flatMap((r) => r.skills.filter((s) => !s.covered).map((s) => `${r.name} S${s.index + 1}`))));
   for (const base of T4) {
     const { skills } = loadoutOptions(C[base], C[gold(base)]);

@@ -73,6 +73,9 @@ import { diamondTexture, unitSpriteTexture, shadowTexture, fxAtlas, tierChip, st
 import { COLORS, TIER_COLORS, ENEMY_FRAME, UNIT, PROJ, statusIconKey, statusIconSuppressed } from './style.js';
 import { drawCrate, rowDepthKey, ROW_KEY, deviceBoxOf, DEVICE_BOX } from './tiles.js';
 
+/** A donor model with no temporary transformation clips: its silhouette remains until the sim removes the soul. */
+export const KAZDEL_SOUL_LOOK = Object.freeze({ tint: 0x742a3e, alpha: .58, roles: Object.freeze({}) });
+
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
 const DIRS = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
 /** Deploy direction of an ally from a UnitInfo / piece: `dir` (any case), else the legacy `facing` sign. */
@@ -636,6 +639,7 @@ export class UnitView {
   onResearchFx(kind, extra) { this.researchActor?.trigger(kind, extra); }
 
   _formSpec() {
+    if (this.info.kazdelSoul === true && this.form === 'kazdelSoul') return KAZDEL_SOUL_LOOK;
     return this.form ? FORMS[this.info.spine || this.info.defId]?.[this.form] || null : null;
   }
 
@@ -650,7 +654,7 @@ export class UnitView {
   setForm(kind, fx = null) {
     const k = typeof kind === 'string' ? kind : null;
     if (k === this.form) return;
-    if (k && !FORMS[this.info.spine || this.info.defId]?.[k]) return;
+    if (k && !(k === 'kazdelSoul' && this.info.kazdelSoul === true) && !FORMS[this.info.spine || this.info.defId]?.[k]) return;
     const prev = this._formSpec();
     this.form = k;
     this.info.form = k;
@@ -1042,6 +1046,8 @@ export class UnitView {
     if (lungeK) { const q = cam.project(this.x + lx, this.y + ly, this.z + this.hover + this.lift, LG_P); bx = q.x; by = q.y; }
     this.root.position.set(bx, by);
     this.root.alpha = alpha;
+    // Keep HP/status bars opaque while the donor's body is a translucent black/red silhouette.
+    this.body.alpha = this.info.kazdelSoul === true ? KAZDEL_SOUL_LOOK.alpha : 1;
     this.root.zIndex = unitDepthKey(cam, this.x, this.y, this.lift);
     this.researchActor?.advance(dt);
     // off-screen: nothing to animate or draw (bounds / hit-testing still follow `screen`)

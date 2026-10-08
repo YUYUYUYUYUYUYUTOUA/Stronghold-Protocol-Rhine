@@ -11,6 +11,117 @@ import { APP_VERSION } from '../shared/constants.js';
 // Example: node tools/verify-rhine-release.mjs http://127.0.0.1:3000 https://your-host.example
 const root = new URL('../', import.meta.url);
 const hash = data => createHash('sha256').update(data).digest('hex');
+const localArtifact = url => url.startsWith('/shared/') ? url.slice(1)
+  : url.startsWith('/sim/') ? `server${url}` : `public${url}`;
+
+/** The extra core BAN slot belongs only to packages carrying the Kazdel covenant. */
+export function verifyOpeningBanRelease({ fetched, packageRoot = root }) {
+  const localBonds = JSON.parse(fs.readFileSync(new URL('data/bonds.json', packageRoot), 'utf8'));
+  const kazdel = Boolean(localBonds.kazdelShip);
+  assert.equal(Boolean(fetched.bonds.kazdelShip), kazdel, 'served Kazdel covenant presence mismatch');
+  assert.deepEqual(fetched.config.bans.FUNNY, { core: kazdel ? 2 : 1, addon: 1 }, 'FUNNY rotation BAN mismatch');
+  for (const level of ['NORMAL', 'HARD', 'ABYSS']) {
+    assert.deepEqual(fetched.config.bans[level], { core: kazdel ? 5 : 4, addon: 4 }, `${level} rotation BAN mismatch`);
+  }
+  assert.deepEqual(fetched.config.bans.TRAINING, { core: 0, addon: 0 }, 'TRAINING rotation BAN mismatch');
+  return { kazdel, funnyCore: kazdel ? 2 : 1, normalCore: kazdel ? 5 : 4 };
+}
+
+const KAZDEL_ROSTER = [
+  ['chess_char_1_05', 'char_290_vigna', 1, ['skillfulShip'], ['skchr_vigna_1', 'skchr_vigna_2'], ['uniequip_002_vigna']],
+  ['chess_kazdel_odd', 'char_4131_odda', 2, ['steadShip'], ['skchr_odda_1', 'skchr_odda_2'], ['uniequip_002_odda']],
+  ['chess_kazdel_meteorite', 'char_219_meteo', 2, ['preciShip'], ['skchr_meteo_1', 'skchr_meteo_2'], ['uniequip_002_meteo']],
+  ['chess_char_2_19', 'char_4151_tinman', 2, ['investShip', 'skillfulShip'], ['skchr_tinman_1', 'skchr_tinman_2'], ['uniequip_002_tinman']],
+  ['chess_kazdel_paprika', 'char_4071_peper', 3, ['deputShip'], ['skcom_heal_rage[3]', 'skchr_peper_2'], ['uniequip_002_peper']],
+  ['chess_kazdel_hoederer', 'char_4088_hodrer', 4, ['steadShip'], ['skchr_hodrer_1', 'skchr_hodrer_2', 'skchr_hodrer_3'], ['uniequip_002_hodrer', 'uniequip_003_hodrer']],
+  ['chess_char_4_04', 'char_4087_ines', 4, ['visiShip', 'raidShip'], ['skchr_ines_1', 'skchr_ines_2', 'skchr_ines_3'], ['uniequip_002_ines']],
+  ['chess_char_4_18', 'char_311_mudrok', 4, ['soloShip'], ['skcom_def_up[3]', 'skchr_mudrok_2', 'skchr_mudrok_3'], ['uniequip_002_mudrok', 'uniequip_003_mudrok']],
+  ['chess_kazdel_logos', 'char_4133_logos', 5, ['arcaneShip'], ['skchr_logos_1', 'skchr_logos_2', 'skchr_logos_3'], ['uniequip_002_logos', 'uniequip_003_logos']],
+  ['chess_kazdel_wisdel', 'char_1035_wisdel', 6, ['preciShip'], ['skchr_wisdel_1', 'skchr_wisdel_2', 'skchr_wisdel_3'], ['uniequip_002_wisdel']],
+];
+
+/** Verify Kazdel only when present locally, while rejecting stale served data/code/assets in new packages. */
+export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packageRoot = root }) {
+  const localBonds = JSON.parse(fs.readFileSync(new URL('data/bonds.json', packageRoot), 'utf8'));
+  if (!localBonds.kazdelShip) return { enabled: false, characters: [] };
+  const bond = fetched.bonds.kazdelShip;
+  assert.ok(bond, 'served Kazdel covenant missing');
+  assert.equal(bond.name, '卡兹戴尔', 'Kazdel main covenant name mismatch');
+  assert.equal(bond.isCore, true, 'Kazdel must be a main covenant');
+  assert.deepEqual(bond.thresholds, [3, 6, 9], 'Kazdel threshold mismatch');
+  const expectedMembers = KAZDEL_ROSTER.map(([id]) => `${id}_a`).sort();
+  assert.deepEqual([...bond.visibleMembers].sort(), expectedMembers, 'Kazdel visible roster mismatch');
+  assert.deepEqual([...bond.members].sort(), expectedMembers, 'Kazdel covenant roster mismatch');
+  const actualMembers = Object.values(fetched.chess).filter(c => !c.isGolden && c.bonds.includes('kazdelShip'));
+  assert.deepEqual(actualMembers.map(c => c.chessId).sort(), expectedMembers, 'Kazdel character pool mismatch');
+  assert.equal(fetched.assets.bonds.kazdelShip, '/art/kazdel/bond.svg', 'Kazdel covenant icon mismatch');
+
+  const urls = new Set([
+    '/art/kazdel/bond.svg', '/shared/kazdel.js', '/shared/openingBans.js',
+    '/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
+    '/sim/content/kits/kazdel.js', '/sim/content/index.js', '/sim/kazdelOrigin.js',
+    '/sim/damage.js', '/sim/units.js', '/sim/buffs.js', '/sim/snapshot.js', '/sim/ai.js', '/sim/projectiles.js',
+    '/sim/battle/combat.js', '/sim/battle/events.js', '/sim/battle/hooks.js',
+    '/sim/battle/deploy.js', '/sim/battle/tiles.js', '/sim/battle/status.js',
+    '/sim/content/kits/ops/chess_char_1_16-tinman.js', '/sim/content/kits/ops/chess_char_2_19-tinman.js',
+    '/js/kazdelState.js', '/js/ui/kazdelHud.js', '/js/ui/combatHud.js', '/js/ui/detailPanel.js',
+    '/js/ui/fallbackField.js', '/js/ui/gameLogic/format.js', '/js/render/fx/kazdel.js',
+    '/js/render/fx/system.js', '/js/render/fx/kinds.js', '/js/render/fx/simfx.js',
+    '/js/render/units.js', '/js/render/app.js', '/js/render/app/info.js', '/css/screens/kazdel.css',
+  ]);
+  const characters = [];
+  for (const [id, charId, tier, addons, skillIds, moduleIds] of KAZDEL_ROSTER) {
+    const normal = fetched.chess[`${id}_a`], elite = fetched.chess[`${id}_b`];
+    assert.ok(normal && elite, `${id} Kazdel character forms missing`);
+    for (const form of [normal, elite]) {
+      assert.equal(form.charId, charId, `${id} character ID mismatch`);
+      assert.equal(form.tier, tier, `${id} tier mismatch`);
+      assert.deepEqual([...form.bonds].sort(), ['kazdelShip', ...addons].sort(), `${id} covenant mismatch`);
+      assert.deepEqual(form.skills.map(s => s.skillId), skillIds, `${id} native skill roster mismatch`);
+      assert.ok(skillIds.includes(form.skill.skillId), `${id} default skill missing from native skills`);
+      assert.ok(form.garrisonIds.length, `${id} garrison missing`);
+      for (const skill of form.skills) {
+        assert.ok(skill.name && skill.desc && skill.bb, `${id} native skill data missing`);
+        const url = fetched.assets.skills[skill.iconId];
+        assert.ok(url, `${id} native skill icon missing`);
+        urls.add(url);
+      }
+      for (const garrisonId of form.garrisonIds) assert.ok(fetched.garrisons[garrisonId], `${id} garrison missing`);
+    }
+    assert.deepEqual(elite.modules.map(m => m.uniEquipId), moduleIds, `${id} ordinary module roster mismatch`);
+    assert.ok(moduleIds.includes(elite.module?.id), `${id} default module missing`);
+    for (const module of elite.modules) {
+      assert.ok(module.name && module.attr && module.level > 0, `${id} native module data missing`);
+      const url = fetched.assets.modules[module.typeIcon];
+      assert.ok(url, `${id} native module icon missing`);
+      urls.add(url);
+    }
+    const art = fetched.assets.chars[charId];
+    assert.ok(art?.avatar && art.avatarE2 && art.portrait && art.portraitE2, `${id} character art missing`);
+    for (const key of ['avatar', 'avatarE2', 'portrait', 'portraitE2']) urls.add(art[key]);
+    for (const facing of ['front', 'back']) {
+      const model = art.spine?.[facing];
+      assert.ok(model?.skel && model.atlas && model.textures?.length, `${id} ${facing} Spine model missing`);
+      for (const url of [model.skel, model.atlas, ...model.textures]) urls.add(url);
+    }
+    characters.push({ id: normal.chessId, charId, name: normal.name, tier, bonds: normal.bonds,
+      skills: skillIds.length, defaultSkill: normal.skill.index + 1, eliteModule: elite.module.type,
+      modules: moduleIds.length });
+  }
+  let tinmanSoulHealing = false;
+  for (const url of urls) {
+    const bytes = await get(url);
+    assert.equal(hash(bytes), hash(fs.readFileSync(new URL(localArtifact(url), packageRoot))), `${url} served Kazdel artifact mismatch`);
+    artifacts[url] = hash(bytes);
+    if (url === '/art/kazdel/bond.svg') assert.match(bytes.toString('utf8'), /<svg\b/, 'Kazdel icon must be an SVG');
+    if (url === '/sim/content/kits/ops/chess_char_1_16-tinman.js') {
+      assert.match(bytes.toString('utf8'), /if\s*\(a\.kazdelSoul\)\s*b\.heal\(unit,\s*a,[^;]+tags:\s*\['kazdelSoulHeal'\]/,
+        'Tinman S2 soul healing exception missing');
+      tinmanSoulHealing = true;
+    }
+  }
+  return { enabled: true, characters, tinmanSoulHealing, httpArtifacts: urls.size };
+}
 
 /** Verify the new device only when the local release carries it; older bundles keep their existing smoke checks. */
 export async function verifyRhineDeviceRelease({ fetched, get, artifacts = {}, packageRoot = root }) {
@@ -92,8 +203,7 @@ async function main() {
       assert.equal(hash(bytes), hash(fs.readFileSync(new URL(`public${avatar}`, root))));
       operators.push({ name: normal.name, tier, skills: skillCount, defaultSkill: defaultSkill + 1, eliteModule: elite.module.type });
     }
-    assert.deepEqual(fetched.config.bans.FUNNY, { core: 1, addon: 1 });
-    for (const level of ['NORMAL', 'HARD', 'ABYSS']) assert.deepEqual(fetched.config.bans[level], { core: 4, addon: 4 });
+    const openingBans = verifyOpeningBanRelease({ fetched });
     for (const [id, count] of [['chess_rhine_dorothy_a', 4], ['chess_rhine_dorothy_b', 5]]) {
       const variant = fetched.tokens.token_10025_doroth_recttp.variants[id];
       assert.equal(variant.count, count);
@@ -136,12 +246,17 @@ async function main() {
       artifacts[path] = hash(bytes);
     }
     const researchDevices = await verifyRhineDeviceRelease({ fetched, get, artifacts });
+    const kazdel = await verifyKazdelRelease({ fetched, get, artifacts });
+    const maincovenants = Object.values(fetched.bonds).filter(b => b.isCore).map(b => ({
+      id: b.bondId, name: b.name, thresholds: b.thresholds, members: b.visibleMembers?.length ?? b.members.length,
+    }));
     const client = await TestClient.connect(base.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws', { timeout: 20000, wsOptions: { headers } });
     try {
       assert.equal((await client.hello('科研装备验证')).t, 'welcome');
       assert.equal((await client.request({ t: 'ping', c: Date.now() }, 10000)).t, 'pong');
     } finally { await client.close(); }
-    checks.push({ base, health, operators, equipment, researchDevices, artifacts, http: 'passed', webSocket: 'welcome + pong' });
+    checks.push({ base, health, operators, characters: [...operators, ...kazdel.characters], maincovenants,
+      equipment, researchDevices, openingBans, kazdel, artifacts, http: 'passed', webSocket: 'welcome + pong' });
   }
   const report = { timestamp: new Date().toISOString(), checks };
   fs.writeFileSync(new URL('rhine-equipment-verification.json', root), JSON.stringify(report, null, 2));

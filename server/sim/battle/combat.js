@@ -4,10 +4,24 @@
 
 import { dealDamage as pipeDamage, heal as pipeHeal, applyHpLoss, makeDamageInfo, reduceElement, leaderHitCancelled } from '../damage.js';
 import { effectiveProfile, performAttack, acquireTargets } from '../ai.js';
+import { withKazdelCannonOrigin } from '../kazdelOrigin.js';
+
+// Mark immediate derivatives (split HP loss, reflection, death procs) with their cannon origin too.
+// Delayed effects retain it through the existing `from` DamageInfo contract.
+function cannonOrigin(battle, source, dmg, run) {
+  const cannon = source?.kazdelCannon || dmg?.tags?.includes('kazdelCannon') || battle._kazdelCannonDamageDepth > 0;
+  if (!cannon) return run(dmg);
+  const safeAllies = source?.kazdelCannonSafeAllies || dmg?.tags?.includes('kazdelCannonEnemiesOnly') || battle._kazdelCannonSafeAlliesDepth > 0;
+  const tags = [...(dmg?.tags ?? [])];
+  if (!tags.includes('kazdelCannon')) tags.push('kazdelCannon');
+  if (safeAllies && !tags.includes('kazdelCannonEnemiesOnly')) tags.push('kazdelCannonEnemiesOnly');
+  const tagged = { ...dmg, tags };
+  return withKazdelCannonOrigin(battle, safeAllies, () => run(tagged));
+}
 
 export class BattleCombat {
   dealDamage(source, target, dmg) {
-    try { return pipeDamage(this, source, target, dmg); } catch (e) { this._internalError('dealDamage', e); return 0; }
+    try { return cannonOrigin(this, source, dmg, (hit) => pipeDamage(this, source, target, hit)); } catch (e) { this._internalError('dealDamage', e); return 0; }
   }
 
   heal(source, target, amount, opts = {}) {
@@ -30,7 +44,8 @@ export class BattleCombat {
     if (!noHitLimit && leaderHitCancelled(this, target, amount)) return 0;
     const t = ['hpLoss'];
     for (const list of [from && from.tags, tags]) if (Array.isArray(list)) for (const x of list) if (!t.includes(x)) t.push(x);
-    return applyHpLoss(this, source, target, amount, { type: 'true', tags: t, noSp: true, silent, origin: from ?? null, sourceless: !!sourceless || !!(from && from.sourceless) });
+    const dmg = { type: 'true', tags: t, noSp: true, silent, origin: from ?? null, sourceless: !!sourceless || !!(from && from.sourceless) };
+    return cannonOrigin(this, source, dmg, (hit) => applyHpLoss(this, source, target, amount, hit));
   }
 
   reduceElement(target, amount, element = null) { return reduceElement(target, amount, element); }

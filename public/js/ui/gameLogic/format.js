@@ -3,6 +3,7 @@
 import { UF } from '../../../../shared/constants.js';
 import { clamp, isObj, tileKey } from './shared.js';
 import { N_, langInfo } from '../../../../shared/i18n.js';
+import { cannonStates } from '../../kazdelState.js';
 
 
 // ---- players, statuses, fields ------------------------------------------------------------------------
@@ -30,7 +31,8 @@ export function snapHud(snap) {
   const n = (v) => (Number.isFinite(v) ? v : null);
   let boss = null;
   if (isObj(snap.boss) && Number.isFinite(snap.boss.hp)) boss = { hp: snap.boss.hp, max: n(snap.boss.max) ?? n(snap.boss.maxHp) };
-  return { killed: n(snap.killed), total: n(snap.total), dp: n(snap.dp), boss };
+  return { killed: n(snap.killed), total: n(snap.total), dp: n(snap.dp), boss,
+    ...(Array.isArray(snap.kazdel) ? { kazdel: cannonStates(snap.kazdel), gameTime: n(snap.gt ?? snap.t) ?? 0 } : {}) };
 }
 
 /** Boss HP fraction 0..1 (null when unknown). */

@@ -67,6 +67,7 @@ export class BattleEvents {
       if (v) (elem || (elem = [])).push([u.id, v[0], v[1], v[2], v[3]]);
     }
     if (elem) snap.elem = elem;
+    if (this._kazdelView) snap.kazdel = this._kazdelView();
     return snap;
   }
 
@@ -78,6 +79,7 @@ export class BattleEvents {
     return {
       fieldId: this.fieldId, kind: this.kind, rect: { ...this.rect }, stageId: this.stageId,
       units: this.units.filter((u) => (u.alive && u.deployed && !u.hidden) || this.isDown(u)).map(unitInfo),
+      ...(this._kazdelView ? { kazdel: this._kazdelView() } : {}),
     };
   }
 }

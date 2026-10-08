@@ -8,11 +8,13 @@ import { makeBuff, STATUS, RESIST_STATUSES } from '../buffs.js';
 import { palsyBuff } from '../damage.js';
 import { evadesGround } from '../targeting.js';
 import { stampFear } from '../fear.js';
+import { captureKazdelCallback } from '../kazdelOrigin.js';
 
 export class BattleStatus {
   addBuff(unit, b) {
     if (!unit || (!unit.alive && !b.allowDead)) return null;
     const buff = makeBuff(b);
+    for (const key of ['onTick', 'onExpire', 'onRemove']) buff[key] = captureKazdelCallback(this, buff[key]);
     const list = unit.buffs;
     let idx = -1;
     for (let i = 0; i < list.length; i++) if (list[i].key === buff.key) { idx = i; break; }

@@ -182,7 +182,7 @@ test('sanitizeEntries: drops unknown chess / illegal parts one by one, and the r
     all[c.chessId] = { skill: o.skills.find((i) => i !== o.defaultSkill), module: o.modules[o.modules.length - 1] };
   }
   const s = sanitizeEntries(all, get);
-  assert.equal(Object.keys(s).length, 118);
+  assert.equal(Object.keys(s).length, 125);
   assert.ok(checkLoadout(s, get).ok);
 });
 
@@ -196,9 +196,9 @@ test('selectedSkill / selectedModule for the in-match UI (shop cards, detail pan
   assert.equal(selectedSkill(null, SB, get).index, SB.skill.index);
 });
 
-test('roster and filters: 118 visible chess in shop order; tier / class / bond / search / changed-only', () => {
+test('roster and filters: 125 visible chess in shop order; tier / class / bond / search / changed-only', () => {
   const roster = rosterOf(Object.values(CHESS));
-  assert.equal(roster.length, 118);
+  assert.equal(roster.length, 125);
   assert.ok(roster.every((c) => !c.isGolden && c.visible));
   for (let i = 1; i < roster.length; i++) assert.ok(roster[i - 1].tier <= roster[i].tier);
   const t3 = filterRoster(roster, { tier: 3 }, {}, get, getBond);
@@ -509,9 +509,9 @@ test('sync: an empty loadout is sent without loading chess.json (no 1.6 MB downl
 
 test('entry badge (review fix): counts like the screen once chess.json is loaded (stale entries of retired chess do not count)', async () => {
   const { badgeCount } = await import('../../public/js/screens/loadout.js');
-  // unknown id, a retired (hidden) chess on a non-default skill (红豆 S1), an elite id
-  const entries = { [INSIDE]: { skill: 0 }, chess_char_9_99_a: { skill: 1 }, chess_char_1_05_a: { skill: 0 }, [IB.goldenId]: { skill: 0 } };
-  assert.equal(get('chess_char_1_05_a').isHidden, true, 'fixture: 红豆 is retired');
+  // unknown id, a retired (hidden) chess on a non-default skill (hidden tier-1 Tin Man S1), an elite id
+  const entries = { [INSIDE]: { skill: 0 }, chess_char_9_99_a: { skill: 1 }, chess_char_1_16_a: { skill: 0 }, [IB.goldenId]: { skill: 0 } };
+  assert.equal(get('chess_char_1_16_a').isHidden, true, 'fixture: tier-1 Tin Man is retired');
   assert.equal(badgeCount(entries, null), 4, 'before the data: the stored entries');
   assert.equal(badgeCount(entries, get), 1, 'with the data: only chess the screen shows as 已调整');
   assert.equal(badgeCount(entries, get), changedCount(entries, get));

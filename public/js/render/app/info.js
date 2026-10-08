@@ -12,7 +12,7 @@ export const FORCED_EXIT = 'forcedExit';
  * own effect (user playtest #2 item 4: 香槟炸弹's blast — sim fx `{ consumed: true, id }` before its 'die' — is its end,
  * not a knock-out), nor for an operator entering the battle knocked out (FORCED_EXIT).
  */
-export const showsDeathFx = (info, consumed = false, reason = null) => !consumed && reason !== FORCED_EXIT && info?.kind !== 'device';
+export const showsDeathFx = (info, consumed = false, reason = null) => !consumed && reason !== FORCED_EXIT && info?.kind !== 'device' && !info?.kazdelSoul;
 
 /**
  * The views' info of a battle unit from its UnitInfo (m.field / fieldMeta `units`, a 'spawn' event; snapshot.js
@@ -36,6 +36,7 @@ export function renderInfo(u) {
     dir: typeof u.dir === 'string' ? u.dir : undefined,
     // the unit's current model form (UnitInfo.form: an enemy's mode, a 傀儡师's 替身): the view starts in it (UnitView reads info.form)
     form: typeof u.form === 'string' ? u.form : undefined,
+    ...(u.kazdelSoul === true ? { kazdelSoul: true, soulOf: typeof u.soulOf === 'number' || typeof u.soulOf === 'string' ? u.soulOf : undefined } : {}),
     // Reconnecting / observing must show the device's current breakthrough before its next effect is emitted.
     researchStage: Number.isInteger(u.researchStage) && u.researchStage >= 0 && u.researchStage <= 2 ? u.researchStage : undefined,
     researchActive: typeof u.researchActive === 'boolean' ? u.researchActive : undefined,

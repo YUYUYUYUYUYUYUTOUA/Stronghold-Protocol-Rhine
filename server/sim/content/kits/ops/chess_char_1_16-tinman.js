@@ -42,7 +42,10 @@ export function tinmanKit(bb, chess, def) {
             // pulses every second: the buff bridges to the next pulse (two ticks over), the last one ends with the unit
             if (healRatio > 0) {
               for (const a of b.alliesInRadius(x, y, radius, null)) {
-                if (b.allySelectable(a, unit)) b.addBuff(a, { key: regenKey, duration: 1 + 2 * b.dt, source: unit, mods: { hpRegen: atk * healRatio } });
+                // Kazdel explicitly permits Big Larry's recovery on souls. Keep the ordinary regeneration path
+                // unchanged for living units; the named tag does not admit other medics or regeneration sources.
+                if (a.kazdelSoul) b.heal(unit, a, atk * healRatio, { tags: ['kazdelSoulHeal'], regen: true });
+                else if (b.allySelectable(a, unit)) b.addBuff(a, { key: regenKey, duration: 1 + 2 * b.dt, source: unit, mods: { hpRegen: atk * healRatio } });
               }
             }
           },

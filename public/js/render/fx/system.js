@@ -13,6 +13,7 @@ import { FxRings } from './rings.js';
 import { FxArrivals } from './arrivals.js';
 import { FxSim } from './simfx.js';
 import { FxZones } from './zones.js';
+import { FxKazdel } from './kazdel.js';
 
 export class FxSystem {
   /**
@@ -61,6 +62,10 @@ export class FxSystem {
     this.tileGfx = new P.Graphics();
     this.tileGfx.blendMode = P.BLEND_MODES.ADD;
     ctx.layers.groundFx.addChild(this.tileGfx);
+    this.kazdelGfx = new P.Graphics();
+    ctx.layers.groundFx.addChild(this.kazdelGfx);
+    this.kazdelWarnings = [];
+    this.kazdelGameTime = 0;
     this.tintSprite = new P.Sprite(P.Texture.WHITE);
     this.tintSprite.alpha = 0;
     this.tintSprite.blendMode = P.BLEND_MODES.ADD;
@@ -105,6 +110,7 @@ export class FxSystem {
     this.labels.length = 0;
     this.tileFlashes.length = 0;
     this.tileGfx.clear();
+    this.kazdelWarnings = []; this.kazdelGameTime = 0; this.kazdelGfx.clear();
     this.tintT = 0; this.tintSprite.alpha = 0;
   }
 
@@ -122,6 +128,7 @@ export class FxSystem {
     this._updateZones(dt);
     this._updateLabels(dt);
     this._updateTileFlashes(dt);
+    this._updateKazdel();
     if (this.tintT > 0) {
       this.tintT = Math.max(0, this.tintT - dt);
       const size = this.ctx.screenSize();
@@ -152,16 +159,17 @@ export class FxSystem {
     this.beams.destroy();
     this.vignette.destroy();
     this.tileGfx.destroy();
+    this.kazdelGfx.destroy();
     this.tintSprite.destroy();
     for (const list of this._numPools.values()) for (const t of list) t.text.destroy();
     this._numPools.clear();
   }
 }
 
-const FX_PARTS = [FxParticles, FxProjectiles, FxBeams, FxLocks, FxNumbers, FxRings, FxArrivals, FxSim, FxZones];
+const FX_PARTS = [FxParticles, FxProjectiles, FxBeams, FxLocks, FxNumbers, FxRings, FxArrivals, FxSim, FxZones, FxKazdel];
 const FX_METHOD_ORDER = ["quality","load","maxParticles","rich","_room","_ts","_groundZ","particle","_o","_freeParticle","_updateParticles","_proj","_onGround","_chest","_bodyPt","burst","attack","_takeProj","_dressProj","_releaseProj","_updateProjs","_shotPoint","_stepShot","_stepBoomerang","_stepMortar","_mote","_puff","_muzzle","_impact","_catch","mortar","_landed","_beam","_updateBeams","_flame","_freeFlame","_updateFlames","_lock","_touchLocks","_nearestLock","_releaseLock","_freeLock","_updateLocks","damage","_slash","heal","number","_growFits","_numSlotPx","_layoutNums","_layoutNumsOnce","_sizeNum","_fadeNum","_takeNum","_releaseNum","_updateNums","ring","_updateRings","skill","_aura","_updateAuras","deploy","promote","death","crateBreak","_viewOf","_where","_point","simFx","explosion","smoke","streak","strike","numberAt","_updateLabels","zone","_freeZone","_updateZones","researchArea","tileFlash","_updateTileFlashes","flashScreen","snowfall","leak","pop","_updatePops"];
 
-for (const key of FX_METHOD_ORDER) {
+for (const key of [...FX_METHOD_ORDER, 'syncKazdel', '_updateKazdel', 'kazdelFx']) {
   let found = null;
   for (const part of FX_PARTS) {
     if (!Object.prototype.hasOwnProperty.call(part.prototype, key)) continue;

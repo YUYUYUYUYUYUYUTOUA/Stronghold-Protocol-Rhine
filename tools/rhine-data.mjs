@@ -7,6 +7,7 @@ import { buildSkill, statsFrom, interpolateAttrs, baseTalentList, traitRecord, r
 import { RHINE_BOND, RHINE_CHARACTERS, RHINE_BALANCE, RHINE_DEVICES, RHINE_EQUIPMENT } from '../shared/rhineResearch.js';
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
 import { applyOpeningBans } from '../shared/openingBans.js';
+import { KAZDEL_BOND, applyKazdelOpeningBans } from '../shared/kazdel.js';
 
 export const RHINE_ADDITIONS = Object.freeze([
   { key: 'mayer', charId: 'char_242_otter', tier: 1, bonds: [RHINE_BOND], skillId: 'skchr_otter_1', defaultModuleId: 'uniequip_002_otter', subName: '召唤师', trait: 'mayer' },
@@ -295,6 +296,7 @@ export async function applyRhineData(files, source = null) {
     rangeGrid: [[0,0]], dmgType: 'none', attackKind: 'ranged', projectile: 'none', canHitFly: false, skill: null,
     deployLimit: 1, count: 1, abnormal: [], variants: {}, assets: { avatar: d.tokenId, spine: null, icon: d.icon, sprite: d.sprite } };
   applyEquipment(files);
+  if (bonds[KAZDEL_BOND]) applyKazdelOpeningBans(config);
   return files;
 }
 

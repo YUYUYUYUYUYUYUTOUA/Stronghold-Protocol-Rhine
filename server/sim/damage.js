@@ -224,9 +224,17 @@ export function absorbShields(battle, target, amount, type = null) {
 /**
  * Full damage pipeline. Returns the HP actually removed (0 when dodged/cancelled/absorbed).
  */
+export function kazdelCannonImmune(battle, source, target, dmg) {
+  const cannon = source?.kazdelCannon || dmg?.tags?.includes('kazdelCannon') || battle._kazdelCannonDamageDepth > 0;
+  if (!cannon) return false;
+  const safeAllies = source?.kazdelCannonSafeAllies || dmg?.tags?.includes('kazdelCannonEnemiesOnly') || battle._kazdelCannonSafeAlliesDepth > 0;
+  return !!target?.kazdelSoul || (safeAllies && target?.side === 'ally');
+}
+
 export function dealDamage(battle, source, target, dmgIn) {
   if (!target || !target.alive || target.removed || target.hidden || !target.deployed) return 0;
   const dmg = dmgIn && dmgIn._norm ? dmgIn : makeDamageInfo(dmgIn);
+  if (kazdelCannonImmune(battle, source, target, dmg)) return 0;
   if (dmg.type === 'element') return applyElement(battle, source, target, dmg);
   // 无来源 (dmg.sourceless, element bursts): hooks see no source — nothing keyed on "damage dealt by X" (ATK-up vs a
   // tag, 伤害提升 items / bonds / modules, reflect, "受到来自…的伤害") can recognise it; `credit` names the unit that still
@@ -291,6 +299,7 @@ export function dealDamage(battle, source, target, dmgIn) {
  */
 export function applyHpLoss(battle, source, target, amount, dmg) {
   if (!target.alive) return 0;
+  if (kazdelCannonImmune(battle, source, target, dmg)) return 0;
   let dealt = 0;
   const hs = dmg && dmg.sourceless ? null : source; // the source hooks see (无来源: none; `credit` keeps it)
   if (target.bossPool) {
@@ -332,7 +341,7 @@ export function applyHpLoss(battle, source, target, amount, dmg) {
   if (battle._hooks.damaged) battle.emit('damaged', { source: hs, target, amount, type: dmg ? dmg.type : 'true', dmg, credit: source });
   if (target.side === 'ally' && target.skill && dmg && !dmg.noSp && dmg.type !== 'element') battle._skills.onDamaged(target);
   const dead = target.bossPool ? target.bossPool.hp <= 0 : target.hp <= 0;
-  if (dead && target.alive) battle.kill(target, source);
+  if (dead && target.alive) battle.kill(target, source, dmg);
   return dealt;
 }
 
@@ -394,6 +403,7 @@ export function elementIntake(target) {
 
 /** Element gauge accumulation + burst. Fires `elementHit` { source, target, dmg } first (mutable amount/mul, cancel). */
 export function applyElement(battle, source, target, dmg) {
+  if (kazdelCannonImmune(battle, source, target, dmg)) return 0;
   const el = dmg.element;
   if (!el || !(el in target.elem)) return 0;
   if (!hasHp(target)) return 0; // a killing blow's rider: the target is dead, nothing fills or bursts (header)
@@ -527,6 +537,10 @@ export function reduceElement(target, amount, el = null) {
  * summons are operator healing too; independent research devices retain their own source. */
 export function canReceiveHeal(source, target, opts = {}) {
   if (!target) return false;
+  // Souls form their own healing group. Tinman's S2 is the sole explicit living-source exception.
+  if (target.kazdelSoul && !source?.kazdelSoul && !opts.tags?.includes('kazdelSoulHeal')) return false;
+  if (target.kazdelSoul && opts.regen && !opts.tags?.includes('kazdelSoulHeal')) return false;
+  if (source?.kazdelSoul && !target.kazdelSoul) return false;
   if (target.s.flags.noOperatorHeal && source !== target) {
     const seen = new Set();
     for (let origin = source; origin && !seen.has(origin); origin = origin.ownerUnit) {

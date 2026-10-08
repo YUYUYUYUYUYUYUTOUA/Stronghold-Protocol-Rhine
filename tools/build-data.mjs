@@ -3962,6 +3962,9 @@ async function main() {
   const { applyRhineData, validateRhineData } = await import('./rhine-data.mjs');
   await applyRhineData(files);
   errors.push(...validateRhineData(files));
+  const { applyKazdelData, validateKazdelData } = await import('./kazdel-data.mjs');
+  await applyKazdelData(files);
+  errors.push(...validateKazdelData(files));
   let total = 0;
   const sizes = {};
   const texts = {};

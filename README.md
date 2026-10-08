@@ -1,8 +1,8 @@
-# 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine
+# 卫戍协议：莱茵／卡兹戴尔扩展 · Stronghold Protocol: Rhine
 
-当前扩展版本：**v0.2.1-rhine.2**。
+当前扩展版本：**v0.2.1-rhine.3**。
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵生命扩展 fork**，基于上游 **v0.2.1**，合入官方发布标签 v0.2.1（提交 [`c2a2ef7`](https://github.com/sganggs/Stronghold-Protocol/commit/c2a2ef7)），本次扩展修改日期为 **2026-10-08**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护，不再要求先更新装置实验分支。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵／卡兹戴尔扩展 fork**，基于上游 **v0.2.1**，合入官方发布标签 v0.2.1（提交 [`c2a2ef7`](https://github.com/sganggs/Stronghold-Protocol/commit/c2a2ef7)），本次扩展修改日期为 **2026-10-09**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
@@ -12,7 +12,7 @@
 
 - 六人同房合作：真人与 AI 共用六个席位；五人开场少 BAN 一个核心盟约、六人少两个，最终攻势支持五人 2＋2＋1、六人 2＋2＋2 分组；详见 [多人版说明](docs/MULTIPLAYER.md)。
 - 六人局最终攻势与隐秘核心共享 BOSS 血量为同规则四人局的 200%，其他属性不变；第 10、12、14 回合每位存活玩家各获得一个信标，第 14 回合奖励信标使用后立即转赠，10、12 回合仍在下个休整期送达。
-- 等待室的“莱茵生命扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.2.1 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
+- 等待室的“莱茵／卡兹戴尔扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.2.1 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
 - 五至六人悬赏决策保留原六张牌并追加三张现有目标，合计九张；追加牌为 I / II / II 阶，赏金分别为 1 / 2 / 2。一至四人的悬赏张数保持原规则。
 - 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位：3人获得生态与能量装置、6人可部署两种、9人解锁单级激光钻机并可部署三种；层数提供数值，生态与能量的参战研究点用于阶段突破。
 - 生态维持仪合并治疗与持续减速，二、三级让范围内己方干员接受任意来源治疗时获得护盾；一级能量谐振仪保留3点充能，发射命中装置整个范围。9莱茵的激光钻机锁定全场最大生命值最高的敌人，持续输出从150%A/秒增至300%A/秒，满20秒后每秒追加0.5%最大生命值真实伤害，领袖按本战场分摊生命计算。
@@ -20,8 +20,11 @@
 - 梅尔、乌啾、森蚺、伊芙利特、星源、多萝西及其全部可选技能、适用模组；多萝西调整为 IV 阶；调整白面鸮、塞雷娅等干员的盟约与特质。
 - 莱茵实验终端、联合研究主机的普通／精锐装备、套装效果、合成和转职路径，以及新绘制的装置／装备图标与动态。
 - 装置放置预览、整格范围、充能条、攻击反馈和突破后范围变化；联机同步、机器人选择及相关测试。
+- 卡兹戴尔 3 / 6 / 9 人盟约：3人本体首次倒地产生死魂灵，6人解锁会误伤活体友军的场外巨炮，9人炮击仅伤敌方。众魂层数提高本体生命、魂灵生命与攻击；魂灵免疫炮击及衍生伤害，持续到死亡、本体复活或战斗结束。
+- 卡兹戴尔十名成员：红豆、奥达、陨星、锡人、明椒、赫德雷、伊内丝、泥岩、逻各斯、维什戴尔及其技能、普通模组与特质。医疗魂灵治疗魂灵，锡人二技能也可以给魂灵回血；魔王保持原有设计。
+- 普通／困难／深渊基础核心 BAN 数调整为5，趣味为2，训练为0；五、六人席位减免继续保留。新增魂灵模型表现、格子预警、炮击冲击与充能条。
 
-完整机制见 [莱茵扩展说明](docs/RHINE.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。Windows 玩家可直接下载 [莱茵版免安装整合包](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest)，完整解压后双击 **`启动莱茵科研版.bat`**；无需安装 Node.js 或 Git。上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
+完整机制见 [莱茵扩展说明](docs/RHINE.md)和[卡兹戴尔说明](docs/KAZDEL.md)，修改范围和验证边界见 [扩展变更记录](docs/RHINE-CHANGES.md)。Windows 玩家可直接下载 [扩展免安装整合包](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest)，完整解压后双击 **`启动莱茵科研版.bat`**；无需安装 Node.js 或 Git。已有玩家关闭服务后运行 **`联网更新.bat`**。上游原版整合包不包含本扩展。扩展问题请在 [本 fork 的 Issues](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/issues) 反馈。
 
 以下保留原项目介绍、声明与致谢，并对本 fork 的安装方式作相应说明。
 

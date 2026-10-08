@@ -37,7 +37,7 @@ const atkHits = (h, u, skill = null) => h.hooksOf('damaged').filter((c) => c.sou
 
 test('coverage: every selectable skill of every visible tier-3 chess is hand-authored (normal + 精锐)', () => {
   const rep = kitCoverage({ tier: 3 });
-  assert.equal(rep.summary.chess, 21);
+  assert.equal(rep.summary.chess, 22);
   assert.equal(rep.summary.covered, rep.summary.skills, rep.chess.filter((r) => r.skills.some((s) => !s.covered)).map((r) => r.name).join(' '));
   for (const r of rep.chess) for (const s of r.skills) if (!s.isDefault) assert.deepEqual([s.normal, s.elite], ['skills', 'skills'], `${r.name} S${s.index + 1}`);
 });
@@ -51,7 +51,7 @@ test('skills map: every selected alternate is authored; eagerly built specs use 
     // Tier 4/5 kits moved with their operators: those factories may build just the selected alternative,
     // whereas the original tier-3 factories eagerly build all alternatives. Both are valid kit contracts.
     const eager = Object.keys(kit.skills ?? {});
-    assert.ok(eager.every((sid) => alts.includes(sid)), `${id} only legal alternate skills keys`);
+    assert.ok(eager.every((sid) => r.skills.some(s => s.skillId === sid)), `${id} only legal skill keys (expansion kits may also key their default)`);
     const buildsAllRecords = KITS[r.chessId] === TIER3_KITS[r.chessId];
     if (buildsAllRecords) assert.deepEqual(eager.slice().sort(), alts.slice().sort(), `${id} all eager keys`);
     for (const sid of alts) {

@@ -61,6 +61,7 @@ import { num, talentBb, traitBb, skillRec, up, batMod } from '../shared/tier1.js
 import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hasHp } from '../../../damage.js';
 import { COLS } from '../../../constants.js';
+import { localOrder, localBefore } from '../../../dir.js';
 
 const S1 = 'skchr_wisdel_1';
 const S2 = 'skchr_wisdel_2';
@@ -134,12 +135,13 @@ function shocks({ count, atkScale, shockScale, radius, prob, stun, mainScale, bo
 
 /** The free deployable tile of her range a shadow takes (PRTS: nearest to her > lower row > left column), or null. */
 function shadowTile(battle, host) {
-  let best = null, bd = Infinity;
+  let best = null, bd = Infinity, order = null;
   for (const k of host.rangeKeys ?? []) {
     const r = Math.floor(k / COLS), c = k % COLS;
     if (!battle.grid.inRect(r, c) || !battle.grid.canStand(r, c, { ranged: true }) || battle.isReservedTile(r, c)) continue;
     const d = Math.hypot(r - host.tileR, c - host.tileC);
-    if (d < bd - 1e-9 || (Math.abs(d - bd) <= 1e-9 && (r < best[0] || (r === best[0] && c < best[1])))) { bd = d; best = [r, c]; }
+    const next = localOrder(r - host.tileR, c - host.tileC, host.dir);
+    if (d < bd - 1e-9 || (Math.abs(d - bd) <= 1e-9 && localBefore(next, order))) { bd = d; best = [r, c]; order = next; }
   }
   return best;
 }
@@ -193,6 +195,20 @@ function shadowKit(host) {
       battle.on('death', (ctx) => {
         if (ctx.unit === t && host.findBuff(camoKey(t))) battle.removeBuff(host, camoKey(t));
       }, { owner: t });
+    },
+  };
+}
+
+/** Data-driven token spawning uses the same behavior as her talent/skill summons. */
+export function shadowTokenKit() {
+  return {
+    fromTokens: true,
+    trait: { noAttack: true },
+    skill: { kind: 'instant', trigger: 'NEVER', onStart(ctx) {
+      if (ctx.unit.ownerUnit) shadowKit(ctx.unit.ownerUnit).skill.onStart(ctx);
+    } },
+    install(battle, unit) {
+      if (unit.ownerUnit) shadowKit(unit.ownerUnit).install(battle, unit);
     },
   };
 }

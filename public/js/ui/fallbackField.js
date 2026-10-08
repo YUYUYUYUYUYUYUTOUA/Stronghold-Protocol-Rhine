@@ -257,7 +257,7 @@ export function createFallbackView(host, opts = {}) {
     const dead = anim === 4;
     const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (hp / maxHp) * 100)) : 0;
     const spPct = spMax > 0 ? Math.max(0, Math.min(100, (sp / spMax) * 100)) : 0;
-    return html`<div class=${cx('ff-unit', enemy ? 'is-enemy' : 'is-ally', device && 'is-research', device?.key === 'energy' && 'is-research-energy', info.golden && 'is-golden', info.boss && 'is-boss', dead && 'is-dead',
+    return html`<div class=${cx('ff-unit', enemy ? 'is-enemy' : 'is-ally', info.kazdelSoul && 'is-kazdel-soul', device && 'is-research', device?.key === 'energy' && 'is-research-energy', info.golden && 'is-golden', info.boss && 'is-boss', dead && 'is-dead',
         hasFlag(flags, UF.SKILL) && 'is-skill', hasFlag(flags, UF.STUNNED | UF.FROZEN | UF.SLEEP) && 'is-stunned', hasFlag(flags, UF.FLYING) && 'is-fly')}
         style=${`transform:translate(${px - size / 2}px,${py - size / 2}px);width:${size}px;height:${size}px`}
         onPointerDown=${(e) => { if (e.button === 0) emit('pieceClick', { unitId: id, uid: info.uid ?? null, unit: info, button: 0, clientX: e.clientX, clientY: e.clientY }); }}

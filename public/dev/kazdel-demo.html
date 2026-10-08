@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>卡兹戴尔 · 本地战斗预览</title>
+  <link rel="icon" href="/art/kazdel/bond.svg" />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/screens/game.css" />
+  <link rel="stylesheet" href="/css/screens/game-panels.css" />
+  <link rel="stylesheet" href="/css/screens/loadout.css" />
+  <link rel="stylesheet" href="/css/screens/kazdel.css" />
+  <script type="importmap">{ "imports": { "preact": "/vendor/preact.module.js", "preact/hooks": "/vendor/hooks.module.js", "htm": "/vendor/htm.module.js" } }</script>
+  <script src="/vendor/pixi.min.js"></script><script src="/vendor/pixi-spine.js"></script>
+  <style>
+    html,body {margin:0;height:100%;overflow:hidden;background:#0c0d10}
+    #field {position:fixed;inset:0}
+    .kpreview {position:fixed;left:18px;top:18px;width:235px;z-index:25;padding:14px;background:#111117eb;border:1px solid #65303c;font:13px/1.6 system-ui,sans-serif;color:#d9ced1}
+    .kpreview h1 {margin:0;font-size:20px;color:#fff;display:flex;align-items:center;gap:10px}
+    .kpreview h1 img{width:32px;height:32px}.kpreview p{margin:8px 0}.kpreview button{padding:5px 9px;margin:3px 4px 3px 0;border:1px solid #70404d;background:#201a21;color:#e7dadc;cursor:pointer}
+    .kpreview button[aria-pressed=true]{background:#5c2537;border-color:#e8798a}
+    #roster{display:grid;grid-template-columns:1fr 1fr;gap:4px}#roster button{display:flex;gap:6px;align-items:center;padding:4px;font-size:12px;line-height:1.2;height:44px;margin:0}#roster img{width:34px;height:34px;object-fit:cover}#roster small{color:#c2a8ad;display:block;font-size:10px;margin-top:3px}
+    #status {white-space:pre-line;color:#d38898;font:12px/1.5 monospace}
+    #hud .kazdel-cannon-hud {position:fixed;top:24px;right:24px;width:285px;max-width:none}
+    #details .dpanel {position:fixed;top:105px;right:18px;left:auto;bottom:18px;z-index:30;width:340px;max-width:34vw;background:rgba(12,16,15,.97)}
+    #details .dpanel__scroll {max-height:100%;overflow:auto}#details .dpanel__close{z-index:2}
+    #errors{position:fixed;bottom:8px;left:18px;z-index:40;color:#ff8898;font:12px monospace;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <div id="field"></div><div id="hud"></div><div id="details"></div>
+  <aside class="kpreview"><h1><img src="/art/kazdel/bond.svg" alt="" />卡兹戴尔</h1>
+    <p>真实战斗模拟 · 本地验收场景</p>
+    <div id="thresholds"><button data-count="3">3 人 · 众魂</button><button data-count="6">6 人 · 巨炮</button><button data-count="9">9 人 · 敌军</button></div>
+    <div><button id="play">播放</button><button id="reset">重置</button><button id="kill">击败本体</button><button id="heal">治疗亡魂</button></div>
+    <p id="status">载入中…</p><p>固定 100 初始层数；目标耐久与重部署时间调高，便于观察。所有蓄能、亡魂和伤害均由实际 Battle 产生。</p>
+    <p>阵营干员 · 点击查看技能、模组和特质</p><div id="roster"></div>
+  </aside><div id="errors"></div>
+  <script type="module" src="/dev/kazdel-demo.js"></script>
+</body></html>

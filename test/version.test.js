@@ -54,7 +54,7 @@ test('the fork keeps its Rhine identity and the official base-game name Strongho
   // EN client data, activity_table basicInfo.act2autochess.name = "Stronghold Protocol: Alliance" (CN 卫戍协议:盟约);
   // the project used to call it "Covenant". The Chinese title stays 卫戍协议：盟约; the repository keeps its name.
   const readme = read('README.md');
-  assert.match(readme.split('\n')[0], /^# 卫戍协议：莱茵生命扩展 · Stronghold Protocol: Rhine$/, 'fork README title');
+  assert.match(readme.split('\n')[0], /^# 卫戍协议：莱茵／卡兹戴尔扩展 · Stronghold Protocol: Rhine$/, 'fork README title');
   assert.match(readme, /mode \*Stronghold Protocol: Alliance\*/, 'README English summary');
   assert.match(read('server/http/boot.js'), /卫戍协议：盟约 · Stronghold Protocol: Alliance v/, 'boot banner');
   assert.equal(pkg.name, 'stronghold-protocol-rhine', 'separate fork package identity');

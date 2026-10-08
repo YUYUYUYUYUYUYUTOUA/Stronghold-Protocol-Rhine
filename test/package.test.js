@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  FOLDER, REFUSE, RUNTIME_RESEARCH, entryProblems, isRefused, packageOutIsUnsafe, plan, resolveSpecifier, scanFiles,
+  FOLDER, PLAYER_ASSET_INPUTS, REFUSE, RUNTIME_RESEARCH, entryProblems, isRefused, packageOutIsUnsafe, plan, resolveSpecifier, scanFiles,
   selectTracked,
 } from '../tools/package.mjs';
 
@@ -30,7 +30,7 @@ test('selection: runtime files in; tests, maintainer tools, other docs, dev page
     'tools/crop-board-atlas.mjs', 'tools/assets/plan.mjs', 'tools/assets/local-enemy-spines.json', 'tools/assets/local-token-spines.json',
     'tools/local-extract/extract.py',
     'tools/local-extract/LICENSE-Ark-Unpacker.txt', 'scripts/start.sh', 'scripts/start-windows.bat', 'scripts/launch.mjs',
-    'scripts/install-service-windows.ps1', 'docs/PLAYING.md', 'docs/DEPLOY.md', ...RUNTIME_RESEARCH, 'package.json',
+    'scripts/install-service-windows.ps1', 'docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/KAZDEL.md', ...RUNTIME_RESEARCH, ...PLAYER_ASSET_INPUTS, 'package.json',
     'package-lock.json', 'LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'README.md', 'CHANGELOG.md',
     // out
     'test/version.test.js', 'tools/golden.mjs', 'tools/build-data.mjs', 'tools/check-imports.mjs', 'tools/package.mjs',
@@ -44,10 +44,10 @@ test('selection: runtime files in; tests, maintainer tools, other docs, dev page
   ]);
   for (const f of ['server/index.js', 'public/i18n/en.json', 'data/i18n/en.json', 'tools/assets/local-enemy-spines.json',
     'tools/assets/local-token-spines.json', 'tools/local-extract/LICENSE-Ark-Unpacker.txt', 'scripts/install-service-windows.ps1',
-    'docs/research/07-assets.json', 'CHANGELOG.md']) {
+    'docs/research/07-assets.json', 'docs/KAZDEL.md', ...PLAYER_ASSET_INPUTS, 'CHANGELOG.md']) {
     assert.ok(keep.includes(f), `keeps ${f}`);
   }
-  assert.equal(keep.length, 35, keep.join(' '));
+  assert.equal(keep.length, 38, keep.join(' '));
   assert.equal(drop.length, 40, drop.join(' '));
   assert.ok(!keep.some((f) => drop.includes(f)));
 });
@@ -68,7 +68,7 @@ test('the real tracked tree: runtime in, the rest out; every shipped import, npm
   assert.deepEqual(p.problems, []);
   const got = new Set(p.files);
   for (const f of ['server/index.js', 'tools/setup.mjs', 'tools/fetch-assets.mjs', 'scripts/start.sh', 'docs/PLAYING.md', 'docs/DEPLOY.md',
-    'package-lock.json', 'NOTICE.md', ...RUNTIME_RESEARCH]) assert.ok(got.has(f), f);
+    'docs/KAZDEL.md', 'package-lock.json', 'NOTICE.md', ...RUNTIME_RESEARCH, ...PLAYER_ASSET_INPUTS]) assert.ok(got.has(f), f);
   for (const f of ['tools/golden.mjs', 'tools/package.mjs', 'scripts/make-windows-bundle.mjs', 'docs/DESIGN.md', 'eslint.config.js', 'Dockerfile']) {
     assert.ok(!got.has(f), f);
   }
@@ -141,8 +141,8 @@ function fakeCheckout() {
     'Dockerfile', 'AGENTS.md', 'review/notes.md', 'docs/DESIGN.md', 'docs/research/00-INDEX.md', 'docs/research/10-networking-hosting.md']) put(f);
   put('scripts/start.sh', '#!/usr/bin/env bash\nexec node scripts/launch.mjs\n');
   fs.chmodSync(path.join(dir, 'scripts/start.sh'), 0o755);
-  for (const f of ['README.md', 'CHANGELOG.md', 'LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'docs/PLAYING.md', 'docs/DEPLOY.md']) put(f, `# ${f}\n`);
-  for (const f of [...RUNTIME_RESEARCH, 'docs/research/01-core-data.json']) put(f, '{}\n');
+  for (const f of ['README.md', 'CHANGELOG.md', 'LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/KAZDEL.md']) put(f, `# ${f}\n`);
+  for (const f of [...RUNTIME_RESEARCH, ...PLAYER_ASSET_INPUTS, 'docs/research/01-core-data.json']) put(f, '{}\n');
   put('docs/img/x.jpg', PNG);
   put('.gitignore', 'public/assets/\npublic/fonts/\npublic/vendor/\ndata/local-assets.json\n.cache/\npv/\n');
   // git-ignored: the art, the local extraction, fonts, caches, the promo folder
@@ -169,7 +169,7 @@ const runTool = (args) => spawnSync(process.execPath, [TOOL, ...args], { encodin
 const listed = (stdout) => stdout.split('\n').filter((l) => l.startsWith('file ')).map((l) => l.slice(5));
 
 const SHIPPED_TRACKED = ['CHANGELOG.md', 'LICENSE', 'NOTICE.md', 'README.md', 'THIRD-PARTY-NOTICES.md', 'data/assets.json', 'data/chess.json',
-  'docs/DEPLOY.md', 'docs/PLAYING.md', ...RUNTIME_RESEARCH, 'package-lock.json', 'package.json', 'public/index.html', 'public/js/main.js',
+  'docs/DEPLOY.md', 'docs/PLAYING.md', 'docs/KAZDEL.md', ...RUNTIME_RESEARCH, ...PLAYER_ASSET_INPUTS, 'package-lock.json', 'package.json', 'public/index.html', 'public/js/main.js',
   'public/js/util.js', 'scripts/launch.mjs', 'scripts/start.sh', 'server/index.js', 'server/sim/rng.js', 'shared/constants.js',
   'tools/assets/network.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/local-extract/extract.py',
   'tools/setup.mjs', 'tools/vendor.mjs'].sort();
@@ -235,6 +235,46 @@ test('scans and guards: home paths and the account name in shipped files (art to
 const hasZipTool = !spawnSync('zip', ['-v'], { encoding: 'utf8' }).error
   || /bsdtar/.test(spawnSync('tar', ['--version'], { encoding: 'utf8' }).stdout || '');
 const hasUnzip = !spawnSync('unzip', ['-h'], { encoding: 'utf8' }).error;
+
+test('full and lite builds retain expansion asset inputs: shipped plans load and enumerate their native art', { skip: !hasZipTool && 'no zip / tar' }, () => {
+  const { dir, put } = fakeCheckout();
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-package-expansion-out-'));
+  try {
+    // Keep the production plan modules and their data unchanged: static import checks alone miss readFileSync URLs.
+    const inputs = [...PLAYER_ASSET_INPUTS, 'tools/assets/kazdel-plan.mjs', 'tools/assets/rhine-plan.mjs',
+      'tools/assets/sources.mjs', 'shared/kazdel.js', 'shared/rhineResearch.js', 'shared/i18n.js', 'shared/i18nPacks.js'];
+    for (const rel of inputs) put(rel, fs.readFileSync(path.join(ROOT, rel)));
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+    put('package.json', JSON.stringify({ ...pkg, type: 'module' }));
+    const git = spawnSync('git', ['-C', dir, 'add', ...inputs], { encoding: 'utf8' });
+    assert.equal(git.status, 0, git.stdout + git.stderr);
+    const probe = `
+      import assert from 'node:assert/strict';
+      import { kazdelArtInput } from './tools/assets/kazdel-plan.mjs';
+      import { rhineArtInput } from './tools/assets/rhine-plan.mjs';
+      const kazdel = kazdelArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
+      assert.equal(Object.keys(kazdel.assets07.operators).length, 10);
+      assert.equal(kazdel.assets07.operators.char_4131_odda.name, '奥达');
+      assert.equal(kazdel.assets07.operators.char_4131_odda.skills.length, 2);
+      const rhine = rhineArtInput({ operators: {} }, { chess: [] });
+      assert.equal(rhine.assets07.operators.char_242_otter.name, '梅尔');
+      assert.equal(rhine.assets07.operators.char_242_otter.skills.length, 2);
+    `;
+    for (const lite of [false, true]) {
+      const p = plan(dir, { lite, allowDirty: true, env: ENV });
+      assert.deepEqual(p.problems, []);
+      for (const rel of [...PLAYER_ASSET_INPUTS, 'docs/KAZDEL.md']) assert.ok(p.files.includes(rel), `${lite ? 'lite' : 'full'} keeps ${rel}`);
+      const built = runTool(['--root', dir, '--out', out, '--no-install', '--allow-dirty', '--keep-stage', ...(lite ? ['--lite'] : [])]);
+      assert.equal(built.status, 0, built.stdout + built.stderr);
+      const stage = path.join(out, `${FOLDER}-v9.9.9${lite ? '-lite' : ''}`, FOLDER);
+      const loaded = spawnSync(process.execPath, ['--input-type=module', '-e', probe], { cwd: stage, encoding: 'utf8' });
+      assert.equal(loaded.status, 0, loaded.stdout + loaded.stderr);
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
 
 test('a --no-install build of the temporary checkout zips exactly the plan in one Stronghold-Protocol/ folder', { skip: !hasZipTool && 'no zip / tar' }, () => {
   const { dir } = fakeCheckout();

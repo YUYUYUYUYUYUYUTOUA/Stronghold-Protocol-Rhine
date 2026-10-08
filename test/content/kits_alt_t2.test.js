@@ -52,7 +52,7 @@ const plain = (id, o = {}) => chessRec({ id, skill: null, ...o });
 
 test('kit coverage: every selectable skill of every visible tier-2 chess is hand-authored (normal + elite)', () => {
   const rep = kitCoverage({ tier: 2 });
-  assert.equal(rep.summary.chess, 18);
+  assert.equal(rep.summary.chess, 20);
   assert.equal(rep.summary.covered, rep.summary.skills, JSON.stringify(rep.chess.filter((r) => r.skills.some((s) => !s.covered)).map((r) => r.name)));
   for (const r of rep.chess) {
     for (const s of r.skills.filter((x) => !x.isDefault)) {

@@ -35,7 +35,7 @@
 
 import { ATTACK_PAUSE, ALLY_COLLIDER_RADIUS, MOVE_SCALE, PROJECTILE_SPEEDS, PROJECTILE_SPEED, BOOMERANG_RETURN_SPEED, COLS, CHAIN_RADIUS } from './constants.js';
 import { sortEnemyTargets, sortAllyTargets, canTargetEnemy, canTargetAlly, tileKeyOf } from './targeting.js';
-import { reduceElement } from './damage.js';
+import { reduceElement, canReceiveHeal } from './damage.js';
 import { straightClear } from './grid.js';
 import { moveFeared, endFear } from './fear.js';
 
@@ -186,6 +186,11 @@ export function performAttack(b, u, prof, targets, opts = null) {
     b.emit('beforeAttack', ctx);
     targets = (ctx.targets || []).filter((t) => t && t.alive);
     if (!targets.length || !u.alive) return;
+  }
+  // Consume only an actual ordinary attack and capture the bonus for all of its later projectile impacts.
+  if (u.kazdelSoul && !isSkill && u.mem.kazdelNextAttackBonus > 0 && !(prof.heal && prof.dmgType === 'heal')) {
+    prof = { ...prof, atkScale: (prof.atkScale ?? 1) * (1 + u.mem.kazdelNextAttackBonus) };
+    u.mem.kazdelNextAttackBonus = 0;
   }
   u.lastAttackAt = b.time;
   u.stats.attacks++;
@@ -365,6 +370,7 @@ export function chainHealNext(b, healer, prev, seen) {
   let best = null;
   for (const a of b.allyUnits) {
     if (!a.alive || !a.deployed || a.hidden || a.kind === 'device' || seen.has(a.id)) continue;
+    if (!canReceiveHeal(healer, a)) continue;
     if (Math.abs(a.tileR - r0) > 1 || Math.abs(a.tileC - c0) > 1) continue;
     if (a !== healer && (a.s.flags.isolated || (a.s.flags.noHeal && !(through && through(healer, a))) || (a.profile && a.profile.noHeal))) continue;
     if (!best || a.hpRatio < best.hpRatio - 1e-12 || (Math.abs(a.hpRatio - best.hpRatio) <= 1e-12 && a.aggroSeq > best.aggroSeq)) best = a;

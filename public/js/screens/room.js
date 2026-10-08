@@ -196,14 +196,14 @@ export function RhineToggle({ room, isHost, busy = false, online = true, onPick 
   const enabled = room?.rhineEnabled !== false;
   const disabled = !isHost || !!busy || !online || !!room?.inMatch || (!!room?.phase && room.phase !== PHASE.LOBBY);
   return html`<div class="rhine-setting" data-testid="rhine-toggle">
-    <span class="rhine-setting__label">${t('莱茵生命扩展')}</span>
-    <div class="rhine-setting__choices" role="group" aria-label=${t('莱茵生命扩展')}>
+    <span class="rhine-setting__label">${t('莱茵／卡兹戴尔扩展')}</span>
+    <div class="rhine-setting__choices" role="group" aria-label=${t('莱茵／卡兹戴尔扩展')}>
       ${[[true, N_('开启')], [false, N_('原版')]].map(([value, label]) => html`<button key=${label} type="button"
         class=${`rhine-setting__option${enabled === value ? ' is-active' : ''}`} disabled=${disabled}
         data-testid=${value ? 'rhine-enabled' : 'rhine-vanilla'} aria-pressed=${enabled === value ? 'true' : 'false'}
         onClick=${() => !disabled && enabled !== value && onPick(value)}>${t(label)}</button>`)}
     </div>
-    <span class="rhine-setting__desc">${enabled ? t('科研装置 · 扩展干员 · 莱茵装备') : t('官方原版干员与规则')}${isHost ? '' : t(' · 由房主选择')}</span>
+    <span class="rhine-setting__desc">${enabled ? t('莱茵科研装置与装备 · 卡兹戴尔众魂与战争巨炮') : t('官方原版干员与规则')}${isHost ? '' : t(' · 由房主选择')}</span>
   </div>`;
 }
 

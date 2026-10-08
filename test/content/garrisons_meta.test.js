@@ -30,8 +30,8 @@ const plain = (pred = () => true) => Object.values(DATA.chess).filter((c) => c.v
 /** Visible normal chess without a 休整期结束时 特质 (fillers for prep-end tests). */
 const noPrepFin = (pred = () => true) => Object.values(DATA.chess).filter((c) => c.visible && !c.isGolden && (c.garrisonIds || []).every((g) => GR(g).eventType !== 'SERVER_PREP_FIN') && pred(c)).map((c) => c.chessId).sort();
 
-function setup(seed = 70) {
-  const h = makeMatch({ mode: 'solo', seed, registry: REG, fake: true }).start();
+function setup(seed = 70, data = DATA) {
+  const h = makeMatch({ mode: 'solo', seed, data, registry: REG, fake: true }).start();
   h.toPrep(1);
   const m = h.m;
   const ps = h.ps('p_0');
@@ -599,7 +599,7 @@ test('free refreshes: 普罗旺斯 113 获得时, 德克萨斯 120 / 巫恋 132 
   assert.equal(u.ps.shop.freeRefreshes, 2 + 1 + 2);
 });
 
-test('funds: 能天使 26 / 新约能天使 32 获得时, 格雷伊 67 / 泥岩 21 售出时 → next round; 琳琅诗怀雅 98 (hand needs 炎 / 投资人)', () => {
+test('funds: 能天使 26 / 新约能天使 32 获得时, 格雷伊 67 / 原生泥岩 21 夹具售出时 → next round; 琳琅诗怀雅 98 (hand needs 炎 / 投资人)', () => {
   for (const { gid, g, owners } of idsOf('SERVER_GAIN', 'SERVER_ONCE_GOLD')) {
     for (const owner of owners) { const s = setup(); s.acquire(owner); assert.equal(s.ps.pendingFunds, g.bb.count, gid); }
     cover(gid);
@@ -632,9 +632,12 @@ test('funds: 能天使 26 / 新约能天使 32 获得时, 格雷伊 67 / 泥岩 
     }
     cover(gid);
   }
-  const s = setup();
+  // Kazdel replaces Mudrock's live trait; retain the original sale trait as an explicit dispatcher fixture.
+  const mudrock = 'chess_char_4_18_b';
+  const nativeSaleData = { ...DATA, chess: { ...DATA.chess, [mudrock]: { ...CH(mudrock), garrisonIds: ['garrison_21_b'] } } };
+  const s = setup(70, nativeSaleData);
   s.acquire('chess_char_6_13_b');
-  s.sell(give(s.m, s.ps, 'chess_char_4_18_b', 'hand'));
+  s.sell(give(s.m, s.ps, mudrock, 'hand'));
   assert.equal(s.ps.pendingFunds, 4 + 4);
 });
 

@@ -6,6 +6,7 @@
 
 import { TICK, MAX_INTERNAL_ERRORS, MAX_HOOK_DEPTH } from '../constants.js';
 import { withGameData } from '../content/support/dataScope.js';
+import { captureKazdelCallback } from '../kazdelOrigin.js';
 
 let hookSeq = 0;
 
@@ -111,7 +112,7 @@ export class BattleHooks {
   // scheduling
 
   after(seconds, fn, opts = {}) {
-    const s = { due: this.time + Math.max(0, Number(seconds) || 0), fn, owner: opts.owner ?? null, interval: 0, seq: ++schedSeq, cancelled: false, holdsBattle: !!opts.holdsBattle };
+    const s = { due: this.time + Math.max(0, Number(seconds) || 0), fn: captureKazdelCallback(this, fn), owner: opts.owner ?? null, interval: 0, seq: ++schedSeq, cancelled: false, holdsBattle: !!opts.holdsBattle };
     s.cancel = () => { s.cancelled = true; };
     this._sched.push(s);
     return s;
@@ -119,7 +120,7 @@ export class BattleHooks {
 
   every(seconds, fn, opts = {}) {
     const iv = Math.max(TICK, Number(seconds) || TICK);
-    const s = { due: this.time + (opts.immediate ? 0 : iv), fn, owner: opts.owner ?? null, interval: iv, seq: ++schedSeq, cancelled: false, count: 0, holdsBattle: false };
+    const s = { due: this.time + (opts.immediate ? 0 : iv), fn: captureKazdelCallback(this, fn), owner: opts.owner ?? null, interval: iv, seq: ++schedSeq, cancelled: false, count: 0, holdsBattle: false };
     s.cancel = () => { s.cancelled = true; };
     this._sched.push(s);
     return s;

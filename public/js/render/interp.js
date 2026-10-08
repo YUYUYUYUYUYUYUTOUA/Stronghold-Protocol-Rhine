@@ -263,6 +263,13 @@ export class SnapshotBuffer {
     return s[ia < 0 ? 0 : ia].down || null;
   }
 
+  /** Supplemental authoritative state of the snapshot on the render clock (e.g. cannon telegraphs). */
+  rawAt(time = this.renderT) {
+    if (!this.snaps.length || !Number.isFinite(time)) return null;
+    const index = this._indexAt(time);
+    return this.snaps[index < 0 ? 0 : index].raw;
+  }
+
   /**
    * Interpolated state at `time` (default renderT). Fills and returns `out` (a Map id → sample object reused
    * across calls: `{ id, x, y, hp, maxHp, sp, spMax, flags, anim, vx, vy, seen, el, elFill, elUntil, elDur }` —

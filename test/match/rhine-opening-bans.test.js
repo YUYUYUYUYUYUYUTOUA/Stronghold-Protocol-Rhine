@@ -20,7 +20,7 @@ test('Rhine opening overlay is idempotent, preserves the subset rule and leaves 
   assert.deepEqual(config.bans.FUNNY, { core: 1, addon: 1 });
   assert.deepEqual(config.bans.TRAINING, { core: 0, addon: 0 });
   for (const difficulty of Object.keys(OPENING_BANS)) {
-    assert.deepEqual(DATA.config.bans[difficulty], OPENING_BANS[difficulty], difficulty);
+    assert.deepEqual(DATA.config.bans[difficulty], { ...OPENING_BANS[difficulty], core: OPENING_BANS[difficulty].core + (difficulty === 'TRAINING' ? 0 : 1) }, difficulty);
   }
   assert.deepEqual(new GameData({}, 'unknown').bans('NORMAL'), { core: 4, addon: 4 }, 'partial-data fallback agrees');
 });
@@ -56,7 +56,7 @@ test('actual matches count occupied human and AI seats and publish the effective
     try {
       const m = h.m, pub = m.publicView();
       const reduction = count === 6 ? 2 : count === 5 ? 1 : 0;
-      const expected = { core: Math.max(0, OPENING_BANS[difficulty].core - reduction), addon: OPENING_BANS[difficulty].addon };
+      const expected = { core: Math.max(0, DATA.config.bans[difficulty].core - reduction), addon: OPENING_BANS[difficulty].addon };
       assert.equal(pub.startingPlayerCount, count);
       assert.deepEqual(pub.openingBans, expected, `${difficulty}, ${count} seats including ${roster.bots || 0} AI`);
       assert.deepEqual(m.gd.bans(difficulty), expected);
@@ -125,7 +125,7 @@ test('guided training still draws no core or add-on bonds in the actual match', 
 test('every rotating mode retains five undrawn core bonds; new operators obey the existing all-bonds ban rule', () => {
   for (const [modeId, mode] of modes) {
     const gd = new GameData(DATA, modeId);
-    const expected = OPENING_BANS[mode.difficulty];
+    const expected = DATA.config.bans[mode.difficulty];
     for (let seed = 1; seed <= 100; seed++) {
       const bans = drawDisabledBonds(gd, createRng(seed));
       const drawn = new Set(bans.drawn), off = new Set([...bans.drawn, ...bans.staticOff]);
@@ -162,13 +162,19 @@ function averagePool(data, modeId, seeds = 1000) {
 }
 
 test('the extra rotating slot keeps mean per-tier roster depth close to the previous Rhine release', () => {
-  const previous = { ...DATA, chess: { ...DATA.chess }, config: structuredClone(DATA.config) };
-  for (const id of NEW_CHESS) { delete previous.chess[id]; delete previous.chess[id.replace(/_a$/, '_b')]; }
-  previous.config.bans.FUNNY = { core: 0, addon: 1 };
-  for (const difficulty of ['NORMAL', 'HARD', 'ABYSS']) previous.config.bans[difficulty] = { core: 3, addon: 4 };
+  const previous = { ...DATA, chess: structuredClone(DATA.chess), bonds: { ...DATA.bonds }, config: structuredClone(DATA.config) };
+  delete previous.bonds.kazdelShip;
+  for (const [id, c] of Object.entries(previous.chess)) {
+    if (id.startsWith('chess_kazdel_')) { delete previous.chess[id]; continue; }
+    c.bonds = c.bonds.filter(b => b !== 'kazdelShip');
+    if (id.startsWith('chess_char_1_05_')) { c.visible = false; c.isHidden = true; }
+    if (id.startsWith('chess_char_2_19_')) c.bonds = ['investShip', 'swiftShip'];
+  }
+  previous.config.bans.FUNNY = { core: 1, addon: 1 };
+  for (const difficulty of ['NORMAL', 'HARD', 'ABYSS']) previous.config.bans[difficulty] = { core: 4, addon: 4 };
   for (const modeId of ['mode_multi_normal', 'mode_multi_funny']) {
     const before = averagePool(previous, modeId), after = averagePool(DATA, modeId);
-    assert.ok(after.total <= before.total + 1, `${modeId}: adding operators does not expand the mean pool`);
+    assert.ok(after.total <= before.total * 1.05, `${modeId}: seven new shop entries keep mean pool growth below 5%`);
     assert.ok(Math.abs(after.total - before.total) < 5, `${modeId}: comparable total depth ${before.total} -> ${after.total}`);
     for (let tier = 1; tier <= 6; tier++) {
       assert.ok(Math.abs(after.tiers[tier] - before.tiers[tier]) < 1.5,
@@ -180,10 +186,10 @@ test('the extra rotating slot keeps mean per-tier roster depth close to the prev
 test('the match publishes the extra slot and its banned list agrees with the shared pool', () => {
   for (const difficulty of ['FUNNY', 'NORMAL', 'HARD', 'ABYSS']) {
     const h = makeMatch({ mode: 'coop', difficulty, humans: 1, seed: 31 }).start();
-    const pub = h.m.publicView(), expected = OPENING_BANS[difficulty];
+    const pub = h.m.publicView(), expected = DATA.config.bans[difficulty];
     assert.equal(pub.drawnDisabledBonds.length, expected.core + expected.addon);
     assert.deepEqual([...pub.bannedChess].sort(), [...h.m.pool.banned].sort());
-    assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 118);
+    assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 125);
     h.m.dispose();
   }
 });
@@ -203,8 +209,8 @@ function combinations(ids, count) {
 test('every possible base or five/six-seat rotation preserves at least eight operators at every tier', () => {
   // NORMAL/HARD/ABYSS share a rotation table; the two FUNNY modes share their static exclusions.
   for (const [modeId, count, cases] of [
-    ['mode_multi_normal', 1, 41580], ['mode_multi_funny', 1, 36],
-    ['mode_multi_normal', 5, 27720], ['mode_multi_normal', 6, 11880], ['mode_multi_funny', 6, 6],
+    ['mode_multi_normal', 1, 83160], ['mode_multi_funny', 1, 126],
+    ['mode_multi_normal', 5, 69300], ['mode_multi_normal', 6, 39600], ['mode_multi_funny', 6, 6],
   ]) {
     const gd = new GameData(DATA, modeId, count), counts = gd.bans(gd.difficulty);
     const eligible = gd.bondIds.filter(b => gd.bond(b).weight > 0 && !gd.modeInactiveBonds.has(b));

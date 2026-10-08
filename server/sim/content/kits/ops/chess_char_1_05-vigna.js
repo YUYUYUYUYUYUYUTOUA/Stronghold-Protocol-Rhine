@@ -12,6 +12,7 @@ export default {
     const tb = traitBb(chess);
     return {
       skill: { kind: 'duration', mods: { atkPct: num(bb.atk), batPct: batMod(bb.base_attack_time, chess) } },
+      skills: { skchr_vigna_1: { kind: 'duration', mods: { atkPct: num(bb.atk) } } },
       talents: [{ install(battle, unit) {
         const key = 'vigna:proc';
         battle.on('beforeAttack', (ctx) => {

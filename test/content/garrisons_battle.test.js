@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getData } from '../../server/data.js';
+import { KAZDEL_GARRISON_KEYS } from '../../shared/kazdel.js';
 
 const D = getData({ log: { warn() {}, error() {}, info() {} } });
 const GR = (gid) => D.garrisons[gid];
@@ -723,7 +724,10 @@ test('coverage: every IN_BATTLE garrison id of a visible chess (and every id the
   // These traits are dispatched by content/rhine.js; their real normal / elite records and formulas are
   // covered in rhine.test.js alongside the devices they read, rather than the legacy garrison dispatcher.
   const rhine = /^garrison_rhine_(mayer|saria|ifrit)_[ab]$/;
-  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g) && !rhine.test(g)).sort();
+  // Kazdel's actual normal/elite records, literal bonuses, death caps and soul rules are exercised by
+  // kazdel.test.js. They belong to content/kazdel.js rather than this legacy dispatcher.
+  const kazdel = new Set(Object.values(KAZDEL_GARRISON_KEYS));
+  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g) && !rhine.test(g) && !kazdel.has(GR(g).effectKey)).sort();
   assert.deepEqual(missing, []);
   assert.ok(VISIBLE_IDS.size >= 100, `${VISIBLE_IDS.size} ids`);
 });

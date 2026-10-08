@@ -17,7 +17,7 @@
 // the start scripts, the tools a player runs (setup, vendor = the postinstall, fetch-assets + tools/assets, doctor, and
 // what setup starts: tools/local-extract, crop-board-atlas), the research tables the Node server (server/sim/
 // nodeData.js fallback) and fetch-assets read, package.json / package-lock.json, LICENSE / NOTICE.md /
-// THIRD-PARTY-NOTICES.md, README.md, CHANGELOG.md, docs/PLAYING.md and docs/DEPLOY.md. `npm ci --omit=dev` in the
+// THIRD-PARTY-NOTICES.md, README.md, CHANGELOG.md, docs/PLAYING.md, docs/DEPLOY.md and docs/KAZDEL.md. `npm ci --omit=dev` in the
 // stage adds the production node_modules and (postinstall) public/vendor. The full zip adds the git-ignored art: the
 // files data/assets.json lists, public/fonts, and the local-client extraction (public/assets/local/,
 // data/local-assets.json) when present — nothing else on disk, so art the data no longer lists (焰狐龙梓兰, left out of
@@ -72,9 +72,11 @@ export const FOLDER = 'Stronghold-Protocol';
 /** Root files a player gets. */
 export const ROOT_FILES = ['package.json', 'package-lock.json', 'LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'README.md', 'CHANGELOG.md'];
 /** The player docs. */
-export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md'];
+export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/KAZDEL.md'];
 /** Research tables read at run time: server/sim/nodeData.js (the Node sim's fallback) and tools/fetch-assets.mjs. */
 export const RUNTIME_RESEARCH = ['docs/research/03-operators.json', 'docs/research/05-enemies.json', 'docs/research/05-maps.json', 'docs/research/07-assets.json'];
+/** Fixed expansion tables loaded by the shipped asset plans during setup, including a lite package's first boot. */
+export const PLAYER_ASSET_INPUTS = ['tools/rhine-data-source.json', 'tools/kazdel-data-source.json'];
 /** The start scripts (scripts/make-windows-bundle.mjs is the maintainer's Windows pack, docs/WINDOWS.md). */
 export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/launch.mjs', 'scripts/open-browser.mjs',
   'scripts/run-server.cmd', 'scripts/start-windows.bat', 'scripts/start-windows.ps1', 'scripts/start.sh'];
@@ -134,7 +136,7 @@ export function isPlayerFile(rel) {
   if (!p || isRefused(p) || isJunk(p) || p === 'data/local-assets.json' || p === GENERATED_PACK_INDEX) return false;
   if (NOT_TRACKED_SHIP.some((d) => p.startsWith(d))) return false;
   if (RUNTIME_DIRS.some((d) => p.startsWith(d)) || PLAYER_TOOL_DIRS.some((d) => p.startsWith(d))) return true;
-  return ROOT_FILES.includes(p) || PLAYER_DOCS.includes(p) || RUNTIME_RESEARCH.includes(p) || PLAYER_SCRIPTS.includes(p) || PLAYER_TOOLS.includes(p);
+  return ROOT_FILES.includes(p) || PLAYER_DOCS.includes(p) || RUNTIME_RESEARCH.includes(p) || PLAYER_ASSET_INPUTS.includes(p) || PLAYER_SCRIPTS.includes(p) || PLAYER_TOOLS.includes(p);
 }
 
 /**

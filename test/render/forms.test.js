@@ -369,7 +369,7 @@ test('render/app.js renderInfo keeps UnitInfo `form` (it used to drop it: views 
 
 test('render/app.js hands the `form` of a sim fx (shared/protocol.js fxForm) with the fx to the view and keeps the mode on the unit info', () => {
   const src = readFileSync(path.join(ROOT, 'public/js/render/app.js'), 'utf8');
-  assert.match(src, /const form = fxForm\(e\);[\s\S]{0,250}inf\.form = form[\s\S]{0,250}setForm\?\.\(form, x\)/);
+  assert.match(src, /const form = fxForm\(e\);[\s\S]{0,350}inf\.form = form[\s\S]{0,350}setForm\?\.\(form, x\)/);
   // a form fx handed out late (render/interp.js takeEvents `late`) switches the model with its closing clip shortened by
   // the lateness and without replaying its telegraph
   assert.match(src, /const x = late > 0 \? \{ \.\.\.e\[4\], late, \.\.\.\(Number\(e\[4\]\.dur\) > 0 \? \{ dur: Math\.max\(0, Number\(e\[4\]\.dur\) - late\) \} : \{\}\) \} : e\[4\];/);

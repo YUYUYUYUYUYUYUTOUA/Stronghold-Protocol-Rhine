@@ -62,8 +62,8 @@ test('matchInfoModel: the two greyed kinds, the briefing order, banned operators
   assert.equal(m.stateOf('sargonShip'), 'drawn');
   assert.equal(m.stateOf('yanShip'), null);
   // bondOrder, then identifier: 调和 (bondOrder 1) leads the add-on row as in the official briefing
-  assert.deepEqual(m.core.map((b) => b.name), ['炎', '萨尔贡', '维多利亚', '谢拉格', '拉特兰', '阿戈尔', '叙拉古', '卡西米尔', '莱茵生命'],
-    'the eight upstream core bonds keep their order, followed by Rhine');
+  assert.deepEqual(m.core.map((b) => b.name), ['炎', '萨尔贡', '维多利亚', '谢拉格', '拉特兰', '阿戈尔', '叙拉古', '卡西米尔', '莱茵生命', '卡兹戴尔'],
+    'the eight upstream core bonds keep their order, followed by Rhine and Kazdel');
   assert.equal(m.addon[0].name, '调和');
   assert.equal(m.core.length + m.addon.length, Object.keys(DATA.bonds).length, 'every bond, once');
   assert.ok(m.core.every((b) => b.isCore) && m.addon.every((b) => !b.isCore));
@@ -161,21 +161,21 @@ test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "o
     assert.equal(pub.modeId, modeId);
     const m = matchInfoModel(pub, SRC(pub.modeId));
     assert.deepEqual([...m.sets.off].sort(), [...OFF_FUNNY].sort(), `${modeId}: 标准模拟's inactiveBondIdList`);
-    assert.equal(m.sets.drawn.size, 2, '标准 draws one core and one add-on bond');
-    assert.equal([...m.sets.drawn].filter((b) => DATA.bonds[b].isCore).length, 1);
+    assert.equal(m.sets.drawn.size, 3, 'the expanded roster retains the standard core/add-on disabling rule');
+    assert.equal([...m.sets.drawn].filter((b) => DATA.bonds[b].isCore).length, 2, 'ten expanded core bonds disable two under the unchanged proportional rule');
     assert.ok([...m.sets.drawn].every((b) => !OFF_FUNNY.includes(b)));
     assert.deepEqual([...m.banned].sort(), [...pub.bannedChess].sort(), 'every banned operator is known');
     assert.deepEqual(m.banned.map((id) => DATA.chess[id].tier), [...m.banned.map((id) => DATA.chess[id].tier)].sort((a, b) => a - b));
     for (const id of m.banned) assert.ok(DATA.chess[id].bonds.every((b) => m.stateOf(b)), `${id}: every bond greyed`);
-    assert.equal(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length, 12);
+    assert.equal(m.addon.filter((b) => m.stateOf(b.bondId)).length + m.core.filter((b) => m.stateOf(b.bondId)).length, OFF_FUNNY.length + m.sets.drawn.size);
     assert.match(textOf(MatchLegend({ model: m })), /或本模式禁用/);
     h.m.dispose();
   }
-  // 绝境: 4 core + 4 add-on drawn, nothing switched off by the mode
+  // Hard disables half the core roster: five of ten, plus four add-on bonds.
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, bots: 1, seed: 4 }).start();
   const m = matchInfoModel(h.m.publicView(), SRC('mode_multi_hard'));
   assert.equal(m.sets.off.size, 0);
-  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [4, 4]);
+  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [5, 4]);
   assert.deepEqual([...m.banned].sort(), [...h.m.bannedChess].sort());
   h.m.dispose();
 });

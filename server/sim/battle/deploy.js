@@ -6,6 +6,7 @@
 import { COLS } from '../constants.js';
 import { unitInfo } from '../snapshot.js';
 import { fin } from './util.js';
+import { kazdelCannonImmune } from '../damage.js';
 
 export class BattleDeploy {
   /**
@@ -23,9 +24,12 @@ export class BattleDeploy {
     }
     const k = R0 * COLS + C0;
     const occ = this._occ[k];
-    if (occ && occ !== u && occ.alive && occ.deployed) { this.log(`tile ${R0},${C0} occupied; ${u} not deployed`); return false; }
+    const ownSoul = occ?.kazdelSoul && occ.ownerUnit === u;
+    if (occ && occ !== u && occ.alive && occ.deployed && !ownSoul) { this.log(`tile ${R0},${C0} occupied; ${u} not deployed`); return false; }
     // "倒地干员所在地块视为可部署，但所有我方单位在此处的部署行为将被阻止" (PRTS 卫戍协议/帮助 §作战阶段 单位部署)
-    if (this.downOn(R0, C0, u)) { this.log(`a knocked-out operator lies on ${R0},${C0}; ${u} not deployed`); return false; }
+    if (this.downOn(R0, C0, u.kazdelSoul ? u.ownerUnit : u)) { this.log(`a knocked-out operator lies on ${R0},${C0}; ${u} not deployed`); return false; }
+    // Only a successful return ends a soul: invalid tiles and unpaid DP must leave it fighting.
+    if (u.kind === 'op' && u.kazdelSoulUnit?.alive) this.retreat(u.kazdelSoulUnit, { reason: 'kazdelReturn', permanent: true });
     const first = u.deploySeq === 0;
     u.alive = true;
     u.deployed = true;
@@ -71,10 +75,12 @@ export class BattleDeploy {
   }
 
   /** Mark `unit` dead (hp reached 0). Fires `kill` then `death`. */
-  kill(unit, killer = null) {
+  kill(unit, killer = null, dmg = null) {
     if (!unit || !unit.alive) return;
+    if (kazdelCannonImmune(this, killer, unit, dmg)) return;
     unit.hp = 0;
-    if (this._hooks.kill) this.emit('kill', { killer, victim: unit });
+    if ((killer?.kazdelCannon || this._kazdelCannonDamageDepth > 0) && !dmg?.tags?.includes('kazdelCannon')) dmg = { ...dmg, tags: [...(dmg?.tags ?? []), 'kazdelCannon'] };
+    if (this._hooks.kill) this.emit('kill', { killer, victim: unit, dmg });
     // a nested kill/retreat inside the handlers already removed it: a later handler's hp write must not stick
     if (!unit.alive) { if (!unit.bossPool) unit.hp = 0; return; }
     if (unit.hp > 0 && !unit.bossPool) { // revived by a kill handler (clamped: a handler may write any number)
@@ -82,7 +88,7 @@ export class BattleDeploy {
       return;
     }
     unit.hp = 0; // NaN / negative writes from handlers
-    this._remove(unit, 'killed', killer);
+    this._remove(unit, 'killed', killer, false, false, dmg);
   }
 
   /**
@@ -96,7 +102,7 @@ export class BattleDeploy {
     this._remove(unit, reason, null, permanent, dying);
   }
 
-  _remove(unit, reason, killer = null, permanent = false, dying = false) {
+  _remove(unit, reason, killer = null, permanent = false, dying = false, dmg = null) {
     unit.alive = false;
     unit.removeReason = reason;
     unit.deployed = false;
@@ -146,7 +152,7 @@ export class BattleDeploy {
     }
     // the reason ('killed' | 'retreat' | 'expired' | …) lets the client keep the knock-down sound for real knock-outs
     if (reason !== 'leak') this._ev(['die', unit.id, reason]);
-    if (this._hooks.death) this.emit('death', { unit, reason, killer, dying: !!dying });
+    if (this._hooks.death) this.emit('death', { unit, reason, killer, dying: !!dying, dmg });
     if (unit.removed) this._toRelease.push(unit);
   }
 
@@ -196,7 +202,7 @@ export class BattleDeploy {
     }
     const k = at ? at[0] * COLS + at[1] : unit.homeR * COLS + unit.homeC;
     const occ = this._occ[k];
-    if (occ && occ.alive && occ !== unit) return false;
+    if (occ && occ.alive && occ !== unit && !(occ.kazdelSoul && occ.ownerUnit === unit)) return false;
     if (at && this.downOn(at[0], at[1], unit)) return false;
     const ps = this.getPlayer(unit.ownerId);
     const cost = unit.base.cost;
@@ -228,7 +234,7 @@ export class BattleDeploy {
       if (!ps || ps.dp + 1e-9 < cost) continue;
       const [r, c] = this.restTile(u);
       const occ = this._occ[r * COLS + c];
-      if (occ && occ.alive && occ !== u) continue;
+      if (occ && occ.alive && occ !== u && !(occ.kazdelSoul && occ.ownerUnit === u)) continue;
       if (this.downOn(r, c, u)) continue;
       ps.dp = Math.max(0, ps.dp - cost);
       this._deploy(u, { initial: false, tile: r === u.homeR && c === u.homeC ? null : [r, c] });
