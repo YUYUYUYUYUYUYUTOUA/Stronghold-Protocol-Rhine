@@ -299,6 +299,11 @@ export function unitStatsEntry(u, s = null) {
     ...statView(cur),
     base: statView(base),
     ...(range ? { range } : {}),
+    ...(Number.isFinite(u?.researchLaserProgress) ? {
+      researchLaserTarget: Number.isInteger(u.researchLaserTarget) ? u.researchLaserTarget : null,
+      researchLaserProgress: Math.max(0, Math.min(20, round2(u.researchLaserProgress))),
+      researchLaserActive: !!u.researchLaserActive,
+    } : {}),
     // the enemy card greys a SILENCE-format line (折射) from this; absent flags ⇒ not silenced
     silenced: !!(cur.flags && cur.flags.silence),
   };

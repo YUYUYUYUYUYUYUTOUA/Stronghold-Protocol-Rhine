@@ -10,7 +10,7 @@ import { tileKey, parseKey, inField, canPlace, placeClass, freeSlot, pieceDir, p
 import { attackRangeGrid, loadoutRecord, resolveRecordLoadout } from '../../../shared/loadoutRecord.js';
 import { OK, fail } from './common.js';
 
-import { RHINE_BOND, RHINE_DEVICES, rhineCapacity } from '../../../shared/rhineResearch.js';
+import { RHINE_BOND, RHINE_DEVICES, rhineCapacity, rhineDevice, rhineDeviceUnlocked } from '../../../shared/rhineResearch.js';
 
 export class PlayerPlacement {
   /**
@@ -61,6 +61,9 @@ export class PlayerPlacement {
    * with its own owner).
    */
   _legal(piece, r, c, owner = null) {
+    const device = piece.kind === 'token' && rhineDevice(piece.id);
+    if ((piece.research || device) && (!piece.research || !device || device.key !== piece.researchKey
+      || !this.alive || !rhineDeviceUnlocked(device, this.bonds[RHINE_BOND]))) return false;
     if (!canPlace(this.deployMap(), this._placementOf(piece), r, c)) return false;
     const k = tileKey(r, c);
     const range = this.summonRange(piece, owner);
@@ -208,6 +211,7 @@ export class PlayerPlacement {
    * of them would have nowhere to go.
    */
   _reorient(piece, dir) {
+    if (piece.research && (!this.alive || !rhineDeviceUnlocked(piece.id, this.bonds[RHINE_BOND]))) return fail(ERR.BAD_TARGET, msg('科研装置尚未解锁'));
     if (pieceDir(piece) === dir) return OK;
     if (piece.kind === 'chess') {
       const loc = this.find(piece.uid);
@@ -242,6 +246,7 @@ export class PlayerPlacement {
   _moveTokenToBoard(loc, r, c, dir = 'RIGHT') {
     const piece = loc.piece;
     if (piece.research) {
+      if (!this.alive || !rhineDeviceUnlocked(piece.id, this.bonds[RHINE_BOND])) return fail(ERR.BAD_TARGET, msg('科研装置尚未解锁'));
       const cap = this.alive ? rhineCapacity(this.bonds[RHINE_BOND]) : 0;
       if (!cap) return fail(ERR.BAD_TARGET, msg('莱茵生命盟约尚未激活'));
       if (loc.area !== 'board' && [...this.board.values()].filter((p) => p.research).length >= cap) return fail(ERR.BOARD_FULL, msg('已达到科研装置上场上限'));

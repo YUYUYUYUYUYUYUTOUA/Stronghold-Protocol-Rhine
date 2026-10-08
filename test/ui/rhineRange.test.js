@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { researchRange, researchRangeText, researchContainsTile, researchRangeTiles, circleRangeSections } from '../../shared/rhineRange.js';
 import { RHINE_DEVICES } from '../../shared/rhineResearch.js';
 import { GEO } from '../../shared/constants.js';
-import { bodyInRadius, bodyOnTile } from '../../server/sim/body.js';
+import { bodyOnTile } from '../../server/sim/body.js';
 import { previewGrid } from '../../public/js/ui/facing.js';
 import { showRange } from '../../public/js/ui/facingWheel.js';
 import { bossPrepField, circleToDisp, IDENTITY } from '../../public/js/render/prepfield.js';
@@ -18,9 +18,9 @@ const area = poly => Math.abs(poly.reduce((sum, a, i) => {
 const full = { r0: 0, r1: 18, c0: 0, c1: 20 };
 
 test('device previews cover the same complete battle cells at every breakthrough', () => {
-  for (const key of ['medical', 'energy', 'ecology']) for (const stage of [0, 1, 2]) {
+  for (const key of ['medical', 'energy']) for (const stage of [0, 1, 2]) {
     const piece = device(key, stage), range = researchRange(piece);
-    assert.equal(range.radius, key === 'ecology' && stage === 2 ? 3 : 2);
+    assert.equal(range.radius, key === 'medical' && stage === 2 || key === 'energy' && stage >= 1 ? 3 : 2);
     assert.equal(range.grid.length, range.radius === 3 ? 29 : 13);
     assert.deepEqual(previewGrid({ getToken: () => ({ rangeGrid: [[0, 0]] }) }, piece), range.grid,
       'the legacy one-square token grid must not override the current breakthrough');
@@ -35,16 +35,28 @@ test('device previews cover the same complete battle cells at every breakthrough
 });
 
 test('stage is normalized and battle researchStage metadata also selects the larger grid', () => {
-  assert.equal(researchRange(device('ecology', 9)).radius, 3);
-  assert.equal(researchRange(device('ecology', -1)).radius, 2);
-  assert.equal(researchRange(device('ecology', NaN)).radius, 2);
-  assert.equal(researchRange({ defId: device('ecology').id, researchStage: 2 }).radius, 3);
+  assert.equal(researchRange(device('medical', 9)).radius, 3);
+  assert.equal(researchRange(device('medical', -1)).radius, 2);
+  assert.equal(researchRange(device('medical', NaN)).radius, 2);
+  assert.equal(researchRange({ defId: device('medical').id, researchStage: 2 }).radius, 3);
   assert.equal(researchRange({ kind: 'chess', id: 'ordinary' }), null);
+});
+
+test('laser global shape previews complete battle cells and clears without a directional range', () => {
+  const range = researchRange(device('laser', 2));
+  assert.equal(range.global, true); assert.equal(range.stage, 0); assert.equal(range.radius, 0); assert.deepEqual(range.grid, []);
+  const calls = [], view = { highlightTiles: (...args) => calls.push(args) };
+  const tiles = showRange(view, previewGrid({ getToken: () => null }, device('laser')), 10, 6, 'LEFT', { group: 'selRange' }, range.radius);
+  assert.equal(tiles.length, GEO.ROWS * GEO.COLS);
+  assert.equal(calls.at(-1)[1].researchRange, true); assert.equal(calls.at(-1)[1].researchGlobal, true);
+  const normal = tiles.filter(([r,c]) => r >= GEO.NORMAL_RECT.r0 && r <= GEO.NORMAL_RECT.r1 && c >= GEO.NORMAL_RECT.c0 && c <= GEO.NORMAL_RECT.c1);
+  assert.equal(normal.length, 44);
+  showRange(view, null, 10, 6, null, { group: 'selRange' }); assert.deepEqual(calls.at(-1)[0], []);
 });
 
 test('preplacement needs no facing, uses full grid tiles without circles, and cleanup clears it', () => {
   const calls = [], view = { highlightTiles: (...args) => calls.push(args) };
-  const range = researchRange(device('ecology'));
+  const range = researchRange(device('medical'));
   const style = { group: 'researchPreview', color: 0x00ff00 };
   let first;
   for (const dir of [null, 'UP', 'RIGHT', 'DOWN', 'LEFT']) {
@@ -54,7 +66,7 @@ test('preplacement needs no facing, uses full grid tiles without circles, and cl
     assert.equal(calls.at(-1)[1].circle, undefined);
     assert.equal(calls.at(-1)[1].researchRange, true, 'renderer clips research grids to the current field');
   }
-  const mature = researchRange(device('ecology', 2));
+  const mature = researchRange(device('medical', 2));
   assert.equal(showRange(view, mature.grid, 10, 6, 'LEFT', style, mature.radius).length, 29);
   assert.equal(calls.at(-1)[1].circle, undefined);
   showRange(view, null, 0, 0, null, style);
@@ -175,11 +187,11 @@ test('renderer draws clipped circles on terrain tops, replaces them at breakthro
 
 test('descriptions distinguish targeting, global charging and both splash shapes, plus continuous ecology', () => {
   assert.match(researchRangeText(device('medical')), /半径 2 格.*整格区域.*13 格.*本方干员.*召唤物.*机械水獭/);
-  assert.match(researchRangeText(device('energy')), /半径 2 格内己方干员.*主目标仍须.*半径 2 格.*13 格.*一级起.*实际半径 1 格.*范围外.*满充无目标时保留/);
-  assert.match(researchRangeText(device('energy', 1)), /己方全场干员.*主目标仍须.*半径 2 格.*实际半径 1 格/);
-  assert.match(researchRangeText(device('energy', 2)), /己方全场干员.*主目标仍须.*钙质化 25 格菱形/);
-  assert.match(researchRangeText(device('ecology', 2)), /当前覆盖半径 3 格.*整格区域.*29 格.*持续减速 50%.*三级为 3 格.*每 8 秒额外束缚 1 秒/);
-  assert.doesNotMatch(researchRangeText(device('ecology', 0)), /开启 4 秒|随.*层数/);
+  assert.match(researchRangeText(device('energy')), /半径 2 格.*全部敌人.*13 格.*无目标时保留满充能/);
+  assert.match(researchRangeText(device('energy', 1)), /己方全场干员.*半径 3 格.*实际半径 1 格/);
+  assert.match(researchRangeText(device('energy', 2)), /己方全场干员.*主目标须.*钙质化 25 格菱形/);
+  assert.match(researchRangeText(device('medical', 2)), /半径 3 格.*整格区域.*29 格.*持续减速\s?50%.*任意来源治疗.*周期束缚/);
+  assert.doesNotMatch(researchRangeText(device('medical', 0)), /开启 4 秒|随.*层数/);
 });
 
 // Inspect component nodes without a DOM: this verifies the label decision, not screenshot rendering.
@@ -187,7 +199,7 @@ function textNodes(node) {
   if (node == null || typeof node === 'boolean') return '';
   if (Array.isArray(node)) return node.map(textNodes).join(' ');
   if (typeof node !== 'object') return String(node);
-  return [node.props?.k, textNodes(node.props?.children)].filter(Boolean).join(' ');
+  return [node.props?.k, node.props?.title, textNodes(node.props?.children)].filter(Boolean).join(' ');
 }
 test('research token details label fallback attack as base, while live attack stays live', () => {
   const token = { tokenId: device('medical').id, name: '医疗装置', stats: { atk: 300 } };
@@ -196,4 +208,11 @@ test('research token details label fallback attack as base, while live attack st
   assert.match(base, /未计入科研层数、装备与梅尔加成/);
   const live = textNodes(TokenDetail({ token, live: { atk: 372 } }));
   assert.equal(live.includes('基础攻击'), false);
+});
+
+test('laser details show one-level lock and ramp information without research or breakthroughs', () => {
+  const token = { tokenId: device('laser').id, name: '激光钻机', stats: { atk: 300 } };
+  const text = textNodes(TokenDetail({ token, piece: device('laser'), live: { atk: 400, researchLaserTarget: 99, researchLaserProgress: 20, researchLaserActive: true } }));
+  assert.match(text, /9名.*单级/); assert.match(text, /锁定与增伤.*20\/20秒.*300%/);
+  assert.doesNotMatch(text, /研究进度|下次突破|胜利\+|失败\+/);
 });

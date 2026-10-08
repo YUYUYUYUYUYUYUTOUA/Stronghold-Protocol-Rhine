@@ -581,5 +581,8 @@ export function heal(battle, source, target, amount, opts = {}) {
     if (source.side === 'ally' && source.ownerId != null) { const pp = battle._pp(source.ownerId); if (pp) pp.healingDone += actual; }
   }
   if (actual >= 0.5 && !opts.silent) battle._ev(['heal', target.id, Math.round(actual)]);
+  // Post-resolution observers see the adjusted amount and real overflow only after HP / stats are committed.
+  // This also fires for a valid full-HP heal; cancelled / forbidden heals returned before this point.
+  if (battle._hooks.healResolved) battle.emit('healResolved', { source, target, amount: amt, actual, overheal: Math.max(0, amt - actual), opts });
   return actual;
 }

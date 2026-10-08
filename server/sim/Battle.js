@@ -112,6 +112,9 @@ export class Battle {
       this.flags[k] = this.flags[k] != null && Number.isFinite(v) && v >= 0 ? v : DP_DEFAULTS[k];
     }
     this.sharedBoss = opts.sharedBoss ?? null;
+    const fieldHp = Number(opts.bossFieldMaxHp ?? this.flags.bossFieldMaxHp);
+    this.bossFieldMaxHp = this.sharedBoss ? Math.min(this.sharedBoss.maxHp,
+      Number.isFinite(fieldHp) && fieldHp > 0 ? fieldHp : this.sharedBoss.maxHp) : null;
     this.routes = (opts.routes ?? []).map((r) => normalizeRoute(r));
     /** Per-template enemy overrides `{ [enemyKey]: { stats: {…partial} } }` (waves.json `overrides`). */
     this.enemyOverrides = opts.enemyOverrides ?? {};

@@ -21,7 +21,7 @@ export const DOROTHY_TOKEN = 'token_10025_doroth_recttp';
 const clone = x => structuredClone(x);
 const BASE_STATS = { maxHp: 3000, atk: 300, def: 0, res: 0, cost: 0, blockCnt: 0, bat: 1, aspd: 100,
   respawnTime: 999, spRecovery: 0, hpRecoveryPerSec: 0, moveSpeed: 0, tauntLevel: -10, massLevel: 0, deployLimit: 1, deckStack: 0 };
-const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动一台科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台，${RHINE_BALANCE.thresholds[2]}名时三台全部启动。达到${RHINE_BALANCE.sharingCount}名时，除伊芙利特和治疗干员外的莱茵输出干员获得己方已部署装置中最高基础攻击力的${RHINE_BALANCE.researchSharing[0] * 100}%，精锐${RHINE_BALANCE.researchSharing[1] * 100}%，作为额外攻击力；多个装置不重复共享。休整期选择生命维持仪、能量谐振仪或生态调控器。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响。`;
+const TEXT = `在场${RHINE_BALANCE.thresholds[0]}名不同【莱茵生命】干员时启动一台科研装置；在场${RHINE_BALANCE.thresholds[1]}名时同时启动两台，${RHINE_BALANCE.thresholds[2]}名时三台全部启动。达到${RHINE_BALANCE.sharingCount}名时，除伊芙利特和治疗干员外的莱茵输出干员获得己方已部署装置中最高基础攻击力的${RHINE_BALANCE.researchSharing[0] * 100}%，精锐${RHINE_BALANCE.researchSharing[1] * 100}%，作为额外攻击力；多个装置不重复共享。3名时获得生态维持仪与能量谐振仪，9名时解锁只有一级的全场激光钻机。装置基础攻击力${RHINE_BALANCE.baseAttack}，每层科研增加${RHINE_BALANCE.attackPerLayer}点。生态维持仪与能量谐振仪参战成功获得${RHINE_BALANCE.successPoints}研究点，失败获得${RHINE_BALANCE.failurePoints}点；${RHINE_BALANCE.breakthroughPoints.map((n,i) => `第${i+1}次突破需要${n}点`).join('，')}。每次突破后研究点清零，溢出不保留；科研层数不受影响，激光钻机不积累研究点或突破。`;
 
 // This expansion is not a sandbox/roguelike mode. Preserve the source conditions for auditing,
 // but never compile mode-restricted module parts into the live ordinary-battle blackboards.
@@ -66,7 +66,7 @@ function makeGarrison(key, gold) {
   const grade = gold ? 1 : 0, r = RHINE_BALANCE;
   if (key === 'copy_start') return garrison(id, '身前一格干员若为“进入休整期时”特质，本干员的特质与其相同', 'SERVER_PREP_START', 'SERVER_FRONT_SAME_EFFECT_PREP_START');
   if (key === 'copy_end') return garrison(id, '身前一格干员若为“休整期结束时”特质，本干员的特质与其相同', 'SERVER_PREP_FIN', 'SERVER_FRONT_SAME_EFFECT_PREP_FIN');
-  if (key === 'mayer') return garrison(id, `战斗中，身前一格科研装置每完成一次有效工作，使已激活的【莱茵生命】增加${r.mayerDeviceLayers[grade]}层。能量装置每次实际发射脉冲计一次；医疗装置每${r.medicalInterval}秒治疗轮次有实际治疗或护盾净增加时计一次，多个目标不重复计数；生态装置累计${r.ecologyResearchInterval}秒范围内有可选敌人时计一次，无敌人时暂停累计。同一装置只取最强的一名梅尔`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { device_layers: r.mayerDeviceLayers[grade] });
+  if (key === 'mayer') return garrison(id, `战斗中，身前一格科研装置每完成一次有效工作，使已激活的【莱茵生命】增加${r.mayerDeviceLayers[grade]}层。能量装置每次实际发射脉冲计一次；生态维持仪有实际治疗、护盾净增加或累计${r.ecologyResearchInterval}秒有效减速时计一次，同一装置${r.medicalInterval}秒内最多计一次，多个目标和治疗来源不重复计数；激光钻机累计${r.laserResearchInterval}秒有效输出计一次，逐次伤害不重复产层。无目标时暂停累计。同一装置只取最强的一名梅尔`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { device_layers: r.mayerDeviceLayers[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
   if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署且有效的单台科研装置中最高基础攻击力的${r.ifritInheritance[grade] * 100}%作为额外攻击力，多台不相加，无独立继承上限`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
   if (key === 'astgenne') return garrison(id, `战斗中，首次开启技能时，使已激活的【莱茵生命】与【精准】各增加${r.astgenneFirstSkillLayers[grade]}层`, 'IN_BATTLE', 'RHINE_ASTGENNE_FIRST_SKILL', { layer: r.astgenneFirstSkillLayers[grade] }, { bond_ids: `${RHINE_BOND},preciShip` });
@@ -77,7 +77,7 @@ function makeGarrison(key, gold) {
 function adaptMayerTalent(talent, count) {
   if (talent.bb?.cnt == null) return;
   talent.bb.cnt = count;
-  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用.*?个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生命维持仪治疗';
+  for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用.*?个机械水獭召唤物/, `可以使用${count}个机械水獭召唤物`) + '。机械水獭不能接受干员治疗（包括塞雷娅及干员的治疗召唤物），可接受生态维持仪治疗';
 }
 
 function adaptDorothyTalent(talent, count) {
@@ -288,6 +288,7 @@ export async function applyRhineData(files, source = null) {
     owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'phys', attackKind: 'melee', projectile: 'none', canHitFly: false,
     skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
   tokens[DOROTHY_TOKEN] = compileDorothyToken(ctx, chess);
+  delete tokens.token_rhine_ecology;
   for (const d of RHINE_DEVICES) tokens[d.tokenId] = { tokenId: d.tokenId, kind: 'summon', name: d.name, appellation: d.name,
     desc: d.description, descRaw: d.description, profession: 'TOKEN', subProfessionId: 'notchar1', position: 'ALL', displayType: 'DEFAULT',
     placeable: false, ownerRange: false, owners: [], stats: { ...BASE_STATS, atk: RHINE_BALANCE.baseAttack },

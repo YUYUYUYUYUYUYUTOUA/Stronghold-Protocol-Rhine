@@ -1,6 +1,6 @@
 // Research auras cover complete board cells, independently of facing. Moving targets are tested
 // against the cell containing their centre, so placement highlights and live effects share a boundary.
-import { RHINE_BALANCE as B, rhineDevice, rhineStage } from './rhineResearch.js';
+import { RHINE_BALANCE as B, rhineDevice, rhineStage, rhineDeviceStage } from './rhineResearch.js';
 import { GEO } from './constants.js';
 import { t } from './i18n.js';
 
@@ -11,6 +11,7 @@ export const CALCIFICATION_GRID = Object.freeze(Array.from({ length: 7 }, (_, i)
     .filter(c => Math.abs(r) + Math.abs(c) <= 3).map(c => Object.freeze([r, c]))));
 
 export function energyPulseRange(stage = 0) {
+  if (rhineStage(stage) === 0) return { radius: B.radius, grid: null, tileBased: false, deviceCentered: true };
   const tileBased = rhineStage(stage) >= 2;
   return { radius: tileBased ? 3 : B.energySpreadRadius, grid: tileBased ? CALCIFICATION_GRID : null, tileBased };
 }
@@ -18,8 +19,9 @@ export function energyPulseRange(stage = 0) {
 export function researchRange(piece) {
   const def = rhineDevice(typeof piece === 'string' ? piece : piece?.id ?? piece?.tokenId ?? piece?.defId);
   if (!def) return null;
-  const stage = rhineStage(piece?.stage ?? piece?.researchStage);
-  const radius = B.radius + (def.key === 'ecology' && stage >= 2 ? 1 : 0);
+  const stage = rhineDeviceStage(def, piece?.stage ?? piece?.researchStage);
+  if (def.key === 'laser') return { key: def.key, radius: 0, grid: [], stage, global: true };
+  const radius = B.radius + ((def.key === 'medical' && stage >= 2 || def.key === 'energy' && stage >= 1) ? 1 : 0);
   const grid = [];
   for (let r = -radius; r <= radius; r++) for (let c = -radius; c <= radius; c++) {
     if (Math.hypot(r, c) <= radius + 1e-9) grid.push([r, c]);
@@ -62,14 +64,15 @@ export function researchRangeTiles(row, col, radius, bounds = GEO.NORMAL_RECT) {
 export function researchRangeText(piece) {
   const range = researchRange(piece);
   if (!range) return '';
-  if (range.key === 'medical') return t('覆盖半径 {radius} 格内的整格区域（{tiles} 格）；治疗本方干员及可受治疗的召唤物，包括机械水獭。突破不扩大范围。', { radius: B.radius, tiles: range.grid.length });
+  if (range.key === 'medical') return t('覆盖半径 {radius} 格内的整格区域（{tiles} 格），敌人持续减速50%；治疗本方干员及可受治疗的召唤物，包括机械水獭。二级起范围内本方干员接受任意来源治疗均获得护盾，自然生命回复不触发。三级扩大范围并周期束缚。', { radius: range.radius, tiles: range.grid.length });
   if (range.key === 'energy') {
     const pulse = energyPulseRange(range.stage);
     const charging = range.stage >= 1 ? t('己方全场干员释放技能均可充能') : t('半径 {radius} 格内己方干员释放技能时充能', { radius: B.radius });
+    if (range.stage === 0) return t('{charging}；3点充能发射后命中装置半径 {radius} 格内全部敌人（{tiles} 格），无目标时保留满充能。', { charging, radius: range.radius, tiles: range.grid.length });
     const splash = pulse.tileBased ? t('主目标所在格为中心的钙质化 {tiles} 格菱形', { tiles: pulse.grid.length }) : t('主目标周围实际半径 {radius} 格', { radius: pulse.radius });
-    return t('{charging}；主目标仍须在装置半径 {radius} 格内（{tiles} 格）。一级起造成范围法术伤害，溅射为{splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。', { charging, radius: B.radius, tiles: range.grid.length, splash });
+    return t('{charging}；主目标须在装置半径 {radius} 格内（{tiles} 格）。溅射为{splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。', { charging, radius: range.radius, tiles: range.grid.length, splash });
   }
-  return t('当前覆盖半径 {radius} 格内的整格区域（{tiles} 格），持续减速 {slow}%；一级及二级为 {baseRadius} 格，三级为 {matureRadius} 格。二级起每 {interval} 秒额外束缚 {duration} 秒。', { radius: range.radius, tiles: range.grid.length, slow: B.ecologySlow * 100, baseRadius: B.radius, matureRadius: B.radius + 1, interval: B.ecologyInterval, duration: B.ecologyBindDuration });
+  return t('全场攻击，选择面板最大生命值最高的敌人，锁定至其死亡或永久离场；只有一级，仅9莱茵生命可用。持续输出每秒增伤5%，20秒达到上限并开始每秒追加最大生命值0.5%的真实伤害；领袖按本战场分摊血量计算。');
 }
 
 /** Polygon clipped to a tile's square. Coordinates throughout are [column, row]. */

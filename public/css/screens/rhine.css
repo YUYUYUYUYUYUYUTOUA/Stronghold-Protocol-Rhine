@@ -12,3 +12,4 @@
 .ff-unit.is-research .ff-unit__art{border:0;background:transparent;border-radius:0;overflow:visible}
 .ff-unit.is-research .ff-unit__art img{object-fit:contain}
 .ff-unit.is-research-energy .ff-unit__bars i.sp{background:#ffbc70}
+.rhine-card.is-locked{border-style:dashed;background:#171c20}.rhine-card.is-locked .rhine-card__select img{opacity:.45;filter:grayscale(.7)}.rhine-card__laser{font-size:.105rem;line-height:1.5;color:#e6a4ff;margin-top:.03rem;font-variant-numeric:tabular-nums}.rhine-card.is-locked .rhine-card__laser{color:#9ca6ad}

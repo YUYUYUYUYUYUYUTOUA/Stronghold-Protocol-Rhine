@@ -176,7 +176,7 @@ test('Mayer otters reject operator heals including Saria, chained HoT and operat
     assert.equal(t.hp, 100);
     assert.equal(h.hooksOf('heal').some(c => c.target === t), false, 'rejected heals never reach reactive heal hooks');
     h.run(3);
-    close(t.hp, 100 + 150);
+    close(t.hp, 100 + 225);
     assert.ok(h.hooksOf('heal').some(c => c.source === medical && c.target === t));
     assert.equal(h.b.heal(t, t, 10, { self: true }), 10, 'intrinsic self recovery retains the original self-heal rule');
     h.b.addBuff(t, { key: 'test:healFree', flags: { healFree: true } });

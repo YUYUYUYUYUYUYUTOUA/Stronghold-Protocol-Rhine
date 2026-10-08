@@ -12,7 +12,7 @@ function setup(key, stage) {
   const chess = Object.fromEntries(actors.map(([uid]) => [`${uid}_a`, chessRec({id:`${uid}_a`,stats:{maxHp:2000,atk:100,blockCnt:0},skill:{}})]));
   const kits = Object.fromEntries(actors.map(([uid]) => [`${uid}_a`, () => ({trait:{noAttack:true},skill:{kind:'instant',trigger:{rule:'NEVER'}}})]));
   const h = makeBattle({autoFinish:false,kits,defs:{chess,enemies:{dummy:enemyRec({key:'dummy',hp:100000,speed:0})}},
-    players:[{playerId:'p1',seat:0,side:'L',colOffset:0,units,bonds:{rhineShip:{active:true,count:3,layers:0}},
+    players:[{playerId:'p1',seat:0,side:'L',colOffset:0,units,bonds:{rhineShip:{active:true,count:key==='laser'?9:3,layers:0}},
       research:{active:true,devices:[{uid:'device',key,tokenId,onBoard:true,stage}]}}]});
   h.step();return h;
 }
@@ -23,8 +23,8 @@ test('Rhine healing FX: one event per effective target, even when the heal also 
   const h=setup('medical',2), d=h.unit('device');
   for(const id of ['a','b'])h.unit(id).hp=h.unit(id).s.maxHp-1;
   h.run(B.medicalInterval);
-  const events=fx(h,'rhineHeal');assert.equal(events.length,2);
-  for(const [i,id] of ['a','b'].entries()){
+  const events=fx(h,'rhineHeal');assert.equal(events.length,3);
+  for(const [i,id] of ['a','b','c'].entries()){
     const target=h.unit(id);
     assert.deepEqual(events[i],['fx','rhineHeal',target.x,target.y,{source:d.id,target:target.id,stage:2}]);
     assert.equal(target.hp,target.s.maxHp);assert.ok(target.s.shield>0);
@@ -36,14 +36,14 @@ test('Rhine healing FX: healing-only and shield-only emit; full-health stage zer
   const healed=setup('medical',0);healed.unit('a').hp=100;healed.run(B.medicalInterval);
   assert.equal(fx(healed,'rhineHeal').length,1);assert.equal(fx(healed,'rhineHeal')[0][4].stage,0);done(healed);
   const shielded=setup('medical',1);shielded.run(B.medicalInterval);
-  assert.equal(fx(shielded,'rhineHeal').length,1);assert.ok(shielded.unit('a').s.shield>0);done(shielded);
+  assert.equal(fx(shielded,'rhineHeal').length,2);assert.ok(shielded.unit('a').s.shield>0);done(shielded);
   const full=setup('medical',0);full.run(B.medicalInterval);
   assert.equal(fx(full,'rhineHeal').length,0);done(full);
   const cancelled=setup('medical',1);cancelled.b.on('heal',ctx=>{ctx.amount=0;});cancelled.run(B.medicalInterval);
   assert.equal(fx(cancelled,'rhineHeal').length,0);assert.equal(cancelled.unit('a').s.shield,0);done(cancelled);
 });
 
-test('Rhine visual metadata: all three spawn stages serialize and pulse/ecology name the source device',()=>{
+test('Rhine visual metadata: all three research stages serialize and pulse/medical field name the source device',()=>{
   for(const stage of [0,1,2]){
     const energy=setup('energy',stage), d=energy.unit('device');energy.spawn('dummy',{pos:[10,6]});
     for(const uid of ['a','b','c'])assert.equal(energy.unit(uid).skill.activate('test',{free:true}),true);
@@ -53,18 +53,18 @@ test('Rhine visual metadata: all three spawn stages serialize and pulse/ecology 
     assert.equal(unitInfo(d).researchStage,stage);
     assert.equal(energy.eventsOf('spawn').find(e=>e[1].id===d.id)[1].researchStage,stage);
     assert.equal('researchStage' in JSON.parse(JSON.stringify(unitInfo(energy.unit('a')))),false);
-    const ecology=setup('ecology',stage);ecology.run(B.ecologyInterval);
+    const ecology=setup('medical',stage);ecology.run(B.ecologyInterval);
     assert.equal(fx(ecology,'rhineEcology').length,2);
     for(const [i,event] of fx(ecology,'rhineEcology').entries()){
       assert.deepEqual(event[4],{source:ecology.unit('device').id,stage,active:true,radius:B.radius+(stage>=2?1:0),
-        continuous:true,duration:B.ecologyInterval,bind:i>0&&stage>=1});
+        continuous:true,duration:B.ecologyInterval,bind:i>0&&stage>=2});
     }
     done(energy);done(ecology);
   }
 });
 
-test('ecology active state keeps its stage for reconnects and emits one stop/restart without an immediate bind',()=>{
-  const h=setup('ecology',2), d=h.unit('device'), bond=h.b.getPlayer('p1').bonds.rhineShip;
+test('medical field active state keeps its stage for reconnects and emits one stop/restart without an immediate bind',()=>{
+  const h=setup('medical',2), d=h.unit('device'), bond=h.b.getPlayer('p1').bonds.rhineShip;
   const target=h.spawn('dummy',{pos:[10,7]});h.step();
   assert.equal(unitInfo(d).researchActive,true);assert.equal(unitInfo(d).researchStage,2);
   assert.equal(target.findBuff('slow').mods.moveMul,0.5);
@@ -84,6 +84,58 @@ test('ecology active state keeps its stage for reconnects and emits one stop/res
   h.b.retreat(d,{permanent:true});assert.equal(unitInfo(d).researchActive,false);
   assert.equal(fx(h,'rhineEcology').at(-1)[4].active,false);
   done(h);
+});
+
+test('laser FX and reconnect metadata preserve the fixed stage, target and effective seconds while pausing the beam',()=>{
+  const h=setup('laser',2), d=h.unit('device'), target=h.spawn('dummy',{pos:[10,9]});
+  h.run(1);
+  assert.equal(unitInfo(d).researchStage,0);
+  assert.equal(h.eventsOf('spawn').find(e=>e[1].id===d.id)[1].researchStage,0);
+  assert.equal(unitInfo(d).researchLaserTarget,target.id);
+  assert.equal(unitInfo(d).researchLaserProgress,1);
+  assert.equal(unitInfo(d).researchLaserActive,true);
+  const active=fx(h,'rhineLaser').at(-1);
+  assert.deepEqual(active.slice(2,4),[target.x,target.y]);
+  assert.deepEqual(active[4],{source:d.id,target:target.id,fromX:d.x,fromY:d.y,active:true,progress:1});
+  target.hidden=true;h.step();
+  assert.equal(fx(h,'rhineLaser').at(-1)[4].active,false);
+  assert.equal(unitInfo(d).researchLaserTarget,target.id);
+  assert.equal(unitInfo(d).researchLaserProgress,1);
+  assert.equal(unitInfo(d).researchLaserActive,false);
+  target.hidden=false;h.run(.3);
+  assert.equal(fx(h,'rhineLaser').at(-1)[4].active,true);
+  assert.equal(unitInfo(d).researchLaserProgress,1.25);
+  done(h);
+});
+
+test('laser clearing publishes an empty lock when its target dies without a successor',()=>{
+  const h=setup('laser',0), d=h.unit('device'), target=h.spawn('dummy',{pos:[10,9]});
+  h.run(1);assert.equal(unitInfo(d).researchLaserProgress,1);
+  h.b.kill(target);h.step();
+  assert.deepEqual(fx(h,'rhineLaser').at(-1),['fx','rhineLaser',d.x,d.y,
+    {source:d.id,target:null,fromX:d.x,fromY:d.y,active:false,progress:0}]);
+  const info=unitInfo(d);
+  assert.deepEqual([info.researchLaserTarget,info.researchLaserProgress,info.researchLaserActive],[null,0,false]);
+  const count=fx(h,'rhineLaser').length;h.step(5);
+  assert.equal(fx(h,'rhineLaser').length,count,'an empty lock does not repeat clear events');
+  done(h);
+});
+
+test('laser clearing after device disable publishes empty state even when its locked beam was already paused',()=>{
+  for(const paused of [false,true]){
+    const h=setup('laser',0), d=h.unit('device'), target=h.spawn('dummy',{pos:[10,9]});
+    h.run(1);
+    if(paused){target.hidden=true;h.step();assert.equal(fx(h,'rhineLaser').at(-1)[4].progress,1);}
+    const count=fx(h,'rhineLaser').length;
+    h.b.getPlayer('p1').input.research.active=false;h.step();
+    assert.equal(fx(h,'rhineLaser').length,count+1);
+    assert.deepEqual(fx(h,'rhineLaser').at(-1)[4],
+      {source:d.id,target:null,fromX:d.x,fromY:d.y,active:false,progress:0});
+    const info=unitInfo(d);
+    assert.deepEqual([info.researchLaserTarget,info.researchLaserProgress,info.researchLaserActive],[null,0,false]);
+    h.step(5);assert.equal(fx(h,'rhineLaser').length,count+1);
+    done(h);
+  }
 });
 
 test('energy full charge remains visible to snapshots and late joins until a target triggers one pulse',()=>{

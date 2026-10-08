@@ -9,7 +9,7 @@ import { ERR } from '../../shared/constants.js';
 import { canPlace, parseKey } from '../../server/match/board.js';
 import { buildBattleSpec, createBattleFromSpec } from '../../server/sim/spec.js';
 import { FakeBattle } from './fakeBattle.js';
-import { arrange } from '../../server/match/bot.js';
+import { arrange, rhineBotRecord, rhineLaserExposure } from '../../server/match/bot.js';
 import { collectViolations } from '../../server/match/invariants.js';
 
 // Independent of expansion authoring order: exercise the real match rules against six known, distinct members.
@@ -45,6 +45,17 @@ function deploy(h, ps, key) {
   return h.m.handle(ps.playerId, { t: 'g.move', uid: device(ps, key).uid, to: { area: 'board', row, col } });
 }
 function recall(h, ps, key, area = 'research') { return h.m.handle(ps.playerId, { t: 'g.move', uid: device(ps, key).uid, to: { area, idx: 0 } }); }
+function nineSetup() {
+  const data = fixture();
+  const extra = Object.values(data.chess).filter(c => c.visible && !c.isGolden && !IDS.includes(c.chessId)).slice(0, 2).map(c => c.chessId);
+  for (const id of extra) for (const c of [data.chess[id], data.chess[data.chess[id].goldenId]].filter(Boolean)) {
+    c.bonds = [RHINE_BOND]; c.tokens = []; c.garrisonIds = []; c.position = 'MELEE';
+  }
+  data.chess[IDS[1]].bonds.push('maniShip');
+  const h = setup({ data }), ps = h.ps('p_0');
+  const pieces = [...IDS, ...extra].map(id => give(h.m, ps, id, 'board', freeTile(ps)));
+  return { h, ps, pieces };
+}
 
 test('Rhine thresholds unlock a separate reserve, capacity 1/2, and harmony adds only one virtual member', () => {
   const h = setup(), ps = h.ps('p_0');
@@ -52,13 +63,14 @@ test('Rhine thresholds unlock a separate reserve, capacity 1/2, and harmony adds
   assert.equal(ps.researchView().unlocked, false);
   member(h, ps, 2);
   assert.equal(ps.researchView().capacity, 1);
-  assert.equal(ps.research.hand.filter(Boolean).length, 3);
+  assert.equal(ps.research.hand.filter(Boolean).length, 2);
+  assert.deepEqual([device(ps, 'laser').uid, device(ps, 'laser').locked, device(ps, 'laser').minCount, device(ps, 'laser').maxStage], [null, true, 9, 0]);
   assert.deepEqual(deploy(h, ps, 'medical'), { ok: true });
   assert.equal(deploy(h, ps, 'energy').error, ERR.BOARD_FULL);
   member(h, ps, 3); member(h, ps, 4); member(h, ps, 5);
   assert.equal(ps.researchView().capacity, 2);
   assert.deepEqual(deploy(h, ps, 'energy'), { ok: true });
-  assert.equal(deploy(h, ps, 'ecology').error, ERR.BOARD_FULL);
+  assert.equal(deploy(h, ps, 'laser').error, ERR.BAD_TARGET);
   checkInvariants(h.m);
 
   const data = fixture(); data.chess[IDS[1]].bonds.push('maniShip');
@@ -71,28 +83,163 @@ test('Rhine thresholds unlock a separate reserve, capacity 1/2, and harmony adds
   assert.equal(pp.researchView().capacity, 2);
 });
 
-test('Rhine count nine with eight actual members and harmony deploys all three types; dropping to eight recalls only excess', () => {
-  const data = fixture();
-  const extra = Object.values(data.chess).filter(c => c.visible && !c.isGolden && !IDS.includes(c.chessId)).slice(0, 2).map(c => c.chessId);
-  for (const id of extra) for (const c of [data.chess[id], data.chess[data.chess[id].goldenId]].filter(Boolean)) {
-    c.bonds = [RHINE_BOND]; c.tokens = []; c.garrisonIds = []; c.position = 'MELEE';
-  }
-  data.chess[IDS[1]].bonds.push('maniShip');
-  const h = setup({ data }), ps = h.ps('p_0');
-  const pieces = [...IDS, ...extra].map(id => give(h.m, ps, id, 'board', freeTile(ps)));
+test('Rhine count nine deploys all three types; dropping to eight recalls the laser before legal devices and preserves its UID', () => {
+  const { h, ps, pieces } = nineSetup();
   assert.equal(ps.bonds[RHINE_BOND].count, 9);
   assert.equal(ps.researchView().capacity, 3);
-  for (const key of ['medical', 'energy', 'ecology']) assert.deepEqual(deploy(h, ps, key), { ok: true });
-  ps.research.points.ecology = 4; ps.research.stages.ecology = 1;
+  // Insert the laser first: loss of the gate must recall this one rather than the last legal device.
+  for (const key of ['laser', 'medical', 'energy']) assert.deepEqual(deploy(h, ps, key), { ok: true });
+  const laserUid = device(ps, 'laser').uid;
+  ps.research.points.laser = 4; ps.research.stages.laser = 1;
   assert.equal(ps.battleInput().research.devices.filter(d => d.onBoard).length, 3);
   checkInvariants(h.m);
   assert.deepEqual(ps.move(pieces[7].uid, { area: 'hand', idx: 0 }), { ok: true });
   assert.equal(ps.researchView().capacity, 2);
   assert.equal(ps.researchView().devices.filter(d => d.onBoard).length, 2);
-  assert.deepEqual([device(ps, 'ecology').stage, device(ps, 'ecology').points], [1, 4]);
+  assert.deepEqual([device(ps, 'laser').stage, device(ps, 'laser').points], [0, 0]);
+  assert.equal(device(ps, 'laser').onBoard, false);
+  assert.equal(device(ps, 'laser').locked, true);
+  assert.equal(device(ps, 'laser').uid, laserUid);
+  assert.equal(device(ps, 'medical').onBoard, true);
+  assert.equal(device(ps, 'energy').onBoard, true);
   assert.equal(ps.research.hand.filter(Boolean).length, 1);
-  assert.equal(deploy(h, ps, 'ecology').error, ERR.BOARD_FULL);
+  assert.equal(deploy(h, ps, 'laser').error, ERR.BAD_TARGET);
+  const [row, col] = freeTile(ps);
+  assert.deepEqual(ps.move(pieces[7].uid, { area: 'board', row, col }), { ok: true });
+  assert.equal(device(ps, 'laser').uid, laserUid);
+  assert.deepEqual(deploy(h, ps, 'laser'), { ok: true });
+  assert.equal(ps.researchView().devices.filter(d => d.onBoard).length, 3);
   checkInvariants(h.m);
+});
+
+test('eight Rhine members cannot forge laser deployment through a board swap, reorientation or battle input', () => {
+  const { h, ps, pieces } = nineSetup();
+  try {
+    deploy(h, ps, 'medical'); deploy(h, ps, 'energy');
+    const uid = device(ps, 'laser').uid;
+    assert.deepEqual(ps.move(pieces[7].uid, { area: 'hand', idx: 0 }), { ok: true });
+    assert.equal(ps.bonds[RHINE_BOND].count, 8);
+    assert.equal(deploy(h, ps, 'laser').error, ERR.BAD_TARGET);
+    // A malformed restored board still cannot use g.move to keep/reorder the now-locked card.
+    const laser = ps.find(uid).piece;
+    ps.research.hand[2] = null;
+    const [row, col] = freeTile(ps), key = `${row},${col}`;
+    ps.board.set(key, laser);
+    const chess = [...ps.board.values()].find(p => p.kind === 'chess');
+    assert.equal(ps.move(chess.uid, { area: 'board', row, col }).error, ERR.BAD_TILE);
+    assert.equal(ps.move(uid, { area: 'board', row, col }, 'RIGHT').error, ERR.BAD_TARGET);
+    assert.equal(ps.move(uid, { area: 'board', row, col }, 'UP').error, ERR.BAD_TARGET);
+    assert.equal(ps.move(device(ps, 'energy').uid, { area: 'board', row, col }).error, ERR.BAD_TILE);
+    const input = ps.battleInput();
+    assert.equal(input.units.some(u => u.tokenId === 'token_rhine_laser'), false);
+    assert.equal(input.research.devices.find(d => d.key === 'laser').locked, true);
+    assert.equal(input.research.devices.filter(d => d.onBoard).length, 2);
+    assert.equal(ps.find(uid).area, 'research');
+    // Omitting the research flag cannot turn a device ID into a deployable ordinary summon.
+    const [forgedRow, forgedCol] = freeTile(ps);
+    ps.board.set(`${forgedRow},${forgedCol}`, { ...laser, uid: 999999, research: false });
+    assert.equal(ps.battleInput().units.some(u => u.tokenId === 'token_rhine_laser'), false);
+    assert.equal(device(ps, 'laser').uid, uid);
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
+});
+
+test('the single-stage laser never earns research, including stale stages, points and synthetic participant state', () => {
+  const { h, ps } = nineSetup();
+  try {
+    deploy(h, ps, 'laser');
+    ps.research.stages.laser = 2; ps.research.points.laser = 4;
+    const view = ps.researchView();
+    assert.deepEqual([view.devices[2].stage, view.devices[2].points, view.devices[2].maxStage], [0, 0, 0]);
+    assert.deepEqual([view.devices[2].locked, view.devices[2].minCount], [false, 9]);
+    ps.freezeResearch(ps.battleInput());
+    assert.deepEqual(ps.research.participants, []);
+    ps.research.participants.push('laser');
+    assert.equal(ps.settleResearch(true), true);
+    assert.deepEqual([ps.research.stages.laser, ps.research.points.laser], [0, 0]);
+    for (const success of [true, false]) {
+      h.m.round++; ps.freezeResearch(ps.battleInput()); ps.settleResearch(success);
+      assert.deepEqual([device(ps, 'laser').stage, device(ps, 'laser').points], [0, 0]);
+    }
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
+});
+
+test('older unlocked ecology states retain medical/energy identity without generating a duplicate or an early laser', () => {
+  const h = setup(), ps = h.ps('p_0');
+  try {
+    IDS.forEach((_, i) => member(h, ps, i));
+    deploy(h, ps, 'medical');
+    const medicalUid = device(ps, 'medical').uid, energyUid = device(ps, 'energy').uid;
+    ps.research.points.medical = 3; ps.research.stages.energy = 1; ps.research.points.energy = 4;
+    const legacy = ps.newPiece('token', 'token_rhine_ecology', { research: true, researchKey: 'ecology', ownerUid: null });
+    ps.research.hand[2] = legacy;
+    ps.research.stages.ecology = 2; ps.research.points.ecology = 0;
+    const [row, col] = freeTile(ps);
+    ps.board.set(`${row},${col}`, legacy);
+    for (let i = 0; i < 3; i++) ps.recompute();
+    assert.equal(device(ps, 'medical').uid, medicalUid);
+    assert.equal(device(ps, 'energy').uid, energyUid);
+    assert.deepEqual([device(ps, 'medical').points, device(ps, 'energy').stage, device(ps, 'energy').points], [3, 1, 4]);
+    assert.equal(ps.find(legacy.uid), null);
+    assert.equal(device(ps, 'laser').uid, null);
+    assert.equal(device(ps, 'laser').locked, true);
+    assert.deepEqual([...ps.board.values(), ...ps.research.hand.filter(Boolean)].filter(p => p.research).map(p => p.id).sort(), ['token_rhine_energy', 'token_rhine_medical']);
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
+});
+
+test('bot device estimates use merged medical control/healing, energy stages and a capped pulse rate, and single-target drill ramp', () => {
+  const h = setup(), ps = h.ps('p_0');
+  try {
+    IDS.forEach((_, i) => member(h, ps, i));
+    ps.layers[RHINE_BOND] = 10;
+    const medical = ps.find(device(ps, 'medical').uid).piece, energy = ps.find(device(ps, 'energy').uid).piece;
+    for (const [stage, scale, targets] of [[0, 0.75, 1], [1, 0.75, 2], [2, 1, 3]]) {
+      ps.research.stages.medical = stage;
+      const rec = rhineBotRecord(h.m, ps, medical);
+      assert.equal(rec.stats.atk, 340 * scale);
+      assert.equal(rec.stats.bat, 3);
+      assert.equal(rec._rhineSlow, 0.5);
+      assert.equal(rec._rhineHeal, targets * scale * (stage ? 1.25 : 1));
+      assert.equal(rec._rhineBind > 0, stage === 2);
+      assert.equal(rec.rangeGrid.length, stage === 2 ? 29 : 13);
+    }
+    for (const [stage, scale] of [[0, 1.8], [1, 2.4], [2, 3]]) {
+      ps.research.stages.energy = stage;
+      assert.equal(rhineBotRecord(h.m, ps, energy).stats.atk, 340 * scale);
+    }
+    const crowded = { ...ps, board: new Map(Array.from({ length: 40 }, (_, i) => [String(i), { kind: 'chess' }])) };
+    assert.equal(rhineBotRecord(h.m, crowded, energy).stats.bat, 1.5);
+    const laser = { id: 'token_rhine_laser', research: true, researchKey: 'laser' };
+    const laserRec = rhineBotRecord(h.m, ps, laser);
+    assert.equal(laserRec.stats.atk, 510);
+    assert.equal(laserRec._rhineLaser, true);
+    assert.equal(rhineLaserExposure(510, 0, 1e6), 0);
+    assert.equal(rhineLaserExposure(510, 20, 1e6), 15300);
+    assert.equal(rhineLaserExposure(510, 40, 1e6), 135700);
+  } finally { h.m.dispose(); }
+});
+
+test('autoplay keeps the deployed Rhine census at nine before placing all three devices', () => {
+  const { h, ps, pieces } = nineSetup();
+  try {
+    const outsider = Object.values(h.m.gd.raw.chess).find(c => c.visible && c.isGolden && c.tier === 6 && !c.bonds.includes(RHINE_BOND));
+    give(h.m, ps, outsider.chessId);
+    arrange(h.m, ps);
+    assert.equal(ps.bonds[RHINE_BOND].count, 9);
+    assert.equal(device(ps, 'laser').onBoard, true);
+    assert.equal(ps.researchView().devices.filter(d => d.onBoard).length, 3);
+    const uid = device(ps, 'laser').uid;
+    const empty = ps.hand.findIndex(p => !p);
+    assert.deepEqual(ps.move(pieces[7].uid, { area: 'hand', idx: empty }), { ok: true });
+    assert.equal(device(ps, 'laser').locked, true);
+    arrange(h.m, ps);
+    assert.equal(ps.bonds[RHINE_BOND].count, 9);
+    assert.equal(device(ps, 'laser').uid, uid);
+    assert.equal(device(ps, 'laser').onBoard, true);
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
 });
 
 test('the shipped seven-member roster reaches Rhine nine through Muelsyse harmony and a terminal-isomorph recruit', () => {
@@ -115,7 +262,7 @@ test('the shipped seven-member roster reaches Rhine nine through Muelsyse harmon
   }
   assert.equal(ps.bonds[RHINE_BOND].count, 9);
   assert.equal(ps.researchView().capacity, 3);
-  for (const key of ['medical', 'energy', 'ecology']) assert.deepEqual(deploy(h, ps, key), { ok: true });
+  for (const key of ['medical', 'energy', 'laser']) assert.deepEqual(deploy(h, ps, key), { ok: true });
   assert.equal([...ps.board.values()].filter(p => p.kind === 'chess').length, 8);
   assert.equal(ps.battleInput().research.devices.filter(d => d.onBoard).length, 3);
   checkInvariants(h.m);
@@ -129,7 +276,7 @@ test('research cards never consume ordinary reserve slots, cannot be sold/equipp
   ps.hand = itemIds.map((id) => ps.newPiece('item', id));
   assert.deepEqual(deploy(h, ps, 'medical'), { ok: true });
   assert.deepEqual(recall(h, ps, 'medical', 'hand'), { ok: true });
-  assert.equal(ps.research.hand.filter(Boolean).length, 3);
+  assert.equal(ps.research.hand.filter(Boolean).length, 2);
   const uid = device(ps, 'medical').uid;
   assert.equal(ps.sell(uid).error, ERR.BAD_TARGET);
   assert.equal(ps.destroy(uid).error, ERR.BAD_TARGET);
@@ -167,7 +314,7 @@ test('dropping 6→3→inactive recalls excess devices without losing points, du
   assert.equal(ps.researchView().devices.filter((d) => d.onBoard).length, 1);
   for (const [i, p] of pieces.slice(2, 5).entries()) assert.deepEqual(ps.move(p.uid, { area: 'hand', idx: i + 1 }), { ok: true });
   assert.equal(ps.researchView().active, false);
-  assert.equal(ps.research.hand.filter(Boolean).length, 3);
+  assert.equal(ps.research.hand.filter(Boolean).length, 2);
   assert.equal(device(ps, 'medical').points, 3);
   assert.equal(device(ps, 'medical').stage, 1);
   assert.equal(device(ps, 'energy').points, 0);
@@ -175,7 +322,7 @@ test('dropping 6→3→inactive recalls excess devices without losing points, du
   assert.equal(deploy(h, ps, 'medical').error, ERR.BAD_TARGET);
   assert.deepEqual(ps.move(pieces[2].uid, { area: 'board', row: freeTile(ps)[0], col: freeTile(ps)[1] }), { ok: true });
   assert.equal(ps.researchView().active, true);
-  assert.equal(new Set(ps.research.hand.map((p) => p.uid)).size, 3);
+  assert.equal(new Set(ps.research.hand.filter(Boolean).map((p) => p.uid)).size, 2);
   checkInvariants(h.m);
 });
 
@@ -279,19 +426,19 @@ test('a failed battle construction does not award research for a synthetic empty
 test('autoplay deploys research from its dedicated reserve, prefers developed devices and can recall with a full ordinary hand', () => {
   const h = setup(), ps = h.ps('p_0');
   IDS.slice(0, 3).forEach((_, i) => member(h, ps, i));
-  ps.research.stages.ecology = 2;
-  ps.research.points.medical = 4;
+  ps.research.stages.medical = 2;
+  ps.research.points.energy = 4;
   arrange(h.m, ps);
-  assert.equal(device(ps, 'ecology').onBoard, true);
+  assert.equal(device(ps, 'medical').onBoard, true);
   assert.equal(ps.researchView().devices.filter((d) => d.onBoard).length, 1);
-  const uid = device(ps, 'ecology').uid;
+  const uid = device(ps, 'medical').uid;
   ps.hand = Object.keys(h.m.gd.raw.items).slice(0, ps.hand.length).map((id) => ps.newPiece('item', id));
   arrange(h.m, ps);
-  assert.equal(device(ps, 'ecology').uid, uid);
-  assert.equal(device(ps, 'ecology').onBoard, true);
+  assert.equal(device(ps, 'medical').uid, uid);
+  assert.equal(device(ps, 'medical').onBoard, true);
   assert.equal(ps.hand.filter(Boolean).length, 10);
-  assert.equal(device(ps, 'ecology').points, 0);
-  assert.equal(device(ps, 'ecology').stage, 2);
+  assert.equal(device(ps, 'medical').points, 0);
+  assert.equal(device(ps, 'medical').stage, 2);
   checkInvariants(h.m);
 });
 

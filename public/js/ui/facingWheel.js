@@ -28,6 +28,7 @@ import { DIRS, DIR_LABEL, DEAD_ZONE_TILES, dirFromDelta, dirFromKey, rangeTiles,
 import { facingSwallows } from './gameLogic.js';
 import { settingsStore } from './settings.js';
 import { t } from '../../../shared/i18n.js';
+import { GEO } from '../../../shared/constants.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const rawOf = (view) => (view && view.raw) || view || null;
@@ -139,8 +140,12 @@ export function syncPieceDirs(view, priv, skip = null) {
 export function showRange(view, grid, row, col, dir, style = FACING_STYLE, radius = null) {
   if (!view || typeof view.highlightTiles !== 'function') return [];
   const radial = Number.isFinite(radius) && radius > 0;
-  const tiles = grid && (dir || radial) ? rangeTiles(grid, row, col, radial ? 'RIGHT' : dir) : [];
-  try { view.highlightTiles(tiles, radial ? { ...style, researchRange: true } : style); } catch { /* cosmetic */ }
+  // The shared global device shape has radius 0 and an empty grid. Complete board cells
+  // let the renderer clip the preview to its normal, united or mirrored boss battlefield.
+  const global = radius === 0 && Array.isArray(grid) && grid.length === 0;
+  const tiles = global ? Array.from({ length: GEO.ROWS }, (_, r) => Array.from({ length: GEO.COLS }, (_, c) => [r, c])).flat()
+    : grid && (dir || radial) ? rangeTiles(grid, row, col, radial ? 'RIGHT' : dir) : [];
+  try { view.highlightTiles(tiles, radial || global ? { ...style, researchRange: true, ...(global ? { researchGlobal: true } : {}) } : style); } catch { /* cosmetic */ }
   return tiles;
 }
 

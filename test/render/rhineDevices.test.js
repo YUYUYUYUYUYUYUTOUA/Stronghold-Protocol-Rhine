@@ -2,7 +2,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakePixi, fakeViewCtx } from './fakepixi.js';
 import { presetCamera } from '../../public/js/render/projection.js';
-import { researchPose, RHINE_LOOK } from '../../public/js/render/rhineDevices.js';
+import { researchPose, RHINE_LOOK, laserFeedback } from '../../public/js/render/rhineDevices.js';
 import { FxSystem, SHOT_HEIGHT } from '../../public/js/render/fx.js';
 import { RHINE_DEVICES, RHINE_BALANCE } from '../../shared/rhineResearch.js';
 import { energyPulseRange } from '../../shared/rhineRange.js';
@@ -41,7 +41,7 @@ test('the upstream frozen-gate marker stays pictorially distinct from Rhine full
 });
 
 test('a late battle view preserves breakthrough lamps before any research effect is replayed', async () => {
-  const info = renderInfo({ id: 200, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, researchStage: 2 });
+  const info = renderInfo({ id: 200, kind: 'token', defId: 'token_rhine_medical', side: 'ally', x: 5, y: 12, researchStage: 2 });
   const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
   const v = new UnitView(ctx, info);
   await tick(); await tick(); v.update(1 / 60, cam, 0);
@@ -110,7 +110,7 @@ test('PNG texture trims transparent export margins, preserves aspect and caches 
 test('only the medical drone hovers; grounded equipment breathes without sliding or bouncing', () => {
   assert.notEqual(researchPose('medical', 0).y, researchPose('medical', 1).y);
   assert.notEqual(researchPose('medical', 0).rotation, researchPose('medical', 1).rotation);
-  for (const key of ['energy', 'ecology']) {
+  for (const key of ['energy', 'laser']) {
     assert.equal(researchPose(key, 0).y, researchPose(key, 3).y);
     assert.equal(researchPose(key, 1, 2, 1).rotation, 0);
     assert.ok(researchPose(key, 1, 2, 1).light > researchPose(key, 1, 0, 0).light);
@@ -118,22 +118,22 @@ test('only the medical drone hovers; grounded equipment breathes without sliding
 });
 
 test('research rigs are bounded, show breakthrough lamps, react only to their own events and survive low quality', async () => {
-  const kinds = { medical: 'rhineHeal', energy: 'rhinePulse', ecology: 'rhineEcology' };
+  const kinds = { medical: 'rhineHeal', energy: 'rhinePulse', laser: 'rhineLaser' };
   for (const d of RHINE_DEVICES) {
     const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
     const v = new UnitView(ctx, { id: d.key, kind: 'token', defId: d.tokenId, side: 'ally', x: 5, y: 12, dir: 'RIGHT', maxHp: 1, researchStage: 1 });
     await tick(); await tick(); v.update(1 / 60, cam, 0);
     const rig = v.researchActor;
-    assert.equal(rig.lights.filter(x => x.visible).length, 2);
+    assert.equal(rig.lights.filter(x => x.visible).length, d.key === 'laser' ? 1 : 2);
     assert.equal(v.facingArrow, null, 'radial research equipment has no directional wedge');
     assert.ok(v.fallback.width <= v.screen.s * RHINE_LOOK[d.key].width * 1.02);
     assert.ok(v.fallback.height <= v.screen.s * RHINE_LOOK[d.key].height * 1.02);
     assert.equal(rig.root.parent, v.body, 'same depth, culling and teardown as the summon');
     v.onResearchFx('anUnrelatedEffect', { stage: 2 });
-    assert.equal(rig.pulse, 0); assert.equal(rig.stage, 1);
-    v.onResearchFx(kinds[d.key], { stage: 2 });
+    assert.equal(rig.pulse, 0); assert.equal(rig.stage, d.key === 'laser' ? 0 : 1);
+    v.onResearchFx(kinds[d.key], { stage: 2, active: true });
     v.update(1 / 60, cam, 1);
-    assert.ok(rig.pulse > 0); assert.equal(rig.lights.filter(x => x.visible).length, 3);
+    assert.ok(rig.pulse > 0); assert.equal(rig.lights.filter(x => x.visible).length, d.key === 'laser' ? 1 : 3);
     const canvases = fake.canvases.length, children = rig.root.children.length;
     ctx.settings.quality = 'low';
     for (let i = 0; i < 90; i++) v.update(1 / 60, cam, 1 + i / 60);
@@ -162,8 +162,8 @@ test('actual source ids animate the device while medical and pulse effects use t
   assert.deepEqual(rings[0].slice(0, 2), [3, 4]);
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 0 });
-  assert.deepEqual(rings.map(r => r.slice(0, 2)), [[1, 2], [3, 4], [3, 4]]);
-  assert.equal(rings[1][4], energyPulseRange(0).radius, 'the prototype already has the actual radius-one splash');
+  assert.deepEqual(rings.map(r => r.slice(0, 2)), [[1, 2], [1, 2]]);
+  assert.deepEqual(flashes[0][0], [[0,1],[1,0],[1,1],[1,2],[2,-1],[2,0],[2,1],[2,2],[2,3],[3,0],[3,1],[3,2],[4,1]].filter(([r,c]) => r >= 0 && c >= 0), 'prototype damage flashes complete cells around the device');
   assert.equal(beams[1][0], source, 'a visible beam starts at the firing tower');
   assert.deepEqual([beams[1][1].x, beams[1][1].y], [3, 4], 'instant hit cue terminates at the sim impact point');
   assert.equal(particles.length, 1, 'high quality adds a muzzle flare to the persistent actor pulse');
@@ -174,14 +174,14 @@ test('actual source ids animate the device while medical and pulse effects use t
   rings.length = 0;
   fx.simFx('rhinePulse', 3, 4, { source: 20, stage: 2 });
   assert.equal(rings.length, 2);
-  assert.deepEqual(flashes[0][0], energyPulseRange(2).grid.map(([r,c]) => [4+r,3+c]), 'the mature grid centres on the struck target, not the source');
+  assert.deepEqual(flashes[1][0], energyPulseRange(2).grid.map(([r,c]) => [4+r,3+c]), 'the mature grid centres on the struck target, not the source');
   fx.simFx('rhineEcology', 1, 2, { source: 20, stage: 2, radius: 3, continuous: true, bind: true, duration: RHINE_BALANCE.ecologyInterval });
-  assert.ok(flashes[1][0].length > 0, 'ecology activation lights complete cells instead of a round area');
-  assert.equal(flashes[1][2], RHINE_BALANCE.ecologyInterval / 2, 'continuous field covers the full refresh interval at 2x battle speed');
-  assert.equal(flashes[1][3], false, 'the continuous field is not a periodic danger flash');
-  assert.equal(flashes[1][4].steady, true);
-  assert.equal(flashes[2][2], RHINE_BALANCE.ecologyBindDuration / 2, 'bind is a separate one-game-second cue');
-  assert.equal(flashes[2][3], true);
+  assert.ok(flashes[2][0].length > 0, 'ecology activation lights complete cells instead of a round area');
+  assert.equal(flashes[2][2], RHINE_BALANCE.ecologyInterval / 2, 'continuous field covers the full refresh interval at 2x battle speed');
+  assert.equal(flashes[2][3], false, 'the continuous field is not a periodic danger flash');
+  assert.equal(flashes[2][4].steady, true);
+  assert.equal(flashes[3][2], RHINE_BALANCE.ecologyBindDuration / 2, 'bind is a separate one-game-second cue');
+  assert.equal(flashes[3][3], true);
   assert.doesNotThrow(() => fx.simFx('rhineHeal', 3, 4, { source: 999, target: 999 }), 'missing/removed source leaves a safe point effect');
 });
 
@@ -276,7 +276,7 @@ test('continuous ecology stays visible through its refresh interval and only bin
   fx._updateTileFlashes(RHINE_BALANCE.ecologyInterval);
   assert.equal(fx.tileFlashes.length, 0, 'an unrefreshed field expires instead of leaking into another battle');
   const ctx = fakeViewCtx(fake.P, { cam: () => cam, assets: { image: async () => ({ width: 100, height: 140 }) } });
-  const v = new UnitView(ctx, { id: 230, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 1 });
+  const v = new UnitView(ctx, { id: 230, kind: 'token', defId: 'token_rhine_medical', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 1 });
   await tick(); await tick();
   v.onResearchFx('rhineEcology', { stage: 1, continuous: true });
   assert.equal(v.researchActor.pulse, 0, 'the opening slow aura does not imply a bind');
@@ -291,7 +291,7 @@ test('joining mid-battle restores ecology immediately from effective UnitInfo an
   const fx = Object.create(FxSystem.prototype);
   Object.assign(fx, { ctx, tileFlashes: [], _p: {}, tileGfx: new fake.P.Graphics() });
   ctx.fx = fx;
-  const info = renderInfo({ id: 240, kind: 'token', defId: 'token_rhine_ecology', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 0 });
+  const info = renderInfo({ id: 240, kind: 'token', defId: 'token_rhine_medical', side: 'ally', x: 5, y: 12, maxHp: 1, researchStage: 0 });
   const v = new UnitView(ctx, info);
   ctx.view = id => id === v.id ? v : null;
   await tick(); await tick();
@@ -355,4 +355,71 @@ test('an activation expires offscreen and is not replayed when its device re-ent
   const idle = researchPose('energy', 3 + v.bob, 2, 0);
   assert.equal(rig.core.alpha, idle.light, 'returning to view shows the current idle pose');
   v.destroy();
+});
+
+test('laser restores one continuous beam from UnitInfo, keeps its lock on pause, and clears dead or absent targets', async () => {
+  const target = { id: 301, x: 9, y: 11, z: 0, alive: true };
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, settings: { quality: 'low' },
+    view: id => id === target.id ? target : null, assets: { image: async () => ({ width: 128, height: 160 }) } });
+  const info = renderInfo({ id: 300, kind: 'token', defId: 'token_rhine_laser', side: 'ally', x: 5, y: 12, maxHp: 1,
+    researchStage: 2, researchActive: true, researchLaserTarget: target.id, researchLaserProgress: 10, researchLaserActive: true });
+  const v = new UnitView(ctx, info);
+  await tick(); await tick(); v.update(1 / 60, cam, 10);
+  const rig = v.researchActor;
+  assert.equal(rig.stage, 0); assert.equal(rig.lights.length, 1, 'the single-stage drill has no breakthrough lamps');
+  assert.equal(rig.beamActive, true); assert.equal(rig.laserGfx.visible, true, 'low quality preserves output feedback immediately on reconnect');
+  assert.equal(rig.laserGfx.parent, v.root);
+  assert.equal(rig.core.tint, 0xe6a4ff);
+  const before = { ...rig.beamPoint }, canvases = fake.canvases.length;
+  target.x += 1; v.update(1 / 60, cam, 10.1);
+  assert.notEqual(rig.beamPoint.x, before.x, 'the persistent beam follows the target between sim events');
+  v.onResearchFx('rhineLaser', { target: target.id, progress: 20, active: true }); v.update(1 / 60, cam, 20);
+  assert.equal(rig.core.tint, 0xff674f); assert.equal(laserFeedback(v.info).full, true);
+  assert.equal(fake.canvases.length, canvases, 'laser rendering reuses its Graphics and allocates no frame textures');
+  v.onResearchFx('rhineLaser', { target: target.id, progress: 20, active: false }); v.update(1 / 60, cam, 21);
+  assert.equal(rig.beamActive, false); assert.equal(v.info.researchLaserTarget, target.id);
+  assert.equal(laserFeedback(v.info).progress, 1, 'a temporary pause keeps the real accumulated output progress');
+  v.onResearchFx('rhineLaser', { target: target.id, progress: 20, active: true }); target.alive = false; v.update(1 / 60, cam, 22);
+  assert.equal(rig.beamActive, false); assert.equal(rig.laserGfx.visible, false, 'a dead target cannot leave a ghost beam');
+  target.alive = true; v.onResearchFx('rhineLaser', { target: null, progress: 0, active: false }); v.update(1 / 60, cam, 23);
+  assert.equal(rig.laserGfx.visible, false); assert.equal(laserFeedback(v.info).progress, 0);
+  v.destroy();
+  const prep = new UnitView(ctx, info, { prep: true }); prep.update(1 / 60, cam, 24);
+  assert.equal(prep.researchActor.beamActive, false, 'preparation never replays a combat laser'); prep.destroy();
+});
+
+test('laser FX dispatch updates only its actor and snapshot metadata is sanitised', () => {
+  const events = [], source = { id: 1, x: 4, y: 10, onResearchFx: (...args) => events.push(args) };
+  const fx = Object.create(FxSystem.prototype);
+  Object.assign(fx, { ctx: { view: id => id === 1 ? source : null, heightAt: () => 0 },
+    ring() { throw new Error('laser must not be rendered as an ecology area'); }, tileFlash() { throw new Error('laser must not flash a range'); } });
+  fx.simFx('rhineLaser', 8, 10, { source: 1, target: 2, progress: 20, active: true });
+  assert.equal(events.length, 1); assert.equal(events[0][0], 'rhineLaser');
+  assert.doesNotThrow(() => fx.simFx('rhineLaser', 4, 10, { source: 999, target: null, active: false, progress: 0 }));
+  assert.equal(renderInfo({ id: 1, researchLaserProgress: 99 }).researchLaserProgress, 20);
+  assert.equal(renderInfo({ id: 1, researchLaserProgress: '20' }).researchLaserProgress, undefined);
+  assert.equal(renderInfo({ id: 1, researchLaserActive: 'false' }).researchLaserActive, undefined);
+});
+
+test('first real laser FX starts the beam after an initially inactive spawn, and a stop event retracts it', async () => {
+  const target = { id: 321, x: 9, y: 11, z: 0, alive: true };
+  const ctx = fakeViewCtx(fake.P, { cam: () => cam, settings: { quality: 'low' },
+    assets: { image: async () => ({ width: 128, height: 160 }) } });
+  const info = renderInfo({ id: 320, kind: 'token', defId: 'token_rhine_laser', side: 'ally', x: 5, y: 12, maxHp: 1,
+    researchStage: 0, researchActive: false, researchLaserTarget: null, researchLaserProgress: 0, researchLaserActive: false });
+  const v = new UnitView(ctx, info);
+  const fx = Object.create(FxSystem.prototype);
+  Object.assign(fx, { ctx: { ...ctx, view: id => id === v.id ? v : id === target.id ? target : null } });
+  ctx.fx = fx;
+  await tick(); await tick(); v.update(1 / 60, cam, 0);
+  assert.equal(v.researchActor.beamActive, false);
+  fx.simFx('rhineLaser', target.x, target.y, { source: v.id, target: target.id, active: true, progress: .25 });
+  v.update(1 / 60, cam, .25);
+  assert.equal(v.info.researchActive, false, 'the initial generic spawn field has not been replaced');
+  assert.equal(v.info.researchLaserActive, true);
+  assert.equal(v.researchActor.beamActive, true, 'the first authoritative output event starts the beam without waiting for reconnect metadata');
+  fx.simFx('rhineLaser', target.x, target.y, { source: v.id, target: target.id, active: false, progress: .25 });
+  v.update(1 / 60, cam, .5);
+  assert.equal(v.researchActor.beamActive, false, 'the specific stop event still controls output');
+  assert.equal(v.info.researchLaserProgress, .25); v.destroy();
 });

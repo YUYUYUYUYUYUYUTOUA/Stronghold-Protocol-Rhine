@@ -45,6 +45,7 @@ export function rhineArtInput(assets07 = {}, ops03 = {}) {
 }
 export function addRhineArt(manifest) {
   manifest.bonds ||= {}; manifest.tokens ||= {}; manifest.items ||= {};
+  delete manifest.tokens.token_rhine_ecology;
   manifest.bonds[RHINE_BOND] = '/art/rhine/bond.svg';
   for (const d of RHINE_DEVICES) manifest.tokens[d.tokenId] = { avatar: d.sprite || d.icon };
   manifest.items.trap_rhine_terminal = '/art/rhine/terminal.png';

@@ -39,6 +39,9 @@ export function renderInfo(u) {
     // Reconnecting / observing must show the device's current breakthrough before its next effect is emitted.
     researchStage: Number.isInteger(u.researchStage) && u.researchStage >= 0 && u.researchStage <= 2 ? u.researchStage : undefined,
     researchActive: typeof u.researchActive === 'boolean' ? u.researchActive : undefined,
+    researchLaserTarget: u.researchLaserTarget === null || typeof u.researchLaserTarget === 'number' || typeof u.researchLaserTarget === 'string' ? u.researchLaserTarget : undefined,
+    researchLaserProgress: Number.isFinite(u.researchLaserProgress) ? Math.max(0, Math.min(20, u.researchLaserProgress)) : undefined,
+    researchLaserActive: typeof u.researchLaserActive === 'boolean' ? u.researchLaserActive : undefined,
     // DESIGN §16 loadout of an ally (UnitInfo.skillIndex / moduleId): the Spine actor plays that skill's clip, and a
     // tap hands them to the detail card (a teammate's unit shows its owner's skill / module)
     skillIndex: Number.isInteger(u.skillIndex) ? u.skillIndex : undefined,

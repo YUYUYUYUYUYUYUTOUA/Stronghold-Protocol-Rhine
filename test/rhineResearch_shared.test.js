@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { RHINE_BALANCE, advanceRhineResearch, rhineStage } from '../shared/rhineResearch.js';
-import { CALCIFICATION_GRID, energyPulseRange } from '../shared/rhineRange.js';
+import { RHINE_BALANCE, advanceRhineResearch, rhineStage, rhineDeviceStage, rhineDeviceUnlocked } from '../shared/rhineResearch.js';
+import { CALCIFICATION_GRID, energyPulseRange, researchRange } from '../shared/rhineRange.js';
 
 test('Rhine shared progress: each stage requires five points and resets exactly to zero', () => {
   assert.deepEqual(RHINE_BALANCE.breakthroughPoints, [5, 5]);
@@ -50,9 +50,31 @@ test('mature energy splash matches Saria Calcification in both actual operator r
   assert.ok(CALCIFICATION_GRID.every(Object.isFrozen));
 });
 
-test('energy splash has AOE at level one and changes only to the mature tile shape at level three', () => {
-  for (const stage of [0, 1]) assert.deepEqual(energyPulseRange(stage), { radius: 1, grid: null, tileBased: false });
+test('energy first pulse covers its whole field while later pulses remain target-centered', () => {
+  assert.deepEqual(energyPulseRange(0), { radius: 2, grid: null, tileBased: false, deviceCentered: true });
+  assert.deepEqual(energyPulseRange(1), { radius: 1, grid: null, tileBased: false });
   assert.deepEqual(energyPulseRange(2), { radius: 3, grid: CALCIFICATION_GRID, tileBased: true });
   assert.deepEqual(energyPulseRange(99), energyPulseRange(2));
   assert.deepEqual(energyPulseRange(-3), energyPulseRange(0));
+});
+
+test('research device gates keep the single-level laser locked below nine, including forged stages', () => {
+  for (const count of [0, 2, 3, 6, 8, 9, 12]) {
+    const bond = { count, active: count >= 3 };
+    assert.equal(rhineDeviceUnlocked('medical', bond), count >= 3);
+    assert.equal(rhineDeviceUnlocked('energy', bond), count >= 3);
+    assert.equal(rhineDeviceUnlocked('laser', bond), count >= 9);
+  }
+  assert.equal(rhineDeviceUnlocked('laser', { count: 12, active: false }), false);
+  assert.equal(rhineDeviceUnlocked('ecology', { count: 12, active: true }), false);
+  for (const stage of [0, 1, 2, 999, -1]) assert.equal(rhineDeviceStage('laser', stage), 0);
+  assert.equal(rhineDeviceStage('medical', 999), 2);
+  assert.deepEqual(researchRange({ id: 'token_rhine_laser', stage: 2 }), { key: 'laser', radius: 0, grid: [], stage: 0, global: true });
+});
+
+test('merged support and upgraded energy share their complete tiles with the renderer', () => {
+  for (const stage of [0, 1, 2]) {
+    assert.equal(researchRange({ id: 'token_rhine_medical', stage }).grid.length, stage === 2 ? 29 : 13);
+    assert.equal(researchRange({ id: 'token_rhine_energy', stage }).grid.length, stage === 0 ? 13 : 29);
+  }
 });

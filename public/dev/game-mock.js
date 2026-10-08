@@ -19,7 +19,7 @@ import { settingsStore } from '/js/ui/settings.js';
 import { awayStore } from '/js/ui/matchChrome.js';
 import { GAME_FILES } from '/js/ui/gameComponents.js';
 import { PHASE, GEO } from '/shared/constants.js';
-import { RHINE_DEVICES, rhineStage } from '/shared/rhineResearch.js';
+import { RHINE_DEVICES, rhineDeviceStage } from '/shared/rhineResearch.js';
 
 const params = new URLSearchParams(location.search);
 const SHOT = params.get('shot') === '1';
@@ -281,19 +281,29 @@ function setPhase(phase, variant) {
   stopBattle();
   buildState();
   for (const v of (variant || '').split(',').filter(Boolean)) VARIANTS.add(v);
-  if (VARIANTS.has('rhine') || VARIANTS.has('rhineRange')) S.priv.research = {
-    unlocked: true, active: true, capacity: 2, layers: 24,
-    hand: RHINE_DEVICES.map((d, i) => ({ uid: 900 + i, kind: 'token', id: d.tokenId, research: true, stage: 1 })),
-    devices: RHINE_DEVICES.map((d, i) => ({ ...d, uid: 900 + i, onBoard: false, points: 2, stage: 1 })),
-  };
-  if (VARIANTS.has('rhineRange')) {
-    const research = S.priv.research, stage = rhineStage(params.get('researchStage') ?? 2);
-    const index = Math.max(0,RHINE_DEVICES.findIndex(d=>d.key===(params.get('researchDevice')||'ecology')));
+  if (VARIANTS.has('rhine') || VARIANTS.has('rhineRange') || VARIANTS.has('rhineLaser')) {
+    const count = Math.max(0, Number(params.get('rhineCount') ?? (VARIANTS.has('rhine') ? 6 : 9)) || 0);
+    S.priv.research = {
+      unlocked: true, active: count >= 3, count, capacity: [3, 6, 9].filter(n => count >= n).length, layers: 24,
+      hand: RHINE_DEVICES.map((d, i) => count >= d.minCount ? ({ uid: 900 + i, kind: 'token', id: d.tokenId, research: true, stage: rhineDeviceStage(d, 1) }) : null),
+      devices: RHINE_DEVICES.map((d, i) => ({ ...d, uid: count >= d.minCount ? 900 + i : null, unlocked: count >= d.minCount, onBoard: false, points: 2, stage: rhineDeviceStage(d, 1) })),
+    };
+  }
+  if (VARIANTS.has('rhineRange') || VARIANTS.has('rhineLaser')) {
+    const research = S.priv.research;
+    const index = Math.max(0,RHINE_DEVICES.findIndex(d=>d.key===(params.get('researchDevice')||'medical')));
     const row = 10, col = params.get('rangeEdge')==='1' ? 2 : 6;
-    for (let i=0;i<research.devices.length;i++) { research.devices[i].stage=stage; research.hand[i].stage=stage; }
-    S.priv.board=S.priv.board.filter(p=>p.row!==row||p.col!==col);
-    S.priv.board.push({...research.hand[index],row,col,dir:'RIGHT'});
-    research.hand[index]=null;research.devices[index].onBoard=true;
+    for (let i=0;i<research.devices.length;i++) {
+      const stage = rhineDeviceStage(RHINE_DEVICES[i], params.get('researchStage') ?? 2);
+      research.devices[i].stage=stage; if (research.hand[i]) research.hand[i].stage=stage;
+    }
+    for (const i of VARIANTS.has('rhineLaser') ? [0,1,2] : [index]) {
+      if (!research.hand[i]) continue;
+      const c = VARIANTS.has('rhineLaser') ? [3,6,9][i] : col;
+      S.priv.board=S.priv.board.filter(p=>p.row!==row||p.col!==c);
+      S.priv.board.push({...research.hand[i],row,col:c,dir:'RIGHT'});
+      research.hand[i]=null;research.devices[i].onBoard=true;
+    }
     ['chess_item_rhine_terminal_a','chess_item_rhine_terminal_b','chess_item_rhine_mainframe_a','chess_item_rhine_mainframe_b'].forEach((id,i)=>{
       const item=data.lookup('items',id);if(item)S.priv.hand[i]=itemPiece(item);
     });
@@ -464,6 +474,13 @@ function startCombat(phase) {
     const c = data.lookup('chess', p.id);
     const colOff = 0;
     const r = boss ? p.row - 7 : p.row;
+    if (p.research) {
+      const d = RHINE_DEVICES.find(d => d.tokenId === p.id);
+      units.push({ id: id++, kind: 'token', side: 'ally', ownerId: ME, defId: p.id, name: d.name, x: p.col, y: r, uid: p.uid,
+        maxHp: 1, researchStage: rhineDeviceStage(d, p.stage), researchActive: true, sp: 0, spMax: d.key === 'energy' ? 3 : 0,
+        researchLaserTarget: null, researchLaserProgress: 0, researchLaserActive: false });
+      continue;
+    }
     units.push({ id: id++, kind: 'op', side: 'ally', ownerId: ME, defId: p.id, name: c?.name, tier: c?.tier, golden: !!p.golden, spine: c?.charId, avatar: c?.assets?.avatar, x: p.col + colOff, y: r, facing: 1, maxHp: c?.stats?.maxHp || 1000, uid: p.uid });
   }
   if (kind !== 'normal') {
@@ -485,6 +502,8 @@ function startCombat(phase) {
     const startX = boss ? (i % 2 ? 17 : 3) : kind === 'unite' ? 18 : 10; // escaped_multi: the right half's gates
     enemies.push({ id: id++, kind: 'enemy', side: 'enemy', ownerId: ME, defId: key, name: e?.name, spine: key, avatar: key, x: startX + rnd() * 0.3, y, facing: -1, maxHp: e?.stats?.maxHp || 3000, hp: e?.stats?.maxHp || 3000, spawnAt: i * 0.9, dir: boss ? (i % 2 ? -1 : 1) : -1, dead: false });
   }
+  // A durable moving dummy makes the drill's full twenty-second colour transition observable in the lab.
+  if (VARIANTS.has('rhineLaser') && enemies[0]) { enemies[0].maxHp = 1e6; enemies[0].hp = 1e6; }
   if (boss) {
     const bossRec = data.lookup('bosses', phase === PHASE.HIDDEN_CORE ? 'boss_8' : 'boss_5');
     const e = data.lookup('enemies', bossRec.enemyKey);
@@ -493,7 +512,7 @@ function startCombat(phase) {
   // every field — 联防 too — is fought on the round's battlefield (server unite.js; 0.2.0's escaped-level map withdrawn)
   const field = { fieldId, kind, rect, stageId: pub.stageId, units: units.map((u) => ({ ...u })) };
   store.patch('match', { field });
-  const allyState = units.map((u) => ({ ...u, hp: u.maxHp * (0.55 + rnd() * 0.45), sp: rnd() * 20, spMax: 20 }));
+  const allyState = units.map((u) => u.kind === 'token' ? ({ ...u, hp: 1 }) : ({ ...u, hp: u.maxHp * (0.55 + rnd() * 0.45), sp: rnd() * 20, spMax: 20 }));
   const t0 = performance.now();
   const total = enemies.length;
   let killed = phase === PHASE.SETTLE ? total : 0;
@@ -515,6 +534,34 @@ function startCombat(phase) {
     // attacks
     const liveEnemies = enemies.filter((e) => !e.dead && t >= e.spawnAt);
     for (const a of allyState) {
+      if (a.kind === 'token') {
+        // This laboratory mock demonstrates cues only; balance is verified in the real sim tests.
+        const d = RHINE_DEVICES.find(d => d.tokenId === a.defId);
+        if (d.key === 'medical') {
+          if (!a._fieldShown || t - a._bindAt >= 8) {
+            ev.push(['fx', 'rhineEcology', a.x, a.y, { source: a.id, stage: a.researchStage, radius: a.researchStage === 2 ? 3 : 2, continuous: true, active: true, bind: !!a._fieldShown && a.researchStage === 2 }]);
+            a._fieldShown = true; a._bindAt = t;
+          }
+          if (t - (a._healAt || 0) >= 3) {
+            const target = allyState.find(u => u.kind === 'op');
+            if (target) ev.push(['fx', 'rhineHeal', target.x, target.y, { source: a.id, target: target.id, stage: a.researchStage }]);
+            a._healAt = t;
+          }
+        } else if (d.key === 'energy') {
+          a.sp = Math.min(3, Math.floor(t * 1.5) % 6);
+          if (a.sp === 3 && t - (a._pulseAt || 0) >= 1.5 && liveEnemies.length) {
+            const target = liveEnemies[0];
+            ev.push(['fx', 'rhinePulse', target.x, target.y, { source: a.id, target: target.id, stage: a.researchStage, fromX: a.x, fromY: a.y }]); a._pulseAt = t;
+          }
+        } else if (t - (a._laserAt || 0) >= .25) {
+          let target = liveEnemies.find(e => e.id === a.researchLaserTarget);
+          if (!target) { target = liveEnemies.slice().sort((a,b) => b.maxHp - a.maxHp)[0]; a.researchLaserProgress = 0; }
+          a.researchLaserTarget = target?.id ?? null; a.researchLaserActive = !!target;
+          if (target) a.researchLaserProgress = Math.min(20, a.researchLaserProgress + (a._laserAt ? t - a._laserAt : 0));
+          ev.push(['fx', 'rhineLaser', target?.x ?? a.x, target?.y ?? a.y, { source: a.id, target: a.researchLaserTarget, fromX: a.x, fromY: a.y, x: target?.x ?? a.x, y: target?.y ?? a.y, active: !!target, progress: a.researchLaserProgress }]); a._laserAt = t;
+        }
+        continue;
+      }
       if (!liveEnemies.length || rnd() > 0.2) continue;
       const tgt = liveEnemies[Math.floor(rnd() * liveEnemies.length)];
       const dmg = Math.round(200 + rnd() * 700);

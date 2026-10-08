@@ -36,6 +36,7 @@
 
 import { rhineDevice } from '../../../shared/rhineResearch.js';
 import { researchRangeText } from '../../../shared/rhineRange.js';
+import { laserProgressText } from './rhineDock.js';
 import { useEffect } from '../../vendor/hooks.module.js';
 import { html, Icon, TierChip, MicroLabel, Button, confirmDialog, useTicker } from './components.js';
 import { Img, RichText, UnitThumb, BondGlyph, GIcon, diyToken } from './gameComponents.js';
@@ -579,7 +580,9 @@ function EnemyDetail({ enemy, snapHp, count, live = null }) {
  * @param {boolean} [startDeploy] the sim's switch (tests pass both values)
  */
 export function summonDeployHint(token, startDeploy = SKILL_SUMMON_START_DEPLOY) {
-  if (rhineDevice(token?.tokenId)) return t('莱茵生命科研装置：不占部署人数，无敌且不阻挡；只能收回科研备牌区。实际参战后记录研究进度，胜利+2、失败+1。');
+  const research = rhineDevice(token?.tokenId);
+  if (research?.key === 'laser') return t('莱茵生命科研装置：9名莱茵生命干员时解锁，单级；不占部署人数，无敌且不阻挡，只能收回科研备牌区。');
+  if (research) return t('莱茵生命科研装置：不占部署人数，无敌且不阻挡；只能收回科研备牌区。实际参战后记录研究进度，胜利+2、失败+1。');
   if (!token || token.kind !== 'summon' || token.placeable !== true) return null;
   const talent = Object.values(token.variants || {}).some((v) => (v?.sources || []).includes('talent'));
   if (talent) return t('作战开始时在摆放的位置部署');
@@ -661,9 +664,11 @@ function MapCharDetail({ token, snapHp, live, m }) {
     <//>` : null}`;
 }
 
-export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live = null, researchStage = null }) {
+export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live = null, researchStage = null, researchState = null }) {
   const m = data.get('assets');
   const research = rhineDevice(token.tokenId);
+  const laser = research?.key === 'laser';
+  const laserState = live && 'researchLaserTarget' in live ? live : researchState || {};
   // a band map character (外勤医疗's Touch / 预备干员-医疗, tokens.json kind 'mapChar') is an operator of the mode, not a
   // summon: no owner variants — its stats, skill, talents and 特性 are on the record (GitHub #260, PR #278)
   if (token?.kind === 'mapChar') return MapCharDetail({ token, snapHp, live, m });
@@ -696,7 +701,8 @@ export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live 
     </div>
     ${hint ? html`<p class="dhint"><${Icon} name="info" />${hint}</p>` : null}
     ${baseResearchAttack ? html`<p class="dhint">${t('基础攻击未计入科研层数、装备与梅尔加成；实际数值以开战时或实时数值为准。')}</p>` : null}
-    ${research ? html`<${Section} title=${t('作用范围')}><p class="dtext">${researchRangeText({ id: token.tokenId, stage: piece?.stage ?? researchStage ?? live?.researchStage })}</p><p class="dhint">${t('高亮的整格区域均生效，不随朝向改变。移动单位按所在格判断；巨型单位按占据格判断。')}</p><//>` : null}
+    ${research ? html`<${Section} title=${t('作用范围')}><p class="dtext">${researchRangeText({ id: token.tokenId, stage: piece?.stage ?? researchStage ?? live?.researchStage })}</p>${laser ? null : html`<p class="dhint">${t('高亮的整格区域均生效，不随朝向改变。移动单位按所在格判断；巨型单位按占据格判断。')}</p>`}<//>` : null}
+    ${laser ? html`<${Section} title=${t('锁定与增伤')}><p class="dtext">${laserProgressText(laserState.researchLaserProgress, laserState.researchLaserTarget, laserState.researchLaserActive)}</p><p class="dhint">${t('锁定面板最大生命值最高的敌人，目标死亡或永久离场后重新选敌并清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害；领袖按本战场分摊最大生命值计算。')}</p><//>` : null}
     ${token.descRaw || token.desc ? html`<${Section} title=${t('说明')}><${RichText} as="p" text=${token.descRaw || token.desc} class="dtext" /><//>` : null}
     ${skill ? html`<${Section} title=${t('技能')}><p class="dtext"><b>${skill.name}</b> ${skill.desc}</p><//>` : null}
     ${talents.length ? html`<${Section} title=${t('天赋')}>${talents.map((t, i) => html`<p class="dtext" key=${i}><b>${t.name}</b> ${t.desc}</p>`)}<//>` : null}`;
@@ -793,7 +799,7 @@ export function resolveDetail(target, pieces, { priv = null, backups = data.get(
     if (dr) return { type: 'chess', chess: dr, piece: own?.piece || null, unitId: u.id, unitItems: Array.isArray(u.items) ? u.items : null, standIn: null, diy: pick };
     if (c) return { type: 'chess', chess: c, piece: own?.piece || null, unitId: u.id, unitItems: Array.isArray(u.items) ? u.items : null, standIn: si };
     const t = data.lookup('tokens', u.defId) || diyToken(u.defId);
-    if (t) return { type: 'token', token: t, unitId: u.id, ownerId: tokenOwnerId(own?.piece, pieces), researchStage: u.researchStage };
+    if (t) return { type: 'token', token: t, unitId: u.id, ownerId: tokenOwnerId(own?.piece, pieces), researchStage: u.researchStage, researchState: u };
     const en = data.lookup('enemies', u.defId);
     return en ? { type: 'enemy', enemy: en, unitId: u.id } : null;
   }
@@ -849,7 +855,7 @@ export function DetailPanel({ detail, editable, snapHp, onClose, onSell, onDestr
         standIn=${detail.standIn || null} diy=${detail.diy || null} />` : null}
       ${detail.type === 'item' ? html`<${ItemDetail} item=${detail.item} piece=${detail.piece} editable=${editable} onDestroy=${destroyIt} offBonds=${offBonds} />` : null}
       ${detail.type === 'enemy' ? html`<${EnemyDetail} enemy=${detail.enemy} snapHp=${snapHp} count=${detail.count} live=${liveNow} />` : null}
-      ${detail.type === 'token' ? html`<${TokenDetail} token=${detail.token} piece=${detail.piece} ownerId=${detail.ownerId ?? null} snapHp=${snapHp} live=${liveNow} researchStage=${detail.researchStage} />` : null}
+      ${detail.type === 'token' ? html`<${TokenDetail} token=${detail.token} piece=${detail.piece} ownerId=${detail.ownerId ?? null} snapHp=${snapHp} live=${liveNow} researchStage=${detail.researchStage} researchState=${detail.researchState} />` : null}
       ${detail.type === 'terrain' ? html`<${TerrainDetail} terrain=${detail.terrain} />` : null}
     </div>
   </aside>`;

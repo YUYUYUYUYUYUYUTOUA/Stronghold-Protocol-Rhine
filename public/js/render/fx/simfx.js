@@ -88,6 +88,7 @@ export class FxSim {
       const src = this._viewOf(ex.source ?? ex.src ?? ex.id);
       if (spec.a === 'researchEcology' && src?.info && typeof ex.active === 'boolean') src.info.researchActive = ex.active;
       src?.onResearchFx?.(kind, ex);
+      if (spec.a === 'researchLaser') return; // one persistent, snapshot-restorable beam belongs to the drill actor
       if (spec.a === 'researchEcology' && ex.active === false) {
         const key = `rhineEcology:${ex.source ?? ex.src ?? ex.id ?? `${at.x},${at.y}`}`;
         for (let i = this.tileFlashes.length - 1; i >= 0; i--) {
@@ -113,7 +114,12 @@ export class FxSim {
           }
         }
         const pulse = energyPulseRange(ex.stage);
-        if (pulse.tileBased) {
+        if (pulse.deviceCentered) {
+          const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };
+          const x = src?.x ?? num(ex.fromX, at.x), y = src?.y ?? num(ex.fromY, at.y);
+          this.tileFlash(researchRangeTiles(Math.floor(y + .5), Math.floor(x + .5), pulse.radius, bounds), col, .65);
+          this.ring(x, y, src?.z || 0, .1, .5, col, .46, 'shock');
+        } else if (pulse.tileBased) {
           // Calcification is a tile grid, not a larger Euclidean circle. Centre it on the
           // struck enemy's cell exactly as the sim does; the tower still acquires nearby targets.
           const bounds = this.ctx.fieldRect?.() || { r0: 0, r1: GEO.ROWS - 1, c0: 0, c1: GEO.COLS - 1 };

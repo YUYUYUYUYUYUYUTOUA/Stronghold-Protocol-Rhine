@@ -37,13 +37,22 @@ test('Rhine data: six-member research sharing and the new three device levels ar
   assert.match(bond.desc, /精锐25%/);
   const energy = files.tokens.token_rhine_energy;
   assert.match(energy.desc, /一级/);
-  assert.match(energy.desc, /范围法术脉冲/);
+  assert.match(energy.desc, /法术脉冲/);
   assert.match(energy.desc, /己方全场/);
   assert.match(energy.desc, /钙质化.*25格/);
-  assert.doesNotMatch(energy.desc, /伤害提高/);
-  const ecology = files.tokens.token_rhine_ecology;
+  assert.match(energy.desc, /180%/);
+  assert.match(energy.desc, /240%/);
+  assert.match(energy.desc, /伤害提高至300%/);
+  const ecology = files.tokens.token_rhine_medical;
   assert.match(ecology.desc, /持续减速50%/);
   assert.match(ecology.desc, /每8秒/);
+  assert.match(ecology.desc, /任意来源治疗/);
+  assert.equal(files.tokens.token_rhine_ecology, undefined, 'there is no independent slow-only device');
+  const laser = files.tokens.token_rhine_laser;
+  assert.match(laser.desc, /只有一级/);
+  assert.match(laser.desc, /最大生命值最高/);
+  assert.match(laser.desc, /0\.5%/);
+  assert.match(laser.desc, /本战场分摊/);
 });
 test('Rhine data: device production, single-device inheritance and four attack per layer match the approved rules', () => {
   assert.equal(files.bonds.rhineShip.bb.atk_per_stack, 4);

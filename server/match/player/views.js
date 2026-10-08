@@ -8,7 +8,7 @@ import { boardOrder, pieceDir } from '../board.js';
 import { bondList, offBondCounts } from '../bondsMeta.js';
 import { bountyText } from '../choices.js';
 
-import { rhineStage } from '../../../shared/rhineResearch.js';
+import { RHINE_BOND, rhineDevice, rhineDeviceStage, rhineDeviceUnlocked } from '../../../shared/rhineResearch.js';
 
 export class PlayerViews {
   pieceView(p, rc = null) {
@@ -25,7 +25,14 @@ export class PlayerViews {
     };
     if (rc) { v.row = rc[0]; v.col = rc[1]; v.dir = pieceDir(p); }
     if (p.kind === 'item' && p.id === 'chess_item_5_04_e_a' && p.meta?.sixPlayerBeaconRound === 14) v.giftTiming = 'immediate';
-    if (p.research) { v.research = true; v.researchKey = p.researchKey; v.points = this.research.points[p.researchKey] || 0; v.stage = rhineStage(this.research.stages[p.researchKey]); }
+    if (p.research) {
+      const d = rhineDevice(p.id);
+      v.research = true; v.researchKey = d?.key ?? p.researchKey;
+      v.points = d?.maxStage === 0 ? 0 : this.research.points[v.researchKey] || 0;
+      v.stage = rhineDeviceStage(d, this.research.stages[v.researchKey]);
+      v.locked = !this.alive || !rhineDeviceUnlocked(d, this.bonds[RHINE_BOND]);
+      v.minCount = d?.minCount; v.maxStage = d?.maxStage;
+    }
     return v;
   }
 

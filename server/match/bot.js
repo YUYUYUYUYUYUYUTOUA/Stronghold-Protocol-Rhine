@@ -85,7 +85,8 @@ import { itemKey } from './gamedata.js';
 import { computeBonds, pieceBonds } from './bondsMeta.js';
 import { withBounties, isFlyKey } from './waves.js';
 import { mitigate } from '../sim/damage.js';
-import { RHINE_BOND, RHINE_EQUIPMENT as RE } from '../../shared/rhineResearch.js';
+import { RHINE_BOND, RHINE_BALANCE as RB, RHINE_EQUIPMENT as RE, rhineAttack, rhineCapacity, rhineDevice, rhineDeviceStage, rhineDeviceUnlocked } from '../../shared/rhineResearch.js';
+import { researchRange } from '../../shared/rhineRange.js';
 import { HOVER_KEYS } from '../sim/content/enemies.js';
 import { attackRangeGrid, loadoutRecord, resolveRecordLoadout } from '../../shared/loadoutRecord.js';
 
@@ -211,7 +212,7 @@ export function bountyKillChance(m, ps, card) {
   const tileTime = Math.max(0.4, Math.min(6, 1 / (speed * 0.5)));
   const units = [];
   for (const [k, p] of ps.board) {
-    const rec = p.kind === 'token' ? gd.token(p.id) : rangeRec(ps, gd.chess(p.id));
+    const rec = p.kind === 'token' ? rhineBotRecord(m, ps, p) : rangeRec(ps, gd.chess(p.id));
     if (!rec) continue;
     const [r, c] = parseKey(k);
     const u = unitOf(rec, k, r, c, pieceDir(p), model);
@@ -224,8 +225,13 @@ export function bountyKillChance(m, ps, card) {
     let t = tileTime;
     if (!fly && !held && units.some((u) => u.block > 0 && u.key === k)) { t += LAYOUT_PARAMS.hold; held = true; }
     let dps = 0;
-    for (const u of units) if (u.cover.has(k) && (fly ? u.air : u.ground)) dps += u.vs;
+    for (const u of units) if (!u.laser && u.cover.has(k) && (fly ? u.air : u.ground)) dps += u.vs;
     exp += t * dps;
+  }
+  // A drill is one locked target. Credit it conservatively only when this bounty is at least as tough as the wave.
+  if (hp >= Math.max(...model.routes.map((r) => r.panelMaxHp || r.hp))) {
+    const duration = route.tiles.length * tileTime + (held ? LAYOUT_PARAMS.hold : 0);
+    for (const u of units) if (u.laser) exp += rhineLaserExposure(u.vs, duration, hp);
   }
   return 1 - Math.exp(-exp / (BOUNTY_KILL * hp));
 }
@@ -525,6 +531,9 @@ function lineupScore(m, ps, set, ctx) {
     const w = bond && bond.isCore ? 14 : 9;
     v += b.tier * w + Math.min(12, (b.layers || 0) * 0.1) + (id === ctx.focus ? 6 : 0);
   }
+  // Device output depends on this deployed census. Give the 9-member gate enough value to keep its last member.
+  v += rhineCapacity(bonds[RHINE_BOND]) * 8;
+  if (rhineDeviceUnlocked('laser', bonds[RHINE_BOND])) v += 40;
   let blockers = 0;
   let air = 0;
   let healers = 0;
@@ -663,12 +672,12 @@ export function fieldModel(m, ps = null) {
   const toBoard = boss
     ? ([r, c]) => boardTileOf(boss.side === 'R' ? 'bossR' : 'bossL', r, c)
     : (p) => p;
-  const pushRoute = (tilesRC, n, fly, hp, speed, dwell = 0) => {
+  const pushRoute = (tilesRC, n, fly, hp, speed, dwell = 0, panelMaxHp = hp, laserMaxHp = hp) => {
     const own = tilesRC.map(toBoard).filter(([r, c]) => inRect(r, c)).map(([r, c]) => tileKey(r, c));
     if (own.length > 1) own.pop(); // the objective / last tile: an enemy there has already leaked
     if (!own.length) return;
     const tileTime = Math.max(0.4, Math.min(6, 1 / Math.max(0.05, speed * 0.5)));
-    routesOut.push({ n, fly, tiles: own, tileTime, hp: Math.max(100, hp), dwell });
+    routesOut.push({ n, fly, tiles: own, tileTime, hp: Math.max(100, hp), dwell, panelMaxHp, laserMaxHp });
   };
   const routes = wave && Array.isArray(wave.routes) ? wave.routes : [];
   const spawns = wave && Array.isArray(wave.spawns) ? wave.spawns : [];
@@ -698,11 +707,16 @@ export function fieldModel(m, ps = null) {
       }
       // the leader counts like LEADER_WEIGHT tough enemies: its huge pool makes damage on it worth a lot everywhere
       const hp = isLeader ? LEADER_HP : ((e && e.stats && e.stats.maxHp) || 1000) * ((s.mods && s.mods.hpMul) || 1);
+      const panelMaxHp = ((e && e.stats && e.stats.maxHp) || 1000) * ((s.mods && s.mods.hpMul) || 1);
+      const alive = (m.order || []).filter((p) => p.alive).length;
+      const poolMaxHp = isLeader && typeof gd.bossPoolHp === 'function' ? gd.bossPoolHp(m.hiddenBossId || m.bossId, alive) : panelMaxHp;
+      const laserMaxHp = isLeader ? poolMaxHp / Math.max(1, Math.ceil(alive / 2)) : panelMaxHp;
       const spd = ((e && e.stats && e.stats.moveSpeed) || 1) * ((s.mods && s.mods.speedMul) || 1);
       const air = HOVER.has(s.enemyKey);
       const key = `${s.routeIndex}|${isLeader ? 'boss' : ''}|${air ? 'air' : ''}`;
-      const a = per.get(key) || { ri: s.routeIndex, boss: isLeader, air, n: 0, hp: 0, spd: 0 };
+      const a = per.get(key) || { ri: s.routeIndex, boss: isLeader, air, n: 0, hp: 0, spd: 0, panelMaxHp: 0, laserMaxHp: 0 };
       a.n += isLeader ? LEADER_WEIGHT : n; a.hp += hp * n; a.spd += spd * n;
+      a.panelMaxHp = Math.max(a.panelMaxHp, panelMaxHp); a.laserMaxHp = Math.max(a.laserMaxHp, laserMaxHp);
       per.set(key, a);
     }
     for (const a of per.values()) {
@@ -714,11 +728,11 @@ export function fieldModel(m, ps = null) {
       const cnt = a.boss ? 1 : a.n;
       const dwell = a.boss ? BOSS_DWELL : 0;
       if (rt.motion === 'FLY') {
-        pushRoute(traceLine([rt.start, ...(Array.isArray(rt.checkpoints) ? rt.checkpoints : []), rt.end]), a.n, true, a.hp / cnt, a.spd / cnt, dwell);
+        pushRoute(traceLine([rt.start, ...(Array.isArray(rt.checkpoints) ? rt.checkpoints : []), rt.end]), a.n, true, a.hp / cnt, a.spd / cnt, dwell, a.panelMaxHp, a.laserMaxHp);
       } else {
         const key = `${rt.start[0]},${rt.start[1]}->${rt.end[0]},${rt.end[1]}`;
         const path = Array.isArray(gpaths[key]) ? gpaths[key] : traceLine([rt.start, ...(boss && Array.isArray(rt.checkpoints) ? rt.checkpoints : []), rt.end]);
-        pushRoute(path, a.n, a.air, a.hp / cnt, a.spd / cnt, dwell); // a hovering enemy: ground tiles, air unit
+        pushRoute(path, a.n, a.air, a.hp / cnt, a.spd / cnt, dwell, a.panelMaxHp, a.laserMaxHp); // a hovering enemy: ground tiles, air unit
       }
     }
   }
@@ -821,6 +835,45 @@ function dpsVs(rec, def, res) {
   return rec.attackKind === 'none' ? d * 0.4 : d;
 }
 
+/** Conservative prep model; exact skill timing, healing/shields and drill locks remain the battle sim's job. */
+export function rhineBotRecord(m, ps, piece) {
+  const source = (ps.gd || m.gd).token(piece.id);
+  const def = rhineDevice(piece.id);
+  if (!piece.research || !def || !source) return source;
+  const stage = rhineDeviceStage(def, ps.research?.stages[def.key]);
+  const attack = rhineAttack(ps.layers?.[RHINE_BOND]);
+  const range = researchRange({ id: piece.id, stage });
+  const rec = { ...source, stats: { ...source.stats, atk: attack, blockCnt: 0, aspd: 100 }, rangeGrid: range.grid,
+    canHitFly: true, attackKind: 'ranged', dmgType: 'arts', _rhineDevice: def.key };
+  if (def.key === 'medical') {
+    rec.attackKind = 'heal'; rec.dmgType = 'heal';
+    rec.stats.atk = attack * RB.medicalHealScale[stage]; rec.stats.bat = RB.medicalInterval;
+    rec._rhineHeal = RB.medicalTargetCount[stage] * RB.medicalHealScale[stage] * (stage >= 1 ? 1 + RB.medicalShieldHealRatio : 1);
+    rec._rhineSlow = RB.ecologySlow; rec._rhineBind = stage >= 2 ? RB.ecologyBindDuration / RB.ecologyInterval : 0;
+  } else if (def.key === 'energy') {
+    const members = [...ps.board.values()].filter((p) => p.kind === 'chess').length;
+    // Assume one skill every ten seconds; first-stage contributors are only partly inside the local aura.
+    const chargeRate = Math.max(0.1, members / 10 * (stage ? 1 : 0.5));
+    rec.stats.atk = attack * RB.energyPulseScale[stage];
+    rec.stats.bat = Math.max(RB.energyPulseInterval, RB.energyCharges / chargeRate);
+  } else {
+    rec.stats.atk = attack * RB.laserBaseScale; rec.stats.bat = 1; rec._rhineLaser = true;
+    rec.rangeGrid = [];
+  }
+  rec._botDpsId = `${piece.id}|${stage}|${rec.stats.atk}|${rec.stats.bat}`;
+  return rec;
+}
+
+/** Integrated drill damage for one uninterrupted target, including its own field's post-ramp HP damage. */
+export function rhineLaserExposure(initialDps, seconds, maxHp = 0) {
+  const duration = Math.max(0, Number(seconds) || 0);
+  const ramp = Math.min(duration, RB.laserRampSeconds);
+  const after = Math.max(0, duration - RB.laserRampSeconds);
+  const rampFactor = 0.5 * RB.laserRampPerSecond * ramp * ramp;
+  return initialDps * (duration + rampFactor + after * RB.laserRampPerSecond * RB.laserRampSeconds)
+    + after * Math.max(0, maxHp) * RB.laserTrueHpRatio;
+}
+
 /**
  * The record a chess fights with for range purposes: its range grid replaced by the one it is deployed with under the
  * player's loadout — a passive 攻击范围扩大 skill, a module's range or 攻击距离 (shared/loadoutRecord.js attackRangeGrid:
@@ -853,7 +906,7 @@ export function effDps(model, rec) {
   if (!rec) return 0;
   if (!model || !Array.isArray(model.armor) || !model.armor.length) return dpsOf(rec);
   // (a 自选 record — one DIY slot id, each player's own operator — is cached per operator and skill)
-  const id = rec.diyFor ? `${rec.chessId}@${rec.charId}#${rec.skill?.index ?? ''}` : rec.chessId || rec.tokenId || rec.id || rec.name;
+  const id = rec._botDpsId || (rec.diyFor ? `${rec.chessId}@${rec.charId}#${rec.skill?.index ?? ''}` : rec.chessId || rec.tokenId || rec.id || rec.name);
   const cache = model.dps instanceof Map ? model.dps : null;
   if (cache && cache.has(id)) return cache.get(id);
   let v = 0;
@@ -889,24 +942,29 @@ class Layout {
     const p = this.p;
     const cover = new Map(); // key → { g: dps on ground, a: dps on air }
     const healCover = new Map();
+    const slowCover = new Map();
     for (const u of this.units) {
+      if (u.laser) continue;
       for (const k of u.cover) {
         const e = cover.get(k) || { g: 0, a: 0 };
         if (u.ground) e.g += u.dps;
         if (u.air) e.a += u.dps;
         cover.set(k, e);
-        if (u.heal) healCover.set(k, (healCover.get(k) || 0) + 1);
+        if (u.heal) healCover.set(k, (healCover.get(k) || 0) + u.healPower);
+        if (u.slow) slowCover.set(k, Math.max(slowCover.get(k) || 0, u.slow));
       }
     }
     const blockAt = new Map();
     for (const u of this.units) if (u.block > 0 && this.model.ground.has(u.key)) blockAt.set(u.key, (blockAt.get(u.key) || 0) + u.block);
     let total = 0;
+    const laserTarget = routes.reduce((best, rt) => !best || (rt.panelMaxHp || rt.hp) > (best.panelMaxHp || best.hp) ? rt : best, null);
     for (const rt of routes) {
       let exp = 0;
       let lastBlock = -Infinity;
       for (let i = 0; i < rt.tiles.length; i++) {
         const k = rt.tiles[i];
         let t = rt.tileTime + (i < 2 && rt.dwell ? rt.dwell : 0);
+        if (slowCover.has(k)) t /= Math.max(0.25, 1 - slowCover.get(k));
         if (!rt.fly && blockAt.has(k)) {
           // a blocker right behind another one mostly holds what slipped past; a separate line holds again
           const fresh = i - lastBlock >= p.spread;
@@ -915,6 +973,10 @@ class Layout {
         }
         const c = cover.get(k);
         if (c) exp += t * (rt.fly ? c.a : c.g);
+      }
+      if (rt === laserTarget) {
+        const duration = rt.tileTime * rt.tiles.length + (rt.dwell || 0);
+        for (const u of this.units) if (u.laser) exp += rhineLaserExposure(u.dps, duration, rt.laserMaxHp || rt.hp) / Math.max(1, rt.n);
       }
       total += rt.n * (1 - Math.exp(-exp / (p.kill * rt.hp)));
     }
@@ -926,10 +988,11 @@ class Layout {
 
 function unitOf(rec, key, r, c, dir = 'RIGHT', model = null) {
   const block = isBlocker(rec) ? Math.max(1, rec.stats?.blockCnt ?? 1) : 0;
-  const atkMul = airflowAtkMul(model, key, dir);
+  const atkMul = rec._rhineDevice ? 1 : airflowAtkMul(model, key, dir);
   return {
     rec, key, dir, dps: effDps(model, rec) * atkMul, atkMul, air: hitsFly(rec), ground: rec.attackKind !== 'heal' && !isHealer(rec),
-    block, heal: isHealer(rec), cover: new Set(rangeTiles(rec, r, c, dir)),
+    block, heal: isHealer(rec), healPower: rec._rhineHeal ?? 1, slow: rec._rhineSlow ? Math.min(0.75, rec._rhineSlow + (rec._rhineBind || 0)) : 0,
+    laser: !!rec._rhineLaser, cover: new Set(rangeTiles(rec, r, c, dir)),
   };
 }
 
@@ -957,8 +1020,16 @@ export function* planLayoutSteps(m, ps, pieces, params = LAYOUT_PARAMS, { occupi
   const model = fieldModel(m, ps);
   const map = ps.deployMap();
   const pgd = ps.gd || m.gd;
-  const rec = recOf || ((p) => (p.kind === 'token' ? pgd.token(p.id) : rangeRec(ps, pgd.chess(p.id))));
+  const rec = recOf || ((p) => (p.kind === 'token' ? rhineBotRecord(m, ps, p) : rangeRec(ps, pgd.chess(p.id))));
   const layout = new Layout(model, params);
+  if (pieces.some((p) => p.research)) {
+    const moving = new Set(pieces.map((p) => p.uid));
+    for (const [key, p] of ps.board) {
+      if (moving.has(p.uid)) continue;
+      const record = rec(p);
+      if (record) layout.units.push(unitOf(record, key, ...parseKey(key), pieceDir(p), model));
+    }
+  }
   const rank = (p) => { const r = rec(p); return isBlocker(r) ? 0 : isHealer(r) ? 2 : 1; };
   const order = pieces.slice().sort((a, b) => rank(a) - rank(b) || dpsOf(rec(b)) - dpsOf(rec(a)) || a.uid - b.uid);
   const taken = new Set(occupied);
@@ -1694,7 +1765,7 @@ const SUMMON_TRIES = 4;
  */
 function* placeTokensSteps(m, ps) {
   // Dedicated research cards never enter the ordinary hand. Prefer the devices already developed by this player.
-  const research = (ps.research?.hand || []).filter(Boolean).sort((a, b) =>
+  const research = (ps.research?.hand || []).filter((p) => p && rhineDeviceUnlocked(p.id, ps.bonds?.[RHINE_BOND])).sort((a, b) =>
     (ps.research.stages[b.researchKey] || 0) - (ps.research.stages[a.researchKey] || 0)
     || (ps.research.points[b.researchKey] || 0) - (ps.research.points[a.researchKey] || 0));
   for (const p of [...ps.hand, ...ps.temp, ...research]) {

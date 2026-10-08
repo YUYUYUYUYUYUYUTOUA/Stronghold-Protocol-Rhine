@@ -56,6 +56,9 @@ export function unitInfo(u) {
     researchStage: Number.isInteger(u.researchStage) ? u.researchStage : undefined,
     // Keep the model's stage while a device is disabled; reconnects must not restore its inactive area.
     researchActive: typeof u.researchActive === 'boolean' ? u.researchActive : undefined,
+    researchLaserTarget: u.researchLaserTarget === null || Number.isInteger(u.researchLaserTarget) ? u.researchLaserTarget : undefined,
+    researchLaserProgress: Number.isFinite(u.researchLaserProgress) ? Math.max(0, Math.min(20, r2(u.researchLaserProgress))) : undefined,
+    researchLaserActive: typeof u.researchLaserActive === 'boolean' ? u.researchLaserActive : undefined,
     // Independent research charging reuses the ordinary skill-bar slots, including late joins.
     sp: Number.isFinite(u.researchCharges) ? u.researchCharges : undefined,
     spMax: Number.isFinite(u.researchChargeMax) ? u.researchChargeMax : undefined,

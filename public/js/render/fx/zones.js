@@ -144,9 +144,9 @@ export class FxZones {
     }
   }
 
-  /** Restore an effective ecology field from UnitInfo, without waiting for a replayed periodic event. */
+  /** Restore the medical rig's effective ecology field from UnitInfo, without replaying periodic binds. */
   researchArea(view, previous = null) {
-    if (!view || view.prep || !view.alive || view.remove || view.destroyed || view.researchDevice?.key !== 'ecology'
+    if (!view || view.prep || !view.alive || view.remove || view.destroyed || view.researchDevice?.key !== 'medical'
       || view.info?.researchActive === false || !Number.isInteger(view.info?.researchStage)) return null;
     const stage = view.info.researchStage;
     if (stage < 0 || stage > 2) return null;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { placementContext, canPlace, dropIntent, indexPieces, boardTargets } from '../../public/js/ui/gameLogic.js';
 import { retreatSlot, underframeActions } from '../../public/js/ui/facing.js';
-import { researchTileAt, researchProgress, researchRangeSummary } from '../../public/js/ui/rhineDock.js';
+import { researchTileAt, researchProgress, researchRangeSummary, laserProgressText } from '../../public/js/ui/rhineDock.js';
 import { summonDeployHint } from '../../public/js/ui/detailPanel.js';
 import { RHINE_DEVICES, rhineAttack, rhineStage } from '../../shared/rhineResearch.js';
 const stage = JSON.parse(readFileSync(new URL('../../data/stages.json', import.meta.url))).act2autochess_m01;
@@ -61,12 +61,23 @@ test('UI shows growth thresholds and research instructions without a fictional s
 
 test('dock range summaries separate nearby targeting from global charging and mature splash', () => {
   const energy = RHINE_DEVICES.find(d => d.key === 'energy').tokenId;
-  assert.match(researchRangeSummary({ id: energy, stage: 0 }), /选敌 13 格.*范围内充能.*溅射半径 1/);
-  assert.match(researchRangeSummary({ id: energy, stage: 1 }), /选敌 13 格.*本方全场充能.*溅射半径 1/);
-  assert.match(researchRangeSummary({ id: energy, stage: 2 }), /选敌 13 格.*本方全场充能.*钙质化 25 格/);
+  assert.match(researchRangeSummary({ id: energy, stage: 0 }), /范围 13 格.*范围内充能.*全范围脉冲/);
+  assert.match(researchRangeSummary({ id: energy, stage: 1 }), /选敌 29 格.*本方全场充能.*溅射半径 1/);
+  assert.match(researchRangeSummary({ id: energy, stage: 2 }), /选敌 29 格.*本方全场充能.*钙质化 25 格/);
   assert.equal(researchRangeSummary({ id: energy, stage: 99 }), researchRangeSummary({ id: energy, stage: 2 }));
-  const ecology = RHINE_DEVICES.find(d => d.key === 'ecology').tokenId;
+  const ecology = RHINE_DEVICES.find(d => d.key === 'medical').tokenId;
   assert.match(researchRangeSummary({ id: ecology, stage: 0 }), /范围 13 格.*半径 2.*持续减速 50%/);
   assert.match(researchRangeSummary({ id: ecology, stage: 2 }), /范围 29 格.*半径 3.*持续减速 50%/);
   assert.equal(researchRangeSummary({ id: 'unrelated' }), '');
+  assert.match(researchRangeSummary({ id: 'token_rhine_laser', stage: 2 }), /全场锁定.*最大生命值/);
+});
+
+test('laser UI reports the gate and actual seconds of output without research progression', () => {
+  assert.match(summonDeployHint({ tokenId: 'token_rhine_laser' }), /9名.*单级/);
+  assert.doesNotMatch(summonDeployHint({ tokenId: 'token_rhine_laser' }), /研究进度|胜利|失败/);
+  assert.match(laserProgressText(0), /等待目标.*150%/);
+  assert.match(laserProgressText(10, 12, true), /锁定输出.*10\/20秒.*225%/);
+  assert.match(laserProgressText(10.75, 12, true), /10\/20秒.*225%/, 'displayed damage follows the sim’s completed output seconds');
+  assert.match(laserProgressText(20, 12, false), /输出暂停.*20\/20秒.*300%/);
+  assert.match(laserProgressText(99, 12, true), /20\/20秒.*300%/);
 });
