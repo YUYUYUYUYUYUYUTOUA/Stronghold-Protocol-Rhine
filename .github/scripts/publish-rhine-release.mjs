@@ -113,9 +113,10 @@ async function verifyTree(directory) {
   assert.deepEqual(actual.sort(), [...manifest.files.map(f => f.path), 'bundle-manifest.json'].sort());
   return manifest;
 }
-function runTests(node, directory, files, log) {
-  const result = spawnSync(node, ['--test', '--test-reporter=spec', '--test-concurrency=3', ...files], {
-    ...quiet, cwd: directory, env: { ...process.env, NO_COLOR: '1', SP_E2E: '0', SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
+function runTests(node, directory, files, log, options = {}) {
+  const result = spawnSync(node, ['--test', '--test-reporter=spec', `--test-concurrency=${options.concurrency ?? 3}`, ...(options.args || []), ...files], {
+    ...quiet, cwd: directory, timeout: options.timeout ?? 300000,
+    env: { ...process.env, NO_COLOR: '1', SP_E2E: '0', SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0', ...options.env },
   });
   const text = (result.stdout || '') + (result.stderr || '');
   fs.writeFileSync(log, text);
@@ -165,6 +166,9 @@ async function main() {
   const oldManifest = await verifyTree(previous);
   progress(`Verified ${oldManifest.fileCount} previous payload files; checking official Windows Node.`);
   const fresh = request.upstreamResources ? await upstreamResources(downloads) : null;
+  // The previous full bundle includes development tools used by packaged regression tests.
+  // Reuse them only when the entire resolved dependency lock is unchanged.
+  if (fresh) assert.deepEqual(dependencyLock(previous), dependencyLock(source));
   if (!fresh) {
     for (const file of ['package-lock.json', 'data/assets.json']) {
       assert.equal(await sha(path.join(previous, file)), await sha(path.join(source, file)),
@@ -188,8 +192,7 @@ async function main() {
   assert.equal(command(bundledNode, ['--version']).trim(), request.runtimeVersion);
   for (const relative of ['public/assets', 'public/fonts', 'public/vendor', 'node_modules']) {
     assert.equal(fs.existsSync(path.join(source, relative)), false, relative);
-    const origin = relative === 'node_modules' && fresh ? fresh : previous;
-    fs.cpSync(path.join(origin, relative), path.join(source, relative), { recursive: true });
+    fs.cpSync(path.join(previous, relative), path.join(source, relative), { recursive: true });
     if (fresh && relative !== 'node_modules') fs.cpSync(path.join(fresh, relative), path.join(source, relative), { recursive: true });
   }
   const localOrigin = fresh && fs.existsSync(path.join(fresh, 'data/local-assets.json')) ? fresh : previous;
@@ -217,6 +220,22 @@ async function main() {
     'test/extension-potential.test.js', 'test/room-rhine-profile.test.js', 'test/vanilla-data.test.js',
     'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
   ], path.join(root, 'packaged-tests.log'));
+  let browserTests = null;
+  if (fresh) {
+    const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
+      .map(dir => path.join(dir, 'Microsoft/Edge/Application/msedge.exe')).find(file => fs.existsSync(file));
+    assert.ok(edge, 'Microsoft Edge is required for the native Windows renderer checks.');
+    const browserOutput = path.join(built.destination, 'test/e2e/out');
+    assert.equal(fs.existsSync(browserOutput), false);
+    browserTests = {
+      renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js'],
+        path.join(root, 'browser-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
+      statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
+        { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
+    };
+    fs.renameSync(browserOutput, path.join(root, 'browser-evidence'));
+    progress('Native Windows Edge renderer and stats-page checks passed; screenshots moved outside the payload.');
+  }
   const server = spawn(node, ['server/index.js'], { cwd: built.destination, windowsHide: true,
     env: { ...process.env, HOST: '127.0.0.1', PORT: '3214' }, stdio: 'ignore' });
   let smoke;
@@ -271,11 +290,11 @@ async function main() {
   const report = { ...request.sourceValidation, createdAt: new Date().toISOString(), sourceCommit: request.sourceCommit,
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
-    packagedWindows: { node: request.runtimeVersion, tests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
+    packagedWindows: { node: request.runtimeVersion, tests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
     limitations: [
-      'Interactive browser/BAT launch and manual balance evaluation were not run; native Windows Node service and launcher regression tests were exercised.',
+      'Manual browser/BAT launch and balance evaluation were not run; automated native Windows service, browser and launcher checks are recorded separately.',
     ] };
   fs.writeFileSync(path.join(assets, 'RELEASE-VALIDATION.json'), JSON.stringify(report, null, 2) + '\n');
   const assetNames = fs.readdirSync(assets).sort();
