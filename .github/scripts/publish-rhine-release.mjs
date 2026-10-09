@@ -31,16 +31,14 @@ function command(executable, args, options = {}) {
 const api = endpoint => JSON.parse(command('gh', ['api', `repos/${repo}/${endpoint}`]));
 async function sha(file) {
   const hash = createHash('sha256');
-  for await (const chunk of fs.createReadStream(file)) hash.update(chunk);
+  if (fs.statSync(file).size <= 4 * 1024 * 1024) hash.update(fs.readFileSync(file));
+  else for await (const chunk of fs.createReadStream(file, { highWaterMark: 4 * 1024 * 1024 })) hash.update(chunk);
   return hash.digest('hex');
 }
-const psQuote = value => `'${value.replace(/'/g, "''")}'`;
-function powershell(script) {
-  return command('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; ${script}`]);
-}
+const progress = message => console.log(`${new Date().toISOString()} ${message}`);
 function extract(archive, destination) {
   assert.equal(fs.existsSync(destination), false, destination);
-  powershell(`Expand-Archive -LiteralPath ${psQuote(archive)} -DestinationPath ${psQuote(destination)}`);
+  command('python', [path.join(automation, '.github/scripts/rhine-release-archive.py'), 'extract', archive, destination]);
 }
 async function verifyTree(directory) {
   const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'bundle-manifest.json'), 'utf8'));
@@ -92,7 +90,7 @@ function runTests(node, directory, files, log) {
 }
 function zip(directory, destination) {
   assert.equal(fs.existsSync(destination), false);
-  powershell(`Compress-Archive -LiteralPath ${psQuote(directory)} -DestinationPath ${psQuote(destination)} -CompressionLevel Optimal`);
+  command('python', [path.join(automation, '.github/scripts/rhine-release-archive.py'), 'zip', directory, destination]);
 }
 async function main() {
   const draft = api(`releases/${request.draftReleaseId}`);
@@ -110,6 +108,7 @@ async function main() {
   assert.equal(draft.draft, true, 'Published releases must never be overwritten by a rebuild.');
   assert.equal(command('git', ['-C', source, 'rev-parse', 'HEAD']).trim(), request.sourceCommit);
   fs.mkdirSync(root);
+  progress('Downloading and checking the previous release.');
   const downloads = path.join(root, 'downloads'); fs.mkdirSync(downloads);
   command('gh', ['release', 'download', request.previousTag, '--repo', repo, '--pattern', request.previousArchiveName,
     '--pattern', 'SHA256SUMS.txt', '--dir', downloads]);
@@ -120,6 +119,7 @@ async function main() {
   extract(previousZip, path.join(root, 'previous'));
   const previous = path.join(root, 'previous/Stronghold-Protocol-Rhine');
   const oldManifest = await verifyTree(previous);
+  progress(`Verified ${oldManifest.fileCount} previous payload files; checking official Windows Node.`);
   for (const file of ['package-lock.json', 'data/assets.json']) {
     assert.equal(await sha(path.join(previous, file)), await sha(path.join(source, file)),
       `${file} changed: prepare fresh verified resources before reusing a previous package.`);
@@ -151,6 +151,7 @@ async function main() {
     runtimeVersion: request.runtimeVersion, runtimeSourceUrl: runtimeBase + runtimeArchiveName, runtimeSha256: runtimeSha });
   assert.equal(built.manifest.sourceCommit, request.sourceCommit);
   assert.equal(built.manifest.sourceDirty, false);
+  progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
   const tests = runTests(node, built.destination, [
     'test/content/kazdel.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
@@ -162,6 +163,8 @@ async function main() {
   const server = spawn(node, ['server/index.js'], { cwd: built.destination, windowsHide: true,
     env: { ...process.env, HOST: '127.0.0.1', PORT: '3214' }, stdio: 'ignore' });
   let smoke;
+  const smokeReport = path.join(built.destination, 'rhine-equipment-verification.json');
+  assert.equal(fs.existsSync(smokeReport), false);
   try {
     let healthy = false;
     for (let i = 0; i < 30; i++) {
@@ -172,6 +175,10 @@ async function main() {
     assert.equal(healthy, true, 'Bundled Windows service did not become healthy.');
     smoke = JSON.parse(command(node, ['tools/verify-rhine-release.mjs', 'http://127.0.0.1:3214'], { cwd: built.destination }));
   } finally { server.kill(); }
+  assert.deepEqual(JSON.parse(fs.readFileSync(smokeReport, 'utf8')), smoke);
+  fs.renameSync(smokeReport, path.join(root, 'packaged-http-verification.json'));
+  await verifyTree(built.destination);
+  progress('Native Windows tests and HTTP/WebSocket checks passed; compressing verified payload.');
   const assets = path.join(root, 'assets'); fs.mkdirSync(assets);
   const archiveName = `Stronghold-Protocol-Rhine-${request.tag}-Windows-x64.zip`;
   const archive = path.join(assets, archiveName); zip(built.destination, archive);
@@ -179,6 +186,7 @@ async function main() {
   const unpacked = path.join(root, 'unpacked-verification/Stronghold-Protocol-Rhine');
   const verified = await verifyTree(unpacked);
   assert.deepEqual(verified, built.manifest);
+  progress('Compressed package passed full file-manifest verification; preparing updater toolkit.');
   const toolDirectory = path.join(root, 'Rhine-Update-Tool-Windows'); fs.mkdirSync(toolDirectory);
   const toolManifest = { schemaVersion: 1, tool: 'Rhine-Update-Tool-Windows', sourceCommit: request.sourceCommit, files: [],
     requires: 'An installed manifest-based Rhine Windows x64 package with bundled Node; GitHub public Releases network access' };
@@ -209,9 +217,13 @@ async function main() {
     packagedWindows: { node: request.runtimeVersion, tests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
-    limitations: ['Interactive browser/BAT launch and manual balance evaluation were not run; native Windows Node service and launcher regression tests were exercised.'] };
+    limitations: [
+      'Interactive browser/BAT launch and manual balance evaluation were not run; native Windows Node service and launcher regression tests were exercised.',
+      'An earlier Windows Node 22 CI run crashed in the online-update test process (exit 3221226505); the release ships and validates native Windows Node 24.21.0.',
+    ] };
   fs.writeFileSync(path.join(assets, 'RELEASE-VALIDATION.json'), JSON.stringify(report, null, 2) + '\n');
   const assetNames = fs.readdirSync(assets).sort();
+  progress(`Uploading ${assetNames.length} validated release assets.`);
   command('gh', ['release', 'upload', request.tag, '--repo', repo, '--clobber', ...assetNames.map(name => path.join(assets, name))]);
   const uploaded = api(`releases/${request.draftReleaseId}`);
   assert.equal(uploaded.draft, true);

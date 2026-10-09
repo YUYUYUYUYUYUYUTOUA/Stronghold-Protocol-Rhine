@@ -6,6 +6,7 @@ on:
     paths:
       - .github/rhine-release-request.json
       - .github/scripts/publish-rhine-release.mjs
+      - .github/scripts/rhine-release-archive.py
       - .github/workflows/rhine-release.yml
   workflow_dispatch:
 
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   publish:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
