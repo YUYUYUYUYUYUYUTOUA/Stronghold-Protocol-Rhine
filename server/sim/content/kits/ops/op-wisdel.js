@@ -62,6 +62,7 @@ import { absoluteRangeKeys, sortEnemyTargets } from '../../../targeting.js';
 import { hasHp } from '../../../damage.js';
 import { COLS } from '../../../constants.js';
 import { localOrder, localBefore } from '../../../dir.js';
+import { hypot } from '../../../detmath.js';
 
 const S1 = 'skchr_wisdel_1';
 const S2 = 'skchr_wisdel_2';
@@ -139,7 +140,7 @@ function shadowTile(battle, host) {
   for (const k of host.rangeKeys ?? []) {
     const r = Math.floor(k / COLS), c = k % COLS;
     if (!battle.grid.inRect(r, c) || !battle.grid.canStand(r, c, { ranged: true }) || battle.isReservedTile(r, c)) continue;
-    const d = Math.hypot(r - host.tileR, c - host.tileC);
+    const d = hypot(r - host.tileR, c - host.tileC);
     const next = localOrder(r - host.tileR, c - host.tileC, host.dir);
     if (d < bd - 1e-9 || (Math.abs(d - bd) <= 1e-9 && localBefore(next, order))) { bd = d; best = [r, c]; order = next; }
   }

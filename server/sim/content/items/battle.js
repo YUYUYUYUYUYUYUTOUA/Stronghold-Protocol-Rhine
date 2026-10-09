@@ -48,6 +48,7 @@ import {
 } from '../support/index.js';
 import { mitigate, hasHp, periodicDamage, isHpLoss } from '../../damage.js';
 import { RHINE_BOND, RHINE_EQUIPMENT } from '../../../../shared/rhineResearch.js';
+import { hypot } from '../../detmath.js';
 
 // =====================================================================================================================
 // data helpers
@@ -499,7 +500,7 @@ const BY_ITEM = {
     const r = num(p.radius, 3), sc = num(p.damage_scale, 1);
     S.on('hit', (c) => {
       if (c.source !== u || !c.target || c.target.side !== 'enemy' || c.dmg.type === 'element') return;
-      if (Math.hypot(c.target.x - u.x, c.target.y - u.y) >= r - 1e-6) c.dmg.mul *= sc;
+      if (hypot(c.target.x - u.x, c.target.y - u.y) >= r - 1e-6) c.dmg.mul *= sc;
     });
   },
   // 炎国短刀: each skill activation +atk (≤ atk_buff_cnt stacks) — one 直接乘算 bonus of atk × stacks

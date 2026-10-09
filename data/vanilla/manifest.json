@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "profile": "vanilla",
-  "upstreamVersion": "0.2.1",
-  "source": "c2a2ef778cf728ff29b953b9842b2a39b1e9cbea",
+  "upstreamVersion": "0.2.2",
+  "source": "62eb113419123d9a3a63606107bbf85230c5dd2f",
   "files": [
     {
       "path": "assets.json",
-      "size": 1114330,
-      "sha256": "52551174da55b55f6e4c9d43d1bb8fd9165dd889c16ae4b78faa8a3644cf3008"
+      "size": 1281869,
+      "sha256": "bef944cdcfd3ded365d64d5fda84322289aabb28051eb9c1ece37376d04e96bc"
     },
     {
       "path": "backups.json",
-      "size": 1883848,
-      "sha256": "7b528a931577556716d935d0c9509eb05c1f6a2f24464ad500ac8f2a795a806f"
+      "size": 2033892,
+      "sha256": "69d5a47bd5c4652846fc3990985518c0d9be15822ce226e4351df4e1f536eb7f"
     },
     {
       "path": "bands.json",
@@ -31,8 +31,8 @@
     },
     {
       "path": "chess.json",
-      "size": 1712670,
-      "sha256": "34338e7cd766981ce43d3e4049d9a60b3d2aea017e00f5cfea8682bcfe54461b"
+      "size": 1875334,
+      "sha256": "ba7d338b3940fc123c9834a888a9cea1b9b14ee0c756d27463c68ca62f005437"
     },
     {
       "path": "choices.json",
@@ -71,23 +71,23 @@
     },
     {
       "path": "i18n/en.json",
-      "size": 2274454,
-      "sha256": "c274adcf856cd06060605d69823e85a0d3f43ae4f857d8829f5755698f7f36d7"
+      "size": 2492895,
+      "sha256": "6a92588fa6ad9b318c363dfbc956c0c6a80380d00f18f5055c58827eae523ab7"
     },
     {
       "path": "i18n/ja.json",
-      "size": 2613640,
-      "sha256": "8b2ab9ca1aa4387a36f43eb36a498ca287abd8ee438fad985a218f6dee5ca255"
+      "size": 2855763,
+      "sha256": "05b97a64dc5164ff407509eb8394776c8cca3b2c40d76f3a677d9df581c6dc76"
     },
     {
       "path": "i18n/ko.json",
-      "size": 2436671,
-      "sha256": "f989a7d4487ed1ed301eea2f77d349188290a63cfc65be2149928b3164382a7f"
+      "size": 2664330,
+      "sha256": "7a4e46ab28d017797cc371d766e7bc76cd69f31ba5c506a26b6dda6d0261de30"
     },
     {
       "path": "i18n/zh-TW.json",
-      "size": 2040328,
-      "sha256": "970abdcf0be49fc7171eb7cf12c9d5cb64c6d435cdc340534c42f94105e00935"
+      "size": 2231435,
+      "sha256": "18d67dc6b6b1a6b3208bc842356b3c0e90a6356af9bd8aba09d38993d1aabcd8"
     },
     {
       "path": "items.json",
@@ -101,8 +101,8 @@
     },
     {
       "path": "tokens.json",
-      "size": 133951,
-      "sha256": "ca98a1189d62c3221e3bc9d149f8ba67d44cab5a6c5e780251fb162177d6519c"
+      "size": 137892,
+      "sha256": "81739c67e38ad882fdc7640f07ffbf7d82d9c2a1176287ff2dd2e071cb83163b"
     },
     {
       "path": "tuning.json",

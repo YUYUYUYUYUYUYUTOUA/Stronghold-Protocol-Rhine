@@ -9,6 +9,9 @@ import { indexAudio } from './assets/audio.mjs';
 import { Downloader } from './assets/downloader.mjs';
 import { processModels } from './assets/spine.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, contentHash } from './assets/manifest.mjs';
+import { fetchExtensionVoices } from './assets/extension-voices.mjs';
+import { restartForEnvProxy } from './assets/env-proxy.mjs';
+async function main() {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assetRoot = join(root, 'public', 'assets'), cache = join(root, '.cache');
 const inputs = kazdelArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
@@ -29,9 +32,12 @@ for (const [id, entry] of Object.entries(resolved.value.chars)) manifest.chars[i
 for (const key of ['skills', 'skillsById']) manifest[key] = { ...manifest[key], ...resolved.value[key] };
 manifest.prof.sub = { ...manifest.prof.sub, ...resolved.value.prof.sub };
 addKazdelArt(manifest);
+await fetchExtensionVoices(root, inputs, manifest);
 manifest.stats.chars = Object.keys(manifest.chars).length;
 manifest.stats.skills = Object.keys(manifest.skills).length;
 const { hash: _hash, ...body } = manifest;
 manifest.hash = contentHash(body);
 await writeFile(path, JSON.stringify(manifest) + '\n');
 console.log('Kazdel art ready: all ten operator portraits, avatars, skill icons, models and faction icon.');
+}
+if (!restartForEnvProxy()) await main();

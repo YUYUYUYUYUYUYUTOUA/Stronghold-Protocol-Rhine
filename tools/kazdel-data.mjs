@@ -36,12 +36,12 @@ function moduleChoices(ctx, char, status, label, spec) {
     const meta = ctx.uniequipTable.equipDict[id], phase = ordinaryModulePhase(ctx, id, status.equipLevel);
     if (meta.type === 'INITIAL' || meta.isSpecialEquip || !phase) return [];
     const { op } = splitModuleParts(phase);
-    const hasTrait = op.some(p => bestCandidate(p.overrideTraitDataBundle?.candidates, status.phase, status.level, OPERATOR_POTENTIAL));
+    const hasTrait = op.some(p => bestCandidate(p.overrideTraitDataBundle?.candidates, status.phase, status.level, (ctx.potRank ?? OPERATOR_POTENTIAL)));
     return [{ uniEquipId: id, name: meta.uniEquipName,
       typeName: `${meta.typeName1 || ''}${meta.typeName2 ? '-' + meta.typeName2 : ''}`,
       typeIcon: meta.typeIcon, icon: meta.uniEquipIcon || id, isDefault: id === spec.defaultModuleId, level: status.equipLevel,
-      attr: moduleAttr(phase), traitOverride: hasTrait ? traitRecord(ctx, char, status.phase, status.level, op, label, OPERATOR_POTENTIAL).trait : null,
-      talentChanges: moduleTalentChanges(ctx, op, status.phase, status.level, label, OPERATOR_POTENTIAL) }];
+      attr: moduleAttr(phase), traitOverride: hasTrait ? traitRecord(ctx, char, status.phase, status.level, op, label, (ctx.potRank ?? OPERATOR_POTENTIAL)).trait : null,
+      talentChanges: moduleTalentChanges(ctx, op, status.phase, status.level, label, (ctx.potRank ?? OPERATOR_POTENTIAL)) }];
   });
 }
 export function kazdelGarrison(key, gold) {
@@ -96,8 +96,8 @@ function compileChess(ctx, files, spec, gold, index) {
   const st = config.economy.chessStatus[spec.tier][gold ? 'golden' : 'normal'];
   const status = { phase: st.phase, level: st.level, skillLevel: st.skillLevel, equipLevel: st.equipLevel };
   const formKey = Object.values(status).join('/'), nativeForm = files.backups?.units?.[spec.charId]?.forms?.[formKey];
-  const attrs = withPotential(raw, interpolateAttrs(raw, status.phase, status.level), OPERATOR_POTENTIAL, chessId);
-  const { trait, classify } = traitRecord(ctx, raw, status.phase, status.level, [], chessId, OPERATOR_POTENTIAL);
+  const attrs = withPotential(raw, interpolateAttrs(raw, status.phase, status.level), (ctx.potRank ?? OPERATOR_POTENTIAL), chessId);
+  const { trait, classify } = traitRecord(ctx, raw, status.phase, status.level, [], chessId, (ctx.potRank ?? OPERATOR_POTENTIAL));
   const skills = raw.skills.flatMap((s, skillIndex) => {
     if (!unlocked(s.unlockCond, status.phase, status.level)) return [];
     const skill = buildSkill(ctx, s.skillId, status.skillLevel, null, chessId);
@@ -113,10 +113,10 @@ function compileChess(ctx, files, spec, gold, index) {
   delete skill.isDefault;
   const modules = gold ? moduleChoices(ctx, raw, status, chessId, spec) : [];
   const mod = modules.find(m => m.isDefault), statsBase = statsFrom(attrs);
-  const talentsBase = baseTalentList(ctx, raw, status.phase, status.level, chessId, OPERATOR_POTENTIAL);
+  const talentsBase = baseTalentList(ctx, raw, status.phase, status.level, chessId, (ctx.potRank ?? OPERATOR_POTENTIAL));
   return { chessId, baseId, goldenId, isGolden: gold, tier: spec.tier, identifier: 300 + index,
     isHidden: false, isDiy: false, visible: true, chessType: 'PRESET', shopSortId: 300 + index,
-    backup: { charId: spec.charId, tmplId: null, skillIndex: skill.index, uniEquipId: spec.defaultModuleId, potRank: OPERATOR_POTENTIAL },
+    backup: { charId: spec.charId, tmplId: null, skillIndex: skill.index, uniEquipId: spec.defaultModuleId, potRank: (ctx.potRank ?? OPERATOR_POTENTIAL) },
     charId: spec.charId, name: raw.name, appellation: raw.appellation, rarity: Number(raw.rarity.replace('TIER_', '')),
     profession: raw.profession, subProfessionId: raw.subProfessionId, subProfessionName: spec.subName, position: raw.position,
     nationId: raw.nationId, bonds: [...spec.bonds], garrisonIds: [kazdelGarrison(spec.characterKey, gold).garrisonId],
@@ -167,6 +167,10 @@ function compileWisdelToken(files) {
 
 export async function applyKazdelData(files, source = null) {
   const ctx = source || JSON.parse(await readFile(new URL('./kazdel-data-source.json', import.meta.url), 'utf8'));
+  if (!Number.isInteger(ctx.potRank)) {
+    const { applyPotentialOverlay } = await import('./extension-potential.mjs');
+    return applyPotentialOverlay(files, applyKazdelData, ctx);
+  }
   const { chess, bonds, garrisons, effects, config, tokens } = files;
   for (const [index, spec] of KAZDEL_ADDITIONS.entries()) for (const gold of [false, true]) {
     const c = compileChess(ctx, files, spec, gold, index);

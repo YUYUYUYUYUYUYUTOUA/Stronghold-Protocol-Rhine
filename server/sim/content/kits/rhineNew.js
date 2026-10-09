@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 // 星源 / 多萝西: native selectable skills and the owner's resolved module blackboards.
 // Trap damage and chain reactions are explicit physical activations, never inferred from damage/kill events.
 import { num, talentBb, traitBb, skillRec, up } from './shared/tier1.js';
@@ -133,7 +134,7 @@ function trapTile(b, u) {
     const r = Math.floor(key / COLS), c = key % COLS;
     if (!b.grid.canStand(r, c) || b.grid.isObstacle(r, c) || b.isReservedTile(r, c) || groundOn(b, r, c)) continue;
     const [lr, lc] = localOrder(r - u.tileR, c - u.tileC, u.dir);
-    const distance = enemies.length ? Math.min(...enemies.map(e => Math.hypot(e.x - c, e.y - r))) : Math.hypot(u.x - c, u.y - r);
+    const distance = enemies.length ? Math.min(...enemies.map(e => hypot(e.x - c, e.y - r))) : hypot(u.x - c, u.y - r);
     candidates.push({ r, c, distance, lr, lc });
   }
   candidates.sort((a, c) => a.distance - c.distance || a.lr - c.lr || a.lc - c.lc);

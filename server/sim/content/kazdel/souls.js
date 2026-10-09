@@ -9,6 +9,7 @@ const purePassive = (buff) => buff.persist && !buff.status && (buff.key.startsWi
 /** No active skills, triggered talents, statuses, Kazdel layers or regeneration enter H0/A0. */
 export function soulBaseline(owner) {
   const clone = new Unit({ id: 0, side: 'ally', kind: 'token', base: { ...owner.base, hpRecoveryPerSec: 0 } });
+  clone.cultMul = owner.cultMul;
   clone.alive = false;
   clone.buffs = owner.buffs.filter(purePassive).map(b => ({ ...b, flags: {}, shield: 0,
     mods: Object.fromEntries(Object.entries(b.mods ?? {}).filter(([key]) => !NON_SOUL_MODS.has(key))) }));

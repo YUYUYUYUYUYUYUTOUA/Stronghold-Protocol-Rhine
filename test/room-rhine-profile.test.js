@@ -51,6 +51,27 @@ const create = (h, player, fields = {}) => {
   return h.lobby.roomOf(player);
 };
 
+test('0.2.2 operator settings follow the selected profile and coexist with the AI draft-order switch', () => {
+  const h = lobbyHarness(), host = h.player('Host');
+  for (const profile of Object.values(h.data)) {
+    for (const c of Object.values(profile.chess)) c.charId = c.baseId === BASE ? 'char_base' : 'char_rhine_extra';
+  }
+  const ops = { char_base: { potential: 2, cultivate: 1 }, char_rhine_extra: { potential: 3, cultivate: 0 } };
+  assert.deepEqual(h.send(host, { t: 'room.loadout', entries: {}, ops }), { ok: true });
+  const room = create(h, host);
+  assert.deepEqual(room.seatOf(host.playerId).ops, ops);
+  assert.deepEqual(h.send(host, { t: 'room.setAiPicksLast', on: true }), { ok: true });
+  assert.deepEqual(h.send(host, { t: 'room.setRhine', enabled: false }), { ok: true });
+  assert.deepEqual(host.ops, { char_base: ops.char_base });
+  assert.strictEqual(host.ops, room.seatOf(host.playerId).ops);
+  assert.ok(Object.isFrozen(host.ops.char_base));
+  assert.equal(room.aiPicksLast, true);
+  assert.equal(h.send(host, { t: 'room.loadout', entries: {}, ops }).error, ERR.BAD_TARGET);
+  assert.deepEqual(h.send(host, { t: 'room.setRhine', enabled: true }), { ok: true });
+  assert.deepEqual(h.send(host, { t: 'room.loadout', entries: {}, ops }), { ok: true });
+  assert.deepEqual(host.ops, ops);
+});
+
 test('Rhine room protocol defaults to enabled, validates optional creation and host toggle booleans, and accepts all nine choices', () => {
   assert.equal(new Room('TEST', 'coop', 'NORMAL', 0).rhineEnabled, true);
   assert.equal(validateC2S({ t: 'room.create', mode: 'solo', difficulty: 'NORMAL' }), null);

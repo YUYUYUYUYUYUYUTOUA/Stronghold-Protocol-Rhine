@@ -1,8 +1,8 @@
 {
   "name": "stronghold-protocol-rhine",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
-  "description": "基于 sganggs/Stronghold-Protocol v0.2.1 的非官方莱茵与卡兹戴尔扩展：科研装置、众魂与战争巨炮（1–6 人合作）",
+  "description": "基于 sganggs/Stronghold-Protocol v0.2.2 的非官方莱茵与卡兹戴尔扩展：科研装置、众魂与战争巨炮（1–6 人合作）",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine#readme",
   "repository": {
@@ -38,6 +38,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --checkJs -p jsconfig.json",
     "check:imports": "node tools/check-imports.mjs",
+    "ci": "node tools/ci.mjs",
     "package": "node tools/package.mjs",
     "package:lite": "node tools/package.mjs --lite"
   },

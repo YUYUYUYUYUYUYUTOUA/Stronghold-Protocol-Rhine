@@ -14,6 +14,7 @@ import { useMemo, useState } from '../../vendor/hooks.module.js';
 import { NAME_MAX_LEN, APP_VERSION, DEV_BUILD } from '../../../shared/constants.js';
 import { html, Button, Icon, MicroLabel, TextField, PingPill } from '../ui/components.js';
 import { GuideButton } from '../ui/guide.js';
+import { openStats } from './stats.js';
 import { toast } from '../ui/toasts.js';
 import { net, identity } from '../net.js';
 import { store, useStore, shallowEqual } from '../store.js';
@@ -245,7 +246,10 @@ export function TitleScreen() {
     </div>
     <div class="title-corner title-corner--tr">
       <div>
-        <${LangToggle} class="title-lang" />
+        <div class="title-corner__tools">
+          <${Button} variant="ghost" size="sm" icon="chart" class="title-stats" onClick=${openStats} title=${t('统计数据')}>${t('统计')}<//>
+          <${LangToggle} class="title-lang" />
+        </div>
         <${MicroLabel} tone="hi">TARGET POINT<//><br /><${MicroLabel}>STRONGHOLD PROTOCOL<//>
       </div>
     </div>

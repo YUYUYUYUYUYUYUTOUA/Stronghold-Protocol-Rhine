@@ -1,18 +1,18 @@
 # 卫戍协议：莱茵／卡兹戴尔扩展 · Stronghold Protocol: Rhine
 
-当前扩展版本：**v0.2.1-rhine.4**。
+当前扩展版本：**v0.2.2-rhine.1**。
 
-本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵／卡兹戴尔扩展 fork**，基于上游 **v0.2.1**，合入官方发布标签 v0.2.1（提交 [`c2a2ef7`](https://github.com/sganggs/Stronghold-Protocol/commit/c2a2ef7)），本次扩展修改日期为 **2026-10-09**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护。
+本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方莱茵／卡兹戴尔扩展 fork**，基于上游 **v0.2.2**，合入官方发布标签 v0.2.2（提交 [`62eb1134`](https://github.com/sganggs/Stronghold-Protocol/commit/62eb1134)），本次扩展修改日期为 **2026-10-10**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护。
 
 扩展代码沿用 **GPL-3.0-or-later**，并保留原有 Spine Runtimes 组合分发附加许可；[LICENSE](LICENSE)、[NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 原文保留。游戏数据、官方阵营标识及其他游戏素材的权属不因此改变，不应将本仓库全部美术视为 GPL 内容。
 
 ### 本扩展新增内容
 
-- 本次同步上游 0.2.1：自选编队、替补干员、多语言与快捷键，并保留满潜能、联防地形和冲锋修复。莱茵新增干员同步满潜能，自选同名干员与莱茵特质分开处理。
+- 本次同步上游 0.2.2：逐干员潜能与练度、日文语音、统计页、AI 队友最后轮选，以及失衡和整数帧攻击间隔修复。扩展干员支持低潜能与练度选择，默认仍为满潜能、精英2 Lv.60；自选同名干员与扩展特质分开处理。
 
 - 六人同房合作：真人与 AI 共用六个席位；五人开场少 BAN 一个核心盟约、六人少两个，最终攻势支持五人 2＋2＋1、六人 2＋2＋2 分组；详见 [多人版说明](docs/MULTIPLAYER.md)。
 - 六人局最终攻势与隐秘核心共享 BOSS 血量为同规则四人局的 200%，其他属性不变；第 10、12、14 回合每位存活玩家各获得一个信标，第 14 回合奖励信标使用后立即转赠，10、12 回合仍在下个休整期送达。
-- 等待室的“莱茵／卡兹戴尔扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.2.1 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
+- 等待室的“莱茵／卡兹戴尔扩展”由房主在开局前选择，单人与合作均默认开启；选择“原版”后，本局使用随包固定的上游 v0.2.2 原版干员、盟约、装备及其他游戏数据。切换会取消队友准备状态，各房间独立设置，对局开始后锁定。
 - 五至六人悬赏决策保留原六张牌并追加三张现有目标，合计九张；追加牌为 I / II / II 阶，赏金分别为 1 / 2 / 2。一至四人的悬赏张数保持原规则。
 - 莱茵生命 3 / 6 / 9 人盟约、独立科研备牌位：3人获得生态与能量装置、6人可部署两种、9人解锁单级激光钻机并可部署三种；层数提供数值，生态与能量的参战研究点用于阶段突破。
 - 生态维持仪合并治疗与持续减速，二、三级让范围内己方干员接受任意来源治疗时获得护盾；一级能量谐振仪保留3点充能，发射命中装置整个范围。9莱茵的激光钻机锁定全场最大生命值最高的敌人，持续输出从150%A/秒增至300%A/秒，满20秒后每秒追加0.5%最大生命值真实伤害，领袖按本战场分摊生命计算。
@@ -30,7 +30,7 @@
 
 《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–6 人联机合作。
 
-![version](https://img.shields.io/badge/version-0.2.1-2ea44f)
+![version](https://img.shields.io/badge/version-0.2.2-2ea44f)
 ![license](https://img.shields.io/badge/code%20license-GPL--3.0--or--later-blue)
 ![node](https://img.shields.io/badge/node-22%20%7C%2024-339933)
 
@@ -65,11 +65,11 @@ English summary: [below](#english).
 
 - **独立模拟**（单人）与**同盟模拟**（1–6 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
-- 上游基础版本为 0.2.1，其修复记录见 [CHANGELOG.md](CHANGELOG.md)；本 fork 另含自定义莱茵扩展，与官方规则有所不同。扩展反馈请提交到本 fork 的 Issue。
+- 当前版本 0.2.2：干员可以单独设置潜能和练度（默认满潜、精英2 Lv.60），新增日文语音和统计数据页，按官方补上失衡、整数秒攻击间隔 30 帧等规则，并修复了 0.2.1 发布后玩家和 GitHub 上反馈的问题，详见 [CHANGELOG.md](CHANGELOG.md)。仍有少数规则按推断实现，与官方不一致的地方欢迎在 Issue 里反馈。
 
 ## 原版功能一览
 
-以下数量为上游 v0.2.1 介绍口径，本 fork 在此基础上加入上述莱茵扩展。
+以下数量为上游 v0.2.2 介绍口径，本 fork 在此基础上加入上述莱茵扩展。
 
 - **完整的一局**：确认本局信息 → 策略轮选（40 名策略）→ 14 回合 → 结算称号；险境及以上满足条件时进入第 15 回合「隐秘核心」。
 - **4 种难度**：标准 / 险境 / 绝境 / 终极，独立与同盟各一套参数，均取自官方数据。
@@ -92,7 +92,7 @@ English summary: [below](#english).
 
 ### 本扩展：Windows 免安装整合包（推荐）
 
-1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.2.1-rhine.4-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
+1. 到 [本扩展 Releases](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/latest) 下载 **`Stronghold-Protocol-Rhine-v0.2.2-rhine.1-Windows-x64.zip`**。不要选择 GitHub 自动生成的 `Source code` 下载项，它不包含运行环境和素材。
 2. **完整解压到新文件夹**，双击 **`启动莱茵科研版.bat`**。包内已包含官方 Node.js 24、运行依赖和游戏素材，首次启动也无需下载安装。
 3. 浏览器会自动打开游戏；保持启动窗口开启。朋友只需访问房主分享的游戏网址，不必各自下载整合包。
 
@@ -140,7 +140,7 @@ npm start          # 启动服务器：http://localhost:3000
 
 | 项目 | 要求 |
 |---|---|
-| 开服的电脑 | Windows / macOS / Linux，Node.js 22 或 24（LTS）；磁盘约 600–750 MB（素材、依赖与本地提取贴图：完整包解压后约 625 MB）；内存空闲约 100 MB，每局再加几 MB |
+| 开服的电脑 | Windows / macOS / Linux，Node.js 22 或 24（LTS）；磁盘约 700–850 MB（素材、依赖与本地提取贴图：完整包解压后约 710 MB）；内存空闲约 100 MB，每局再加几 MB |
 | 玩家 | 支持 WebGL 的现代浏览器（Chrome / Edge / Firefox / Safari 最新版），电脑、手机或平板（横屏） |
 | 网络 | 首次进入游戏时，每位玩家要从开服的电脑下载几十 MB 素材（之后走浏览器缓存）；对局中流量很小 |
 
@@ -153,7 +153,7 @@ npm start          # 启动服务器：http://localhost:3000
 | 环境变量 | 默认 | 说明 |
 |---|---|---|
 | `PORT` | `3000` | 监听端口 |
-| `HOST` | `0.0.0.0` | 监听地址（`127.0.0.1` = 只允许本机，放在反向代理后面时使用） |
+| `HOST` | `::` | 监听地址。默认 `::` 是双栈：同一个端口同时接受 IPv6 和 IPv4；`0.0.0.0` = 只 IPv4；`127.0.0.1` = 只允许本机，放在反向代理后面时使用 |
 | `SP_COMBAT` | `client` | `client`：各玩家浏览器模拟自己的战斗（服务器负载极低）；`server`：由服务器模拟并推流 |
 | `SP_VERIFY` | `off` | 服务器复算客户端上报的战斗结果：`off` / `sample`（约 1/8 抽查）/ `all`（全部复算，更耗 CPU） |
 | `TRUST_PROXY` | `auto` | 是否信任 `X-Forwarded-For` 等转发头：`auto` 只信任来自本机 / 内网的代理；`1` 总是；`0` 从不 |
@@ -193,7 +193,7 @@ npm start          # 启动服务器：http://localhost:3000
 | 操作 | 方法 |
 |---|---|
 | 购买 / 升级调度中心 / 机变选卡 | 点一次选中，再点一次确认（`D` 升级） |
-| 部署 / 移动干员 | 从整备区拖到棋盘格 → 出现方向轮盘 → 往上 / 右 / 下 / 左滑动选择朝向后松手；松在中心或点「✕ 点击取消」取消。拖动时模型在指针 / 手指下，指针所在的格子就是落点 |
+| 部署 / 移动干员 | 从整备区拖到棋盘格 → 出现方向轮盘 → 往上 / 右 / 下 / 左滑动选择朝向后松手；松在中心或点「✕ 点击取消」取消。拖动时指针 / 手指所在的格子就是落点，能放下时模型直接站在这一格上（不能放下时跟在指针下） |
 | 调整朝向 | 把干员拖回它自己的格子，再选方向 |
 | 出售 / 撤退 / 销毁装备 | 点击单位所在的格子 → 底部按钮「出售 +1」「撤退」；也可以把棋盘上的干员拖回整备区撤退。整备区里的装备与法术只能「销毁」，已配发的装备锁定在干员身上（干员出售或合成精锐时退回整备区） |
 | 装备 | 把装备拖到干员所在的格子上（每人 2 件；满了会弹出替换窗口，被替换的一件会被销毁）；法术拖到地块上并选方向 |
@@ -203,6 +203,7 @@ npm start          # 启动服务器：http://localhost:3000
 | 暂停（独立模拟） | 作战中（含最终攻势 / 隐秘核心）点顶栏的「暂停」或按 `Space`，再点「继续作战」（或 `Space`）继续；同盟模拟的作战不能暂停 |
 | 表情 | 左下角「交流」，左右滑动（或方向键）换主题，冷却 1 秒 |
 | 观战 | 自己的作战结束后（或休整期）点左侧队友头像 →「前往查看」；不参战的朋友可以在大厅输入同盟密钥点「观战」（每个同盟最多 2 名观战者，本作新增） |
+| 统计（本机） | 标题画面右上角、大厅、等待室的「统计」：胜率、策略通过率、称号、战斗累计和对局记录（点一行回看结算页）；只存在本机浏览器里，可以导出 / 导入，没清完第一个回合就退出的对局不计入统计（[玩法指南 §12](docs/PLAYING.md#13-统计本机)） |
 
 完整的规则、数值和小技巧见 **[docs/PLAYING.md](docs/PLAYING.md)**（游戏内左下角也有「玩法说明」）。
 
@@ -236,9 +237,11 @@ SP_E2E=1 node --test test/ui/mock.e2e.test.js        # 浏览器端到端测试�
 SP_REAL_E2E=1 node --test test/ui/real.e2e.test.js   # 需要 Chrome + 已下载的素材
 RENDER_E2E=1 node --test 'test/render/*.browser.test.js'   # 渲染测试，部分需要本地提取的棋盘贴图
 GOLDEN_FULL=1 node --test test/golden.test.js           # 黄金结果：固定种子的整套战斗与人机对局摘要（默认只跑快速子集）
+node tools/perfbench.mjs --cpu 1,4,6 --profile             # 真实战斗的帧耗时基准（Chrome 降速 CPU 近似中低端手机），需要 Chrome + 已下载的素材
 ```
 
 - 游戏数据由 `npm run build-data`（`tools/build-data.mjs`）从官方数据表生成，不要手工修改 `data/*.json`。
+- 性能测试：`/dev/battle-perf.html` 在浏览器里跑一场真实战斗（对局用的战斗运行器、模拟和渲染），实时显示帧率与逐帧耗时；在手机上打开后点击「开始测量（10 秒）」，生成的报告可以复制后附在反馈中。用到的战斗来自 `node tools/capture-specs.mjs` 从固定种子的机器人对局里截取的数据（`public/dev/perf/`）。
 - 只重构、不改玩法的提交不能改变 `test/golden/*.json`；有意改变玩法时运行 `npm run golden:update`，检查差异后随改动一起提交（见 [test/golden/README.md](test/golden/README.md)）。
 - GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）在 Ubuntu 与 Windows、Node 22 / 24 上运行 `npm ci`、`node --test` 和服务器冒烟测试。
 - 2026-10-03 本地全量测试记录：3488 项，3479 通过、0 失败、9 项条件跳过（原始数据缓存或可选浏览器环境）。独立本机 HTTP／WebSocket 与开发场景检查通过；此记录不等同于完整人工多人实机验收，也不预先代表 GitHub Actions 已运行通过。
@@ -289,7 +292,7 @@ GOLDEN_FULL=1 node --test test/golden.test.js           # 黄金结果：固定�
 
 An **unofficial, non-commercial fan remake** of Arknights' seasonal auto-chess tower-defense mode *Stronghold Protocol: Alliance*, played in the browser: solo, or 1–6 player co-op (AI teammates can fill seats). Combat is simulated in each player's browser, so a low-power PC can host.
 
-- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.2.1 plus fixes through `c2a2ef7`. Modified on 2026-10-07. It is not an upstream or official game release; report expansion issues to this fork.
+- **Fork:** this unofficial Rhine expansion is maintained by [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA), based on [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.2.2 plus fixes through `62eb1134`. Modified on 2026-10-10. It is not an upstream or official game release; report expansion issues to this fork.
 - **Run this expansion:** clone this fork, install Node.js 22 or 24, then run `npm ci`, `npm run setup`, and `npm start`. Setup includes the Rhine resource plan; `node tools/fetch-rhine-assets.mjs` can supplement an existing asset download. The [upstream all-in-one bundle](https://github.com/sganggs/Stronghold-Protocol/releases/latest) contains the original game only, not this expansion. The official 3D board needs a local Arknights client to extract; otherwise the 2D board is used.
 - **Play with friends:** create a co-op room and share the 4-letter key or the `?room=KEY` link. On a LAN, use the address printed at start; otherwise use a virtual-LAN tool, a tunnel or a VPS — see [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Disclaimer:** not affiliated with or endorsed by Hypergryph or Yostar. All Arknights names, art, audio, text and data are © their respective owners and are **not** covered by this project's GPL licence. For study and personal non-commercial use only — no selling, paid distribution, paid servers or monetisation of any kind. Content will be removed on request of the rights holders. Provided "as is", without warranty.

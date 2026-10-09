@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { applyKazdelData, validateKazdelData, KAZDEL_ADDITIONS, KAZDEL_EXISTING, WISDEL_TOKEN, kazdelGarrison } from '../tools/kazdel-data.mjs';
 import { applyRhineData } from '../tools/rhine-data.mjs';
 import { composeStats, loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
+import { stripPotential } from '../shared/potential.js';
 import { KAZDEL_BOND, KAZDEL_CHARACTERS, KAZDEL_BALANCE, KAZDEL_CANNON, kazdelStage } from '../shared/kazdel.js';
 import { OPENING_BANS, openingBanCounts } from '../shared/openingBans.js';
 
@@ -102,7 +103,7 @@ test('Kazdel data: all general modules, first-module defaults, no-module fallbac
     assert.deepEqual(c.modules.map(m => m.uniEquipId), allowed);
     assert.equal(c.module.id, spec.defaultModuleId);
     const none = loadoutRecord(c, resolveRecordLoadout(c, { moduleId: 'none' }));
-    assert.deepEqual(none.stats, c.statsBase); assert.deepEqual(none.trait, c.traitBase); assert.deepEqual(none.talents, c.talentsBase);
+    assert.deepEqual(none.stats, c.statsBase); assert.deepEqual(none.trait, c.traitBase); assert.deepEqual(none.talents, stripPotential(c.talentsBase));
     for (const m of c.modules) {
       const selected = loadoutRecord(c, resolveRecordLoadout(c, { moduleId: m.uniEquipId }));
       assert.deepEqual(selected.stats, composeStats(c.statsBase, m.attr));

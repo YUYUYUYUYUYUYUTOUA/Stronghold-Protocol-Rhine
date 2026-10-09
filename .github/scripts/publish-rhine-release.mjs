@@ -21,6 +21,14 @@ assert.match(request.previousArchiveSha256, /^[0-9a-f]{64}$/);
 assert.match(request.runtimeVersion, /^v24\.\d+\.\d+$/);
 assert.ok(Number.isSafeInteger(request.draftReleaseId) && request.draftReleaseId > 0);
 assert.equal(request.previousArchiveName, `Stronghold-Protocol-Rhine-${request.previousTag}-Windows-x64.zip`);
+if (request.upstreamResources) {
+  const resources = request.upstreamResources;
+  assert.equal(resources.repository, 'sganggs/Stronghold-Protocol');
+  assert.equal(resources.tag, request.tag.split('-')[0]);
+  assert.equal(resources.archiveName, `Stronghold-Protocol-${resources.tag}.zip`);
+  assert.match(resources.commit, /^[0-9a-f]{40}$/);
+  assert.match(resources.sha256, /^[0-9a-f]{64}$/);
+}
 
 function command(executable, args, options = {}) {
   const result = spawnSync(executable, args, { ...quiet, ...options });
@@ -39,6 +47,42 @@ const progress = message => console.log(`${new Date().toISOString()} ${message}`
 function extract(archive, destination) {
   assert.equal(fs.existsSync(destination), false, destination);
   command('python', [path.join(automation, '.github/scripts/rhine-release-archive.py'), 'extract', archive, destination]);
+}
+function dependencyLock(directory) {
+  const lock = JSON.parse(fs.readFileSync(path.join(directory, 'package-lock.json'), 'utf8'));
+  delete lock.name; delete lock.version;
+  delete lock.packages[''].name; delete lock.packages[''].version;
+  return lock;
+}
+async function upstreamResources(downloads) {
+  const resources = request.upstreamResources;
+  command('gh', ['release', 'download', resources.tag, '--repo', resources.repository,
+    '--pattern', resources.archiveName, '--dir', downloads]);
+  const archive = path.join(downloads, resources.archiveName);
+  assert.equal(await sha(archive), resources.sha256);
+  extract(archive, path.join(root, 'upstream'));
+  const directory = path.join(root, 'upstream/Stronghold-Protocol');
+  const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'MANIFEST.json'), 'utf8'));
+  assert.equal(manifest.format, 1);
+  assert.equal(manifest.app, resources.tag.slice(1));
+  const seen = new Set();
+  for (const [relative, entry] of Object.entries(manifest.files)) {
+    assert.ok(!relative.includes('\\') && !relative.includes(':') && !path.posix.isAbsolute(relative));
+    assert.ok(relative.split('/').every(p => p && p !== '.' && p !== '..'));
+    assert.equal(seen.has(relative.toLowerCase()), false); seen.add(relative.toLowerCase());
+    const file = path.join(directory, relative), stat = fs.lstatSync(file);
+    assert.ok(stat.isFile() && !stat.isSymbolicLink());
+    assert.equal(stat.size, entry.size, relative); assert.equal(await sha(file), entry.sha256, relative);
+  }
+  const vanilla = JSON.parse(fs.readFileSync(path.join(source, 'data/vanilla/manifest.json'), 'utf8'));
+  assert.equal(vanilla.source, resources.commit); assert.equal(vanilla.upstreamVersion, resources.tag.slice(1));
+  for (const entry of vanilla.files) {
+    assert.equal(await sha(path.join(directory, 'data', entry.path)), entry.sha256, entry.path);
+    assert.equal(await sha(path.join(source, 'data/vanilla', entry.path)), entry.sha256, entry.path);
+  }
+  assert.deepEqual(dependencyLock(directory), dependencyLock(source));
+  progress(`Verified upstream ${resources.tag} archive, ${seen.size} manifest files and ${vanilla.files.length} fixed data snapshots.`);
+  return directory;
 }
 async function verifyTree(directory) {
   const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'bundle-manifest.json'), 'utf8'));
@@ -120,9 +164,12 @@ async function main() {
   const previous = path.join(root, 'previous/Stronghold-Protocol-Rhine');
   const oldManifest = await verifyTree(previous);
   progress(`Verified ${oldManifest.fileCount} previous payload files; checking official Windows Node.`);
-  for (const file of ['package-lock.json', 'data/assets.json']) {
-    assert.equal(await sha(path.join(previous, file)), await sha(path.join(source, file)),
-      `${file} changed: prepare fresh verified resources before reusing a previous package.`);
+  const fresh = request.upstreamResources ? await upstreamResources(downloads) : null;
+  if (!fresh) {
+    for (const file of ['package-lock.json', 'data/assets.json']) {
+      assert.equal(await sha(path.join(previous, file)), await sha(path.join(source, file)),
+        `${file} changed: prepare fresh verified resources before reusing a previous package.`);
+    }
   }
   assert.equal(oldManifest.runtime.version, request.runtimeVersion);
   const runtimeArchiveName = `node-${request.runtimeVersion}-win-x64.zip`;
@@ -141,10 +188,18 @@ async function main() {
   assert.equal(command(bundledNode, ['--version']).trim(), request.runtimeVersion);
   for (const relative of ['public/assets', 'public/fonts', 'public/vendor', 'node_modules']) {
     assert.equal(fs.existsSync(path.join(source, relative)), false, relative);
-    fs.cpSync(path.join(previous, relative), path.join(source, relative), { recursive: true });
+    const origin = relative === 'node_modules' && fresh ? fresh : previous;
+    fs.cpSync(path.join(origin, relative), path.join(source, relative), { recursive: true });
+    if (fresh && relative !== 'node_modules') fs.cpSync(path.join(fresh, relative), path.join(source, relative), { recursive: true });
   }
-  if (fs.existsSync(path.join(previous, 'data/local-assets.json'))) {
-    fs.copyFileSync(path.join(previous, 'data/local-assets.json'), path.join(source, 'data/local-assets.json'));
+  const localOrigin = fresh && fs.existsSync(path.join(fresh, 'data/local-assets.json')) ? fresh : previous;
+  if (fs.existsSync(path.join(localOrigin, 'data/local-assets.json'))) {
+    fs.copyFileSync(path.join(localOrigin, 'data/local-assets.json'), path.join(source, 'data/local-assets.json'));
+  }
+  if (fresh) {
+    command(bundledNode, ['--input-type=module', '-e',
+      "import fs from 'node:fs'; import {fetchExtensionVoices} from './tools/assets/extension-voices.mjs'; import {rhineArtInput} from './tools/assets/rhine-plan.mjs'; import {kazdelArtInput} from './tools/assets/kazdel-plan.mjs'; const expected=JSON.parse(fs.readFileSync('data/assets.json')); const actual=structuredClone(expected); await fetchExtensionVoices(process.cwd(),kazdelArtInput(rhineArtInput()),actual); const {default:assert}=await import('node:assert/strict'); assert.deepEqual(actual,expected,'Rebuilt extension voices must exactly match tagged metadata.');"], { cwd: source });
+    progress('New extension voice assets downloaded and checked against the tagged manifest.');
   }
   const { buildBundle } = await import(pathToFileURL(path.join(source, 'tools/build-rhine-bundle.mjs')));
   const built = await buildBundle({ source, out: path.join(root, 'stage'), runtimeDir: runtime,
@@ -159,6 +214,8 @@ async function main() {
     'test/kazdel_data.test.js', 'test/rhine_data.test.js', 'test/i18n.test.js', 'test/i18n-packs.test.js',
     'test/tools/verify-rhine-release.test.js', 'test/rhine-bundle-update.test.js', 'test/rhine-online-update.test.js',
     'test/rhine-bundle-launch.test.js',
+    'test/extension-potential.test.js', 'test/room-rhine-profile.test.js', 'test/vanilla-data.test.js',
+    'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
   ], path.join(root, 'packaged-tests.log'));
   const server = spawn(node, ['server/index.js'], { cwd: built.destination, windowsHide: true,
     env: { ...process.env, HOST: '127.0.0.1', PORT: '3214' }, stdio: 'ignore' });
@@ -219,7 +276,6 @@ async function main() {
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
     limitations: [
       'Interactive browser/BAT launch and manual balance evaluation were not run; native Windows Node service and launcher regression tests were exercised.',
-      'An earlier Windows Node 22 CI run crashed in the online-update test process (exit 3221226505); the release ships and validates native Windows Node 24.21.0.',
     ] };
   fs.writeFileSync(path.join(assets, 'RELEASE-VALIDATION.json'), JSON.stringify(report, null, 2) + '\n');
   const assetNames = fs.readdirSync(assets).sort();

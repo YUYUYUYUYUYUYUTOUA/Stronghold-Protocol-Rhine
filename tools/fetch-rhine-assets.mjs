@@ -9,6 +9,9 @@ import { indexAudio } from './assets/audio.mjs';
 import { Downloader } from './assets/downloader.mjs';
 import { processModels } from './assets/spine.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, contentHash } from './assets/manifest.mjs';
+import { fetchExtensionVoices } from './assets/extension-voices.mjs';
+import { restartForEnvProxy } from './assets/env-proxy.mjs';
+async function main() {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assetRoot = join(root, 'public', 'assets');
 const cache = join(root, '.cache');
@@ -33,8 +36,11 @@ if (resolved.misses.length || spine.problems.length) {
     else manifest[key] = { ...manifest[key], ...value };
   }
   addRhineArt(manifest);
+  await fetchExtensionVoices(root, inputs, manifest);
   const { hash, ...body } = manifest;
   manifest.hash = contentHash(body);
   await writeFile(path, JSON.stringify(manifest) + '\n');
   console.log('Rhine art ready: six operators, Mayer summon, Dorothy trap, three devices and faction icon.');
 }
+}
+if (!restartForEnvProxy()) await main();

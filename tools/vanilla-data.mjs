@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
-export const VANILLA_UPSTREAM_COMMIT = 'c2a2ef778cf728ff29b953b9842b2a39b1e9cbea';
+export const VANILLA_UPSTREAM_COMMIT = '62eb113419123d9a3a63606107bbf85230c5dd2f';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 
@@ -22,7 +22,7 @@ export async function writeVanillaData(files,out,{source='build-data before the 
     const bytes=await fs.readFile(path.join(out,name));JSON.parse(bytes.toString('utf8'));
     entries.push({path:name,size:bytes.length,sha256:hash(bytes)});
   }
-  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.2.1',source,files:entries},null,2)+'\n');
+  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.2.2',source,files:entries},null,2)+'\n');
 }
 
 async function snapshot(){
@@ -37,7 +37,7 @@ async function snapshot(){
     const name=rel.slice(5);await fs.mkdir(path.dirname(path.join(out,name)),{recursive:true});await fs.writeFile(path.join(out,name),bytes);
     entries.push({path:name,size:bytes.length,sha256:hash(bytes)});
   }
-  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.2.1',source:VANILLA_UPSTREAM_COMMIT,files:entries},null,2)+'\n');
+  await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,profile:'vanilla',upstreamVersion:'0.2.2',source:VANILLA_UPSTREAM_COMMIT,files:entries},null,2)+'\n');
   console.log(`Preserved ${entries.length} exact upstream data files in data/vanilla.`);
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await snapshot();

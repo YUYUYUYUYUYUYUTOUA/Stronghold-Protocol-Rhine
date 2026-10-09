@@ -1,3 +1,4 @@
+import { hypot } from '../../detmath.js';
 // Selectable Rhine support kits. Skill/talent/module numbers come from the resolved loadout records.
 // PRTS: https://prts.wiki/w/梅尔 · https://prts.wiki/w/乌啾
 import { num, talentBb, skillRec, freeTileAround, enemiesInGrid, alliesInGridOf, up } from './shared/tier1.js';
@@ -146,7 +147,7 @@ export function wuhoo(bb, chess, def) {
       b.loseHp(u, Math.max(0, Math.min(u.hp - 1, u.hp * num(s2.bb?.['turdus_s2[self_damage].hp_ratio'], 0.15))), { source: u });
       // This skill needs no injured target to activate; select after paying HP, nearest on equal HP ratios.
       const target = alliesInGridOf(b, u).filter(a => healable(b, u, a)).sort((a, c) => a.hpRatio - c.hpRatio
-        || Math.hypot(a.x - u.x, a.y - u.y) - Math.hypot(c.x - u.x, c.y - u.y) || c.deploySeq - a.deploySeq)[0];
+        || hypot(a.x - u.x, a.y - u.y) - hypot(c.x - u.x, c.y - u.y) || c.deploySeq - a.deploySeq)[0];
       if (target) b.heal(u, target, u.s.atk * u.s.atkScaleMul, { rhineSkill: true });
     } },
   };

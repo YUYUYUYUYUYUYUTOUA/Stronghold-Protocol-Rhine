@@ -10,6 +10,7 @@ import { registerMeta } from '../server/sim/content/rhineMeta.js';
 import { RHINE_BALANCE, RHINE_DEVICES } from '../shared/rhineResearch.js';
 import { DataSource } from '../server/sim/simdata.js';
 import { loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
+import { stripPotential } from '../shared/potential.js';
 const names=['chess','bonds','garrisons','tokens','effects','config','items'];
 const files=Object.fromEntries(await Promise.all(names.map(async n=>[n,JSON.parse(await readFile(new URL(`../data/${n}.json`,import.meta.url),'utf8'))])));
 const source=JSON.parse(await readFile(new URL('../tools/rhine-data-source.json',import.meta.url),'utf8'));
@@ -160,7 +161,7 @@ test('Rhine data: default modules compose real stats and none restores base trai
     assert.equal(files.chess[c.baseId].skill.index,skillIndex);
     assert.equal(selected,ds.getChess(c.chessId,{skillIndex,moduleId}),'implicit and explicit defaults share the resolved def');
     assert.deepEqual(base.raw.stats,c.statsBase);assert.deepEqual(base.traitBb,c.traitBase.bb);
-    assert.deepEqual(base.raw.talents,c.talentsBase);assert.equal(base.raw.module?.active===true,false);
+    assert.deepEqual(base.raw.talents,stripPotential(c.talentsBase));assert.equal(base.raw.module?.active===true,false);
     assert.equal(selected.raw.module?.active===true,moduleId!=='none');
     assert.equal(files.chess[c.baseId].modules,undefined,'ordinary cards retain original no-module rules');
     assert.equal(ds.getChess(c.baseId).loadout.moduleId,null,'ordinary default never equips the elite module');

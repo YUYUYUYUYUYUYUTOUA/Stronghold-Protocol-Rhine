@@ -62,7 +62,7 @@ test('five client-run normal fields wait for the fifth result; its progress, uni
   const f5 = m.fields[4];
   assert.ok(f5.spec.players[0].units.some((u) => u.uid === unit.uid));
   m.handle('p_4', { t: 'b.progress', battleId: f5.battleId, gt: 4, killed: 1, total: 9, leaks: 2 });
-  assert.deepEqual(m.publicView().fields[4].progress, { killed: 1, total: 9, done: false });
+  assert.deepEqual(m.publicView().fields[4].progress, { killed: 1, resolved: null, total: 9, done: false });
   assert.equal(m.publicView().players[4].pendingLp, 2);
   m.handle('p_0', { t: 'b.progress', battleId: f5.battleId, gt: 99, killed: 9, total: 9 });
   assert.equal(f5.progress.killed, 1, 'only the fifth player can report its own field');

@@ -34,6 +34,16 @@ const soul = u => u.kazdelSoulUnit;
 const layers = (h, id = K, owner = 'p1') => h.b.getPlayer(owner).bonds[id].layers;
 const shots = h => h.events.filter(e => e[0] === 'fx' && e[1] === 'kazdelCannonImpact');
 
+test('0.2.2 development applies once to body and inherited soul; Kazdel layer HP stays a final addition', () => {
+  const h = fixture(['vigna'], { layers: 10, units: [{ ...entry('vigna', 10, 3), cultivate: 3 }] });
+  const u = h.unit('kaz_vigna');
+  assert.equal(u.s.maxHp, 2300, '2000 × 1.1 plus 100 layer HP');
+  assert.equal(soulBaseline(u).maxHp, 2200, 'development included; layer HP excluded');
+  die(h, u);
+  assert.equal(soul(u).s.maxHp, 1440, '2200 × 0.6 plus 120 layer HP');
+  assert.equal(soul(u).s.atk, 476, '500 × 1.1 × 0.8 plus 36 layer ATK');
+});
+
 test('Kazdel stage freezes at start; body and soul receive layer stats once; same-name pieces are independent', () => {
   const h = fixture(['vigna1', 'vigna2'], { layers: 10 });
   const a = h.unit('kaz_vigna1'), b = h.unit('kaz_vigna2');
