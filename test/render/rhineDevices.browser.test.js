@@ -176,7 +176,7 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
     } finally { await page.close(); }
   });
 
-  test('laser card exposes the nine-member gate, one level, decoded local SVG and global selection cells', async () => {
+  test('laser card exposes the nine-member gate, one level, decoded local SVG and global attack without a local range overlay', async () => {
     const { page, problems } = await open('dev/game-mock.html?phase=PREP&variant=rhineRange&researchDevice=laser&rhineCount=9&board=2d&shot=1',
       'window.__SP_VIEW__?.raw?.debug?.views.get("p:902")?._pic?.shown === "img"');
     try {
@@ -188,9 +188,13 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
       });
       assert.equal(art.ok, true); assert.match(art.type, /image\/svg\+xml/); assert.equal(art.lamps, 1);
       const p = await page.evaluate(() => window.__SP_VIEW__.tileScreen(10, 6)); await page.mouse.click(p.x, p.y);
-      await page.waitForFunction('window.__SP_VIEW__.raw.debug.tiles.highlights.get("selRange")?.tiles.length === 44');
+      await page.waitForFunction(() => document.querySelector('.dpanel--token')?.textContent.includes('全场攻击')
+        && !window.__SP_VIEW__.raw.debug.tiles.highlights.has('selRange'));
+      const detail = await page.$eval('.dpanel--token', el => el.innerText);
+      assert.match(detail, /全场攻击/);
+      assert.match(detail, /完整共享最大生命值/);
       await page.waitForSelector('.pbanner--overlay', { hidden: true });
-      await page.screenshot({ path: path.join(OUT, 'rhine-laser-global-grid.png') });
+      await page.screenshot({ path: path.join(OUT, 'rhine-laser-global-attack.png') });
       await page.goto(`${EXTERNAL_BASE || `http://127.0.0.1:${srv.port}`}/dev/game-mock.html?phase=PREP&variant=rhine&rhineCount=6&board=2d&shot=1`);
       await page.waitForSelector('[data-research="laser"].is-locked');
       const locked = await page.$eval('[data-research="laser"]', el => ({ text: el.innerText, disabled: el.querySelector('.rhine-card__select').disabled }));
