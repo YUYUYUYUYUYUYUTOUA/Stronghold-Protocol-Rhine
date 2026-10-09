@@ -1,0 +1,86 @@
+{
+  "tag": "v0.2.1-rhine.4",
+  "sourceCommit": "ea54cb8ea13e511730bbd87bdbfb7388284d86ba",
+  "draftReleaseId": 407541952,
+  "previousTag": "v0.2.1-rhine.3",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.1-rhine.3-Windows-x64.zip",
+  "previousArchiveSha256": "f15446782a4409a40cd04db5b349e3d7ccad9c66f0a43c1133a2ebc88be5258c",
+  "runtimeVersion": "v24.21.0",
+  "sourceValidation": {
+    "version": "v0.2.1-rhine.4",
+    "sourceCommit": "ea54cb8ea13e511730bbd87bdbfb7388284d86ba",
+    "basedOn": {
+      "tag": "v0.2.1",
+      "commit": "c2a2ef778cf728ff29b953b9842b2a39b1e9cbea"
+    },
+    "tests": {
+      "sourceFull": {
+        "total": 5757,
+        "pass": 5720,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 36,
+        "platform": "linux",
+        "node": "v24.21.0",
+        "browserOptInSuites": false,
+        "failedCase": "heavy 2-player boss field performance timing: best 0.5254568206 ms/tick exceeds 0.5 ms/tick",
+        "failedCaseResolution": "The unchanged original test passed in an isolated rerun of test/sim/robustness.test.js."
+      },
+      "isolatedRobustnessRetest": {
+        "total": 35,
+        "pass": 35,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "isolatedPerformanceSmoke": {
+        "total": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "packagedRegression": {
+        "total": 192,
+        "pass": 188,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 4,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "goldenScenarios": {
+        "matched": 283,
+        "validatedGameplayCommit": "7b8e31e1d6645013940013de42d7c217f82fc6fd",
+        "note": "Previously verified after all gameplay changes; this release-preparation commit changes documentation only."
+      }
+    },
+    "resources": {
+      "previousPackageFilesVerified": 22537,
+      "previousPackageSha256": "f15446782a4409a40cd04db5b349e3d7ccad9c66f0a43c1133a2ebc88be5258c",
+      "officialRuntimeFilesVerified": 1993,
+      "officialRuntimeArchiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+      "runtimeVersion": "v24.21.0",
+      "resourcesSourceRelease": "v0.2.1-rhine.3",
+      "runtimeExcludedConfigPaths": [
+        "node_modules/npm/.npmrc"
+      ]
+    },
+    "updateChecks": {
+      "from": "v0.2.1-rhine.3",
+      "to": "v0.2.1-rhine.4",
+      "changedFiles": 43,
+      "conflictProtection": "passed",
+      "localConfigAndPrivateFilesPreserved": "passed",
+      "repeatUpdate": "already-current",
+      "rollback": "passed",
+      "stoppedFixtureGuardCalls": 6,
+      "platform": "linux",
+      "windowsProcessDetection": "not executed; stopped fixture supplied to updater core"
+    }
+  }
+}

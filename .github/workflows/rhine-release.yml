@@ -1,0 +1,44 @@
+name: Publish Rhine Release
+
+on:
+  push:
+    branches: [codex/rhine-upstream-021]
+    paths:
+      - .github/rhine-release-request.json
+      - .github/scripts/publish-rhine-release.mjs
+      - .github/workflows/rhine-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rhine-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Preserve tagged source bytes
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+        with:
+          path: automation
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Validate release request
+        id: request
+        run: node automation/.github/scripts/publish-rhine-release.mjs request
+      - uses: actions/checkout@v7
+        if: steps.request.outputs.published != 'true'
+        with:
+          ref: ${{ steps.request.outputs.source_commit }}
+          path: source
+      - name: Build, validate and publish the requested release
+        if: steps.request.outputs.published != 'true'
+        run: node automation/.github/scripts/publish-rhine-release.mjs publish
