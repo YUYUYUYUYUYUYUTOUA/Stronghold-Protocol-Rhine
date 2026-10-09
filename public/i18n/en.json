@@ -1,16 +1,4 @@
 {
-  "卡兹戴尔战争巨炮": "Kazdel War Cannon",
-  "战争巨炮": "War Cannon",
-  "战争巨炮充能": "War Cannon Charge",
-  "仅伤敌军": "Enemies Only",
-  "敌我均伤 · 亡魂免疫": "Friendly Fire · Souls Immune",
-  "九宫格轰击预警 · {seconds}秒": "3×3 Bombardment Warning · {seconds}s",
-  "亡魂": "Soul",
-  "众魂归来": "Souls Return",
-  "继承本体的普通攻击与攻击范围，默认不继承主动技能与触发效果；不占人口，不再产生死亡层数。": "Inherits the owner's normal attacks and attack range, but normally no active skills or triggered effects. Uses no deployment capacity and grants no further death stacks.",
-  "亡魂仅接受亡魂之间的治疗及锡人二技能治疗；医疗亡魂不治疗本体。战争巨炮不会伤害亡魂。持续至被击败或本体重新部署，无时间限制。": "Souls can only be healed by other souls or Tin Man's second skill; Medic souls cannot heal living operators. Immune to the War Cannon. Remains until defeated or its owner redeploys, with no time limit.",
-  "莱茵／卡兹戴尔扩展": "Rhine / Kazdel Expansion",
-  "莱茵科研装置与装备 · 卡兹戴尔众魂与战争巨炮": "Rhine Research Devices and Equipment · Kazdel Souls and War Cannon",
   "_meta": {
     "type": "lang",
     "lang": "en",
@@ -26,6 +14,18 @@
     "complete": true
   },
   "_about": "English UI strings: Chinese msgid → English (shared/i18n.js t(); docs/I18N.md). Placeholders {name} and {n|one|other} as in the msgid; a 'context::msgid' key is a tc() variant. Seeded from GitHub PR #70 (branch en-translation) by @YuriRestia, reused with credit (NOTICE.md). Game texts are not here: data/i18n/en.json (tools/build-i18n.mjs).",
+  "卡兹戴尔战争巨炮": "Kazdel War Cannon",
+  "战争巨炮": "War Cannon",
+  "战争巨炮充能": "War Cannon Charge",
+  "仅伤敌军": "Enemies Only",
+  "敌我均伤 · 亡魂免疫": "Friendly Fire · Souls Immune",
+  "九宫格轰击预警 · {seconds}秒": "3×3 Bombardment Warning · {seconds}s",
+  "亡魂": "Soul",
+  "众魂归来": "Souls Return",
+  "继承本体的普通攻击与攻击范围，默认不继承主动技能与触发效果；不占人口，不再产生死亡层数。": "Inherits the owner's normal attacks and attack range, but normally no active skills or triggered effects. Uses no deployment capacity and grants no further death stacks.",
+  "亡魂仅接受亡魂之间的治疗及锡人二技能治疗；医疗亡魂不治疗本体。战争巨炮不会伤害亡魂。持续至被击败或本体重新部署，无时间限制。": "Souls can only be healed by other souls or Tin Man's second skill; Medic souls cannot heal living operators. Immune to the War Cannon. Remains until defeated or its owner redeploys, with no time limit.",
+  "莱茵／卡兹戴尔扩展": "Rhine / Kazdel Expansion",
+  "莱茵科研装置与装备 · 卡兹戴尔众魂与战争巨炮": "Rhine Research Devices and Equipment · Kazdel Souls and War Cannon",
   "你已在其他同盟中，请先离开当前同盟": "You are already in another Alliance. Leave it first.",
   "你已不在该同盟中": "You are no longer in this Alliance",
   "创建者已离开，同盟已解散": "The host left. The Alliance has been disbanded.",
@@ -1164,5 +1164,8 @@
   "科研装置尚未解锁": "Research device is not yet unlocked",
   "一级：半径2格内敌人持续减速50%；每3秒治疗生命比例最低的1名友军，治疗量为基础攻击的75%。二级：每次治疗2人，范围内己方干员接受任意来源治疗时，获得最终治疗量25%与溢出治疗量50%的护盾，持续6秒；同一装置护盾累计不超过目标生命上限40%。三级：半径扩大至3格，每次治疗3人，各恢复100%基础攻击的生命；每8秒束缚范围内敌人1秒。自然生命回复不触发护盾。": "Level 1: continuously slows enemies within radius 2 by 50%; every 3 seconds, heals the ally with the lowest HP ratio for 75% of base ATK. Level 2: heals 2 targets; your operators in range receiving healing from any source gain a shield equal to 25% of the final healing amount plus 50% of overhealing, lasting 6 seconds. Shields from this device stack up to 40% of the target's maximum HP. Level 3: expands radius to 3, heals 3 targets for 100% of base ATK each, and binds enemies in range for 1 second every 8 seconds. Natural HP regeneration does not trigger shields.",
   "一级：半径2格内己方干员释放技能时充能，3点充能对装置范围内所有敌人造成180%基础攻击的法术脉冲。二级：己方全场干员释放技能均可充能，选敌半径扩大至3格，脉冲造成240%基础攻击的范围法术伤害，溅射半径1格。三级：伤害提高至300%，溅射扩大至塞雷娅“钙质化”的25格范围，以主目标为中心。同一干员3秒内至多贡献一次；脉冲发射间隔至少1.5秒，无目标时保留满充能。": "Level 1: skills used by your operators within radius 2 contribute charges; at 3 charges, deals an Arts pulse equal to 180% of base ATK to all enemies in the device's area. Level 2: your operators' skills across the battlefield contribute charges; targeting radius expands to 3, and deals 240% of base ATK as Arts damage with radius-1 splash. Level 3: damage increases to 300%, with Saria's Calcification 25-cell splash centered on the primary target. Each operator can contribute once every 3 seconds; pulses are at least 1.5 seconds apart. Retains full charge when no target is available.",
-  "仅9莱茵生命时可部署，只有一级，无阶段突破。全场选择面板最大生命值最高的敌人，锁定后仅在目标死亡或永久离场时转移火力；暂时无法攻击时暂停输出。基础每秒法术伤害为装置基础攻击的150%，持续输出每秒增加初始伤害的5%，20秒后达到300%；换目标时清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害，领袖按本战场分摊的最大生命值计算。": "Deployable only at 9 Rhine Lab, with one level and no breakthroughs. Globally selects the enemy with the highest maximum HP, retaining its lock until death or permanent removal; firing pauses while the target temporarily cannot be attacked. Starts at 150% of device base ATK as Arts damage per second; effective output adds 5% of initial damage each second, reaching 300% after 20 seconds. Changing targets resets the ramp. After 20 seconds, additionally deals 0.5% of target maximum HP as true damage each second; for leaders, uses this battlefield's share of maximum HP."
+  "仅9莱茵生命时可部署，只有一级，无阶段突破。全场选择面板最大生命值最高的敌人，锁定后仅在目标死亡或永久离场时转移火力；暂时无法攻击时暂停输出。基础每秒法术伤害为装置基础攻击的150%，持续输出每秒增加初始伤害的5%，20秒后达到300%；换目标时清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害，领袖按本战场分摊的最大生命值计算。": "Deployable only at 9 Rhine Lab, with one level and no breakthroughs. Globally selects the enemy with the highest maximum HP, retaining its lock until death or permanent removal; firing pauses while the target temporarily cannot be attacked. Starts at 150% of device base ATK as Arts damage per second; effective output adds 5% of initial damage each second, reaching 300% after 20 seconds. Changing targets resets the ramp. After 20 seconds, additionally deals 0.5% of target maximum HP as true damage each second; for leaders, uses this battlefield's share of maximum HP.",
+  "锁定面板最大生命值最高的敌人，目标死亡或永久离场后重新选敌并清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。": "Locks onto the enemy with the highest maximum HP. When it dies or permanently leaves, selects a new target and resets the damage increase. After 20 seconds, it also deals True damage equal to 0.5% of the target's maximum HP each second. Against a leader, each drill uses the full shared maximum HP.",
+  "全场攻击，选择面板最大生命值最高的敌人，锁定至其死亡或永久离场；只有一级，仅9莱茵生命可用。持续输出每秒增伤5%，20秒达到上限并开始每秒追加最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。": "Targets the enemy with the highest maximum HP anywhere on the field, remaining locked until it dies or permanently leaves. One stage, available only with 9 Rhine Lab operators. Each second of effective output adds 5% of the initial damage, reaching the cap after 20 seconds, then adding True damage equal to 0.5% of maximum HP each second. Against a leader, each drill uses the full shared maximum HP.",
+  "仅9莱茵生命时可部署，只有一级，无阶段突破。全场选择面板最大生命值最高的敌人，锁定后仅在目标死亡或永久离场时转移火力；暂时无法攻击时暂停输出。基础每秒法术伤害为装置基础攻击的150%，持续输出每秒增加初始伤害的5%，20秒后达到300%；换目标时清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害，领袖直接按完整共享最大生命值计算。": "Deployable only with 9 Rhine Lab operators; one stage, with no breakthroughs. Targets the selectable enemy with the highest maximum HP anywhere on the field and stays locked until it dies or permanently leaves. Output pauses while the target cannot be attacked. Base Arts damage per second is 150% of the device's base ATK, increasing by 5% of the initial damage each second of effective output, up to 300% after 20 seconds. Changing targets resets the increase. After 20 seconds, it also deals True damage equal to 0.5% of the target's maximum HP each second. Against a leader, each drill uses the full shared maximum HP."
 }

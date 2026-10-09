@@ -7,7 +7,7 @@ import { unitInfo } from '../../server/sim/snapshot.js';
 import { unitStatsEntry } from '../../shared/protocol.js';
 
 for (const clientCombat of [false, true]) for (const humans of [1, 2, 3, 4, 5, 6]) {
-  test(`laser field HP base is a fixed share with ${humans} players (${clientCombat ? 'client' : 'server'} combat)`, () => {
+  test(`laser receives the full shared boss HP with ${humans} players (${clientCombat ? 'client' : 'server'} combat)`, () => {
     const h = makeMatch({ mode: 'coop', difficulty: 'FUNNY', humans, fake: true, instant: false, clientCombat, clients: false }).start().toPrep(1);
     try {
       h.m.round = 14;
@@ -17,22 +17,24 @@ for (const clientCombat of [false, true]) for (const humans of [1, 2, 3, 4, 5, 6
       assert.equal(fields.length, Math.ceil(humans / 2));
       for (const field of fields) {
         const flags = clientCombat ? field.spec.flags : field.battle.opts.flags;
-        assert.equal(flags.bossFieldMaxHp, pool.maxHp / fields.length);
+        const maxHp = clientCombat ? field.spec.boss.poolMax : field.battle.opts.sharedBoss.maxHp;
+        assert.equal(maxHp, pool.maxHp);
+        assert.equal(flags.bossFieldMaxHp, undefined);
         assert.equal(flags.layerGainsEnabled, false);
       }
     } finally { h.m.dispose(); }
   });
 }
 
-test('client spec, browser reconstruction and server takeover retain the same laser HP base', () => {
+test('client reconstruction and server takeover use full shared boss HP, including specs with a legacy field share', () => {
   const flags = { bossFieldMaxHp: 20000 };
   const spec = buildBattleSpec({ kind: 'boss', flags, players: [], spawns: [], boss: { poolHp: 60000, poolMax: 60000 } });
   const browser = createBattleFromSpec(JSON.parse(JSON.stringify(spec)), { enemies: {}, chess: {}, tokens: {} });
-  assert.equal(browser.bossFieldMaxHp, 20000);
+  assert.equal(browser.sharedBoss.maxHp, 60000);
   const takeover = createBattleFromSpec(spec, { enemies: {}, chess: {}, tokens: {} }, { sharedBoss: { maxHp: 60000, hp: 59000 } });
-  assert.equal(takeover.bossFieldMaxHp, browser.bossFieldMaxHp);
+  assert.equal(takeover.sharedBoss.maxHp, browser.sharedBoss.maxHp);
   const isolated = new Battle({ kind: 'boss', players: [], spawns: [], sharedBoss: { maxHp: 60000, hp: 59000 }, content: false });
-  assert.equal(isolated.bossFieldMaxHp, 60000, 'an isolated laboratory field owns the whole test pool');
+  assert.equal(isolated.sharedBoss.maxHp, 60000);
 });
 
 test('joining field metadata and live detail stats preserve laser lock and accumulated seconds', () => {

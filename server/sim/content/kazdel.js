@@ -16,8 +16,8 @@ export function kazdelTrait(unit, key) {
   }
   return null;
 }
-const gain = (battle, s, source, bonds, n, cap = Infinity, capKey = null) => gainLayers(battle, {
-  playerId: s.ps.playerId, source, bonds, n, reason: 'garrison', cap, capKey,
+const gain = (battle, s, source, bonds, n) => gainLayers(battle, {
+  playerId: s.ps.playerId, source, bonds, n, reason: 'garrison',
 });
 function bestAura(state, key, victim = null) {
   let best = null;
@@ -31,15 +31,23 @@ function bestAura(state, key, victim = null) {
   return best;
 }
 function qualifiedDeath(battle, s, u) {
+  const o = kazdelTrait(u, 'odda');
+  if (o) gain(battle, s, u, ['kazdelShip', 'steadShip'], o.layer * (u.mem.kazdelParticipatedKills?.size ?? 0));
   if (s.deaths.has(u)) return;
   s.deaths.add(u);
   if (s.stage >= C.friendlyFireStage) s.charge = Math.min(C.capacity, s.charge + C.deathCharge);
   const v = kazdelTrait(u, 'vigna');
   if (v) gain(battle, s, u, ['kazdelShip', 'skillfulShip'], v.layer);
-  const o = kazdelTrait(u, 'odda');
-  if (o) gain(battle, s, u, ['kazdelShip', 'steadShip'], o.layer * (u.mem.kazdelParticipatedKills?.size ?? 0), o.max_layer, `kazdel:odda:${u.id}`);
   const h = bestAura(s, 'hoederer', u);
-  if (h) gain(battle, s, h.unit, BOND, h.bb.layer, h.bb.max_layer, `kazdel:hoederer:${s.ps.playerId}`);
+  if (h) gain(battle, s, h.unit, BOND, h.bb.layer);
+}
+function updateWisdelAttack(battle, s, u) {
+  const w = kazdelTrait(u, 'wisdel'), key = 'kazdel:wisdelAttack';
+  const atkFlat = w && present(u) ? (C.damageBase + C.damagePerLayer * layersOf(s)) * w.cannon_attack_ratio : 0;
+  const old = u.findBuff(key);
+  if (atkFlat > 0) {
+    if (old?.mods?.atkFlat !== atkFlat) battle.addBuff(u, { key, mods: { atkFlat } });
+  } else if (old) battle.removeBuff(u, key);
 }
 function updatePassives(battle, s, states) {
   const layers = layersOf(s);
@@ -49,6 +57,7 @@ function updatePassives(battle, s, states) {
       key: 'kazdel:body', persist: true, allowDead: true, mods: { hpFinal: B.bodyHpPerLayer * layers },
     });
   }
+  for (const u of s.originals) updateWisdelAttack(battle, s, u);
   for (const soul of s.souls) if (present(soul)) {
     refreshSoul(battle, soul, layers, kazdelTrait);
     let aspd = 0;
@@ -62,7 +71,7 @@ function updatePassives(battle, s, states) {
 
 export function install(battle) {
   const states = battle.players.map(ps => ({ ps, stage: kazdelStage(ps.bonds[BOND]),
-    originals: ps.units.filter(u => u.kind === 'op'), souls: [], deaths: new Set(), soulCreated: new Set(),
+    originals: ps.units.filter(u => u.kind === 'op'), souls: [], deaths: new Set(),
     charge: 0, warning: null, lastFireAt: -Infinity, cannon: cannonSource(ps, kazdelStage(ps.bonds[BOND])),
   }));
   if (!states.some(s => s.stage || s.originals.some(u => Object.keys(G).some(k => kazdelTrait(u, k))))) return;
@@ -75,6 +84,10 @@ export function install(battle) {
     if (w) for (const soul of s.souls) if (present(soul)) soul.mem.kazdelNextAttackBonus = w.bb.next_attack_bonus;
   };
   battle.on('battleStart', () => { for (const s of states) updatePassives(battle, s, states); }, { priority: -100 });
+  battle.on('deploy', ({ unit }) => {
+    const s = byOwner.get(unit.ownerId);
+    if (s && unit.kind === 'op') updateWisdelAttack(battle, s, unit);
+  }, { priority: -100 });
   battle.on('tick', ({ dt }) => {
     for (const s of states) { updatePassives(battle, s, states); tickCannon(battle, s, dt, layersOf(s), onFire); }
   }, { priority: -50 });
@@ -94,15 +107,18 @@ export function install(battle) {
     if (reason !== 'killed' || u.alive || battle.finished) return;
     if (u.side === 'enemy') {
       for (const owner of u.mem.kazdelContributors ?? []) {
-        (owner.mem.kazdelParticipatedKills ?? (owner.mem.kazdelParticipatedKills = new Set())).add(u.id);
+        const kills = owner.mem.kazdelParticipatedKills ?? (owner.mem.kazdelParticipatedKills = new Set());
+        if (kills.has(u.id)) continue;
+        kills.add(u.id);
+        const s = byOwner.get(owner.ownerId), o = kazdelTrait(owner, 'odda');
+        if (s && o) gain(battle, s, owner, ['kazdelShip', 'steadShip'], o.layer);
       }
       return;
     }
     const s = byOwner.get(u.ownerId);
     if (!s || !member(battle, u)) return;
     if (!dmg?.tags?.includes('kazdelCannon')) qualifiedDeath(battle, s, u);
-    if (s.stage && !s.soulCreated.has(u)) {
-      s.soulCreated.add(u);
+    if (s.stage) {
       const soul = createSoul(battle, u, layersOf(s), kazdelTrait);
       if (soul) s.souls.push(soul);
     }

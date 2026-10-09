@@ -36,7 +36,7 @@ test('Kazdel data: 10 distinct members, approved tiers and 3/6/9 main-faction th
 
 test('Kazdel data: soul and cannon formulas are shared with no hidden expiry or dummy population token', () => {
   assert.deepEqual(KAZDEL_BALANCE, { thresholds: [3, 6, 9], bodyHpPerLayer: 10, soulHpRatio: .6, soulHpPerLayer: 10,
-    soulAttackRatio: .8, soulAttackPerLayer: 3, soulsPerPiecePerBattle: 1 });
+    soulAttackRatio: .8, soulAttackPerLayer: 3, soulsPerPiecePerBattle: null });
   assert.deepEqual(KAZDEL_CANNON, { capacity: 15, chargePerSec: 1, chargePerLayer: .005, deathCharge: 3,
     minInterval: 3, warningDuration: 2, damageBase: 800, damagePerLayer: 15, radius: 1, friendlyFireStage: 2, enemiesOnlyStage: 3 });
   assert.match(files.bonds[KAZDEL_BOND].desc, /无时间限制/);
@@ -48,12 +48,13 @@ test('Kazdel data: soul and cannon formulas are shared with no hidden expiry or 
 
 test('Kazdel data: nine ordinary/elite trait blackboards match the approved effects', () => {
   const expect = {
-    vigna: [{ layer: 2 }, { layer: 4 }], odda: [{ layer: 1, max_layer: 6 }, { layer: 2, max_layer: 12 }],
+    vigna: [{ layer: 2 }, { layer: 4 }], odda: [{ layer: 1 }, { layer: 2 }],
     meteorite: [{ damage_bonus: .2 }, { damage_bonus: .4 }], tinman: [{ aspd: 15, radius: 1 }, { aspd: 30, radius: 1 }],
-    paprika: [{ heal_bonus: .25 }, { heal_bonus: .5 }], hoederer: [{ layer: 2, max_layer: 24 }, { layer: 4, max_layer: 48 }],
+    paprika: [{ heal_bonus: .25 }, { heal_bonus: .5 }], hoederer: [{ layer: 6 }, { layer: 10 }],
     mudrock: [{ block_cnt: 3, hp_per_layer: 5 }, { block_cnt: 3, hp_per_layer: 10 }],
     logos: [{ atk_per_layer: 1, target_count: 2 }, { atk_per_layer: 2, target_count: 3 }],
-    wisdel: [{ damage_bonus: .2, next_attack_bonus: .5 }, { damage_bonus: .4, next_attack_bonus: 1 }],
+    wisdel: [{ damage_bonus: .2, next_attack_bonus: .5, cannon_attack_ratio: .5 },
+      { damage_bonus: .4, next_attack_bonus: 1, cannon_attack_ratio: .5 }],
   };
   for (const [key, pair] of Object.entries(expect)) for (const grade of [0, 1]) {
     const g = files.garrisons[kazdelGarrison(key, Boolean(grade)).garrisonId];

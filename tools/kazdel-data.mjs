@@ -24,7 +24,7 @@ export const KAZDEL_EXISTING = Object.freeze([
   { key: 'mudrock', baseId: 'chess_char_4_18', tier: 4, bonds: ['soloShip', KAZDEL_BOND] },
 ]);
 
-export const KAZDEL_DESCRIPTION = '战斗开始时按3/6/9名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每场首次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的3×3区域发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击也伤害友军，亡魂始终免疫；9名阶段只伤害敌军。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
+export const KAZDEL_DESCRIPTION = '战斗开始时按3/6/9名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的3×3区域发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击也伤害友军，亡魂始终免疫；9名阶段只伤害敌军。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
 
 function ordinaryModulePhase(ctx, id, level) {
   const raw = ctx.battleEquipTable?.[id]?.phases.find(p => p.equipLevel === level);
@@ -53,8 +53,8 @@ export function kazdelGarrison(key, gold) {
       desc = `战斗中，本体首次有效阵亡时，使已激活的【卡兹戴尔】与【灵巧】各增加${bb.layer}层；炮击造成的友方阵亡不产层`;
       break;
     case 'odda':
-      bb = { layer: [1, 2][grade], max_layer: [6, 12][grade] }; bbStr = { bond_ids: `${KAZDEL_BOND},steadShip` };
-      desc = `战斗中，本体首次有效阵亡时，此前本体每参与击杀一个敌人，使已激活的【卡兹戴尔】与【坚守】各增加${bb.layer}层，每个盟约最多${bb.max_layer}层；亡魂击杀不计入，炮击造成的友方阵亡不产层`;
+      bb = { layer: [1, 2][grade] }; bbStr = { bond_ids: `${KAZDEL_BOND},steadShip` };
+      desc = `战斗中，本体每参与击杀一个敌人，使已激活的【卡兹戴尔】与【坚守】各增加${bb.layer}层；本体每次有效阵亡时，本场此前每参与击杀一个敌人，再使这两个已激活盟约各增加${bb.layer}层，无特质产层上限；亡魂击杀不计入，炮击造成的友方阵亡不产层`;
       break;
     case 'meteorite':
       bb = { damage_bonus: [0.2, 0.4][grade] };
@@ -69,8 +69,8 @@ export function kazdelGarrison(key, gold) {
       desc = `战斗中，自身亡魂的治疗量提高${bb.heal_bonus * 100}%，医疗亡魂可治疗其他亡魂`;
       break;
     case 'hoederer':
-      bb = { layer: [2, 4][grade], max_layer: [24, 48][grade] };
-      desc = `战斗中，本体或亡魂在场时，每枚己方卡兹戴尔本体首次有效阵亡，使已激活的【卡兹戴尔】增加${bb.layer}层，每场最多${bb.max_layer}层，包含自身；同名赫德雷只取最高值，亡魂死亡与炮击造成的友方阵亡不产层`;
+      bb = { layer: [6, 10][grade] };
+      desc = `战斗中，本体或亡魂在场时，每枚己方卡兹戴尔本体首次有效阵亡，使已激活的【卡兹戴尔】增加${bb.layer}层，无特质产层上限，包含自身；同名赫德雷只取最高值，亡魂死亡与炮击造成的友方阵亡不产层`;
       break;
     case 'mudrock':
       bb = { block_cnt: 3, hp_per_layer: [5, 10][grade] };
@@ -81,8 +81,8 @@ export function kazdelGarrison(key, gold) {
       desc = `战斗中，每层众魂额外使自身亡魂攻击力+${bb.atk_per_layer}，自身亡魂普通攻击可攻击${bb.target_count}个目标`;
       break;
     case 'wisdel':
-      bb = { damage_bonus: [0.2, 0.4][grade], next_attack_bonus: [0.5, 1][grade] };
-      desc = `战斗中，本体或亡魂在场时，所有己方亡魂造成的伤害提高${bb.damage_bonus * 100}%；每次众魂炮击后，各己方亡魂的下一次普通攻击伤害提高${bb.next_attack_bonus * 100}%，再次炮击刷新而不储存次数；同名光环只取最高值`;
+      bb = { damage_bonus: [0.2, 0.4][grade], next_attack_bonus: [0.5, 1][grade], cannon_attack_ratio: 0.5 };
+      desc = `战斗中，本体或亡魂在场时，所有己方亡魂造成的伤害提高${bb.damage_bonus * 100}%；每次众魂炮击后，各己方亡魂的下一次普通攻击伤害提高${bb.next_attack_bonus * 100}%，再次炮击刷新而不储存次数；同名光环只取最高值；自身本体在场时，获得当前众魂炮击伤害50%的基础攻击力加成，随众魂层数更新，普通攻击与技能均生效`;
       break;
     default: throw new Error(`Unknown Kazdel trait ${key}`);
   }

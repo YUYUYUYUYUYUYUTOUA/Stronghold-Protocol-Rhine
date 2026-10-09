@@ -101,9 +101,7 @@ export class MatchBoss {
         routes: wave.routes,
         sharedBoss: this.bossPool,
         // the round's enemy effects for the leaders' mid-fight summons (server/sim/content/bosses.js summonMods)
-        // Percentage-HP research damage reads a fixed share for this field, never the entire shared pool.
-        // Flags travel with the frozen spec, including client simulation and server takeover.
-        flags: { layerGainsEnabled: false, ...this.gd.dp, enemyScale: this.gd.enemyScale(this.round), bossFieldMaxHp: this.bossPool.maxHp / groups.length },
+        flags: { layerGainsEnabled: false, ...this.gd.dp, enemyScale: this.gd.enemyScale(this.round) },
         fieldId,
         enemyOverrides: wave.overrides,
         waveId: wave.templateId,

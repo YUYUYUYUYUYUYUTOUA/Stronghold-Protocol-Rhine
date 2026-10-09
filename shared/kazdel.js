@@ -9,7 +9,7 @@ export const KAZDEL_CHARACTERS = Object.freeze({
 export const KAZDEL_BALANCE = Object.freeze({
   thresholds: Object.freeze([3, 6, 9]), bodyHpPerLayer: 10,
   soulHpRatio: 0.6, soulHpPerLayer: 10, soulAttackRatio: 0.8, soulAttackPerLayer: 3,
-  soulsPerPiecePerBattle: 1,
+  soulsPerPiecePerBattle: null, // Unlimited: each real body death can create another soul.
 });
 export const KAZDEL_CANNON = Object.freeze({
   capacity: 15, chargePerSec: 1, chargePerLayer: 0.005, deathCharge: 3,

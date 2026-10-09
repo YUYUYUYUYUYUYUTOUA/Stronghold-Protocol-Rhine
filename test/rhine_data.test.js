@@ -52,7 +52,7 @@ test('Rhine data: six-member research sharing and the new three device levels ar
   assert.match(laser.desc, /只有一级/);
   assert.match(laser.desc, /最大生命值最高/);
   assert.match(laser.desc, /0\.5%/);
-  assert.match(laser.desc, /本战场分摊/);
+  assert.match(laser.desc, /完整共享最大生命值/);
 });
 test('Rhine data: device production, single-device inheritance and four attack per layer match the approved rules', () => {
   assert.equal(files.bonds.rhineShip.bb.atk_per_stack, 4);

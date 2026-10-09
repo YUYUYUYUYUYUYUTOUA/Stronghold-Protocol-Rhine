@@ -706,7 +706,7 @@ export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live 
     ${hint ? html`<p class="dhint"><${Icon} name="info" />${hint}</p>` : null}
     ${baseResearchAttack ? html`<p class="dhint">${t('基础攻击未计入科研层数、装备与梅尔加成；实际数值以开战时或实时数值为准。')}</p>` : null}
     ${research ? html`<${Section} title=${t('作用范围')}><p class="dtext">${researchRangeText({ id: token.tokenId, stage: piece?.stage ?? researchStage ?? live?.researchStage })}</p>${laser ? null : html`<p class="dhint">${t('高亮的整格区域均生效，不随朝向改变。移动单位按所在格判断；巨型单位按占据格判断。')}</p>`}<//>` : null}
-    ${laser ? html`<${Section} title=${t('锁定与增伤')}><p class="dtext">${laserProgressText(laserState.researchLaserProgress, laserState.researchLaserTarget, laserState.researchLaserActive)}</p><p class="dhint">${t('锁定面板最大生命值最高的敌人，目标死亡或永久离场后重新选敌并清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害；领袖按本战场分摊最大生命值计算。')}</p><//>` : null}
+    ${laser ? html`<${Section} title=${t('锁定与增伤')}><p class="dtext">${laserProgressText(laserState.researchLaserProgress, laserState.researchLaserTarget, laserState.researchLaserActive)}</p><p class="dhint">${t('锁定面板最大生命值最高的敌人，目标死亡或永久离场后重新选敌并清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。')}</p><//>` : null}
     ${!soul && (token.descRaw || token.desc) ? html`<${Section} title=${t('说明')}><${RichText} as="p" text=${token.descRaw || token.desc} class="dtext" /><//>` : null}
     ${!soul && skill ? html`<${Section} title=${t('技能')}><p class="dtext"><b>${skill.name}</b> ${skill.desc}</p><//>` : null}
     ${!soul && talents.length ? html`<${Section} title=${t('天赋')}>${talents.map((t, i) => html`<p class="dtext" key=${i}><b>${t.name}</b> ${t.desc}</p>`)}<//>` : null}`;

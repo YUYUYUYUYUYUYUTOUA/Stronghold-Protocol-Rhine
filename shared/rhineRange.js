@@ -72,7 +72,7 @@ export function researchRangeText(piece) {
     const splash = pulse.tileBased ? t('主目标所在格为中心的钙质化 {tiles} 格菱形', { tiles: pulse.grid.length }) : t('主目标周围实际半径 {radius} 格', { radius: pulse.radius });
     return t('{charging}；主目标须在装置半径 {radius} 格内（{tiles} 格）。溅射为{splash}，可波及装置选敌范围外。满充无目标时保留，敌人进入后释放。', { charging, radius: range.radius, tiles: range.grid.length, splash });
   }
-  return t('全场攻击，选择面板最大生命值最高的敌人，锁定至其死亡或永久离场；只有一级，仅9莱茵生命可用。持续输出每秒增伤5%，20秒达到上限并开始每秒追加最大生命值0.5%的真实伤害；领袖按本战场分摊血量计算。');
+  return t('全场攻击，选择面板最大生命值最高的敌人，锁定至其死亡或永久离场；只有一级，仅9莱茵生命可用。持续输出每秒增伤5%，20秒达到上限并开始每秒追加最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。');
 }
 
 /** Polygon clipped to a tile's square. Coordinates throughout are [column, row]. */

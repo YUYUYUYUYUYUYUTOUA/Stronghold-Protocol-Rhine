@@ -308,9 +308,7 @@ export function install(battle) {
           s.laserTrue += B.laserTick;
           while (s.laserTrue >= B.laserTrueInterval - 1e-9 && target.alive && !target.removed) {
             s.laserTrue = Math.max(0, s.laserTrue - B.laserTrueInterval);
-            // A boss shows the whole team's shared pool. The Match freezes this field's share separately.
-            const maxHp = target.bossPool && Number.isFinite(battle.bossFieldMaxHp) && battle.bossFieldMaxHp > 0
-              ? battle.bossFieldMaxHp : target.s.maxHp;
+            const maxHp = target.bossPool?.maxHp ?? target.s.maxHp;
             battle.dealDamage(s.unit, target, { type: 'true', amount: maxHp * B.laserTrueHpRatio,
               canDodge: false, tags: ['rhineLaser', 'rhineLaserTrue'] });
           }

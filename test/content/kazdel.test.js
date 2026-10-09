@@ -1,4 +1,4 @@
-// Owner-approved fan mechanics, 2026-10-09: deaths and souls have independent once-per-piece bookkeeping.
+// Owner-approved fan mechanics, 2026-10-09: first-death resources and repeatable souls are independent.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants, hashOf } from '../helpers/battleHarness.js';
@@ -48,8 +48,30 @@ test('Kazdel stage freezes at start; body and soul receive layer stats once; sam
   assert.equal(layers(h), 14);
   die(h, soul(a)); assert.equal(layers(h), 14);
   assert.equal(h.b.redeploy(a), true); die(h, a);
-  assert.equal(layers(h), 14); assert.equal(h.b.allyUnits.filter(u => u.kazdelSoul).length, 2);
+  assert.equal(layers(h), 14); assert.equal(h.b.allyUnits.filter(u => u.kazdelSoul).length, 3);
+  assert.ok(soul(a).alive);
   assert.ok(checkInvariants(h.b));
+});
+
+test('every real body death creates a fresh soul after returns, even after cannon deaths; first-death charge remains once', () => {
+  for (const count of [3,6,9]) {
+    const h=fixture(['plain'],{count}),u=h.unit('kaz_plain');
+    const charge=h.b.snapshot().kazdel[0].charge;
+    let previous=null;
+    for(let i=0;i<4;i++) {
+      die(h,u,null,i===1?['kazdelCannon']:[]);
+      const current=soul(u);
+      assert.ok(current.alive);assert.notEqual(current,previous);
+      assert.equal(h.b.allyUnits.filter(v=>v.kazdelSoul&&v.alive).length,1);
+      assert.equal(h.b.snapshot().kazdel[0].charge-charge,count>=6?3:0);
+      if(i%2===0)die(h,current);
+      assert.equal(h.b.redeploy(u,{free:true}),true);
+      assert.equal(current.alive,false);previous=current;
+      assert.ok(checkInvariants(h.b));
+    }
+    assert.equal(h.b.allyUnits.filter(v=>v.kazdelSoul).length,4);
+    assert.equal(layers(h),0);
+  }
 });
 
 test('retreat and prevented/revived deaths produce no soul or resources', () => {
@@ -118,28 +140,62 @@ test('Mudrock soul loses native noHeal, keeps block3 and its extra layer HP; Log
   }
 });
 
-test('Odda counts distinct enemies killed after positive body participation including cannon finishers; soul hits do not count', () => {
+test('Odda gains on each assisted kill and each death pays all prior assists again, without personal caps', () => {
   for(const elite of [false,true]) {
     const h=fixture(['odda'],{elite,bonds:{steadShip:bond(2)}}), u=h.unit('kaz_odda');
-    for(let i=0;i<9;i++) { const e=h.spawn('kaz_enemy',{pos:[9,8]});h.b.dealDamage(u,e,{amount:1,type:'true'});die(h,e); }
+    const perKill=elite?2:1;
+    for(let i=0;i<9;i++) {
+      const e=h.spawn('kaz_enemy',{pos:[9,8]});
+      h.b.dealDamage(u,e,{amount:1,type:'true'});h.b.dealDamage(u,e,{amount:1,type:'true'});
+      assert.equal(layers(h),i*perKill);die(h,e);
+      assert.equal(layers(h),(i+1)*perKill);
+      assert.equal(layers(h,'steadShip'),(i+1)*perKill);
+      die(h,e);assert.equal(layers(h),(i+1)*perKill);
+    }
     const uncredited=h.spawn('kaz_enemy',{pos:[9,8]});die(h,uncredited);
     const cannon=h.spawn('kaz_enemy',{pos:[9,8]});h.b.dealDamage(u,cannon,{amount:1,type:'true'});die(h,cannon,null,['kazdelCannon']);
-    die(h,u);assert.equal(layers(h),elite?12:6);assert.equal(layers(h,'steadShip'),elite?12:6);
+    assert.equal(layers(h),10*perKill);
+    die(h,u);assert.equal(layers(h),20*perKill);assert.equal(layers(h,'steadShip'),20*perKill);
     assert.equal(u.mem.kazdelParticipatedKills.size,10);
     const e=h.spawn('kaz_enemy',{pos:[9,8]});h.b.dealDamage(soul(u),e,{amount:1,type:'true'});die(h,e);
     assert.equal(u.mem.kazdelParticipatedKills.size,10);
+    assert.equal(layers(h),20*perKill);
+    assert.equal(h.b.redeploy(u,{free:true}),true);
+    const later=h.spawn('kaz_enemy',{pos:[9,8]});die(h,later,u);
+    assert.equal(layers(h),21*perKill);
+    die(h,u);assert.equal(layers(h),32*perKill);assert.equal(layers(h,'steadShip'),32*perKill);
+    assert.ok(checkInvariants(h.b));
   }
 });
 
-test('Hoederer strongest body/soul aura counts own qualifying pieces including self; same-name separate; cap24/48', () => {
+test('Odda ignores zero body damage and soul kills, skips inactive bonds, and cannon friendly-fire deaths do not repay assists', () => {
+  const h=fixture(['odda1','odda2'],{count:6}),a=h.unit('kaz_odda1'),b=h.unit('kaz_odda2');
+  const e=h.spawn('kaz_enemy',{pos:[9,8]});h.b.dealDamage(a,e,{amount:0,type:'true'});die(h,e);
+  assert.equal(layers(h),0);
+  const assisted=h.spawn('kaz_enemy',{pos:[9,8]});
+  h.b.dealDamage(a,assisted,{amount:1,type:'true'});die(h,assisted,b);
+  assert.equal(layers(h),2);assert.equal(layers(h,'steadShip'),0);
+  die(h,a,null,['kazdelCannon']);assert.equal(layers(h),2);assert.ok(soul(a).alive);
+  assert.equal(h.b.redeploy(a,{free:true}),true);die(h,a);assert.equal(layers(h),3);
+  assert.ok(checkInvariants(h.b));
+});
+
+test('Hoederer strongest body/soul aura counts own qualifying pieces including self, without personal caps', () => {
   const keys=['hoederer1','hoederer2',...Array.from({length:13},(_,i)=>`plain${i}`)];
   for(const elite of [false,true]) {
     const h=fixture(keys,{elite});
     for(const key of keys) die(h,h.unit(`kaz_${key}`));
-    assert.equal(layers(h),elite?48:24);
+    assert.equal(layers(h),keys.length*(elite?10:6));
     const former=h.unit('kaz_plain0'); h.b.redeploy(former);die(h,former);
-    assert.equal(layers(h),elite?48:24);
+    assert.equal(layers(h),keys.length*(elite?10:6));
   }
+});
+
+test('Hoederer mixed normal/elite auras select 10 layers once per qualifying piece rather than stacking', () => {
+  const h=fixture(['hoederer1','hoederer2','plain']);
+  h.unit('kaz_hoederer2').def.raw.garrisonIds=['garrison_kazdel_hoederer_b'];
+  for(const key of ['plain','hoederer1','hoederer2'])die(h,h.unit(`kaz_${key}`));
+  assert.equal(layers(h),30);assert.ok(checkInvariants(h.b));
 });
 
 test('Tinman aura excludes self, follows live body/soul and chooses strongest overlapping aura', () => {
@@ -249,9 +305,9 @@ test('active Harmony recipients inherit Kazdel HP/soul/death charge through cano
       kits:{kaz_mani:()=>({})},bonds:{[K]:bond(6,10),maniShip:{active:harmony,count:2,tier:1,layers:0}},autoFinish:false});h.step();
     const u=h.unit('kaz_mani'),before=h.b.snapshot().kazdel[0].charge;
     assert.equal(u.s.maxHp,harmony?2100:2000);die(h,u);
-    assert.equal(!!soul(u),harmony);assert.equal(layers(h),harmony?12:10);
+    assert.equal(!!soul(u),harmony);assert.equal(layers(h),harmony?16:10);
     assert.equal(h.b.snapshot().kazdel[0].charge-before,harmony?3:0);
-    if(harmony)assert.equal(soul(u).s.maxHp,1320);
+    if(harmony)assert.equal(soul(u).s.maxHp,1360);
     assert.equal(h.b.getPlayer('p1').bonds[K].count,6);assert.equal(h.b.snapshot().kazdel[0].stage,2);
     assert.ok(checkInvariants(h.b));
   }

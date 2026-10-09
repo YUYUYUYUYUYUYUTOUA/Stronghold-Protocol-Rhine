@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { makeBattle, chessRec, enemyRec, checkInvariants } from '../helpers/battleHarness.js';
 import { RHINE_CHARACTERS as C, RHINE_DEVICES } from '../../shared/rhineResearch.js';
 import { otterKit, OTTER } from '../../server/sim/content/kits/rhineSupport.js';
+import { SharedBossPool, CreditPool } from '../../server/match/finalAssault.js';
+import { LocalBossPool } from '../../server/sim/spec.js';
 
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `expected ${b}, got ${a}`);
 const op = (uid, row = 10, col = 4, extra = {}) => ({ uid, chessId: `${uid}_a`, row, col, ...extra });
@@ -228,17 +230,29 @@ test('Rhine laser pauses both ramp and mature true-damage timing, and transfers 
   valid(h);
 });
 
-test('Rhine laser mature percentage damage uses field max HP across several fields without multiplying the shared team pool', () => {
+test('each Rhine laser uses the entire shared max HP across several fields and mirror bosses, even as current HP drops', () => {
   const pool = { hp: 6000000, maxHp: 6000000, damage(_pid, amount) { this.hp = Math.max(0, this.hp - amount); } };
   const fields = Array.from({ length: 3 }, (_, i) => arena([player('p1', [device('laser')])], {
     kind: 'boss', sharedBoss: pool, flags: { bossFieldMaxHp: pool.maxHp / 3 }, fieldId: `b${i + 1}`,
   }));
   for (const h of fields) {
     const target = h.spawn('dummy', { pos: [2, 9], tag: 'boss' }); close(target.s.maxHp, pool.maxHp);
+    h.spawn('dummy', { pos: [2, 8], tag: 'boss' });
     h.run(20); assert.equal(h.hooksOf('damaged').filter((c) => c.type === 'true').length, 0);
     h.run(1); const trueHits = h.hooksOf('damaged').filter((c) => c.type === 'true');
-    assert.equal(trueHits.length, 1); close(trueHits[0].dmg.amount, 10000); valid(h);
+    assert.equal(trueHits.length, 1); close(trueHits[0].dmg.amount, 30000); valid(h);
   }
   const allTrue = fields.flatMap((h) => h.hooksOf('damaged').filter((c) => c.type === 'true'));
-  close(allTrue.reduce((sum, c) => sum + c.dmg.amount, 0), pool.maxHp * .005);
+  close(allTrue.reduce((sum, c) => sum + c.dmg.amount, 0), pool.maxHp * .005 * fields.length);
+});
+
+test('laser percentage damage reads shared max HP through browser and takeover pools rather than a modified leader panel', () => {
+  for(const makePool of [()=>new LocalBossPool(6000000,3000000),()=>new CreditPool(new SharedBossPool(6000000))]) {
+    const pool=makePool(),h=arena([player('p1',[device('laser')])],{kind:'boss',sharedBoss:pool,flags:{bossFieldMaxHp:2000000}});
+    const target=h.spawn('dummy',{pos:[2,9],tag:'boss'});
+    h.b.addBuff(target,{key:'test:leaderHp',mods:{hpPct:1}});
+    close(target.s.maxHp,12000000);h.run(21);
+    const hits=h.hooksOf('damaged').filter(c=>c.type==='true');
+    assert.equal(hits.length,1);close(hits[0].dmg.amount,30000);valid(h);
+  }
 });
