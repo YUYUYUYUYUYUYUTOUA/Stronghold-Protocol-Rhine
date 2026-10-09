@@ -86,6 +86,7 @@ function installEntrypoints(root) {
   put(root, 'package.json', '{"type":"module"}');
   put(root, 'shared/constants.js', "export const APP_VERSION='0.2.1', DEV_BUILD=false;");
   put(root, 'server/http/config.js', "import {fileURLToPath} from 'node:url'; export const ROOT=fileURLToPath(new URL('../../',import.meta.url));");
+  put(root, 'server/net.js', 'export const limitKeyOf=(address)=>address;');
   put(root, 'server/index.js', `import fs from 'node:fs';
 import {runMain} from './http/boot.js';
 await runMain(async()=>{ fs.writeFileSync(new URL('../started.txt',import.meta.url),'started');
@@ -93,7 +94,7 @@ return {url:'http://127.0.0.1:54321',host:'127.0.0.1',port:54321,close:async()=>
   // Dependencies are controlled: exercise the real launcher/runMain without opening sockets or a browser.
   put(root, 'scripts/open-browser.mjs', 'export const openBrowser=()=>{throw new Error("browser must remain closed")};');
   put(root, 'tools/setup.mjs', 'export const c=new Proxy({}, {get:()=>x=>x}), mark={ok:"ok",err:"err"};');
-  put(root, 'tools/doctor.mjs', 'export const probePort=async()=>({state:"free"}), classifyAddresses=()=>[], KIND_LABEL={};');
+  put(root, 'tools/doctor.mjs', 'export const probePort=async()=>({state:"free"}), classifyAddresses=()=>[], hostUrl=(host,port)=>`http://${host}:${port}`, KIND_LABEL={};');
 }
 
 for (const entry of ['server/index.js', 'scripts/launch.mjs']) {

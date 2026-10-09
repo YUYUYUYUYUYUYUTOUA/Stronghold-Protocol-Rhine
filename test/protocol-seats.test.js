@@ -25,7 +25,9 @@ test('battle results accept six player records, reject a seventh, and still vali
   const seven = resultFor(7);
   assert.equal(isBattleResult(seven), false);
   assert.equal(validateC2S({ t: 'b.result', battleId: 'battle_7', result: seven }), 'bad field result');
-  six.perPlayer.p_5.killed = 1; // the sixth record must obey killed <= total too
+  six.perPlayer.p_5.killed = 1; // Counted reinforcements can make killed exceed the scheduled total in 0.2.2.
+  assert.equal(isBattleResult(six), true);
+  six.perPlayer.p_5.killed = -1; // The sixth record still obeys the nonnegative integer limit.
   assert.equal(isBattleResult(six), false);
 });
 

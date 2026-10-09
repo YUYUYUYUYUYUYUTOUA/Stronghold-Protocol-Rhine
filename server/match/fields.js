@@ -36,6 +36,7 @@ import { layerGainRoom } from '../../shared/constants.js';
 import { uniteLeft } from '../sim/spec.js';
 import { frontOf } from '../sim/dir.js';
 import { RHINE_BOND, RHINE_CHARACTERS, rhineCapacity, rhineDevice } from '../../shared/rhineResearch.js';
+import { KAZDEL_BOND, KAZDEL_GARRISON_KEYS } from '../../shared/kazdel.js';
 import { diyTokenOwner } from '../../shared/diy.js';
 
 export const MAX_TICKS_PER_INTERVAL = 8;
@@ -645,6 +646,15 @@ function layerAllowanceOf(p, gd, spec) {
     for (const gid of gd.chess(u.chessId)?.garrisonIds || []) {
       const g = gd.garrison(gid);
       if (!g || g.eventType !== 'IN_BATTLE') continue;
+      if (g.effectKey === KAZDEL_GARRISON_KEYS.odda || g.effectKey === KAZDEL_GARRISON_KEYS.hoederer) {
+        // These owner-selected traits have no per-battle cap. Only their active target bonds
+        // in a normal field can exceed the flat allowance; the shared 999-layer limit still applies.
+        if (spec?.kind === 'normal' && spec.flags?.layerGainsEnabled !== false && Number(g.bb?.layer) > 0) {
+          const targets = g.effectKey === KAZDEL_GARRISON_KEYS.odda ? [KAZDEL_BOND, 'steadShip'] : [KAZDEL_BOND];
+          for (const bond of targets) if (p.bonds?.[bond]?.active && gd.bond(bond)) out.set(bond, Infinity);
+        }
+        continue;
+      }
       if (g.effectKey === 'RHINE_MAYER_RESEARCH') {
         if (gd.chess(u.chessId)?.charId === RHINE_CHARACTERS.mayer && Number.isFinite(g.bb?.device_layers) && g.bb.device_layers > 0
           && Number.isInteger(u.row) && Number.isInteger(u.col)) {

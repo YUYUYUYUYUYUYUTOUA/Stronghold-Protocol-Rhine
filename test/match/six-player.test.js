@@ -68,7 +68,7 @@ test('six client normal fields wait for the sixth result and preserve its progre
     const f6 = m.fields[5];
     assert.ok(f6.spec.players[0].units.some((u) => u.uid === unit.uid));
     m.handle('p_5', { t: 'b.progress', battleId: f6.battleId, gt: 4, killed: 1, total: 9, leaks: 2 });
-    assert.deepEqual(m.publicView().fields[5].progress, { killed: 1, total: 9, done: false });
+    assert.deepEqual(m.publicView().fields[5].progress, { killed: 1, resolved: null, total: 9, done: false });
     assert.equal(m.publicView().players[5].pendingLp, 2);
     m.handle('p_0', { t: 'b.progress', battleId: f6.battleId, gt: 99, killed: 9, total: 9 });
     assert.equal(f6.progress.killed, 1, 'a foreign player cannot report the sixth field');

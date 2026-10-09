@@ -30,8 +30,8 @@ test('HUD differentiates six-person friendly fire, nine-person enemy-only and an
   assert.match(text(KazdelCannonHud({states:[{...state,stage:3}],gameTime:12})),/仅伤敌军/);
 });
 
-test('normal battle HUD shape stays unchanged; Kazdel follows authoritative game time and state',()=>{
-  assert.deepEqual(snapHud({killed:1,total:3,dp:10}),{killed:1,total:3,dp:10,boss:null});
+test('normal battle HUD includes the resolved counter; Kazdel follows authoritative game time and state',()=>{
+  assert.deepEqual(snapHud({killed:1,total:3,dp:10}),{killed:1,resolved:1,total:3,dp:10,boss:null});
   const hud=snapHud({gt:8.25,killed:1,total:3,dp:10,kazdel:[state]});
   assert.equal(hud.gameTime,8.25);assert.equal(hud.kazdel[0].charge,7.5);
 });
