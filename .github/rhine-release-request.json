@@ -1,6 +1,6 @@
 {
   "tag": "v0.2.2-rhine.1",
-  "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+  "sourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80",
   "draftReleaseId": 408249524,
   "previousTag": "v0.2.1-rhine.4",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.1-rhine.4-Windows-x64.zip",
@@ -16,7 +16,7 @@
   },
   "sourceValidation": {
     "version": "v0.2.2-rhine.1",
-    "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+    "sourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80",
     "basedOn": {
       "tag": "v0.2.2",
       "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f"
@@ -150,7 +150,8 @@
         "cancelled": 0,
         "skipped": 13,
         "platform": "linux",
-        "node": "v24.21.0"
+        "node": "v24.21.0",
+        "validatedSourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf"
       },
       "i18n": {
         "total": 24,
@@ -174,6 +175,31 @@
         "matched": 283,
         "validatedGameplayCommit": "068e1fae7c38239fab9e57ce0d4e44cccd732d3b",
         "note": "Subsequent gameplay fix changes the fork-specific Kazdel client-layer guard; native replay inputs and content remain unchanged."
+      },
+      "nativeWindowsInitialAttempt": {
+        "validatedSourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+        "packagedRegression": {
+          "total": 255,
+          "pass": 253,
+          "fail": 0,
+          "skipped": 2
+        },
+        "browserRenderer": {
+          "total": 8,
+          "pass": 7,
+          "fail": 1,
+          "skipped": 0
+        },
+        "failedCaseResolution": "Outdated browser fixture expected 44 selected cells for the global drill. Updated it to assert selected global-attack details, full shared maximum HP calculation, and no local range overlay. Full native Windows browser rerun is required before publication."
+      },
+      "laserInspectionRetest": {
+        "total": 7,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0",
+        "validatedSourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80"
       }
     },
     "checks": {
@@ -225,6 +251,8 @@
     "cloudRenderer": {
       "status": "not passed: Chromium WebGL shader initialization stalled",
       "nativeWindowsBrowserChecks": "required by publisher before assets are uploaded"
-    }
+    },
+    "validatedGameplayCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+    "releaseCandidateChange": "After validated gameplay commit, only release-request metadata and the global-drill browser fixture changed; product code is unchanged."
   }
 }
