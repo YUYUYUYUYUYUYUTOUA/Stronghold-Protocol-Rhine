@@ -219,6 +219,8 @@ async function main() {
     'test/rhine-bundle-launch.test.js',
     'test/extension-potential.test.js', 'test/room-rhine-profile.test.js', 'test/vanilla-data.test.js',
     'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
+    'test/match/kazdel-client-layers.test.js', 'test/match/six-player.test.js',
+    'test/protocol-seats.test.js', 'test/rhine-update-boot.test.js', 'test/ui/kazdel.test.js',
   ], path.join(root, 'packaged-tests.log'));
   let browserTests = null;
   if (fresh) {
@@ -320,4 +322,23 @@ async function main() {
   assert.equal(latest.tag_name, request.tag); assert.equal(latest.draft, false); assert.equal(latest.prerelease, false);
   console.log(`Published and verified: ${latest.html_url}`);
 }
-await main();
+try {
+  await main();
+} catch (error) {
+  // Draft-only diagnostics let release preparation failures be inspected through the asset API.
+  let draftFailure = false;
+  try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
+  if (draftFailure) {
+    const logs = {};
+    for (const name of ['packaged-tests.log', 'browser-render.log', 'browser-stats.log']) {
+      const file = path.join(root, name);
+      if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
+    }
+    fs.mkdirSync(root, { recursive: true });
+    const file = path.join(root, 'RELEASE-VALIDATION.json');
+    fs.writeFileSync(file, JSON.stringify({ status: 'validation-failed', sourceCommit: request.sourceCommit,
+      error: String(error?.message || error).slice(-4000), logs }, null, 2) + '\n');
+    spawnSync('gh', ['release', 'upload', request.tag, '--repo', repo, '--clobber', file], quiet);
+  }
+  throw error;
+}
