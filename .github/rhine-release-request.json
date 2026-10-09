@@ -1,86 +1,230 @@
 {
-  "tag": "v0.2.1-rhine.4",
-  "sourceCommit": "ea54cb8ea13e511730bbd87bdbfb7388284d86ba",
-  "draftReleaseId": 407541952,
-  "previousTag": "v0.2.1-rhine.3",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.1-rhine.3-Windows-x64.zip",
-  "previousArchiveSha256": "f15446782a4409a40cd04db5b349e3d7ccad9c66f0a43c1133a2ebc88be5258c",
+  "tag": "v0.2.2-rhine.1",
+  "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+  "draftReleaseId": 408249524,
+  "previousTag": "v0.2.1-rhine.4",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.1-rhine.4-Windows-x64.zip",
+  "previousArchiveSha256": "143dee12a0632efbbb23162a6beecdd4a200a968b9f2aa4013a29b81941e65ee",
   "runtimeVersion": "v24.21.0",
+  "prepareOnly": true,
+  "upstreamResources": {
+    "repository": "sganggs/Stronghold-Protocol",
+    "tag": "v0.2.2",
+    "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f",
+    "archiveName": "Stronghold-Protocol-v0.2.2.zip",
+    "sha256": "7a4342af163cae9972a7bc73081f152702092d9e8aec4d3938cf1a9cc9cfc31e"
+  },
   "sourceValidation": {
-    "version": "v0.2.1-rhine.4",
-    "sourceCommit": "ea54cb8ea13e511730bbd87bdbfb7388284d86ba",
+    "version": "v0.2.2-rhine.1",
+    "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
     "basedOn": {
-      "tag": "v0.2.1",
-      "commit": "c2a2ef778cf728ff29b953b9842b2a39b1e9cbea"
+      "tag": "v0.2.2",
+      "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f"
     },
     "tests": {
       "sourceFull": {
-        "total": 5757,
-        "pass": 5720,
-        "fail": 1,
+        "total": 6306,
+        "pass": 6257,
+        "fail": 8,
         "cancelled": 0,
-        "skipped": 36,
+        "skipped": 41,
         "platform": "linux",
         "node": "v24.21.0",
+        "matchSeeds": 20,
         "browserOptInSuites": false,
-        "failedCase": "heavy 2-player boss field performance timing: best 0.5254568206 ms/tick exceeds 0.5 ms/tick",
-        "failedCaseResolution": "The unchanged original test passed in an isolated rerun of test/sim/robustness.test.js."
+        "failedCaseResolutions": [
+          {
+            "case": "spectator lobby timeout under contention",
+            "resolution": "unchanged isolated suite: 10 passed"
+          },
+          {
+            "case": "4 humans FUNNY: Odda 150 layers rejected by legacy per-round client bound",
+            "resolution": "uncapped eligible Odda/Hoederer trait allowance; real R13 replay and full 20-seed group passed"
+          },
+          {
+            "case": "six-player progress fixture",
+            "resolution": "updated expected upstream resolved field; suite passed"
+          },
+          {
+            "case": "sixth-player progress validation fixture",
+            "resolution": "reinforcement kills may exceed initial total in upstream; positive and invalid-negative cases passed"
+          },
+          {
+            "case": "2 updater boot fixture tests",
+            "resolution": "stub new upstream limiter and doctor dependencies; real boot guards passed"
+          },
+          {
+            "case": "heavy two-player boss performance under contention",
+            "resolution": "unchanged isolated test passed at 0.4046 ms/tick"
+          },
+          {
+            "case": "Kazdel HUD fixture",
+            "resolution": "updated expected upstream resolved field; suite passed"
+          }
+        ],
+        "note": "The entire 6306-test run was not repeated after the fixes. Every failed case was rerun in its original suite/group; additional focused and final packaged regression passed.",
+        "simulationDiagnostics": {
+          "status": "nonfatal hook-depth guard diagnostics observed in some full-match co-op simulations",
+          "actors": [
+            "异客",
+            "刺玫",
+            "余音 enemy_9023_acdums"
+          ],
+          "behavior": "existing depth-32 guard skips recursively nested handlers; match-engine assertions still pass",
+          "upstreamModulesUnchanged": [
+            "server/sim/content/bosses.js",
+            "server/sim/content/kits/ops/chess_char_1_06-vendla.js",
+            "server/sim/content/kits/ops/chess_char_6_05-pasngr.js",
+            "server/sim/content/kits/shared/tier1.js"
+          ],
+          "note": "This is recorded as a simulation limitation, not claimed as a zero-simulation-error result."
+        }
       },
-      "isolatedRobustnessRetest": {
-        "total": 35,
-        "pass": 35,
+      "finalAdaptation": {
+        "total": 36,
+        "pass": 36,
         "fail": 0,
         "cancelled": 0,
         "skipped": 0,
         "platform": "linux",
         "node": "v24.21.0"
       },
-      "isolatedPerformanceSmoke": {
-        "total": 2,
-        "pass": 2,
+      "clientCombat": {
+        "total": 45,
+        "pass": 45,
         "fail": 0,
         "cancelled": 0,
         "skipped": 0,
         "platform": "linux",
         "node": "v24.21.0"
       },
-      "packagedRegression": {
-        "total": 192,
-        "pass": 188,
+      "funnyFull20SeedRetest": {
+        "total": 1,
+        "pass": 1,
         "fail": 0,
         "cancelled": 0,
-        "skipped": 4,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "isolatedLobbyRetest": {
+        "total": 10,
+        "pass": 10,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "isolatedPerformanceRetest": {
+        "total": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "sixPlayerAndBootRetest": {
+        "total": 18,
+        "pass": 18,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "kazdelHudRetest": {
+        "total": 4,
+        "pass": 4,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "packagedLinuxRegression": {
+        "total": 255,
+        "pass": 242,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 13,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "i18n": {
+        "total": 24,
+        "pass": 24,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "platform": "linux",
+        "node": "v24.21.0"
+      },
+      "statsBrowserLinux": {
+        "total": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
         "platform": "linux",
         "node": "v24.21.0"
       },
       "goldenScenarios": {
         "matched": 283,
-        "validatedGameplayCommit": "7b8e31e1d6645013940013de42d7c217f82fc6fd",
-        "note": "Previously verified after all gameplay changes; this release-preparation commit changes documentation only."
+        "validatedGameplayCommit": "068e1fae7c38239fab9e57ce0d4e44cccd732d3b",
+        "note": "Subsequent gameplay fix changes the fork-specific Kazdel client-layer guard; native replay inputs and content remain unchanged."
+      }
+    },
+    "checks": {
+      "lintErrors": 0,
+      "typecheck": "passed",
+      "importBoundaries": "passed with 3 allowed existing Node loader diagnostics",
+      "strictUiCatalogs": {
+        "languages": [
+          "en",
+          "ja",
+          "ko",
+          "zh-TW"
+        ],
+        "msgidsPerLanguage": 1244,
+        "coveragePercent": 100,
+        "errors": 0
       }
     },
     "resources": {
+      "upstreamPackageFilesVerified": 6453,
+      "vanillaSnapshotsByteExact": 22,
       "previousPackageFilesVerified": 22537,
-      "previousPackageSha256": "f15446782a4409a40cd04db5b349e3d7ccad9c66f0a43c1133a2ebc88be5258c",
+      "previousPackageSha256": "143dee12a0632efbbb23162a6beecdd4a200a968b9f2aa4013a29b81941e65ee",
+      "resolvedDependencyLock": "identical after normalizing project name/version",
       "officialRuntimeFilesVerified": 1993,
       "officialRuntimeArchiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
       "runtimeVersion": "v24.21.0",
-      "resourcesSourceRelease": "v0.2.1-rhine.3",
-      "runtimeExcludedConfigPaths": [
-        "node_modules/npm/.npmrc"
-      ]
+      "voiceCharsPerLanguage": 197,
+      "voiceLinesPerLanguage": 2758
     },
     "updateChecks": {
-      "from": "v0.2.1-rhine.3",
-      "to": "v0.2.1-rhine.4",
-      "changedFiles": 43,
+      "from": "v0.2.1-rhine.4",
+      "to": "v0.2.2-rhine.1",
+      "changedFiles": 3253,
       "conflictProtection": "passed",
       "localConfigAndPrivateFilesPreserved": "passed",
       "repeatUpdate": "already-current",
       "rollback": "passed",
-      "stoppedFixtureGuardCalls": 6,
+      "stoppedFixtureGuardCalls": 10,
       "platform": "linux",
-      "windowsProcessDetection": "not executed; stopped fixture supplied to updater core"
+      "windowsProcessDetection": "not executed; stopped fixture supplied to updater core",
+      "validatedSourceCommit": "5b5793d415069f1b92ce790150a3252043c1d369",
+      "finalPreflight": {
+        "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
+        "changedFiles": 3259,
+        "conflicts": 0
+      }
+    },
+    "cloudRenderer": {
+      "status": "not passed: Chromium WebGL shader initialization stalled",
+      "nativeWindowsBrowserChecks": "required by publisher before assets are uploaded"
     }
   }
 }
