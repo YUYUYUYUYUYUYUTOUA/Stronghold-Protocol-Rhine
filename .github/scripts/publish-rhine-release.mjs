@@ -308,6 +308,10 @@ async function main() {
     assert.equal(asset.size, fs.statSync(file).size, asset.name);
     assert.equal(asset.digest, `sha256:${await sha(file)}`, asset.name);
   }
+  if (request.prepareOnly === true) {
+    progress('All five assets are verified. Release remains a draft for the final source-validation check.');
+    return;
+  }
   const body = uploaded.body.replace(/本次在 Linux 环境[^\n]+/, `本次使用包内 Node.js ${request.runtimeVersion} 验证原生 Windows 服务与回归：${tests.pass} 项通过、${tests.skipped} 项条件跳过、0 失败；HTTP／WebSocket 和全量文件校验通过。交互式浏览器／BAT 启动未作人工验收。`);
   const publication = path.join(root, 'publication.json');
   fs.writeFileSync(publication, JSON.stringify({ draft: false, prerelease: false, make_latest: 'true', target_commitish: request.sourceCommit, body }));
