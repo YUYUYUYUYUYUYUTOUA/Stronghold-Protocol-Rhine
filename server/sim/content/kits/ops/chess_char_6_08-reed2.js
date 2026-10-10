@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_08-reed2.js — 焰影苇草 (char_1020_reed2) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -34,7 +35,7 @@ function reed2(bb, chess, def) {
       duration: num(bb.projectile_life_time) > 0 ? num(bb.projectile_life_time) : undefined,
       onStart({ battle, unit, skill }) {
         const n = Math.max(1, Math.floor(num(bb.max_target, 1)));
-        const cands = battle.alliesInGrid(unit).filter((a) => a.kind === 'op' && live(a));
+        const cands = battle.alliesInGrid(unit).filter((a) => nativeOperator(a) && live(a));
         cands.sort((a, b) => (a === unit) - (b === unit) || (b.ground ? 1 : 0) - (a.ground ? 1 : 0) || a.hpRatio - b.hpRatio || a.deploySeq - b.deploySeq);
         unit.mem.reedFire = cands.slice(0, n).map((a) => ({ a, acc: 0 }));
         for (const F of unit.mem.reedFire) {
@@ -71,7 +72,7 @@ function reed2(bb, chess, def) {
       // module “独属自己的一隅”: "攻击范围内存在已受伤的友方干员时，自身造成的伤害提升至110%"
       const ds = num(mod.damage_scale, 1);
       if (ds > 1) aura(battle, unit, 0.25, () => {
-        if (battle.injuredAlliesInKeys(unit.rangeKeys, unit).some((a) => a.kind === 'op' && a !== unit)) {
+        if (battle.injuredAlliesInKeys(unit.rangeKeys, unit).some((a) => nativeOperator(a) && a !== unit)) {
           battle.addBuff(unit, { key: 'reed2:corner', mods: { dmgDealtMul: ds }, duration: 0.4, refresh: 'replace' });
         }
       });

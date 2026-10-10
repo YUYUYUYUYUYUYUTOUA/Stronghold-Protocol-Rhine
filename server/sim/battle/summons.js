@@ -26,7 +26,7 @@ export class BattleSummons {
    * other chess).
    */
   producesToken(owner, tokenId, def = null) {
-    if (!owner || typeof owner !== 'object' || owner.kind !== 'op') return true;
+    if (!owner || typeof owner !== 'object' || (owner.kind !== 'op' && !owner.kazdelSoul)) return true;
     const d = def ?? this.tokenDef(tokenId, owner);
     const src = d && Array.isArray(d.sources) ? d.sources : null;
     if (!src || src.includes('skill') || src.includes('talent')) return true;

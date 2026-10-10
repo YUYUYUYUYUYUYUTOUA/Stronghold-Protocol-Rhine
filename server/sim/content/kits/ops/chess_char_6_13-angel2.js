@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_13-angel2.js — 新约能天使 (char_1041_angel2) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -79,7 +80,7 @@ function angel2(bb, chess, def) {
         for (const e of battle.foesInRadius(col, r, AIRSTRIKE_RADIUS)) {
           if (e.alive && !e.s.flags.untargetable) battle.dealDamage(unit, e, { amount: unit.s.atk * num(bb['attack@cannon_atk_scale'], 1), type: 'phys', isSkill: true, isSplash: true, tags: ['skill', 'delivery'] });
         }
-        const waiting = battle.allyUnits.filter((a) => a.kind === 'op' && a.ownerId === unit.ownerId && !a.alive && !a.removed && a !== unit
+        const waiting = battle.allyUnits.filter((a) => nativeOperator(a) && a.ownerId === unit.ownerId && !a.alive && !a.removed && a !== unit
           && a.def?.position !== 'RANGED' && battle.grid.canStand(r, col, { ranged: false }));
         if (!waiting.length) return;
         waiting.sort((a, b) => (b.respawnAt ?? 0) - (a.respawnAt ?? 0) || b.base.respawnTime - a.base.respawnTime || a.id - b.id);
@@ -119,7 +120,7 @@ function angel2(bb, chess, def) {
       mods: { batPct: batOf(bb.base_attack_time, def) },
       attack: { atkScale: num(bb['attack@atk_scale'], 1) },
       onStart({ battle, unit, skill }) {
-        const cands = battle.alliesInGrid(unit).filter((a) => a !== unit && a.kind === 'op' && live(a));
+        const cands = battle.alliesInGrid(unit).filter((a) => a !== unit && nativeOperator(a) && live(a));
         cands.sort(aggroCmp);
         const victim = steal > 0 ? cands[0] ?? null : null;
         unit.mem.angelVictim = victim;
@@ -160,7 +161,7 @@ function angel2(bb, chess, def) {
         const atk = num(t1.atk), mult = num(t1.mult, 1);
         if (atk) aura(battle, unit, 0.5, () => {
           for (const a of battle.allyUnits) {
-            if (!live(a) || a.kind !== 'op' || !a.skill || a.skill.kind !== 'ammo') continue;
+            if (!live(a) || !nativeOperator(a) || !a.skill || a.skill.kind !== 'ammo') continue;
             battle.addBuff(a, { key: 'angel2:covenant', mods: { atkPct: atk * (hasBond(a, 'lateranoShip') ? mult : 1) }, duration: 0.75, refresh: 'replace' });
           }
         });

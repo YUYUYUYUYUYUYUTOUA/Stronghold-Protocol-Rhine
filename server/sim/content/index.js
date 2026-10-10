@@ -106,7 +106,7 @@ export function setupUnitKit(battle, unit, mode = 'full') {
   const def = unit.def || {};
   const raw = def.raw ?? def;
   const bb = def.skill?.bb ?? {};
-  if (unit.kind === 'token') {
+  if (unit.kind === 'token' && !unit.kazdelSoul) {
     const expansionToken = !isOtherBody(unit.ownerUnit?.def);
     const tk = mode === 'full' ? (rhine.kits?.[def.id] ?? (expansionToken ? RHINE_KITS.tokenKits?.[def.id] : null) ?? KAZDEL_KITS.tokenKits?.[def.id] ?? tokens.kits?.[def.id] ?? tokens.default?.[def.id]) : null;
     if (typeof tk === 'function') {
@@ -114,7 +114,7 @@ export function setupUnitKit(battle, unit, mode = 'full') {
     }
     return def.skill ? genericKit(bb, raw, def) : {};
   }
-  if (unit.kind !== 'op') return {};
+  if (unit.kind !== 'op' && !unit.kazdelSoul) return {};
   const injected = battle.opts && battle.opts.kits;
   if (mode === 'full' || injected) {
     const f = kitOf(def, injected) ?? (mode === 'full' ? kitOf(def, KITS) : undefined);

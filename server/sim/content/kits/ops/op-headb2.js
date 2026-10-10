@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-headb2.js — 怒潮凛冬 (char_1051_headb2) 自选 operator kit: 6★ 撼地者 (近卫), an owned-6★ pick
 // of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and the module at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -85,7 +86,7 @@ const GROUND = Object.freeze({ canHitFly: false });
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 const tagged = (d, tag) => !!d && Array.isArray(d.tags) && d.tags.includes(tag);
-const isOp = (a) => !!a && a.kind === 'op';
+const isOp = (a) => !!a && nativeOperator(a);
 
 /** Tile keys of the 高台 (HIGH tiles of the field rect) whose square the circle of radius `r` around (x, y) touches. */
 function highlandsAround(battle, x, y, r = HIGHLAND_PICK_RADIUS) {

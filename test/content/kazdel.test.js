@@ -51,7 +51,7 @@ test('Kazdel stage freezes at start; body and soul receive layer stats once; sam
   die(h, a); assert.equal(layers(h), 12); assert.equal(layers(h, 'skillfulShip'), 2);
   assert.equal(soul(a).s.maxHp, 1320); assert.equal(soul(a).s.atk, 436);
   assert.equal(soul(a).skill.noSkill, true);
-  assert.equal(soul(a).profile.install, null); assert.equal(soul(a).items.length, 0);
+  assert.equal(soul(a).profile.install, undefined); assert.equal(soul(a).items.length, 0);
   assert.equal(h.b.getPlayer('p1').bonds[K].count, 3);
   h.b.getPlayer('p1').bonds[K].count = 0;
   die(h, b); assert.ok(soul(b)); assert.equal(h.b.snapshot().kazdel[0].stage, 1);
@@ -285,7 +285,7 @@ test('Tinman native S2 heals a soul through the explicit capability while ordina
   s.hp=100;t.hp=100;t.skill.setSpTotal(t.skill.spCost);
   assert.equal(t.skill.activate(),true);h.run(1);
   assert.ok(s.hp>100);assert.equal(s.s.hpRegen,0);assert.ok(t.s.hpRegen>0||t.hp>100);
-  assert.equal(s.profile.install,null);assert.ok(checkInvariants(h.b));
+  assert.equal(s.profile.install?.name,'installCharger');assert.ok(checkInvariants(h.b));
 });
 
 test('merged fields keep death resources/cannon states per player; Tin aura and Meteorite soul-block bonus accept allied teammates', () => {

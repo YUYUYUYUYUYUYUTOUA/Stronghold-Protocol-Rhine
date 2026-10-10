@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/standin-acmedc.js — Touch (char_613_acmedc) 补位 stand-in kit: 5 塞雷娅, 6 塑心 / 纯烬艾雅法拉
 // (all S3 恳切福音 + module PHY-X on the elite). Stand-in contract and rules: ../README.md "Stand-in kits".
 
@@ -8,7 +9,7 @@ const S1 = 'skchr_acmedc_1', S2 = 'skchr_acmedc_2', S3 = 'skchr_acmedc_3';
 /** S2 宛如天启's "所有医疗干员攻击力+X%" on every medic operator of hers while the skill runs (one per target: 同名 buff). */
 const APOCALYPSE_KEY = 'acmedc:apocalypse';
 
-const isMedicOp = (a) => a.kind === 'op' && a.alive && a.deployed && !a.hidden && a.def?.profession === 'MEDIC';
+const isMedicOp = (a) => nativeOperator(a) && a.alive && a.deployed && !a.hidden && a.def?.profession === 'MEDIC';
 
 export default {
   // Touch (医师) — skills from data/backups.json (normal E2 Lv1 skill rank 4, elite E2 Lv60 rank 7; skill_table and PRTS

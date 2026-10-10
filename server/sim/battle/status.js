@@ -5,7 +5,7 @@
 
 import { COLD_FREEZE_DURATION, LEVITATE_HALF_WEIGHT, RESIST_DEFAULT } from '../constants.js';
 import { makeBuff, STATUS, RESIST_STATUSES } from '../buffs.js';
-import { palsyBuff } from '../damage.js';
+import { palsyBuff, soulOrigin } from '../damage.js';
 import { evadesGround } from '../targeting.js';
 import { stampFear } from '../fear.js';
 import { captureKazdelCallback } from '../kazdelOrigin.js';
@@ -14,6 +14,15 @@ export class BattleStatus {
   addBuff(unit, b) {
     if (!unit || (!unit.alive && !b.allowDead)) return null;
     const buff = makeBuff(b);
+    // Regeneration later ticks with the recipient as its source. Enforce the soul
+    // healing boundary now, while the original buff source is still available.
+    if (b.source && (buff.mods?.hpRegen > 0 || buff.mods?.hpRegenRatio > 0)) {
+      const fromSoul = !!soulOrigin(b.source), toSoul = !!soulOrigin(unit);
+      if (fromSoul !== toSoul && !(toSoul && b.tags?.includes('kazdelSoulHeal'))) {
+        buff.mods = { ...buff.mods };
+        for (const key of ['hpRegen', 'hpRegenRatio']) if (buff.mods[key] > 0) delete buff.mods[key];
+      }
+    }
     for (const key of ['onTick', 'onExpire', 'onRemove']) buff[key] = captureKazdelCallback(this, buff[key]);
     const list = unit.buffs;
     let idx = -1;

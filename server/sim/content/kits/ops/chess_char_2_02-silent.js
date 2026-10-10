@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_2_02-silent.js — 赫默 (char_108_silent) kit, tier 2.
 // Conventions of the tier-2 kits: ../shared/tier2.js; kit contract and rules: ../README.md.
 
@@ -40,7 +41,7 @@ export default {
       skills: { 'skcom_heal_up[3]': { kind: 'duration', heal: true, mods: { atkPct: num(bb.atk) } } },
       talents: [{ install(battle, unit) {
         const v = num(t.attack_speed);
-        if (v) installAura(battle, unit, { key: 'talent:silent', value: v, select: (a) => a.kind === 'op' && a.def.profession === 'MEDIC', mods: { aspd: v } });
+        if (v) installAura(battle, unit, { key: 'talent:silent', value: v, select: (a) => nativeOperator(a) && a.def.profession === 'MEDIC', mods: { aspd: v } });
         if (num(tb.heal_scale, 1) !== 1) {
           battle.on('heal', (ctx) => { if (ctx.source === unit && ctx.target.ground) ctx.amount *= num(tb.heal_scale, 1); }, { owner: unit });
         }

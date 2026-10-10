@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-siege.js — 推进之王 (char_112_siege) 自选 operator kit: 6★ 尖兵 (先锋), an owned-6★ pick
 // of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -42,7 +43,7 @@ const X5 = Object.freeze([[1, 0], [0, -1], [0, 0], [0, 1], [-1, 0]]);
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【先锋】 operator (summons are never 【先锋】 operators). */
-const isPioneer = (a) => !!a && a.kind === 'op' && a.def?.profession === 'PIONEER';
+const isPioneer = (a) => !!a && nativeOperator(a) && a.def?.profession === 'PIONEER';
 
 /** The module the record fights with (its active one), or null. */
 function activeModule(chess) {

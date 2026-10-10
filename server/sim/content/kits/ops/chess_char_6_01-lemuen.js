@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_01-lemuen.js — 蕾缪安 (char_4193_lemuen) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -27,7 +28,7 @@ function ensureWanted(battle) {
     const lems = activeLem();
     if (!lems.length) return;
     const need = Math.min(...lems.map((u) => u.mem.wantedInterval));
-    const lat = battle.allyUnits.filter((a) => live(a) && a.kind === 'op' && hasBond(a, 'lateranoShip'));
+    const lat = battle.allyUnits.filter((a) => live(a) && nativeOperator(a) && hasBond(a, 'lateranoShip'));
     for (const e of battle.enemies) {
       if (!e.alive || e.hidden || !isElite(e) || e.findBuff('lemuen:wanted')) continue;
       // "停留超过8秒": a continuous stay — leaving every 拉特兰 range restarts the count
@@ -232,7 +233,7 @@ function lemuen(bb, chess, def) {
         battle.on('skillStart', ({ unit: u, skill }) => {
           if (!ready() || !skill || skill.kind !== 'ammo') return;
           if (u === unit) { if (add > 0) skill.addAmmo(add); }
-          else if (exAdd > 0 && u.side === 'ally' && u.kind === 'op' && hasBond(u, 'lateranoShip')) skill.addAmmo(exAdd);
+          else if (exAdd > 0 && u.side === 'ally' && nativeOperator(u) && hasBond(u, 'lateranoShip')) skill.addAmmo(exAdd);
         }, { owner: unit });
       } },
     ],

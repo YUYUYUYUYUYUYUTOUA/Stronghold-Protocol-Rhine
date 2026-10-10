@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-chen2.js — 假日威龙陈 (char_1013_chen2) 自选 operator kit: 6★ 散射手 (狙击), an owned-6★ pick
 // of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules (RPR-X 沙滩战斗套装, RPR-Y 假期的
 // 最后一天) at every form. Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -77,7 +78,7 @@ const SPARE = new WeakMap();
 export function spareChance(battle, u) {
   const st = SPARE.get(battle);
   if (!st || !u) return 0;
-  const op = u.kind === 'op';
+  const op = nativeOperator(u);
   let p = 0;
   for (const [s, v] of st.srcs) {
     if (!up(s)) continue;

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-hsgma2.js — 斩业星熊 (char_1044_hsgma2) 自选 operator kit: 6★ 驭法铁卫 (重装), an owned-6★
 // pick of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and her module at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -281,7 +282,7 @@ export default {
           }, { owner: unit });
         }
         // S3 临死模式: every other allied operator on her range holds 不死; the part of a damage instance past its HP is her 流失
-        const shelters = (t) => !!unit.mem.hsDying && up(unit) && !!t && t !== unit && t.side === 'ally' && t.kind === 'op' && t.alive
+        const shelters = (t) => !!unit.mem.hsDying && up(unit) && !!t && t !== unit && t.side === 'ally' && nativeOperator(t) && t.alive
           && !!unit.rangeKeySet && unit.rangeKeySet.has(t.tileR * COLS + t.tileC);
         battle.on('hpDamage', (c) => {
           const t = c.target;

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-shu.js — 黍 (char_2025_shu) 自选 operator kit: 6★ 守护者 (重装), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and her module at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -180,7 +181,7 @@ export default {
             if (stacks > 0) {
               const keys = unit.rangeKeySet || new Set(unit.rangeKeys || []);
               for (const a of battle.allyUnits) {
-                if (a.kind !== 'op' || !onField(a) || !keys.has(a.tileR * COLS + a.tileC)) continue;
+                if (!nativeOperator(a) || !onField(a) || !keys.has(a.tileR * COLS + a.tileC)) continue;
                 battle.addBuff(a, { key: HARVEST, duration: 0.1, mods: { atkPct: num(b3.e_atk) * stacks, aspd: num(b3.e_attack_speed) * stacks }, source: unit, tags: ['skill'] });
               }
             }
@@ -240,7 +241,7 @@ export default {
           const hpUp = num(t1.max_hp), asUp = num(t1.attack_speed);
           battle.every(FARM_EVERY, () => {
             if (!up(unit)) return;
-            const ops = battle.allyUnits.filter((a) => a.kind === 'op' && onField(a));
+            const ops = battle.allyUnits.filter((a) => nativeOperator(a) && onField(a));
             const per = new Map();
             for (const a of ops) { const p = a.def?.profession ?? '?'; per.set(p, (per.get(p) ?? 0) + 1); }
             const many = per.size >= PROF_NEEDED, same = Math.max(0, ...per.values()) >= PROF_NEEDED;

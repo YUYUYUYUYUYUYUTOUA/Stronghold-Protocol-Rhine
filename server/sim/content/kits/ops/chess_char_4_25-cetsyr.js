@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_25-cetsyr.js — 魔王 (char_4134_cetsyr) kit, tier 4.
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -120,7 +121,7 @@ export default withDefaults({
             }
             const keep = S3 && skillActive(unit); // S3: “微尘”不再消失
             for (const a of battle.alliesInRadius(unit.x, unit.y, num(t0.range_radius, 1.15), unit.ownerId)) {
-              if (a === unit || a.kind !== 'op' || a.findBuff(`cetsyr:mote:${unit.id}`)) continue;
+              if (a === unit || !nativeOperator(a) || a.findBuff(`cetsyr:mote:${unit.id}`)) continue;
               if (!keep && !takeMote()) break;
               battle.addBuff(a, { key: `cetsyr:mote:${unit.id}`, duration: num(t0.talent_duration, 6), visible: true, source: unit });
               battle.fx('mote', { x: a.x, y: a.y, id: a.id });
@@ -142,7 +143,7 @@ export default withDefaults({
         if (!a) return;
         whileDeployed(battle, unit, AURA, () => {
           const set = new Set(unit.baseRangeKeys || []);
-          const n = battle.allies(unit.ownerId).filter((o) => o !== unit && o.kind === 'op' && set.has(o.tileR * COLS + o.tileC)).length;
+          const n = battle.allies(unit.ownerId).filter((o) => o !== unit && nativeOperator(o) && set.has(o.tileR * COLS + o.tileC)).length;
           toggleBuff(battle, unit, 'cetsyr:module', n >= cnt, { atkPct: a });
         });
       },

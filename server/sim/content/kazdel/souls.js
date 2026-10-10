@@ -1,7 +1,7 @@
-// Kazdel souls: ordinary profession attacks and one copy of passive numerical attributes.
-import { KAZDEL_BALANCE as B, KAZDEL_SOUL_TOKEN } from '../../../../shared/kazdel.js';
+// Kazdel souls: fresh native skill/talent runtimes on the unchanged soul stat baseline.
+import { KAZDEL_BALANCE as B } from '../../../../shared/kazdel.js';
 import { Unit } from '../../units.js';
-import { resolveProfile } from '../../professions.js';
+import { installOwnerSummons } from '../tokens.js';
 
 const NON_SOUL_MODS = new Set(['hpRegen', 'hpRegenRatio', 'spRecoveryFlat', 'spRecoveryMul', 'spCostFlat', 'redeployMul']);
 const purePassive = (buff) => buff.persist && !buff.status && (buff.key.startsWith('bond:') || /^item:.*:stat:/.test(buff.key));
@@ -22,8 +22,8 @@ export function refreshSoul(battle, soul, layers, trait) {
   const maxHp = B.soulHpRatio * s.maxHp + (B.soulHpPerLayer + (mud?.hp_per_layer ?? 0)) * layers;
   const atk = B.soulAttackRatio * s.atk + (B.soulAttackPerLayer + (logos?.atk_per_layer ?? 0)) * layers;
   Object.assign(soul.base, { maxHp, atk, def: s.def, res: s.res, aspd: s.aspd, bat: s.bat,
-    blockCnt: mud?.block_cnt ?? s.blockCnt, hpRecoveryPerSec: 0, spRecovery: 0 });
-  soul.profile.maxTargets = logos?.target_count ?? soul.mem.kazdelBaseTargets;
+    blockCnt: mud?.block_cnt ?? s.blockCnt, hpRecoveryPerSec: 0, spRecovery: owner.base.spRecovery });
+  if (logos) soul.profile.maxTargets = logos.target_count;
   const mods = Object.fromEntries(['dmgDealtMul', 'physDealtMul', 'artsDealtMul', 'dmgTakenMul',
     'physTakenMul', 'artsTakenMul', 'trueTakenMul', 'elemTakenMul', 'elementalTakenMul',
     'healingDealtMul', 'healingTakenMul', 'atkScaleMul', 'defIgnoreFlat', 'defIgnorePct',
@@ -36,18 +36,28 @@ export function refreshSoul(battle, soul, layers, trait) {
 }
 
 export function createSoul(battle, owner, layers, trait) {
+  // Birth starts a new combatant, not a deferred cannon hit: native timers created here
+  // must not carry the killing shell's provenance into later independent skills.
+  const depth = battle._kazdelCannonDamageDepth, origin = battle._kazdelCannonOwnerId;
+  battle._kazdelCannonDamageDepth = 0;
+  battle._kazdelCannonOwnerId = null;
+  try { return spawnSoul(battle, owner, layers, trait); } finally {
+    battle._kazdelCannonDamageDepth = depth;
+    battle._kazdelCannonOwnerId = origin;
+  }
+}
+
+function spawnSoul(battle, owner, layers, trait) {
   const [r, c] = battle.restTile(owner), ps = battle.getPlayer(owner.ownerId), d = owner.def;
-  const raw = { name: `${owner.name} · 众魂`, profession: d.profession, subProfessionId: d.subProf,
-    position: d.position, dmgType: resolveProfile(d).dmgType, attackKind: d.attackKind, projectile: d.projectile,
-    canHitFly: d.canHitFly, targetPriority: d.targetPriority, rangeGrid: d.rangeGrid,
-    trait: { desc: '', bb: { ...(d.traitBb ?? {}) } }, skill: null, stats: { ...owner.base, atk: Math.max(1, owner.base.atk) },
-    spine: d.spine ?? d.charId, avatar: d.avatar ?? d.charId };
-  const def = battle._tokenDef(KAZDEL_SOUL_TOKEN, null, raw);
+  // Keep the original resolved loadout/variant identity for native summon lookups, but no
+  // garrison/item installation and no shared mutable kit closures, SP, buffs or talent memory.
+  const def = { ...d, name: `${owner.name} · 众魂`,
+    raw: { ...d.raw, garrisonIds: [] }, garrisonIds: [] };
   const soul = battle._makeAlly(ps, def, 'token', r, c, { ownerUnit: owner, dir: owner.dir });
   soul.kazdelSoul = true;
   soul.form = 'kazdelSoul';
-  // Native profile attacks (splash / chain healing / blocked-target count) stay; native installs do not.
-  battle._setupUnit(soul, { skill: null, trait: { install: null, noHeal: false } });
+  battle._setupUnit(soul);
+  installOwnerSummons(battle, soul);
   soul.mem.kazdelBaseTargets = soul.profile.maxTargets;
   refreshSoul(battle, soul, layers, trait);
   if (!battle._deploy(soul)) { soul.removed = true; battle.offOwner(soul); return null; }

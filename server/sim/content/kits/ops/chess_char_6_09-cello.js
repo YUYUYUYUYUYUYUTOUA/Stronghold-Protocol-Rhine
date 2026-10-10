@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_09-cello.js — 塑心 (char_245_cello) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -20,7 +21,7 @@ function cello(bb, chess, def) {
   /** S2 partner: the other operator of her range with the highest ATK (re-picked every 0.5 s). */
   const pickPartner = (battle, unit) => {
     unit.mem.celloPick = 0.5;
-    const ops = battle.alliesInGrid(unit).filter((a) => a !== unit && a.kind === 'op');
+    const ops = battle.alliesInGrid(unit).filter((a) => a !== unit && nativeOperator(a));
     unit.mem.celloPartner = ops.reduce((best, a) => (!best || a.s.atk > best.s.atk + 1e-9 ? a : best), null);
   };
   const skills = {
@@ -50,7 +51,7 @@ function cello(bb, chess, def) {
         unit.mem.celloAcc += dt;
         if (unit.mem.celloAcc < 0.5) return;
         unit.mem.celloAcc = 0;
-        const ops = battle.alliesInGrid(unit).filter((a) => a !== unit && a.kind === 'op');
+        const ops = battle.alliesInGrid(unit).filter((a) => a !== unit && nativeOperator(a));
         const top = (f) => ops.reduce((best, a) => (!best || f(a) > f(best) + 1e-9 ? a : best), null);
         const give = (a, key, mods) => { if (a) battle.addBuff(a, { key, mods, duration: 0.75, refresh: 'replace', source: unit, visible: true }); };
         give(top((a) => a.base.maxHp), 'cello:tango:hp', { hpPct: num(bb['cello_s_3[max_hp].max_hp']) });

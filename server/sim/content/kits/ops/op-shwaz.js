@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-shwaz.js — 黑 (char_340_shwaz) 自选 operator kit: 6★ 重射手 (狙击), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules (ARC-X 定制弩配件套装, ARC-Y 老剃刀) at
 // every form. Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -53,7 +54,7 @@ const AURA_EVERY = 0.5;
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【狙击】 operator (summons are never operators). */
-const isSniperOp = (a) => !!a && a.kind === 'op' && a.def?.profession === 'SNIPER';
+const isSniperOp = (a) => !!a && nativeOperator(a) && a.def?.profession === 'SNIPER';
 
 /** The module the record fights with (its active one), or null. */
 function activeModule(chess) {

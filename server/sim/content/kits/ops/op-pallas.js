@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-pallas.js — 帕拉斯 (char_485_pallas) 自选 operator kit: 6★ 教官 (近卫), an owned-6★ pick of
 // the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -61,7 +62,7 @@ export const PEAK_KEY = 'talent:pallas:peak';
 export const holderKey = (unit) => `skill:pallas:blessing#${unit.id}`;
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
-const isMinos = (a) => !!a && a.kind === 'op' && (a.def?.raw?.nationId ?? a.def?.nationId) === MINOS;
+const isMinos = (a) => !!a && nativeOperator(a) && (a.def?.raw?.nationId ?? a.def?.nationId) === MINOS;
 
 /**
  * The 精力充沛 sources of a battle (a Set of `(ally) => ATK bonus`, 0 when one does not apply); the first registration
@@ -94,7 +95,7 @@ function peakSources(battle) {
 export function blessingHolder(battle, unit) {
   const [fr, fc] = frontOf(unit.tileR, unit.tileC, unit.dir, 1);
   const a = battle.grid.inRect(fr, fc) ? battle.unitAt(fr, fc) : null;
-  if (a && a !== unit && a.side === 'ally' && a.kind === 'op' && a.deployed && a.ground !== false && battle.grid.isLow(fr, fc)
+  if (a && a !== unit && a.side === 'ally' && nativeOperator(a) && a.deployed && a.ground !== false && battle.grid.isLow(fr, fc)
     && battle.allySelectable(a, unit)) return a;
   return unit;
 }

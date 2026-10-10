@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_07-bpipe.js — 风笛 (char_222_bpipe) kit, tier 4.
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -49,7 +50,7 @@ export default withDefaults({
         { install(battle, unit) { // 军事传统: every 先锋 of the team starts with +6 SP
           battle.on('deploy', (c) => {
             const u = c.unit;
-            if (u.side !== 'ally' || u.kind !== 'op' || u.ownerId !== unit.ownerId || u.def?.profession !== 'PIONEER' || !u.skill || (u.skill.active && u.skill.isTimed)) return;
+            if (u.side !== 'ally' || !nativeOperator(u) || u.ownerId !== unit.ownerId || u.def?.profession !== 'PIONEER' || !u.skill || (u.skill.active && u.skill.isTimed)) return;
             u.skill.gainSp(num(t1.sp, 6), 'init');
           }, { owner: unit });
         } },

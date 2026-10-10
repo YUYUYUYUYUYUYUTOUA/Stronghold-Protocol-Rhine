@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_11-mlyss.js — 缪尔赛思 (char_249_mlyss) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -20,7 +21,7 @@ const RHINE = new Set(['char_108_silent', 'char_128_plosis', 'char_202_demkni', 
 function pickCopyTarget(battle, owner, t) {
   let best = null, bs = null;
   for (const a of battle.allyUnits) {
-    if (a.kind !== 'op' || !live(a) || a === owner || a.ownerId !== owner.ownerId) continue;
+    if (!nativeOperator(a) || !live(a) || a === owner || a.ownerId !== owner.ownerId) continue;
     const s = [Math.max(Math.abs(a.tileR - t.tileR), Math.abs(a.tileC - t.tileC)), -a.base.atk, a.id];
     let less = !bs;
     if (!less) for (let i = 0; i < 3; i++) { if (s[i] < bs[i]) { less = true; break; } if (s[i] > bs[i]) break; }
@@ -154,7 +155,7 @@ function mlyss(bb, chess, def) {
         }, { owner: unit });
       }
       if (rhineSpOther > 0) battle.on('deploy', ({ unit: u, initial }) => { // the copied 莱茵生命 operator is deployed
-        if (initial || !u || u.kind !== 'op' || u.ownerId !== unit.ownerId || !RHINE.has(u.def?.charId) || !u.skill) return;
+        if (initial || !u || !nativeOperator(u) || u.ownerId !== unit.ownerId || !RHINE.has(u.def?.charId) || !u.skill) return;
         if (battle.allyUnits.some((t) => isTok(t, tokId, unit) && live(t) && t.mem.mlyss?.from === u.id)) u.skill.gainSp(rhineSpOther, 'talent');
       }, { owner: unit });
     },

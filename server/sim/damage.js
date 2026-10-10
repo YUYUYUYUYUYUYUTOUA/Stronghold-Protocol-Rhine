@@ -538,12 +538,22 @@ export function reduceElement(target, amount, el = null) {
 
 /** Shared recipient rule for healing selectors and the final pipeline. Operator-owned healing
  * summons are operator healing too; independent research devices retain their own source. */
+export function soulOrigin(unit) {
+  if (!unit?.kazdelSoul && !unit?.ownerUnit) return null;
+  const seen = new Set();
+  for (let u = unit; u && !seen.has(u); u = u.ownerUnit) {
+    if (u.kazdelSoul) return u;
+    seen.add(u);
+  }
+  return null;
+}
 export function canReceiveHeal(source, target, opts = {}) {
   if (!target) return false;
   // Souls form their own healing group. Tinman's S2 is the sole explicit living-source exception.
-  if (target.kazdelSoul && !source?.kazdelSoul && !opts.tags?.includes('kazdelSoulHeal')) return false;
-  if (target.kazdelSoul && opts.regen && !opts.tags?.includes('kazdelSoulHeal')) return false;
-  if (source?.kazdelSoul && !target.kazdelSoul) return false;
+  const sourceSoul = soulOrigin(source), targetSoul = soulOrigin(target);
+  if (targetSoul && !sourceSoul && !opts.tags?.includes('kazdelSoulHeal')) return false;
+  if (targetSoul && opts.regen && !opts.self && !opts.tags?.includes('kazdelSoulHeal')) return false;
+  if (sourceSoul && !targetSoul) return false;
   if (target.s.flags.noOperatorHeal && source !== target) {
     const seen = new Set();
     for (let origin = source; origin && !seen.has(origin); origin = origin.ownerUnit) {

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_1_19-wildmn.js — 野鬃 (char_496_wildmn) kit, tier 1.
 // Conventions of the tier-1 kits: ../shared/tier1.js; kit contract and rules: ../README.md.
 
@@ -47,7 +48,7 @@ export default {
             deploys++;
             if (!every && deploys > 1) return;
             for (const a of battle.allyUnits) {
-              if (a === unit || a.kind !== 'op' || a.ownerId !== unit.ownerId || a.alive || a.removed || a.def.profession !== 'WARRIOR') continue;
+              if (a === unit || !nativeOperator(a) || a.ownerId !== unit.ownerId || a.alive || a.removed || a.def.profession !== 'WARRIOR') continue;
               const done = a.mem.wildmnCut ?? 0;
               const d = Math.min(cut, cap - done, a.base.cost);
               if (d > 0) { a.base.cost -= d; a.mem.wildmnCut = done + d; }

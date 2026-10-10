@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-nasti.js — 娜斯提 (char_4212_nasti) 自选 operator kit: 6★ 工匠 (辅助), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait, the module CRA-X 工程师们 at every form, and the kits of her
 // three <支援装置>: “质检专员” (token_10059_nasti_nstdef, S1), “监工专员” (token_10060_nasti_nstchr, S2) and “应急承重小组”
@@ -402,7 +403,7 @@ export default {
               holdProtect(battle, unit, resBase, PROTECT_HOLD, unit);   // 庇护: the shared effect (同名效果取最高)
               return;
             }
-            const who = [unit, ...battle.allyUnits.filter((a) => a !== unit && up(a) && !a.hidden && a.kind === 'op' && RANGED_POS.has(String(a.def?.position ?? '').toUpperCase()))];
+            const who = [unit, ...battle.allyUnits.filter((a) => a !== unit && up(a) && !a.hidden && nativeOperator(a) && RANGED_POS.has(String(a.def?.position ?? '').toUpperCase()))];
             for (const a of [...timers.keys()]) if (!who.includes(a)) timers.delete(a);
             for (const a of who) {
               holdProtect(battle, a, resPlus, PROTECT_HOLD, unit);

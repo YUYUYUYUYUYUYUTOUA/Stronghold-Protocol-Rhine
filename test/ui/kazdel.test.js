@@ -47,7 +47,7 @@ test('all eleven roster members resolve normally, while souls show donor art/nam
     const detail=resolveDetail({kind:'unit',unit},new Map([[1,{piece:{kind:'chess',id:roster[0].chessId}}]]));
     assert.equal(detail.type,'token');assert.equal(detail.soulState,unit);assert.equal(detail.piece,undefined);
     const vnode=TokenDetail({token:detail.token,soulState:unit,live:{src:'battle',maxHp:2345,atk:999,def:120,blockCnt:1,range:[[0,0],[0,1]]}});
-    assert.match(text(vnode),/红豆 · 众魂/);assert.match(text(vnode),/不继承主动技能/);assert.match(text(vnode),/无时间限制/);
+    assert.match(text(vnode),/红豆 · 众魂/);assert.match(text(vnode),/所选原生技能与全部原生天赋/);assert.match(text(vnode),/无时间限制/);
     assert.ok(nodes(vnode).some(n=>n.props?.src===data.get('assets').chars.char_290_vigna.avatar));
   }finally{globalThis.fetch=oldFetch;}
 });

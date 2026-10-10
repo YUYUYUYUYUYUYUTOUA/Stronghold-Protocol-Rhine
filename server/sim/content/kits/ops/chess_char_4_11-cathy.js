@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_11-cathy.js — 凯瑟琳 (char_4162_cathy) kit, tier 4.
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -21,7 +22,7 @@ export default withDefaults({
           unit.mem.forgeAura?.cancel();
           unit.mem.forgeAura = whileDeployed(battle, unit, AURA, () => {
             for (const a of battle.allies(unit.ownerId)) {
-              if (a === unit || a.kind !== 'op' || !a.findBuff(CAT_SHIELD_KEY)) continue;
+              if (a === unit || !nativeOperator(a) || !a.findBuff(CAT_SHIELD_KEY)) continue;
               pulse(battle, a, `cathy:forge:${unit.id}`, { atkPct: num(bb.s1_atk), defPct: num(bb.s1_def) });
             }
           });

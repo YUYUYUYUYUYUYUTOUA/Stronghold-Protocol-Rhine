@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/standin-acsupo.js — Raidian (char_614_acsupo) 补位 stand-in kit: 6★ 凝滞师 for 灵知 (T4, S2),
 // 夕 / 安洁莉娜 (T5, S3 + DEC-X) and 浊心斯卡蒂 / 仇白 (T6, S3 + DEC-X); every skill at every form.
 // Kit contract and the stand-in rules: ../README.md ("Stand-in kits").
@@ -138,7 +139,7 @@ export default {
             if (!up(unit)) return;
             const v = ally * (s3On(unit) ? scale : 1);
             for (const a of battle.alliesFor(unit)) {
-              if (a === unit || a.kind !== 'op' || !adjacent4(a, unit)) continue;
+              if (a === unit || !nativeOperator(a) || !adjacent4(a, unit)) continue;
               const cur = a.findBuff(T1_KEY);
               if (cur && cur.source !== unit && (cur.data?.v ?? 0) > v && cur.timeLeft > 0.05) continue;
               battle.addBuff(a, { key: T1_KEY, duration: AURA_DUR, mods: { aspd: v }, source: unit, data: { v }, tags: ['aura'] });

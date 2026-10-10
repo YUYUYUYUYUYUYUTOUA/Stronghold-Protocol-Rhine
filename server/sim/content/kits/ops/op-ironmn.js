@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-ironmn.js — 白铁 (char_4072_ironmn) 自选 operator kit: 6★ 工匠 (辅助), an owned-6★ pick of
 // the tier-5 and tier-6 自选 slots; every skill, both talents, the trait, both modules (CRA-X 铁钳号·爬行者, CRA-Y 海布里印记)
 // at every form, and the kits of his three <支援装置>: 白铁™多功能平台 (token_10027_ironmn_pile1, 极致火力 / pile2, 高效补给)
@@ -102,7 +103,7 @@ const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 const tokTalent = (def, key) => (def?.talents ?? []).find((t) => t && t.bb && t.bb[key] != null) ?? null;
 const tokBb = (def, key) => tokTalent(def, key)?.bb ?? {};
 /** An operator of our side a device's talent may reach (professionMask 639: operators, not summons). */
-const isOp = (a) => !!a && a.kind === 'op' && a.side === 'ally';
+const isOp = (a) => !!a && nativeOperator(a) && a.side === 'ally';
 /**
  * A 工匠's <支援装置> state for the battle: `stock` (持有), `cap` (持有上限), `devices` (its pieces). Shared with 娜斯提
  * (op-nasti.js).
@@ -322,7 +323,7 @@ export default {
             ctx.dmg.cancel = true;
             if (dev.skill && !dev.skill.active) dev.skill.gainSp(1, 'hurt');
             const src = ctx.source ?? ctx.credit;
-            if (src && src.kind === 'op' && src.def?.profession === 'SUPPORT' && src.profile?.sub === 'craftsman' && healRatio > 0) {
+            if (src && nativeOperator(src) && src.def?.profession === 'SUPPORT' && src.profile?.sub === 'craftsman' && healRatio > 0) {
               battle.heal(dev, dev, dev.s.maxHp * healRatio, { self: true, ignoreHealFree: true });
             }
           }, { owner: dev, priority: 100 });

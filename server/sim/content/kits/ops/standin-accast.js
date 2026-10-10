@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/standin-accast.js — Pith (char_612_accast) 补位 stand-in kit: 6★ 扩散术师 for 烛煌 (T5) and
 // 焰影苇草 / 迷迭香 / 荒芜拉普兰德 (T6), all S3 + SPC-X; every skill at every form.
 // Kit contract and the stand-in rules: ../README.md ("Stand-in kits").
@@ -35,7 +36,7 @@ const S2_KEY = 'accast:s2';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【术师】 operator (summons are never 【术师】 operators). */
-const isCaster = (a) => !!a && a.kind === 'op' && a.def?.profession === 'CASTER';
+const isCaster = (a) => !!a && nativeOperator(a) && a.def?.profession === 'CASTER';
 /** One of the 4 tiles next to `u` (相邻四格). */
 const adjacent4 = (a, u) => Math.abs(a.tileR - u.tileR) + Math.abs(a.tileC - u.tileC) === 1;
 

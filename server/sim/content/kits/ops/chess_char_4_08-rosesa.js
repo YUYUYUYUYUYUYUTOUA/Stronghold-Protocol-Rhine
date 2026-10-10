@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_08-rosesa.js — 瑰盐 (char_4163_rosesa) kit, tier 4 (hidden).
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -17,7 +18,7 @@ export default withDefaults({
       talents: [{ install(battle, unit) { // 最好的草药医生: own ATK −5 %, operators in range receive +15 % healing
         battle.addBuff(unit, { key: 'rosesa:t1', mods: { atkPct: num(t0.atk, -0.05) }, persist: true, allowDead: true });
         whileDeployed(battle, unit, AURA, () => {
-          for (const a of battle.alliesInGrid(unit)) if (a.kind === 'op') pulse(battle, a, `rosesa:heal:${unit.id}`, { healingTakenMul: num(t0.heal_scale, 1.15) });
+          for (const a of battle.alliesInGrid(unit)) if (nativeOperator(a)) pulse(battle, a, `rosesa:heal:${unit.id}`, { healingTakenMul: num(t0.heal_scale, 1.15) });
         });
       } }],
       install(battle, unit) {
@@ -25,7 +26,7 @@ export default withDefaults({
         battle.on('hit', (c) => {
           const t = c.target;
           // "友方干员": operators only (summons/devices keep the full hit)
-          if (!skillActive(unit) || !unit.alive || t.side !== 'ally' || t.kind !== 'op' || (c.dmg.type !== 'phys' && c.dmg.type !== 'arts')) return;
+          if (!skillActive(unit) || !unit.alive || t.side !== 'ally' || !nativeOperator(t) || (c.dmg.type !== 'phys' && c.dmg.type !== 'arts')) return;
           if (!keySet(unit).has(t.tileR * COLS + t.tileC)) return;
           c.dmg.mul *= scale;
           deferred.add(c.dmg);

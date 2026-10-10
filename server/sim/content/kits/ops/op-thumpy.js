@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-thumpy.js — 珊比 (char_4235_thumpy) 自选 operator kit: 6★ 本源铁卫 (重装), an owned-6★
 // pick of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and her module at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -290,7 +291,7 @@ export default {
         if (rider > 0) {
           battle.on('damaged', (c) => {
             const g = unit.mem.thumpyGlue, s = c.source, t = c.target;
-            if (!g || !up(unit) || !s || s === unit || s.side !== 'ally' || s.kind !== 'op' || c.type !== 'phys' || !(c.amount > 0)) return;
+            if (!g || !up(unit) || !s || s === unit || s.side !== 'ally' || !nativeOperator(s) || c.type !== 'phys' || !(c.amount > 0)) return;
             if (!t || t.side !== 'enemy' || t.isFlying || !hasHp(t) || !bodyInKeys(t, g.keys)) return;
             battle.dealDamage(unit, t, { type: 'element', element: 'erosion', amount: unit.s.atk * rider, tags: ['skill', 'thumpy:glue'] });
           }, { owner: unit });

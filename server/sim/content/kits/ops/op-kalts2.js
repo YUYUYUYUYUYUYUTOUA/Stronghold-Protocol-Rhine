@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-kalts2.js — 凯尔希·思衡托 (char_1052_kalts2) 自选 operator kit: 6★ 守望者 (医疗), an owned-6★
 // pick of the tier-5 and tier-6 自选 slots; every skill, both talents and the trait at every form (she has no module),
 // and the kit of her summon 战术锚点 (token_10068_kalts2_mtship). Kit contract and the 自选 rules: ../README.md ("How to add
@@ -112,7 +113,7 @@ const isAnchorOf = (t, unit) => !!t && t.kind === 'token' && t.defId === ANCHOR 
 const anchorsOf = (battle, unit) => battle.allyUnits.filter((t) => isAnchorOf(t, unit));
 const isRhodes = (a) => (a?.def?.raw?.nationId ?? a?.def?.nationId) === 'rhodes';
 /** A friendly operator other than `unit` standing on the field. */
-const otherOp = (a, unit) => a !== unit && a.kind === 'op' && up(a) && !a.hidden;
+const otherOp = (a, unit) => a !== unit && nativeOperator(a) && up(a) && !a.hidden;
 /** The anchor stock content/tokens.js releaseSkillSummon keeps on its owner. */
 function setStock(unit, n) {
   const s = unit.mem.summonStock || (unit.mem.summonStock = {});

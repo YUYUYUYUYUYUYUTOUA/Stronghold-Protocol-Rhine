@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_13-gnosis.js — 灵知 (char_206_gnosis) kit, tier 4.
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -103,7 +104,7 @@ export default withDefaults({
           const value = Math.min(1, Math.max(0, -num(t1.one_minus_status_resistance, -0.5)));
           whileDeployed(battle, unit, AURA, () => {
             if (battle.time - unit.deployedAt < num(t1.interval, 10) - 1e-9 || !(value > 0)) return;
-            for (const a of battle.allies(unit.ownerId)) if (a.kind === 'op' && nationOf(a) === 'kjerag') battle.applyStatus(a, 'resist', { duration: AURA_DUR, value, source: unit });
+            for (const a of battle.allies(unit.ownerId)) if (nativeOperator(a) && nationOf(a) === 'kjerag') battle.applyStatus(a, 'resist', { duration: AURA_DUR, value, source: unit });
           });
         } },
       ],

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_04-skadi2.js — 浊心斯卡蒂 (char_1012_skadi2) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -173,16 +174,16 @@ function skadi2(bb, chess, def) {
         const mCnt = num(mod.cnt, Infinity), mAtk = num(mod.atk);
         aura(battle, unit, 0.5, () => {
           const toks = seaborns(battle, unit);
-          const ops = covered(battle, unit, toks).filter((a) => a !== unit && a.kind === 'op');
+          const ops = covered(battle, unit, toks).filter((a) => a !== unit && nativeOperator(a));
           const val = ops.some((a) => ABYSSAL.has(a.def?.charId)) ? a2 : ops.length ? a1 : 0;
-          const own = battle.alliesInGrid(unit).filter((a) => a !== unit && a.kind === 'op').length;
+          const own = battle.alliesInGrid(unit).filter((a) => a !== unit && nativeOperator(a)).length;
           const total = val + (own >= mCnt ? mAtk : 0);
           const dPct = ops.length ? d1 : 0;
           if (total > 0 || dPct > 0) battle.addBuff(unit, { key: 'skadi2:predator', mods: { atkPct: total, defPct: dPct }, duration: 0.75, refresh: 'replace' });
         });
         // "我方干员部署于自身或海嗣范围内后，自身立刻获得3点技力"
         if (sp > 0) battle.on('deploy', ({ unit: u }) => {
-          if (!u || u === unit || u.kind !== 'op' || u.side !== 'ally' || !live(unit) || !unit.skill) return;
+          if (!u || u === unit || !nativeOperator(u) || u.side !== 'ally' || !live(unit) || !unit.skill) return;
           if (inCover(battle, unit, u)) unit.skill.gainSp(sp, 'talent');
         }, { owner: unit });
       } },

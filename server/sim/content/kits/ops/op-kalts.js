@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-kalts.js — 凯尔希 (char_003_kalts) 自选 operator kit: 6★ 医师 (医疗), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and her modules (PHY-X Mon2tr, PHY-Y 医者, ISW-A 凯尔希特限
 // 证章) at every form, and the kit of her summon Mon3tr (token_10002_kalts_mon3tr) — its block, its attacks and her skills
@@ -222,7 +223,7 @@ export default {
           }, { owner: unit });
           // the heal order: herself, her Mon3tr (and, with no module, an operator Mon3tr) first when injured
           const noModule = !moduleOn(chess);
-          const first = (a) => a === unit || isMon3trOf(a, unit) || (noModule && a.kind === 'op' && a.def?.charId === OP_MON3TR);
+          const first = (a) => a === unit || isMon3trOf(a, unit) || (noModule && nativeOperator(a) && a.def?.charId === OP_MON3TR);
           battle.on('beforeAttack', (c) => {
             if (c.attacker !== unit || !c.profile || c.profile.dmgType !== 'heal') return;
             const pri = battle.injuredAlliesInKeys(unit.rangeKeys, unit).filter(first);

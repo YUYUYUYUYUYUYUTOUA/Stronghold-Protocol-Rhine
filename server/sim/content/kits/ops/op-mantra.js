@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-mantra.js — 真言 (char_4204_mantra) 自选 operator kit: 6★ 本源术师 (术师), an owned-6★ pick of
 // the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and the module (PRI-X) at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -308,7 +309,7 @@ export default {
         // 【麻痹付与】 when another operator on her range starts a skill
         battle.on('skillStart', (ctx) => {
           const u = ctx.unit;
-          if (u === unit || !u || u.kind !== 'op' || !s3On(unit) || !unit.rangeKeySet?.has(u.tileR * COLS + u.tileC)) return;
+          if (u === unit || !u || !nativeOperator(u) || !s3On(unit) || !unit.rangeKeySet?.has(u.tileR * COLS + u.tileC)) return;
           grant(battle, unit);
         }, { owner: unit });
       },

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_4_01-rmixer.js — 信仰搅拌机 (char_4194_rmixer) kit, tier 4.
 // Conventions of the tier-4 kits: ../shared/tier4.js; kit contract and rules: ../README.md.
 
@@ -40,7 +41,7 @@ export default withDefaults({
             onHit({ battle, unit }) {
               const n = num(bb.charge, 1);
               const cand = battle.alliesInRadius(unit.x, unit.y, 1.5, unit.ownerId)
-                .filter((a) => a !== unit && a.kind === 'op' && nationOf(a) === 'laterano' && a.skill && a.skill.active && a.skill.kind === 'ammo')
+                .filter((a) => a !== unit && nativeOperator(a) && nationOf(a) === 'laterano' && a.skill && a.skill.active && a.skill.kind === 'ammo')
                 .sort((a, b) => b.deploySeq - a.deploySeq || a.id - b.id);
               if (!cand[0] || !(n > 0)) return;
               cand[0].skill.addAmmo(n);
@@ -64,7 +65,7 @@ export default withDefaults({
         onStart({ battle, unit }) {
           unit.mem.counterReady = -Infinity;
           for (const a of battle.allies(unit.ownerId)) {
-            if (a === unit || a.kind !== 'op' || nationOf(a) !== 'laterano') continue;
+            if (a === unit || !nativeOperator(a) || nationOf(a) !== 'laterano') continue;
             if (a.skill && a.skill.active && a.skill.kind === 'ammo') { a.skill.addAmmo(num(bb.ammo, 0)); battle.fx('reload', { x: a.x, y: a.y, id: a.id, n: num(bb.ammo, 0) }); }
           }
           battle.fx('sermon', { x: unit.x, y: unit.y, id: unit.id });

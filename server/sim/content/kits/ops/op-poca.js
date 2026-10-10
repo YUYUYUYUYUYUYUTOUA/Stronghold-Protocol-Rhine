@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-poca.js — 早露 (char_197_poca) 自选 operator kit: 6★ 攻城手 (狙击), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -51,7 +52,7 @@ const DRIVE_KEY = 'talent:poca:studentSkills';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 const count = (v, d) => Math.max(1, Math.floor(num(v, d)));
-const isStudent = (a) => !!a && a.kind === 'op' && STUDENTS.has(a.def?.charId);
+const isStudent = (a) => !!a && nativeOperator(a) && STUDENTS.has(a.def?.charId);
 /** A running skill of `a` (a passive is no 技能期间). */
 const inSkill = (a) => !!(a.skill && a.skill.active && a.skill.kind !== 'passive');
 

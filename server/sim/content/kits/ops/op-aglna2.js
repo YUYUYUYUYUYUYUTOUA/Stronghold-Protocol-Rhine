@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-aglna2.js — 予愿安洁莉娜 (char_1015_aglna2) 自选 operator kit: 6★ 巡空者 (特种), an
 // owned-6★ pick of the tier-5 and tier-6 自选 slots (no module); every skill, both talents, the trait at every form, and
 // the kit of her S3 marker “一会儿见！” (token_10071_aglna2_agairp). Kit contract and the 自选 rules: ../README.md ("How
@@ -284,7 +285,7 @@ export default {
           if (!(atk > 0) && !(regen > 0)) return;
           installAura(battle, unit, {
             key: 'talent:aglna2:dance', value: atk, interval: DANCE_IV,
-            select: (a) => a.kind === 'op' && !!a.s.flags.liftoff,
+            select: (a) => nativeOperator(a) && !!a.s.flags.liftoff,
             mods: (a) => (regen > 0 && a.blocking.length > 0 ? { atkPct: atk, hpRegenRatio: regen } : { atkPct: atk }),
           });
         } },

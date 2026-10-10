@@ -685,7 +685,7 @@ export function TokenDetail({ token, piece, ownerId = null, snapHp = null, live 
       </div>
     </div>
     ${soul ? html`<div class="drange"><span class="dstat__k">${t('攻击范围')}</span><${RangeGrid} grid=${live?.range} /></div>
-      <${Section} title=${t('众魂归来')}><p class="dtext">${t('继承本体的普通攻击与攻击范围，默认不继承主动技能与触发效果；不占人口，不再产生死亡层数。')}</p><p class="dtext">${t('亡魂仅接受亡魂之间的治疗及锡人二技能治疗；医疗亡魂不治疗本体。战争巨炮不会伤害亡魂。持续至被击败或本体重新部署，无时间限制。')}</p><//>` : null}
+      <${Section} title=${t('众魂归来')}><p class="dtext">${t('继承本体的普通攻击、所选原生技能与全部原生天赋，不继承装备触发及仅活体产层特质；不占人口，不再产生死亡层数。')}</p><p class="dtext">${t('亡魂仅接受亡魂之间的治疗及锡人二技能治疗；医疗亡魂不治疗本体。战争巨炮不会伤害亡魂。持续至被击败或本体重新部署，无时间限制。')}</p><//>` : null}
     <div class=${cx('dstats', live && 'is-live')} data-live=${live ? live.src || 'prep' : undefined}>
       <${LiveTag} live=${live} />
       <${Stat} k=${t('生命上限')} ...${st.maxHp} /><${Stat} k=${baseResearchAttack ? t('基础攻击') : t('攻击')} ...${st.atk} />

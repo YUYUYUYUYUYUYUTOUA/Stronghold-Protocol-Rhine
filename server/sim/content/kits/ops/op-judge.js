@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-judge.js — 斥罪 (char_4065_judge) 自选 operator kit: 6★ 不屈者 (重装), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -183,7 +184,7 @@ export default {
         // UNY-Y: 周围8格没有友方干员时攻击力和防御力+8% (operators only, her own tile aside)
         const ma = num(tb.atk), md = num(tb.def);
         if (ma || md) {
-          const alone = () => !battle.allyUnits.some((a) => a !== unit && a.kind === 'op' && a.alive && a.deployed && !a.hidden
+          const alone = () => !battle.allyUnits.some((a) => a !== unit && nativeOperator(a) && a.alive && a.deployed && !a.hidden
             && Math.max(Math.abs(a.tileR - unit.tileR), Math.abs(a.tileC - unit.tileC)) === 1);
           toggleBuff(battle, unit, 'trait:judge:alone', alone, { atkPct: ma, defPct: md });
         }

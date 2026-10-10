@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-aphris.js — 谬因 (char_4229_aphris) 自选 operator kit: 6★ 轰击术师 (术师), an owned-6★ pick
 // of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait, her module and her summon “中继器” at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -125,7 +126,7 @@ function aphrisPath(battle, unit, beam = false) {
       reach += RELAY_REACH;
       [dr, dc] = dirVec(o.dir);
       relays.push(tiles.length - 1);
-    } else if (beam && o && o !== unit && o.kind === 'op' && o.side === 'ally') [dr, dc] = dirVec(o.dir);
+    } else if (beam && o && o !== unit && nativeOperator(o) && o.side === 'ally') [dr, dc] = dirVec(o.dir);
   }
   return { tiles, index, relays };
 }
@@ -266,7 +267,7 @@ export default {
           battle.every(AURA_IV, () => {
             if (!up(unit) || !unit.rangeKeySet) return;
             for (const a of battle.alliesFor(unit)) {
-              if (a.kind !== 'op' || !unit.rangeKeySet.has(a.tileR * COLS + a.tileC)) continue;
+              if (!nativeOperator(a) || !unit.rangeKeySet.has(a.tileR * COLS + a.tileC)) continue;
               const cur = a.findBuff(SAMPLING_KEY);
               if (cur && cur.source !== unit && (cur.data?.v ?? 0) > v && cur.timeLeft > 0.05) continue;
               battle.addBuff(a, { key: SAMPLING_KEY, duration: AURA_DUR, mods: { resIgnoreFlat: v }, source: unit, data: { v }, tags: ['aura'] });

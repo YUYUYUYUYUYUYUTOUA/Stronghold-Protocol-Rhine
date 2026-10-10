@@ -208,6 +208,8 @@ export class BattlePlayers {
     if (!kit) {
       try { kit = setupUnitKit(this, u, this.contentMode); } catch (e) { this._internalError('setupUnitKit', e); kit = null; }
     }
+    // Soul healing remains separate from living bodies, including native juggernauts.
+    if (u.kazdelSoul) kit = { ...kit, trait: { ...kit?.trait, noHeal: false } };
     u.kit = kit || {};
     u.profile = resolveProfile(u.def, u.kit.trait || null);
     if (u.def.untargetable) this.addBuff(u, { key: 'trait:untargetable', flags: { untargetable: true }, persist: true, allowDead: true });

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_3_01-angel.js — 能天使 (char_103_angel) kit, tier 3.
 // Conventions of the tier-3 kits: ../shared/tier3.js; kit contract and rules: ../README.md.
 
@@ -32,7 +33,7 @@ export default {
             // after the whole board is deployed (the initial deployment goes one unit after another)
             battle.after(0, () => {
               if (!alive(unit)) return;
-              const cands = battle.allies(unit.ownerId).filter((a) => a !== unit && a.kind === 'op' && !a.findBuff('talent:angel_bless_ally'));
+              const cands = battle.allies(unit.ownerId).filter((a) => a !== unit && nativeOperator(a) && !a.findBuff('talent:angel_bless_ally'));
               const pick = battle.rng.pick(cands);
               if (!pick) return;
               battle.addBuff(pick, { key: 'talent:angel_bless_ally', mods: { ...bless }, persist: true, source: unit, visible: true });

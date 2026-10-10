@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-nian.js — 年 (char_2014_nian) 自选 operator kit: 6★ 铁卫 (重装), an owned-6★ pick of the
 // tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -57,7 +58,7 @@ const FORT = 'trait:nian:fortify';
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【重装】 operator (summons are never 重装 operators). */
-const isTank = (a) => !!a && a.kind === 'op' && a.def?.profession === 'TANK';
+const isTank = (a) => !!a && nativeOperator(a) && a.def?.profession === 'TANK';
 /** The mods of `o` without its zero entries. */
 const nz = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => Number.isFinite(v) && v !== 0));
 
@@ -73,7 +74,7 @@ export default {
     const ironGuard = (battle, unit) => {
       const keys = new Set(absoluteRangeKeys(guardGrid, unit.tileR, unit.tileC, unit.dir, 0));
       for (const a of battle.alliesFor(unit)) {
-        if (a === unit || a.kind !== 'op' || a.hidden || !keys.has(a.tileR * COLS + a.tileC)) continue;
+        if (a === unit || !nativeOperator(a) || a.hidden || !keys.has(a.tileR * COLS + a.tileC)) continue;
         const cur = a.findBuff(GUARD);
         if (!(cur && cur.source !== unit && (cur.data?.v ?? 0) > allyDef && cur.timeLeft > 0.05)) {
           battle.addBuff(a, { key: GUARD, duration: AURA_DUR, mods: nz({ defPct: allyDef, blockCnt: allyBlock }), source: unit, data: { v: allyDef }, tags: ['skill', 'aura'] });

@@ -1,4 +1,4 @@
-// Kazdel presets use native operator kits; souls intentionally install none of these active kits.
+// Kazdel presets use native operator kits; souls resolve fresh instances of these native kits.
 import ascalon from './ops/op-ascln.js';
 import logos from './ops/op-logos.js';
 import wisdel, { SHADOW, shadowTokenKit } from './ops/op-wisdel.js';

@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-phatom.js — 傀影 (char_250_phatom) 自选 operator kit: 6★ 处决者 (特种), an owned-6★ pick of
 // the tier-5 and tier-6 自选 slots; every skill, both talents, the trait, his modules (EXE-X 克里斯汀小姐的毛毡, EXE-Y “如影随形”,
 // ISW-A 傀影特限证章) at every form, and the kit of his summon 镜中虚影 (token_10007_phatom_twin). Kit contract and the 自选
@@ -94,7 +95,7 @@ export function noOperatorBeside(battle, unit) {
     const r = unit.tileR + dr, c = unit.tileC + dc;
     if (!battle.grid.inBounds(r, c)) continue;
     const o = battle.unitAt(r, c);
-    if (o && o !== unit && o.side === 'ally' && o.kind === 'op') return false;
+    if (o && o !== unit && o.side === 'ally' && nativeOperator(o)) return false;
   }
   return true;
 }

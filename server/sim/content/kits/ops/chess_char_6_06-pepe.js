@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/chess_char_6_06-pepe.js — 佩佩 (char_4058_pepe) kit, tier 6.
 // Conventions of the tier-6 kits: ../shared/tier6.js; kit contract and rules: ../README.md.
 
@@ -97,7 +98,7 @@ function pepe(bb, chess, def) {
       { install(battle, unit) { // 弥漫莲香: every 近卫 op ATK +16 %
         const atk = num(t1.atk);
         if (atk) aura(battle, unit, 0.5, () => {
-          for (const a of battle.allyUnits) if (live(a) && a.kind === 'op' && a.def?.profession === 'WARRIOR') battle.addBuff(a, { key: 'pepe:lotus', mods: { atkPct: atk }, duration: 0.75, refresh: 'replace' });
+          for (const a of battle.allyUnits) if (live(a) && nativeOperator(a) && a.def?.profession === 'WARRIOR') battle.addBuff(a, { key: 'pepe:lotus', mods: { atkPct: atk }, duration: 0.75, refresh: 'replace' });
         });
       } },
       { install(battle, unit) { // elite module: ≥ cnt enemies in the splash area ⇒ this attack ×1.15

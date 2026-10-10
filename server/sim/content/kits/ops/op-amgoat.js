@@ -1,3 +1,4 @@
+import { nativeOperator } from '../shared/nativeIdentity.js';
 // server/sim/content/kits/ops/op-amgoat.js — 艾雅法拉 (char_180_amgoat) 自选 operator kit: 6★ 中坚术师 (术师), an owned-6★
 // pick of the tier-5 and tier-6 自选 slots; every skill, both talents, the trait and both modules at every form.
 // Kit contract and the 自选 rules: ../README.md ("How to add an operator (自选)").
@@ -61,7 +62,7 @@ const AURA_EVERY = 0.5;
 
 const bbOf = (chess, id) => skillRec(chess, id)?.bb ?? {};
 /** A 【术师】 operator (summons are never operators). */
-const isCaster = (a) => !!a && a.kind === 'op' && a.def?.profession === 'CASTER';
+const isCaster = (a) => !!a && nativeOperator(a) && a.def?.profession === 'CASTER';
 /** An elite or leader enemy (精英或领袖敌人). */
 const isEliteEnemy = (e) => !!e && e.side === 'enemy' && (e.isBoss || e.def?.rank === 'ELITE' || e.def?.rank === 'BOSS');
 const tagged = (d, tag) => !!(d && d.tags && d.tags.includes(tag));

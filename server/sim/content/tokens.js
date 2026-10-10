@@ -1742,60 +1742,65 @@ export function install(battle) {
   // summon kills (夕 化境, …): owner kits listen to `summonKill`
   battle.on('kill', (ctx) => {
     const k = ctx.killer;
-    if (k && k.kind === 'token' && k.ownerUnit && ctx.victim && ctx.victim.side === 'enemy') battle.emit('summonKill', { token: k, owner: k.ownerUnit, victim: ctx.victim });
+    if (k && k.kind === 'token' && !k.kazdelSoul && k.ownerUnit && ctx.victim && ctx.victim.side === 'enemy') battle.emit('summonKill', { token: k, owner: k.ownerUnit, victim: ctx.victim });
   }, { priority: -100 });
 
-  for (const owner of battle.allyUnits) {
-    if (owner.kind !== 'op') continue;
-    const toks = tokenIdsOf(owner);
-    if (!toks.length) continue;
-    const base = baseKey(owner.def?.baseId ?? owner.defId);
+  for (const owner of battle.allyUnits) installOwnerSummons(battle, owner);
+}
 
-    // tactician 援军 = its talent token: board piece first; replaces the engine's generic 援军 when that one is in use
-    const tac = toks.find((t) => TACTICIAN_TOKENS.has(t));
-    if (tac && owner.profile?.sub === 'tactician') {
-      const engineDefault = !!(owner.profile.install && owner.profile.install.name === 'installTactician');
-      battle.on('deploy', (ctx) => {
+/** Install native summon hooks once for an initial operator or a newly created soul. */
+export function installOwnerSummons(battle, owner) {
+  if (owner.kind !== 'op' && !owner.kazdelSoul) return;
+  if (owner.mem.nativeSummonsInstalled) return;
+  owner.mem.nativeSummonsInstalled = true;
+  const toks = tokenIdsOf(owner);
+  if (!toks.length) return;
+  const base = baseKey(owner.def?.baseId ?? owner.defId);
+
+  // tactician 援军 = its talent token: board piece first; replaces the engine's generic 援军 when that one is in use
+  const tac = toks.find((t) => TACTICIAN_TOKENS.has(t));
+  if (tac && owner.profile?.sub === 'tactician') {
+    const engineDefault = !!(owner.profile.install && owner.profile.install.name === 'installTactician');
+    battle.on('deploy', (ctx) => {
+      if (ctx.unit !== owner) return;
+      if (engineDefault) { ensureReinforcement(battle, owner, tac); return; }
+      // a hand-authored kit summons its own 援军 unless one stands: bring the player's board piece in first
+      const piece = battle.allyUnits.find((t) => t.kind === 'token' && t.defId === tac && t.ownerUnit === owner && t.uid != null && !t.mem.isClone);
+      if (piece && ctx.initial && !piece.alive && !piece.removed && piece.deploySeq === 0) battle.redeploy(piece, { free: true });
+      if (piece && piece.alive) owner.trait.reinforcement = piece;
+    }, { owner, priority: 50 });
+  }
+
+  // generic-kit fallbacks (a hand-authored kit for the summoner replaces them); skill summons also run when only the
+  // selected skill falls back to the generic spec (a non-default skill the kit has no `skills` entry for)
+  const kitGeneric = !!owner.kit?.generic;
+  if (kitGeneric || owner.kit?.skillSource === 'generic') {
+    const skillSummons = toks.filter((t) => SKILL_SUMMONS[t] && tokenSources(battle, t, owner).includes('skill'));
+    if (skillSummons.length) {
+      battle.on('skillStart', (ctx) => {
         if (ctx.unit !== owner) return;
-        if (engineDefault) { ensureReinforcement(battle, owner, tac); return; }
-        // a hand-authored kit summons its own 援军 unless one stands: bring the player's board piece in first
-        const piece = battle.allyUnits.find((t) => t.kind === 'token' && t.defId === tac && t.ownerUnit === owner && t.uid != null && !t.mem.isClone);
-        if (piece && ctx.initial && !piece.alive && !piece.removed && piece.deploySeq === 0) battle.redeploy(piece, { free: true });
-        if (piece && piece.alive) owner.trait.reinforcement = piece;
-      }, { owner, priority: 50 });
-    }
-
-    // generic-kit fallbacks (a hand-authored kit for the summoner replaces them); skill summons also run when only the
-    // selected skill falls back to the generic spec (a non-default skill the kit has no `skills` entry for)
-    const kitGeneric = !!owner.kit?.generic;
-    if (kitGeneric || owner.kit?.skillSource === 'generic') {
-      const skillSummons = toks.filter((t) => SKILL_SUMMONS[t] && tokenSources(battle, t, owner).includes('skill'));
-      if (skillSummons.length) {
-        battle.on('skillStart', (ctx) => {
-          if (ctx.unit !== owner) return;
-          for (const t of skillSummons) {
-            // a hand piece (医疗探机 / 诅咒娃娃) deploys where the player placed it — nowhere when not placed
-            if (battle.data.rawToken?.(t)?.placeable === true) { releaseSkillSummon(battle, owner, t); continue; }
-            for (let i = 0; i < (SKILL_SUMMON_PER_CAST[t] ?? 1); i++) if (!summonToken(battle, owner, t, SKILL_SUMMONS[t])) break;
-          }
-        }, { owner });
-      }
-    }
-    if (!kitGeneric) continue;
-    if (toks.includes(TOKEN_IDS.duskDragon) && base === 'chess_char_5_12') {
-      const life = num(owner.def?.talents?.find((t) => t.tokenKey === TOKEN_IDS.duskDragon)?.bb?.['attack@tokenduration'], 0);
-      battle.on('deploy', (ctx) => { if (ctx.unit === owner) owner.mem.duskPending = true; }, { owner });
-      battle.on('attack', (ctx) => {
-        if (ctx.attacker !== owner || !owner.mem.duskPending) return;
-        const t = (ctx.targets || []).find((x) => x && x.side === 'enemy');
-        if (!t) return;
-        owner.mem.duskPending = false;
-        const tile = findSummonTile(battle, owner, 'near', { melee: true, at: { x: t.x, y: t.y } });
-        if (!tile) return;
-        const d = battle.spawnToken(owner, TOKEN_IDS.duskDragon, tile[0], tile[1], life > 0 ? { duration: life } : {});
-        if (d) battle.fx('duskDragon', { x: d.x, y: d.y, id: d.id });
+        for (const t of skillSummons) {
+          // a hand piece (医疗探机 / 诅咒娃娃) deploys where the player placed it — nowhere when not placed
+          if (battle.data.rawToken?.(t)?.placeable === true) { releaseSkillSummon(battle, owner, t); continue; }
+          for (let i = 0; i < (SKILL_SUMMON_PER_CAST[t] ?? 1); i++) if (!summonToken(battle, owner, t, SKILL_SUMMONS[t])) break;
+        }
       }, { owner });
     }
+  }
+  if (!kitGeneric) return;
+  if (toks.includes(TOKEN_IDS.duskDragon) && base === 'chess_char_5_12') {
+    const life = num(owner.def?.talents?.find((t) => t.tokenKey === TOKEN_IDS.duskDragon)?.bb?.['attack@tokenduration'], 0);
+    battle.on('deploy', (ctx) => { if (ctx.unit === owner) owner.mem.duskPending = true; }, { owner });
+    battle.on('attack', (ctx) => {
+      if (ctx.attacker !== owner || !owner.mem.duskPending) return;
+      const t = (ctx.targets || []).find((x) => x && x.side === 'enemy');
+      if (!t) return;
+      owner.mem.duskPending = false;
+      const tile = findSummonTile(battle, owner, 'near', { melee: true, at: { x: t.x, y: t.y } });
+      if (!tile) return;
+      const d = battle.spawnToken(owner, TOKEN_IDS.duskDragon, tile[0], tile[1], life > 0 ? { duration: life } : {});
+      if (d) battle.fx('duskDragon', { x: d.x, y: d.y, id: d.id });
+    }, { owner });
   }
 }
 
