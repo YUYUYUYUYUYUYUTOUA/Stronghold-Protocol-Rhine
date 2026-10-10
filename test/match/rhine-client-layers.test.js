@@ -42,19 +42,19 @@ function keepsFlatBound(s, label, data) {
 test('client research gains: normal and elite Mayer with a selected front device can exceed the flat allowance', () => {
   for (const chessId of [MAYER, ELITE]) {
     const s = spec(); s.players[0].units[0] = mayer(chessId);
-    assert.equal(ownGains(s, { [RHINE_BOND]: 200 }).ok, true, chessId);
+    assert.equal(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + 24 }).ok, true, chessId);
     const garrison = gd.garrison(gd.chess(chessId).garrisonIds[0]);
     assert.equal(garrison.effectKey, 'RHINE_MAYER_RESEARCH');
     assert.equal(garrison.bb.device_layers, chessId === ELITE ? 2 : 1, 'shipped data uses the device-work contract');
   }
   const defaults = spec(); delete defaults.flags;
-  assert.equal(ownGains(defaults, { [RHINE_BOND]: 200 }).ok, true, 'normal battles enable gains by default');
+  assert.equal(ownGains(defaults, { [RHINE_BOND]: FLAT_BOUND + 24 }).ok, true, 'normal battles enable gains by default');
 });
 
 test('client Mayer allowance follows all four deployment directions', () => {
   for (const [dir, row, col] of [['RIGHT', 10, 5], ['UP', 11, 4], ['LEFT', 10, 3], ['DOWN', 9, 4]]) {
     const s = spec(); s.players[0].units = [mayer(MAYER, { dir }), device({ row, col })];
-    assert.equal(ownGains(s, { [RHINE_BOND]: 200 }).ok, true, dir);
+    assert.equal(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + 24 }).ok, true, dir);
   }
 });
 
@@ -95,7 +95,7 @@ test('research selection capacity and per-type uniqueness also constrain client 
   p.research.devices.unshift(selection({ key: 'energy', tokenId: ENERGY, uid: 3 }));
   keepsFlatBound(full, 'the front medical device is outside the one-device capacity');
   p.bonds[RHINE_BOND].count = 6;
-  assert.equal(ownGains(full, { [RHINE_BOND]: 200 }).ok, true, 'the second valid selection fits at Rhine six');
+  assert.equal(ownGains(full, { [RHINE_BOND]: FLAT_BOUND + 24 }).ok, true, 'the second valid selection fits at Rhine six');
 
   const duplicate = spec(), pp = duplicate.players[0];
   pp.bonds[RHINE_BOND].count = 6;
@@ -106,13 +106,13 @@ test('research selection capacity and per-type uniqueness also constrain client 
 
 test('Mayer authorization belongs to its own player and never broadens another bond', () => {
   const s = spec();
-  assert.equal(ownGains(s, { [RHINE_BOND]: 200, arcaneShip: FLAT_BOUND }).ok, true);
+  assert.equal(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + 24, arcaneShip: FLAT_BOUND }).ok, true);
   assert.deepEqual(ownGains(s, { arcaneShip: FLAT_BOUND + 1 }), { ok: false, reason: 'layer bound' });
 
   const other = structuredClone(s.players[0]); other.playerId = 'p_1';
   s.players.push(other); s.players[0].units = [mayer()]; other.units = [device()];
-  assert.deepEqual(check(s, { p_0: { [RHINE_BOND]: 200 } }), { ok: false, reason: 'layer bound' }, 'a teammate device is unavailable');
-  assert.deepEqual(check(s, { p_1: { [RHINE_BOND]: 200 } }), { ok: false, reason: 'layer bound' }, 'a teammate Mayer is unavailable');
+  assert.deepEqual(check(s, { p_0: { [RHINE_BOND]: FLAT_BOUND + 24 } }), { ok: false, reason: 'layer bound' }, 'a teammate device is unavailable');
+  assert.deepEqual(check(s, { p_1: { [RHINE_BOND]: FLAT_BOUND + 24 } }), { ok: false, reason: 'layer bound' }, 'a teammate Mayer is unavailable');
 });
 
 test('device-work allowance requires an actual Mayer and a positive IN_BATTLE trait contract', () => {
@@ -139,13 +139,22 @@ test('disabled gains and non-normal fields never receive Mayer extra allowance',
   }
 });
 
-test('multiple Mayers facing one device remain bounded by the room under 999', () => {
+test('multiple Mayers facing one device remain bounded by one shared roster budget and room under 999', () => {
   const s = spec(), p = s.players[0];
   p.units.push(mayer(ELITE, { uid: 3, col: 6, dir: 'LEFT' }));
   p.bonds[RHINE_BOND].layers = 17;
-  assert.equal(ownGains(s, { [RHINE_BOND]: 982 }).ok, true);
-  assert.deepEqual(ownGains(s, { [RHINE_BOND]: 983 }), { ok: false, reason: 'layer bound' });
+  assert.equal(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + 48 }).ok, true);
+  assert.deepEqual(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + 49 }), { ok: false, reason: 'layer bound' });
   p.bonds[RHINE_BOND].layers = 999;
   assert.equal(ownGains(s, { [RHINE_BOND]: 0 }).ok, true);
   assert.deepEqual(ownGains(s, { [RHINE_BOND]: 1 }), { ok: false, reason: 'layer bound' });
+});
+
+test('client research rejects an over-budget report for either quality, including many copies', () => {
+  for (const [chessId, cap] of [[MAYER,24],[ELITE,48]]) {
+    const s = spec(); s.players[0].units[0] = mayer(chessId);
+    s.players[0].units.push(mayer(chessId, { uid: 3, col: 6, dir: 'LEFT' }));
+    assert.equal(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + cap }).ok, true);
+    assert.deepEqual(ownGains(s, { [RHINE_BOND]: FLAT_BOUND + cap + 1 }), { ok: false, reason: 'layer bound' });
+  }
 });

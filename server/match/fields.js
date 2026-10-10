@@ -621,8 +621,8 @@ function researchDeviceTilesOf(p, gd) {
  * trait's too, 华法琳's 7 / 14, GitHub #175). A trait the data gives no cap (初雪 / 银灰's freeze trait, 菲莱 / 百炼嘉维尔's per-skill
  * 萨尔贡, 斯卡蒂's per-kill …) — or a 魔王, whose +extra on every trait gain counts toward no cap — leaves its bonds bounded
  * only by the room under 999 (Infinity here): such boards legitimately gain hundreds of layers a battle. Mayer's
- * device work likewise has no per-battle cap, but only an enabled normal field with a selected device in front can
- * authorize extra Rhine layers; it never expands the allowance of another bond.
+ * device work has one shared roster cap (24/48), and only an enabled normal field with a selected device in front
+ * can authorize it; it never expands the allowance of another bond.
  * @returns {Map<string, number>} bondId → extra allowance (Infinity: uncapped)
  */
 function layerAllowanceOf(p, gd, spec) {
@@ -632,7 +632,7 @@ function layerAllowanceOf(p, gd, spec) {
   const researchTiles = spec?.kind === 'normal' && spec.flags?.layerGainsEnabled !== false ? researchDeviceTilesOf(p, gd) : new Set();
   const lineup = new Set(Object.keys(p.bonds && typeof p.bonds === 'object' ? p.bonds : {}));
   for (const u of units) for (const b of gd.chess(u.chessId)?.bonds || []) lineup.add(b);
-  let extra = false;
+  let extra = false, mayerBudget = 0, mayerHasDevice = false;
   const credit = (g, times) => {
     const bb = g.bb || {};
     if (Number.isFinite(bb.extra_cnt)) { extra = true; return; }
@@ -657,9 +657,11 @@ function layerAllowanceOf(p, gd, spec) {
       }
       if (g.effectKey === 'RHINE_MAYER_RESEARCH') {
         if (gd.chess(u.chessId)?.charId === RHINE_CHARACTERS.mayer && Number.isFinite(g.bb?.device_layers) && g.bb.device_layers > 0
+          && Number.isFinite(g.bb?.max_layer) && g.bb.max_layer > 0
           && Number.isInteger(u.row) && Number.isInteger(u.col)) {
+          mayerBudget = Math.max(mayerBudget, g.bb.max_layer);
           const [row, col] = frontOf(u.row, u.col, u.dir);
-          if (researchTiles.has(`${row},${col}`)) out.set(RHINE_BOND, Infinity);
+          if (researchTiles.has(`${row},${col}`)) mayerHasDevice = true;
         }
         continue;
       }
@@ -668,6 +670,7 @@ function layerAllowanceOf(p, gd, spec) {
       if (given && given.eventType === 'IN_BATTLE') credit(given, units.length);
     }
   }
+  if (mayerHasDevice) out.set(RHINE_BOND, (out.get(RHINE_BOND) || 0) + mayerBudget);
   if (extra) for (const b of out.keys()) out.set(b, Infinity);
   return out;
 }

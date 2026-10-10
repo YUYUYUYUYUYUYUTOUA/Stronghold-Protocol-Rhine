@@ -254,23 +254,6 @@ const INSTALLERS = {
     });
   },
 
-  RHINE_DOROTHY_TRAP_RESEARCH(battle, list) {
-    const m = byUnit(list);
-    battle.on('trapTriggered', ({ token, owner, deploySeq }) => {
-      if (!token || token.ownerUnit !== owner || token.mem.dorothyTriggered !== deploySeq) return;
-      const arr = m.get(owner);
-      if (!arr) return;
-      for (const it of arr) {
-        const seen = it.traps ??= new WeakMap();
-        if (seen.get(token) === deploySeq) continue;
-        seen.set(token, deploySeq);
-        S.gainLayers(battle, { playerId: owner.ownerId, bonds: [it.bbStr.bond_id],
-          n: S.num(it.bb.layer), requireActive: true, source: owner, reason: 'garrison',
-          cap: S.num(it.bb.max_layer), capKey: it.capKey });
-      }
-    });
-  },
-
   act1autochess_gar_event_useskill(battle, list) {
     const m = byUnit(list);
     battle.on('skillStart', ({ unit }) => {

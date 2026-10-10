@@ -87,14 +87,14 @@ test('Dorothy: automatic deployment makes two free traps; hostile ground cells a
   cast(u); assert.equal(traps(h).length, 2); valid(h);
 });
 
-for (const skillIndex of [0, 1, 2]) test(`Dorothy S${skillIndex + 1}: native damage/status, Dreamer timing, and one research gain for multi-hit trap`, () => {
+for (const skillIndex of [0, 1, 2]) test(`Dorothy S${skillIndex + 1}: native damage/status, Dreamer timing, and no research from multi-hit trap`, () => {
   const h = run('dorothy', { bonds: { rhineShip: { ...active } },
     units: [{ chessId: cid('dorothy'), uid: 'owner', row: 10, col: 4, skillIndex }] });
   const u = h.unit('owner'), t = traps(h)[0]; const e = h.spawn('e', { pos: [t.tileR, t.tileC] });
   const other = h.spawn('e', { pos: [t.tileR, t.tileC + 1] }); const before = u.s.atk;
   assert.equal(triggerResonator(h.b, t, e), true);
   assert.equal(triggerResonator(h.b, t, e), false);
-  assert.equal(gain(h).rhineShip, 2); assert.equal(u.mem.dorothyDream, 1);
+  assert.equal(gain(h).rhineShip ?? 0, 0); assert.equal(u.mem.dorothyDream, 1);
   const d = hits(h); assert.equal(d.length, skillIndex === 0 ? 1 : 2);
   close(d[0].dmg.amount, before * (skillIndex === 2 ? 1 : 1.02) * [3.3, 2.3, 2.5][skillIndex]);
   assert.equal(d[0].type, skillIndex === 2 ? 'arts' : 'phys');
@@ -114,7 +114,7 @@ test('Dorothy traps keep physical contact with stealthed ground enemies across t
     assert.equal(h.b.foesInRadius(target.x, target.y, 0.2).includes(target), false, 'ordinary targeting cannot select the unblocked stealth enemy');
     h.run(0.1);
     assert.ok(!t.alive && target.hp < target.s.maxHp, 'physical trap contact still triggers and damages it');
-    assert.equal(gain(h).rhineShip, 2, 'one physical activation still awards only one layer gain');
+    assert.equal(gain(h).rhineShip ?? 0, 0);
     valid(h);
   }
 });
@@ -133,11 +133,11 @@ test('Dorothy S3: delay chains count each actually detonated physical trap once;
     ...[[10, 5], [10, 6], [10, 7], [11, 6]].map(([row, col], i) => ({ kind: 'token', tokenId: RESONATOR, ownerUid: 'owner', uid: `t${i}`, row, col }))] });
   const first = h.unit('t0'), queued = h.unit('t1'), removed = h.unit('t2');
   const e = h.spawn('e', { pos: [10, 5] }); triggerResonator(h.b, first, e);
-  assert.equal(gain(h).rhineShip, 2); assert.equal(queued.mem.dorothyQueued, queued.deploySeq);
+  assert.equal(gain(h).rhineShip ?? 0, 0); assert.equal(queued.mem.dorothyQueued, queued.deploySeq);
   h.b.retreat(removed, { reason: 'retreat', permanent: true });
-  h.run(1.9); assert.equal(gain(h).rhineShip, 2);
-  h.run(0.2); assert.equal(gain(h).rhineShip, 4); assert.ok(!queued.alive);
-  h.run(2.1); assert.equal(gain(h).rhineShip, 6, 'final connected fourth trap detonates once; withdrawn trap does not');
+  h.run(1.9); assert.equal(gain(h).rhineShip ?? 0, 0);
+  h.run(0.2); assert.equal(gain(h).rhineShip ?? 0, 0); assert.ok(!queued.alive);
+  h.run(2.1); assert.equal(gain(h).rhineShip ?? 0, 0, 'chain explosions never produce research');
   assert.equal(h.hooksOf('trapTriggered').length, 3); valid(h);
 });
 
@@ -146,7 +146,7 @@ test('Dorothy: TRP-Y selects double damage on placement, persists in fieldMeta, 
   const t = traps(h)[0], u = h.unit('owner'); assert.equal(t.form, 'dorothyCritical');
   assert.equal(h.b.fieldMeta().units.find(x => x.id === t.id).form, 'dorothyCritical');
   const before = u.s.atk, e = h.spawn('e', { pos: [t.tileR, t.tileC] }); triggerResonator(h.b, t, e);
-  close(hits(h)[0].dmg.amount, before * 2.8 * 2); assert.equal(gain(h).rhineShip, 4); valid(h);
+  close(hits(h)[0].dmg.amount, before * 2.8 * 2); assert.equal(gain(h).rhineShip ?? 0, 0); valid(h);
   const plain = run('dorothy', { elite: true, units: [{ chessId: cid('dorothy', true), uid: 'owner', row: 10, col: 4, moduleId: 'none' }], setup(b) { b.rng.chance = p => p > 0; } });
   assert.ok(traps(plain).every(x => x.form === 'dorothyNormal')); valid(plain);
 });
@@ -165,7 +165,7 @@ test('Dorothy: withdrawal and owner departure give no research; every attached t
   h.b.retreat(u); assert.ok(!c.alive); assert.equal(c.removeReason, 'ownerGone'); assert.deepEqual(gain(h), {}); valid(h);
 });
 
-for (const elite of [false, true]) test(`Dorothy: actual trap consumptions reach exactly ${elite ? 48 : 24} research and full-potential Dreamer caps at twelve`, () => {
+for (const elite of [false, true]) test(`Dorothy: actual trap consumptions provide no research and full-potential Dreamer caps at twelve`, () => {
   const h = run('dorothy', { elite, bonds: { rhineShip: { ...active } },
     units: [{ chessId: cid('dorothy', elite), uid: 'owner', row: 10, col: 4, skillIndex: 0, moduleId: 'none' }] });
   const u = h.unit('owner'), e = h.spawn('e', { pos: [12, 9] });
@@ -173,13 +173,13 @@ for (const elite of [false, true]) test(`Dorothy: actual trap consumptions reach
     e.x = 9; e.y = 12;
     const t = h.b.spawnToken(u, RESONATOR, 12, 7); assert.ok(t?.alive);
     e.x = 7; e.y = 12; triggerResonator(h.b, t, e);
-    assert.equal(gain(h).rhineShip, Math.min(i + 1, 12) * (elite ? 4 : 2));
+    assert.equal(gain(h).rhineShip ?? 0, 0);
   }
   assert.equal(u.mem.dorothyDream, 12);
   close(u.findBuff('dorothy:dreamer').mods.atkMul, 1.24); valid(h);
 });
 
-test('Dorothy: same-name copies have separate trap ownership and research budgets', () => {
+test('Dorothy: same-name copies have separate trap ownership without research production', () => {
   const h = run('dorothy', { bonds: { rhineShip: { ...active } }, units: [
     { chessId: cid('dorothy'), uid: 'owner', row: 10, col: 3, skillIndex: 0 },
     { chessId: cid('dorothy'), uid: 'copy', row: 11, col: 3, skillIndex: 0 }] });
@@ -188,7 +188,7 @@ test('Dorothy: same-name copies have separate trap ownership and research budget
     e.x = 9; e.y = 12; const t = h.b.spawnToken(u, RESONATOR, 12, 7);
     e.x = 7; e.y = 12; triggerResonator(h.b, t, e);
   }
-  assert.equal(gain(h).rhineShip, 48); assert.equal(first.mem.dorothyDream, 12); assert.equal(second.mem.dorothyDream, 12); valid(h);
+  assert.equal(gain(h).rhineShip ?? 0, 0); assert.equal(first.mem.dorothyDream, 12); assert.equal(second.mem.dorothyDream, 12); valid(h);
 });
 
 test('Dorothy: runtime cap resists oversized injected token limits; direct spawns reject an occupied enemy tile', () => {
@@ -221,9 +221,9 @@ test('Dorothy S3: an old queued chain cannot detonate a new deployment on that c
   for (const t of traps(h)) if (t !== first && t !== queued) h.b.retreat(t, { reason: 'test', permanent: true });
   const e = h.spawn('e', { pos: [10, 5] }); triggerResonator(h.b, first, e);
   const old = queued.deploySeq; assert.equal(queued.mem.dorothyQueued, old);
-  triggerResonator(h.b, queued, null, { chain: true }); assert.equal(gain(h).rhineShip, 4);
+  triggerResonator(h.b, queued, null, { chain: true }); assert.equal(gain(h).rhineShip ?? 0, 0);
   h.b.redeploy(queued); assert.ok(queued.alive); assert.ok(queued.deploySeq > old);
-  h.run(2.2); assert.ok(queued.alive); assert.equal(gain(h).rhineShip, 4); valid(h);
+  h.run(2.2); assert.ok(queued.alive); assert.equal(gain(h).rhineShip ?? 0, 0); valid(h);
 });
 
 for (const kind of ['unite', 'boss', 'hidden']) test(`new Rhine battle traits do not grant layers in ${kind}`, () => {
@@ -231,5 +231,16 @@ for (const kind of ['unite', 'boss', 'hidden']) test(`new Rhine battle traits do
   const h = run('dorothy', { kind, rect: { r0: 9, r1: 12, c0: 2, c1: 10 }, bonds: { rhineShip: { ...active }, preciShip: { ...active } },
     units: [{ chessId: cid('dorothy'), uid: 'owner', row: 10, col: 4, abs: true }, { chessId: cid('astgenne'), uid: 'star', row: 11, col: 4, abs: true }] });
   cast(h.unit('star')); const t = traps(h)[0], e = h.spawn('e', { pos: [t.tileR, t.tileC] }); triggerResonator(h.b, t, e);
+  assert.deepEqual(gain(h), {}); valid(h);
+});
+
+for (const elite of [false, true]) test(`Dorothy research ATK is additive, live and stable (${elite})`, () => {
+  const h = run('dorothy', { elite, bonds: { rhineShip: { ...active, layers: 100 } } });
+  const u = h.unit('owner'), base = u.base.atk, perLayer = elite ? 2 : 1;
+  close(u.s.atk, base + 100 * perLayer);
+  h.run(5); close(u.s.atk, base + 100 * perLayer);
+  const ps = h.b.getPlayer('p1'); ps.bonds.rhineShip.layers = 350;
+  h.step(); close(u.s.atk, base + 350 * perLayer);
+  ps.bonds.rhineShip.active = false; h.step(); close(u.s.atk, base);
   assert.deepEqual(gain(h), {}); valid(h);
 });

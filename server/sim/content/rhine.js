@@ -129,6 +129,8 @@ export function install(battle) {
       const sharing = ps.bonds?.[RHINE_BOND]?.active && ps.bonds[RHINE_BOND].count >= B.sharingCount;
       for (const u of ps.units) {
         if (u.kind !== 'op') continue;
+        const dorothy = researchTrait(u, 'RHINE_DOROTHY_ATTACK');
+        if (dorothy) setPassive(battle, u, 'rhine:dorothy', { atkFlat: layers * (Number(dorothy.atk_per_layer) || 0) });
         const healing = researchTrait(u, 'RHINE_SARIA_HEALING');
         const inheritance = researchTrait(u, 'RHINE_IFRIT_INHERITANCE');
         if (healing) setPassive(battle, u, 'rhine:saria', { healingDealtMul: 1 + Math.floor(layers / Math.max(1, Number(healing.layer_step) || B.sariaLayerStep)) * (Number(healing.heal) || 0) });
@@ -148,6 +150,9 @@ export function install(battle) {
   battle.on('layerGain', ({ bondId }) => { if (bondId === RHINE_BOND) battle.after(0, refresh); });
   battle.on('tick', refresh, { priority: 100 });
 
+  // One roster-wide budget per player, shared across copies, devices and redeployments.
+  const mayerCaps = new Map(battle.players.map(ps => [ps.playerId, Math.max(0, ...ps.units
+    .filter(u => u.kind === 'op').map(u => Number(researchTrait(u, 'RHINE_MAYER_RESEARCH')?.max_layer) || 0))]));
   // One completed device action credits the strongest live Mayer facing that device, never each target/copy.
   const worked = (s, interval = 0) => {
     if (!enabled(s)) return;
@@ -162,7 +167,8 @@ export function install(battle) {
       const amount = Math.max(0, Number(research.device_layers) || 0);
       if (r === s.unit.tileR && c === s.unit.tileC && amount > n) { source = u; n = amount; }
     }
-    if (source) gainLayers(battle, { playerId: s.unit.ownerId, bonds: RHINE_BOND, n, source, reason: 'garrison' });
+    if (source) gainLayers(battle, { playerId: s.unit.ownerId, bonds: RHINE_BOND, n, source, reason: 'garrison',
+      cap: mayerCaps.get(s.unit.ownerId) ?? 0, capKey: `rhine:mayer:${s.unit.ownerId}` });
   };
 
   const medicalRadius = (s) => B.radius + (s.stage >= 2 ? 1 : 0);
@@ -309,7 +315,7 @@ export function install(battle) {
           while (s.laserTrue >= B.laserTrueInterval - 1e-9 && target.alive && !target.removed) {
             s.laserTrue = Math.max(0, s.laserTrue - B.laserTrueInterval);
             const maxHp = target.bossPool?.maxHp ?? target.s.maxHp;
-            battle.dealDamage(s.unit, target, { type: 'true', amount: maxHp * B.laserTrueHpRatio,
+            battle.dealDamage(s.unit, target, { type: 'true', amount: maxHp * (B.laserTrueHpRatio + layersOf(s.ps) * B.laserTrueHpRatioPerLayer),
               canDodge: false, tags: ['rhineLaser', 'rhineLaserTrue'] });
           }
         }

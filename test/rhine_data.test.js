@@ -52,7 +52,7 @@ test('Rhine data: six-member research sharing and the new three device levels ar
   const laser = files.tokens.token_rhine_laser;
   assert.match(laser.desc, /只有一级/);
   assert.match(laser.desc, /最大生命值最高/);
-  assert.match(laser.desc, /0\.5%/);
+  assert.match(laser.desc, /0\.05%.*0\.0005/);
   assert.match(laser.desc, /完整共享最大生命值/);
 });
 test('Rhine data: device production, single-device inheritance and four attack per layer match the approved rules', () => {
@@ -60,7 +60,7 @@ test('Rhine data: device production, single-device inheritance and four attack p
   assert.match(files.bonds.rhineShip.desc, /每层科研增加4点/);
   for (const [suffix, layers, scale] of [['a', 1, 1], ['b', 2, 1.5]]) {
     const mayer = files.garrisons[`garrison_rhine_mayer_${suffix}`];
-    assert.deepEqual(mayer.bb, { device_layers: layers });
+    assert.deepEqual(mayer.bb, { device_layers: layers, max_layer: layers * 24 });
     assert.match(mayer.desc, /身前一格.*有效工作/);
     assert.match(mayer.desc, /护盾净增加/);
     assert.match(mayer.desc, /累计3秒/);
@@ -266,12 +266,12 @@ test('Rhine data: Astgenne keeps the requested tier, dual bonds and first-cast t
 
 test('Rhine data: Dorothy has three skills, only TRP-Y and a consistent four/five trap limit in every loadout',async()=>{
   const ds=new DataSource(files,null),token='token_10025_doroth_recttp';
-  for(const [suffix,count,layer,maxLayer] of [['a',4,2,24],['b',5,4,48]]){
+  for(const [suffix,count,atkPerLayer] of [['a',4,1],['b',5,2]]){
     const id=`chess_rhine_dorothy_${suffix}`,c=files.chess[id],g=files.garrisons[c.garrisonIds[0]];
     assert.equal(c.tier,4);assert.deepEqual(c.bonds,['rhineShip']);assert.deepEqual(c.tokens,[token]);
     assert.equal(c.talents[0].bb.cnt,count);assert.equal(c.talents[0].bb['attack@max_cnt'],2);
     assert.ok(c.talents[0].desc.includes(`同时最多部署${count}个`));
-    assert.equal(g.effectKey,'RHINE_DOROTHY_TRAP_RESEARCH');assert.deepEqual(g.bb,{layer,max_layer:maxLayer});
+    assert.equal(g.effectKey,'RHINE_DOROTHY_ATTACK');assert.deepEqual(g.bb,{atk_per_layer:atkPerLayer});
     for(const skillIndex of [0,1,2])for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_doroth']){
       const owner=ds.getChess(id,{skillIndex,moduleId}),v=ds.getToken(token,id,{skillIndex,moduleId});
       assert.equal(owner.skill.id,`skchr_doroth_${skillIndex+1}`);assert.equal(owner.skill.trigger.rule,'SP_FULL');

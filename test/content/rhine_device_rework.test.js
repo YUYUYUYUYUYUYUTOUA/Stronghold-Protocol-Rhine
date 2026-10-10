@@ -214,7 +214,7 @@ test('Rhine laser ignores attack-speed/ATK buffs and penetration, ramps additive
   assert.equal(hits().filter((c) => c.type === 'true').length, 0);
   h.run(.9); assert.equal(hits().filter((c) => c.type === 'true').length, 0);
   h.run(.1); const trueHits = hits().filter((c) => c.type === 'true'); assert.equal(trueHits.length, 1);
-  close(trueHits[0].dmg.amount, target.s.maxHp * .005);
+  close(trueHits[0].dmg.amount, target.s.maxHp * .0005);
   close(hits().filter((c) => c.type === 'arts').at(-1).dmg.amount, 225);
   assert.ok(h.eventsOf('fx').some((e) => e[1] === 'rhineLaser' && e[4].active && e[4].progress === 20));
   valid(h);
@@ -240,10 +240,10 @@ test('each Rhine laser uses the entire shared max HP across several fields and m
     h.spawn('dummy', { pos: [2, 8], tag: 'boss' });
     h.run(20); assert.equal(h.hooksOf('damaged').filter((c) => c.type === 'true').length, 0);
     h.run(1); const trueHits = h.hooksOf('damaged').filter((c) => c.type === 'true');
-    assert.equal(trueHits.length, 1); close(trueHits[0].dmg.amount, 30000); valid(h);
+    assert.equal(trueHits.length, 1); close(trueHits[0].dmg.amount, 3000); valid(h);
   }
   const allTrue = fields.flatMap((h) => h.hooksOf('damaged').filter((c) => c.type === 'true'));
-  close(allTrue.reduce((sum, c) => sum + c.dmg.amount, 0), pool.maxHp * .005 * fields.length);
+  close(allTrue.reduce((sum, c) => sum + c.dmg.amount, 0), pool.maxHp * .0005 * fields.length);
 });
 
 test('laser percentage damage reads shared max HP through browser and takeover pools rather than a modified leader panel', () => {
@@ -253,6 +253,17 @@ test('laser percentage damage reads shared max HP through browser and takeover p
     h.b.addBuff(target,{key:'test:leaderHp',mods:{hpPct:1}});
     close(target.s.maxHp,12000000);h.run(21);
     const hits=h.hooksOf('damaged').filter(c=>c.type==='true');
-    assert.equal(hits.length,1);close(hits[0].dmg.amount,30000);valid(h);
+    assert.equal(hits.length,1);close(hits[0].dmg.amount,3000);valid(h);
   }
+});
+
+for (const [layers, ratio] of [[0,.0005],[300,.002],[350,.00225],[400,.0025]]) test(`Rhine mature laser: ${layers} live research layers scale continuously`, () => {
+  const h = arena([player('p1', [device('laser')])]);
+  h.b.getPlayer('p1').bonds.rhineShip.layers = layers;
+  const target = h.spawn('dummy', { pos: [10, 9] });
+  h.run(21);
+  const hits = () => h.hooksOf('damaged').filter(c => c.type === 'true');
+  assert.equal(hits().length, 1); close(hits()[0].dmg.amount, target.s.maxHp * ratio);
+  h.b.getPlayer('p1').bonds.rhineShip.layers = layers + 1;
+  h.run(1); close(hits().at(-1).dmg.amount, target.s.maxHp * (ratio + .000005)); valid(h);
 });
