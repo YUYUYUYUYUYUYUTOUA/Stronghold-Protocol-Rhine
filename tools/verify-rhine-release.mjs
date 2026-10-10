@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TestClient } from '../test/helpers/wsClient.js';
 import { APP_VERSION } from '../shared/constants.js';
+import { pngSize } from './assets/formats.mjs';
 
 // Pass one or more base URLs as CLI arguments to also verify an external deployment.
 // Example: node tools/verify-rhine-release.mjs http://127.0.0.1:3000 https://your-host.example
@@ -55,10 +56,10 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
   assert.deepEqual([...bond.members].sort(), expectedMembers, 'Kazdel covenant roster mismatch');
   const actualMembers = Object.values(fetched.chess).filter(c => !c.isGolden && c.bonds.includes('kazdelShip'));
   assert.deepEqual(actualMembers.map(c => c.chessId).sort(), expectedMembers, 'Kazdel character pool mismatch');
-  assert.equal(fetched.assets.bonds.kazdelShip, '/art/kazdel/bond.svg', 'Kazdel covenant icon mismatch');
+  assert.equal(fetched.assets.bonds.kazdelShip, '/art/kazdel/bond.png', 'Kazdel covenant icon mismatch');
 
   const urls = new Set([
-    '/art/kazdel/bond.svg', '/shared/kazdel.js', '/shared/openingBans.js',
+    '/art/kazdel/bond.png', '/shared/kazdel.js', '/shared/openingBans.js',
     '/sim/content/kazdel/ascalon.js', '/sim/content/kits/ops/op-ascln.js', '/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
     '/sim/content/kits/kazdel.js', '/sim/content/index.js', '/sim/kazdelOrigin.js',
     '/sim/damage.js', '/sim/units.js', '/sim/buffs.js', '/sim/snapshot.js', '/sim/ai.js', '/sim/projectiles.js',
@@ -114,7 +115,10 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
     const bytes = await get(url);
     assert.equal(hash(bytes), hash(fs.readFileSync(new URL(localArtifact(url), packageRoot))), `${url} served Kazdel artifact mismatch`);
     artifacts[url] = hash(bytes);
-    if (url === '/art/kazdel/bond.svg') assert.match(bytes.toString('utf8'), /<svg\b/, 'Kazdel icon must be an SVG');
+    if (url === '/art/kazdel/bond.png') {
+      // The supplied PNG retains gallery metadata after IEND; preserve those source bytes.
+      assert.ok(pngSize(bytes), 'Kazdel icon must be a PNG');
+    }
     if (url === '/sim/content/kits/ops/chess_char_1_16-tinman.js') {
       assert.match(bytes.toString('utf8'), /if\s*\(a\.kazdelSoul\)\s*b\.heal\(unit,\s*a,[^;]+tags:\s*\['kazdelSoulHeal'\]/,
         'Tinman S2 soul healing exception missing');

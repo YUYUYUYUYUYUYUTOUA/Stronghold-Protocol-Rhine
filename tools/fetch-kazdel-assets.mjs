@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Incremental Kazdel art generation preserves existing animation overrides and local-client summon models.
+// --manifest-only refreshes the bundled covenant icon mapping offline, preserving every downloaded-art entry.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -11,8 +12,20 @@ import { processModels } from './assets/spine.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, contentHash } from './assets/manifest.mjs';
 import { fetchExtensionVoices } from './assets/extension-voices.mjs';
 import { restartForEnvProxy } from './assets/env-proxy.mjs';
+async function writeManifest(path, manifest) {
+const { hash: _hash, ...body } = manifest;
+manifest.hash = contentHash(body);
+await writeFile(path, JSON.stringify(manifest) + '\n');
+}
 async function main() {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const path = join(root, 'data', 'assets.json');
+if (process.argv.includes('--manifest-only')) {
+  const manifest = JSON.parse(await readFile(path, 'utf8'));
+  await writeManifest(path, addKazdelArt(manifest));
+  console.log('Kazdel covenant art mapping regenerated without downloads.');
+  return;
+}
 const assetRoot = join(root, 'public', 'assets'), cache = join(root, '.cache');
 const inputs = kazdelArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
 const plan = buildPlan({ ...inputs, audio: indexAudio({}), modelsData: {}, enemies05: {}, maps05: {} });
@@ -26,7 +39,6 @@ const resolved = resolveTemplate(template, { root: assetRoot, spine: spine.entri
 if (resolved.misses.length || spine.problems.length) {
   throw new Error(JSON.stringify({ misses: resolved.misses, problems: spine.problems }));
 }
-const path = join(root, 'data', 'assets.json');
 const manifest = JSON.parse(await readFile(path, 'utf8'));
 for (const [id, entry] of Object.entries(resolved.value.chars)) manifest.chars[id] = { ...manifest.chars[id], ...entry };
 for (const key of ['skills', 'skillsById']) manifest[key] = { ...manifest[key], ...resolved.value[key] };
@@ -35,9 +47,7 @@ addKazdelArt(manifest);
 await fetchExtensionVoices(root, inputs, manifest);
 manifest.stats.chars = Object.keys(manifest.chars).length;
 manifest.stats.skills = Object.keys(manifest.skills).length;
-const { hash: _hash, ...body } = manifest;
-manifest.hash = contentHash(body);
-await writeFile(path, JSON.stringify(manifest) + '\n');
+await writeManifest(path, manifest);
 console.log('Kazdel art ready: all eleven operator portraits, avatars, skill icons, models and faction icon.');
 }
-if (!restartForEnvProxy()) await main();
+if (process.argv.includes('--manifest-only') || !restartForEnvProxy()) await main();

@@ -65,8 +65,8 @@ export class FxArrivals {
     this.particle('smoke', p.x, p.y, { add: false, tint: 0x8a7a60, life: 0.7, s0: s / 128 * 0.6, s1: s / 128 * 1.5, a0: 0.45, a1: 0 });
   }
 
-  /** Screen-space pop (bond layer gain / bounty coins). `icon` = texture or null. */
-  pop(icon, label, tint, i = 0) {
+  /** Screen-space pop (bond layer gain / bounty coins). Invert dark icon RGB for contrast; preserve its alpha/texture. */
+  pop(icon, label, tint, i = 0, invertIcon = false) {
     const P = this.P;
     const size = this.ctx.screenSize();
     const top = this.ctx.fieldTop ? this.ctx.fieldTop() : size.height * 0.2;
@@ -79,6 +79,15 @@ export class FxArrivals {
       const sp = new P.Sprite(icon);
       sp.anchor.set(0.5);
       sp.tint = tint;
+      if (invertIcon) {
+        if (!this.popInverse) {
+          this.popInverse = new P.ColorMatrixFilter();
+          // Pixi's shader unpremultiplies RGB before the matrix, then reapplies alpha. Use an RGB offset of 1;
+          // negative() instead adds input alpha, which darkens anti-aliased edges and the pop's fade.
+          this.popInverse.matrix = [-1, 0, 0, 0, 1, 0, -1, 0, 0, 1, 0, 0, -1, 0, 1, 0, 0, 0, 1, 0];
+        }
+        sp.filters = [this.popInverse];
+      }
       // 46 px along its longer side. A bond icon (app.js 'layer': PIXI.Texture.from(url)) is a 1×1 placeholder until
       // its image has loaded: sized from that it was drawn 46× too big, ~5000 px over the whole screen for the pop's
       // 1.4 s (user playtest #4 item 13) — so it is sized once its texture is valid, and hidden until then.

@@ -148,6 +148,7 @@ export class FxSystem {
   }
 
   destroy() {
+    this.popInverse?.destroy();
     this.clear();
     this.addPc.destroy({ children: true });
     this.normPc.destroy({ children: true });

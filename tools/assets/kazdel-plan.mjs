@@ -29,7 +29,7 @@ export function kazdelArtInput(input) {
 
 export function addKazdelArt(manifest) {
   manifest.bonds ||= {};
-  manifest.bonds[KAZDEL_BOND] = '/art/kazdel/bond.svg';
+  manifest.bonds[KAZDEL_BOND] = '/art/kazdel/bond.png';
   if (manifest.stats) manifest.stats.bonds = Object.keys(manifest.bonds).length;
   return manifest;
 }

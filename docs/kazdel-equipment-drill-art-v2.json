@@ -1,0 +1,367 @@
+{
+  "version": "v2",
+  "status": "User approved on 2026-10-10 for integration; rejected v1 retained separately",
+  "date": "2026-10-10",
+  "tool": "built-in image_gen",
+  "transparent_background": true,
+  "pixelReferenceMechanism": "Five actual official PNGs returned by view_image, supplied to each redraw using num_last_images_to_include=5. Windows referenced_image_paths unavailable in this environment.",
+  "officialReferences": [
+    {
+      "id": "trap_1041_acarm041",
+      "name": "维式重锤",
+      "tier": 1,
+      "rel": "item/trap_1041_acarm041.png",
+      "urls": [
+        "https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/ui/autochess/%5Buc%5Dautochesscommon/arts/shopitemicon/trap_1041_acarm041.png"
+      ],
+      "kind": "png",
+      "bytes": 12616,
+      "sha256": "4203dd72a63df5315d876e82e7dc2f5fb535ce7d1c9f4be78d630498f618f0e6",
+      "actualBytes": 12616,
+      "size": [
+        137,
+        157
+      ],
+      "mode": "RGBA",
+      "visuallyInspected": true
+    },
+    {
+      "id": "trap_1047_acarm047",
+      "name": "坚守盾牌",
+      "tier": 1,
+      "rel": "item/trap_1047_acarm047.png",
+      "urls": [
+        "https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/ui/autochess/%5Buc%5Dautochesscommon/arts/shopitemicon/trap_1047_acarm047.png"
+      ],
+      "kind": "png",
+      "bytes": 21890,
+      "sha256": "fd79a60e5a12cf71689c4f8c56260f735f798be7b4ebe7a07b82b12390815efb",
+      "actualBytes": 21890,
+      "size": [
+        109,
+        160
+      ],
+      "mode": "RGBA",
+      "visuallyInspected": true
+    },
+    {
+      "id": "trap_1124_acarm124",
+      "name": "随身身份牌",
+      "tier": 1,
+      "rel": "item/trap_1124_acarm124.png",
+      "urls": [
+        "https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/ui/autochess/%5Buc%5Dautochesscommon/arts/shopitemicon/trap_1124_acarm124.png"
+      ],
+      "kind": "png",
+      "bytes": 13239,
+      "sha256": "3d085108e553447bf4fb8c82c273757c01eebfa7afa9eda5b346b1c03b2b6b1f",
+      "actualBytes": 13239,
+      "size": [
+        136,
+        77
+      ],
+      "mode": "RGBA",
+      "visuallyInspected": true
+    },
+    {
+      "id": "trap_1046_acarm046",
+      "name": "阿戈尔重刃",
+      "tier": 3,
+      "rel": "item/trap_1046_acarm046.png",
+      "urls": [
+        "https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/ui/autochess/%5Buc%5Dautochesscommon/arts/shopitemicon/trap_1046_acarm046.png"
+      ],
+      "kind": "png",
+      "bytes": 18983,
+      "sha256": "f9d2df167f58c27f4793f2b4687b8f509418a3df2f680e6903d49a3f1c11a911",
+      "actualBytes": 18983,
+      "size": [
+        121,
+        160
+      ],
+      "mode": "RGBA",
+      "visuallyInspected": true
+    },
+    {
+      "id": "trap_1076_acarm076",
+      "name": "铳骑之威",
+      "tier": 6,
+      "rel": "item/trap_1076_acarm076.png",
+      "urls": [
+        "https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/ui/autochess/%5Buc%5Dautochesscommon/arts/shopitemicon/trap_1076_acarm076.png"
+      ],
+      "kind": "png",
+      "bytes": 16842,
+      "sha256": "5d77d46399af04bcb133eb0e340bb6d8b41fe1b6487c9913029804bf3d16901b",
+      "actualBytes": 16842,
+      "size": [
+        159,
+        96
+      ],
+      "mode": "RGBA",
+      "visuallyInspected": true
+    }
+  ],
+  "styleObserved": "Strong black contours, compact connected silhouettes, two to three hard flat cel-shading tones, sparse seams/highlights, restrained red/yellow accents; no phototexture or external bloom.",
+  "prompts": [
+    {
+      "key": "sacrifice_mark_v2",
+      "name": "舍身刻印",
+      "prompt": "This is the requested V2 redraw after the previous draft was rejected. Use the FIVE provided real official game equipment PNGs as pixel-level STYLE REFERENCES, in order: basic heavy hammer, dark shield, yellow identity tag, high-tier Agor heavy blade, high-tier gun-knight multi-barrel weapon. Closely match their actual illustrative grammar: compact strong silhouette, bold black outside contour and selective black construction seams, broad opaque flat color planes, only 2-3 hard-edged cel-shading tones, restrained almost graphic highlights, small occasional colored accents, no fine rendered surface noise. Render at the same visual complexity as these references enlarged, not as photorealistic fantasy concept art. Genuine transparent RGBA cutout; a single complete object, no scene, no floor, no ground shadow, no frame, no caption, no text or watermark. Clean readable small-icon form, about 80% of square canvas with transparent padding. The images are references for drawing language and proportion, not objects to copy or collate; output only ONE requested new object. Redraw the Kazdel equipment 'Sacrifice Sigil' (third tier) as a compact physical dark-iron engraved talisman, slightly tilted in three-quarter view. One squat angular diamond/hexagonal iron plate, chunky gunmetal rim with a few broad pale silver bevels, a single simple crimson recessed core whose deep angular central fissure hints at sacrificed vitality. Two modest thick thorn-like shoulders are enough. A short dark attachment loop at top. Plain charcoal metal faces and crimson insert, very small muted brass attachment. Keep the silhouette as simple and sturdy as the reference identity tag/shield; no jewellery, no ornate crown, no sprawling spikes, no tiny engraving, no light rays or aura, no bright red outline around whole object. The central red core and dark protective metal must read at 24 px. Original new object, transparent background."
+    },
+    {
+      "key": "soul_blade_v2",
+      "name": "众魂战刃",
+      "prompt": "This is the requested V2 redraw after the previous draft was rejected. Use the FIVE provided real official game equipment PNGs as pixel-level STYLE REFERENCES, in order: basic heavy hammer, dark shield, yellow identity tag, high-tier Agor heavy blade, high-tier gun-knight multi-barrel weapon. Closely match their actual illustrative grammar: compact strong silhouette, bold black outside contour and selective black construction seams, broad opaque flat color planes, only 2-3 hard-edged cel-shading tones, restrained almost graphic highlights, small occasional colored accents, no fine rendered surface noise. Render at the same visual complexity as these references enlarged, not as photorealistic fantasy concept art. Genuine transparent RGBA cutout; a single complete object, no scene, no floor, no ground shadow, no frame, no caption, no text or watermark. Clean readable small-icon form, about 80% of square canvas with transparent padding. The images are references for drawing language and proportion, not objects to copy or collate; output only ONE requested new object. Redraw the Kazdel 'Warblade of Souls' (sixth tier) as one compact broad heavy cleaver/warblade, diagonal lower-left short grip to upper-right broad blade tip, matching the strong asymmetrical sculpted weapon mass of the reference Agor heavy blade. Wide angular charcoal steel body with a solid light gray cutting-edge plane; one wide dark crimson recessed channel; a simple blunt gunmetal crossguard enclosing one crimson insert, short wrapped black grip and small brass rivet. Suggest bound souls with ONLY two flat pale gray-white angular bands inset or hugging the blade edge, visibly graphic and opaque rather than wispy or glowing. Large connected masses, blade substantially broad, no thin long rapier, no huge ornate gemstone, no circular aura, no detached spectres, no smoke, no texture or scratches. 2-3 flat cel-shading tones on each material, strong contour and coherent silhouette. Clear at 24/32 px. Original new object, transparent background."
+    },
+    {
+      "key": "rhine_laser_v2",
+      "name": "莱茵生命激光钻机",
+      "prompt": "This is the requested V2 redraw after the previous draft was rejected. Use the FIVE provided real official game equipment PNGs as pixel-level STYLE REFERENCES, in order: basic heavy hammer, dark shield, yellow identity tag, high-tier Agor heavy blade, high-tier gun-knight multi-barrel weapon. Closely match their actual illustrative grammar: compact strong silhouette, bold black outside contour and selective black construction seams, broad opaque flat color planes, only 2-3 hard-edged cel-shading tones, restrained almost graphic highlights, small occasional colored accents, no fine rendered surface noise. Render at the same visual complexity as these references enlarged, not as photorealistic fantasy concept art. Genuine transparent RGBA cutout; a single complete object, no scene, no floor, no ground shadow, no frame, no caption, no text or watermark. Clean readable small-icon form, about 80% of square canvas with transparent padding. The images are references for drawing language and proportion, not objects to copy or collate; output only ONE requested new object. Redraw the existing stationary Rhine Life laser research drill as a ground-mounted complete machine. Preserve its design identity: broad low stable base with two angled outrigger feet, vertical central rectangular column, large angular octagonal turret head, short thick rectangular barrel projecting to image RIGHT with oval violet aperture, one round violet side reactor, three small violet indicator slits on front column, compact top carry handle. Slight elevated three-quarter angle showing front and right side. Pale ivory armor planes, dark slate inner chassis and black seams, limited violet inside aperture/reactor; simple graphic shading and black contour exactly like the provided official multibarrel weapon and identity tag. Big readable head, short barrel, sturdy trunk/base; sparse seams only, 2-3 flat tones, no phototexture, complex vents, sculpted surface wear or bloom. The right-facing oval aperture around 85% across object width and 42% down object height is beam attachment. Complete feet and all machine parts inside the canvas. No handheld drill handle, conical bit, wheels, human, laser beam, particles, floor, external shadow, UI frame or tier badge. Original redrawn device, transparent background."
+    }
+  ],
+  "assets": [
+    {
+      "name": "舍身刻印",
+      "key": "trap_kazdel_sigil",
+      "original": {
+        "path": "public/art/kazdel/source/v2/sigil.png",
+        "size": [
+          1299,
+          1211
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 625718,
+        "sha256": "f8677a568aac87ffc104661216ec4b91a95560f66efb404f109cb058126c47ca",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 1124347,
+        "opaque": 789,
+        "partial": 447953,
+        "bboxAlphaGt8": [
+          245,
+          63,
+          1066,
+          1097
+        ]
+      },
+      "gameIcon": {
+        "path": "public/art/kazdel/sigil-v2.png",
+        "size": [
+          256,
+          256
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 46655,
+        "sha256": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 43755,
+        "opaque": 463,
+        "partial": 21318,
+        "bboxAlphaGt8": [
+          38,
+          15,
+          217,
+          240
+        ]
+      },
+      "review": "舍身刻印-v2.png",
+      "reviewSha256": "f8677a568aac87ffc104661216ec4b91a95560f66efb404f109cb058126c47ca"
+    },
+    {
+      "name": "众魂战刃",
+      "key": "trap_kazdel_blade",
+      "original": {
+        "path": "public/art/kazdel/source/v2/blade.png",
+        "size": [
+          1309,
+          1201
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 732915,
+        "sha256": "bd06040f2ca7ce9ed6a40f4b9d2ca80c3571309e0cae015af1bd7d7140825795",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 1086842,
+        "opaque": 1124,
+        "partial": 484143,
+        "bboxAlphaGt8": [
+          17,
+          9,
+          1298,
+          1193
+        ]
+      },
+      "gameIcon": {
+        "path": "public/art/kazdel/blade-v2.png",
+        "size": [
+          256,
+          256
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 39245,
+        "sha256": "efb4a69c233e80b8a80cc9b6dd3c186a1267a066a58454669b96ebe13b6a8901",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 49862,
+        "opaque": 502,
+        "partial": 15172,
+        "bboxAlphaGt8": [
+          15,
+          24,
+          240,
+          232
+        ]
+      },
+      "review": "众魂战刃-v2.png",
+      "reviewSha256": "bd06040f2ca7ce9ed6a40f4b9d2ca80c3571309e0cae015af1bd7d7140825795"
+    },
+    {
+      "name": "莱茵生命激光钻机",
+      "key": "token_rhine_laser",
+      "original": {
+        "path": "public/art/rhine/source/v2/laser.png",
+        "size": [
+          1254,
+          1254
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 1021228,
+        "sha256": "f29774200016a2ae82e01395b6dfb6530c16f4c2ce28186808827d6f9830d558",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 876251,
+        "opaque": 1334,
+        "partial": 694931,
+        "bboxAlphaGt8": [
+          99,
+          16,
+          1165,
+          1239
+        ]
+      },
+      "gameIcon": {
+        "path": "public/art/rhine/laser-v2.png",
+        "size": [
+          256,
+          256
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 58432,
+        "sha256": "c0e347854abbe73057185fe6c4c8d356141b34617d308462dcd2d6559962a265",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 41240,
+        "opaque": 759,
+        "partial": 23537,
+        "bboxAlphaGt8": [
+          30,
+          15,
+          226,
+          240
+        ]
+      },
+      "review": "莱茵生命激光钻机-v2.png",
+      "reviewSha256": "f29774200016a2ae82e01395b6dfb6530c16f4c2ce28186808827d6f9830d558",
+      "fieldSprite": {
+        "path": "public/art/rhine/laser-unit-v2.png",
+        "size": [
+          512,
+          512
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 183171,
+        "sha256": "ce32bbb5567d268cb1eed127c9b3bdd45a9e48416314947ac080f7de3495db8e",
+        "alphaRange": [
+          0,
+          255
+        ],
+        "transparent": 167094,
+        "opaque": 1448,
+        "partial": 93602,
+        "bboxAlphaGt8": [
+          59,
+          31,
+          452,
+          481
+        ]
+      }
+    }
+  ],
+  "derivatives": "Pillow: crop near-transparent border at alpha>8 bounding box with two source-pixel safety margin; Lanczos equal-aspect resize and transparent padding to 88% long-side occupancy. All original PNG bytes retained unchanged; no recoloring or redraw.",
+  "mappingHandoff": {
+    "items": {
+      "trap_kazdel_sigil": "/art/kazdel/sigil-v2.png",
+      "trap_kazdel_blade": "/art/kazdel/blade-v2.png"
+    },
+    "rhineLaser": {
+      "tokenId": "token_rhine_laser",
+      "icon": "/art/rhine/laser-v2.png",
+      "sprite": "/art/rhine/laser-unit-v2.png",
+      "legacySvg": "/art/rhine/laser.svg",
+      "aperturePixelsInOriginal": [
+        1067,
+        430
+      ],
+      "apertureNormalizedAlphaBBox": [
+        0.90807,
+        0.33851
+      ],
+      "displayAnchorNote": "Measured centroid of the right violet aperture; inspect against actual new cloud sprite renderer and derive its display-only core offset. Do not reuse v1 coordinates or change balance.",
+      "measuredCanvasTextureFrame": {
+        "x": 44,
+        "y": 22,
+        "width": 296,
+        "height": 340
+      },
+      "measuredCanvasAperturePixelCenter": [
+        311.875291,
+        137.152681
+      ],
+      "measuredCore": [
+        0.4049840925,
+        0.6613156451
+      ],
+      "suggestedCore": [
+        0.405,
+        0.6613
+      ],
+      "measuredBrowser": "Chrome/154.0.8037.98",
+      "coreScope": "Display-only adaptation for current 512-to-384 unitSpriteTexture crop and anchor(0.5,1); cloud must retain its actual newer runtime and recalculate if this pipeline differs.",
+      "beamPoseNote": "Current sprite y=-0.006 tile is not included in the beam root; align beam with actual sprite position without changing mechanics."
+    }
+  },
+  "integration": "Approved art handoff branch based on verified remote baseline. Kazdel original covenant PNG and display/load fixes included. Equipment and drill consuming mappings must be applied only on newer cloud code, preserving its unpushed mechanism commits. No server/sim or balance changes in this branch.",
+  "reviewFiles": [
+    "three-icons-v2-size-background-review.png",
+    "laser-v2-display-anchor-review.png"
+  ],
+  "qualityReview": {
+    "actualOfficialPixelReferencesViewed": 5,
+    "independentReviewer": "icon_entry_audit",
+    "verdict": "No mandatory redraw issues; coherent shapes and flat contour/cel-shading language match the official reference style more closely than rejected v1.",
+    "smallSize": "At 24px the blade is thin but identifiable; all three are stable from 32px and clear at 48/64px.",
+    "alpha": "Source interiors mostly 253/254 (~99% opacity); transparent backgrounds and natural edges confirmed on light/dark backgrounds; only derivative near-transparent padding trimmed.",
+    "preservation": "Original generated bytes, rejected v1 source files, original Kazdel bond icon and game configuration all remain unchanged."
+  }
+}

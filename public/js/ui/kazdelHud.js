@@ -16,7 +16,7 @@ export function KazdelCannonHud({ states, players = [], gameTime = 0 }) {
       const player = players.find(p => p.playerId === s.ownerId || p.id === s.ownerId);
       const warning = s.warning && s.warning.until > gameTime;
       return html`<section class=${`kazdel-cannon${warning ? ' is-warning' : ''}`} key=${s.ownerId} data-cannon-owner=${s.ownerId}>
-        <header><img src="/art/kazdel/bond.svg" alt="" /><b>${t('战争巨炮')}</b>${list.length > 1 ? html`<small>${player?.name || s.ownerId}</small>` : null}<span class="num">${s.charge.toFixed(1)}/${s.max}</span></header>
+        <header><img src="/art/kazdel/bond.png" alt="" /><b>${t('战争巨炮')}</b>${list.length > 1 ? html`<small>${player?.name || s.ownerId}</small>` : null}<span class="num">${s.charge.toFixed(1)}/${s.max}</span></header>
         <div class="kazdel-cannon__bar" role="progressbar" aria-label=${t('战争巨炮充能')} aria-valuemin="0" aria-valuemax=${s.max} aria-valuenow=${s.charge}><i style=${`width:${s.charge / s.max * 100}%`}></i></div>
         <p>${cannonModeText(s.stage)}</p>
         ${warning ? html`<p>${t('九宫格轰击预警 · {seconds}秒', { seconds: Math.max(0, s.warning.until - gameTime).toFixed(1) })}</p>` : null}
