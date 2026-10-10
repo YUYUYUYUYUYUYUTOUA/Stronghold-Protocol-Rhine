@@ -646,7 +646,7 @@ function layerAllowanceOf(p, gd, spec) {
     for (const gid of gd.chess(u.chessId)?.garrisonIds || []) {
       const g = gd.garrison(gid);
       if (!g || g.eventType !== 'IN_BATTLE') continue;
-      if (g.effectKey === KAZDEL_GARRISON_KEYS.odda || g.effectKey === KAZDEL_GARRISON_KEYS.hoederer) {
+      if (g.effectKey === KAZDEL_GARRISON_KEYS.odda || g.effectKey === KAZDEL_GARRISON_KEYS.hoederer || g.effectKey === KAZDEL_GARRISON_KEYS.ascalon) {
         // These owner-selected traits have no per-battle cap. Only their active target bonds
         // in a normal field can exceed the flat allowance; the shared 999-layer limit still applies.
         if (spec?.kind === 'normal' && spec.flags?.layerGainsEnabled !== false && Number(g.bb?.layer) > 0) {

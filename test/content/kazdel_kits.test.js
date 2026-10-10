@@ -6,7 +6,7 @@ import kits from '../../server/sim/content/kits/kazdel.js';
 import { skillSpecSource } from '../../server/sim/content/index.js';
 
 const ds = getDefaultSource();
-const names = ['odd', 'meteorite', 'paprika', 'hoederer', 'logos', 'wisdel'];
+const names = ['odd', 'meteorite', 'paprika', 'hoederer', 'logos', 'wisdel', 'ascalon'];
 const idOf = (key, elite = false) => `chess_kazdel_${key}_${elite ? 'b' : 'a'}`;
 const dummy = enemyRec({ key: 'kazdelDummy', hp: 1e8, def: 0, res: 0, speed: 0 });
 const run = (units, extra = {}) => makeBattle({ units, kits, defs: { enemies: { kazdelDummy: dummy } }, autoFinish: false, hooks: ['damaged', 'heal', 'skillStart'], captureNoisy: true, ...extra });

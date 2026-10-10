@@ -295,8 +295,8 @@ test('harness battle with injected kits: non-default skill via the view uses the
 
 test('tools/kit-coverage: every visible chess and each selectable skill, defaults hand-authored', { skip }, () => {
   const rep = kitCoverage();
-  assert.equal(rep.summary.chess, 125);
-  assert.equal(rep.chess.length, 125);
+  assert.equal(rep.summary.chess, 126);
+  assert.equal(rep.chess.length, 126);
   for (const r of rep.chess) {
     const ch = loadoutOptions(C[r.chessId], C[C[r.chessId].goldenId]);
     assert.deepEqual(r.skills.map((s) => s.index), ch.skills, `${r.chessId}: selectable skills listed`);

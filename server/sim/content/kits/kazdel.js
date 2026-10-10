@@ -1,4 +1,5 @@
 // Kazdel presets use native operator kits; souls intentionally install none of these active kits.
+import ascalon from './ops/op-ascln.js';
 import logos from './ops/op-logos.js';
 import wisdel, { SHADOW, shadowTokenKit } from './ops/op-wisdel.js';
 import hoederer from './ops/op-hodrer.js';
@@ -106,6 +107,7 @@ export function paprika(bb, chess) {
 }
 
 export default {
+  chess_kazdel_ascalon_a: ascalon.char_4132_ascln,
   chess_kazdel_odd_a: odda,
   chess_kazdel_meteorite_a: meteorite,
   chess_kazdel_paprika_a: paprika,

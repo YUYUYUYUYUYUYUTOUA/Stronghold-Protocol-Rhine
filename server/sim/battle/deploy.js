@@ -7,6 +7,7 @@ import { COLS } from '../constants.js';
 import { unitInfo } from '../snapshot.js';
 import { fin } from './util.js';
 import { kazdelCannonImmune } from '../damage.js';
+import { kazdelCannonOwner } from '../kazdelOrigin.js';
 
 export class BattleDeploy {
   /**
@@ -83,7 +84,12 @@ export class BattleDeploy {
     if (!unit || !unit.alive) return;
     if (kazdelCannonImmune(this, killer, unit, dmg)) return;
     unit.hp = 0;
-    if ((killer?.kazdelCannon || this._kazdelCannonDamageDepth > 0) && !dmg?.tags?.includes('kazdelCannon')) dmg = { ...dmg, tags: [...(dmg?.tags ?? []), 'kazdelCannon'] };
+    if (killer?.kazdelCannon || this._kazdelCannonDamageDepth > 0 || dmg?.tags?.includes('kazdelCannon')) {
+      const tags = [...(dmg?.tags ?? [])];
+      if (!tags.includes('kazdelCannon')) tags.push('kazdelCannon');
+      if ((killer?.kazdelCannonSafeAllies || this._kazdelCannonSafeAlliesDepth > 0) && !tags.includes('kazdelCannonEnemiesOnly')) tags.push('kazdelCannonEnemiesOnly');
+      dmg = { ...dmg, tags, kazdelCannonOwnerId: kazdelCannonOwner(this, killer, dmg) };
+    }
     if (this._hooks.kill) this.emit('kill', { killer, victim: unit, dmg });
     // a nested kill/retreat inside the handlers already removed it: a later handler's hp write must not stick
     if (!unit.alive) { if (!unit.bossPool) unit.hp = 0; return; }

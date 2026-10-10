@@ -189,7 +189,7 @@ test('the match publishes the extra slot and its banned list agrees with the sha
     const pub = h.m.publicView(), expected = DATA.config.bans[difficulty];
     assert.equal(pub.drawnDisabledBonds.length, expected.core + expected.addon);
     assert.deepEqual([...pub.bannedChess].sort(), [...h.m.pool.banned].sort());
-    assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 125);
+    assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 126);
     h.m.dispose();
   }
 });

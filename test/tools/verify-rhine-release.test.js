@@ -83,7 +83,7 @@ test('release smoke remains compatible with a package predating the laser device
     get: async () => { throw new Error('old release should not request laser artifacts'); } }), { laser: false });
 });
 
-test('release smoke verifies all ten Kazdel members, native loadouts, Tinman S2 and served artwork/code', async t => {
+test('release smoke verifies all eleven Kazdel members, native loadouts, Tinman S2 and served artwork/code', async t => {
   const fixture = kazdelPackageFixture(t);
   const artifacts = {}, requested = [];
   const result = await verifyKazdelRelease({ fetched: data(), artifacts, packageRoot: fixture.packageRoot, get: async url => {
@@ -92,13 +92,13 @@ test('release smoke verifies all ten Kazdel members, native loadouts, Tinman S2 
   } });
   assert.equal(result.enabled, true);
   assert.equal(result.tinmanSoulHealing, true);
-  assert.equal(result.characters.length, 10);
-  assert.deepEqual(result.characters.map(c => c.tier), [1, 2, 2, 2, 3, 4, 4, 4, 5, 6]);
+  assert.equal(result.characters.length, 11);
+  assert.deepEqual(result.characters.map(c => c.tier), [1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 6]);
   assert.equal(result.httpArtifacts, requested.length);
   assert.equal(new Set(requested).size, requested.length, 'shared native skill/module icons should be fetched once');
   assert.equal(Object.keys(artifacts).length, requested.length);
   assert.ok(Object.values(artifacts).every(value => /^[a-f0-9]{64}$/.test(value)));
-  for (const url of ['/shared/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
+  for (const url of ['/sim/content/kazdel/ascalon.js', '/sim/content/kits/ops/op-ascln.js', '/shared/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
     '/sim/kazdelOrigin.js', '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/art/kazdel/bond.svg',
     '/assets/spine/op/char_4131_odda/front/char_4131_odda.skel', '/assets/spine/op/char_4131_odda/back/char_4131_odda.atlas']) {
     assert.ok(requested.includes(url), `${url} must be verified through the actual HTTP mount`);

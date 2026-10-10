@@ -53,6 +53,7 @@
 import { MIN_DAMAGE_RATIO, ELEMENT, ELEMENT_ORDER, PALSY_MAX } from './constants.js';
 import { BOSS_HIT_LIMIT } from '../../shared/constants.js';
 import { evadesGround } from './targeting.js';
+import { kazdelCannonOwner } from './kazdelOrigin.js';
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -85,6 +86,7 @@ export function makeDamageInfo(d = {}) {
     isAttack: !!d.isAttack,
     isProjectile: !!d.isProjectile,
     tags: d.tags ?? [],
+    kazdelCannonOwnerId: d.kazdelCannonOwnerId ?? null,
     cancel: false,
     noSp: !!d.noSp,
     ignoreSleep: !!d.ignoreSleep,
@@ -228,7 +230,9 @@ export function kazdelCannonImmune(battle, source, target, dmg) {
   const cannon = source?.kazdelCannon || dmg?.tags?.includes('kazdelCannon') || battle._kazdelCannonDamageDepth > 0;
   if (!cannon) return false;
   const safeAllies = source?.kazdelCannonSafeAllies || dmg?.tags?.includes('kazdelCannonEnemiesOnly') || battle._kazdelCannonSafeAlliesDepth > 0;
-  return !!target?.kazdelSoul || (safeAllies && target?.side === 'ally');
+  const ownerId = kazdelCannonOwner(battle, source, dmg);
+  // Missing provenance must never turn a cannon derivative into team-wide friendly fire.
+  return !!target?.kazdelSoul || (target?.side === 'ally' && (safeAllies || ownerId == null || target.ownerId !== ownerId));
 }
 
 export function dealDamage(battle, source, target, dmgIn) {

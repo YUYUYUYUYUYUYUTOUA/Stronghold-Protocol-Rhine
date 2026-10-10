@@ -16,6 +16,7 @@ export const KAZDEL_ADDITIONS = Object.freeze([
   { key: 'hoederer', characterKey: 'hoederer', charId: KAZDEL_CHARACTERS.hoederer, tier: 4, bonds: [KAZDEL_BOND, 'steadShip'], skillId: 'skchr_hodrer_3', defaultModuleId: 'uniequip_002_hodrer', subName: '重剑手' },
   { key: 'logos', characterKey: 'logos', charId: KAZDEL_CHARACTERS.logos, tier: 5, bonds: [KAZDEL_BOND, 'arcaneShip'], skillId: 'skchr_logos_3', defaultModuleId: 'uniequip_002_logos', subName: '中坚术师' },
   { key: 'wisdel', characterKey: 'wisdel', charId: KAZDEL_CHARACTERS.wisdel, tier: 6, bonds: [KAZDEL_BOND, 'preciShip'], skillId: 'skchr_wisdel_3', defaultModuleId: 'uniequip_002_wisdel', subName: '投掷手' },
+  { key: 'ascalon', characterKey: 'ascalon', charId: KAZDEL_CHARACTERS.ascalon, tier: 3, bonds: [KAZDEL_BOND], skillId: 'skchr_ascln_2', defaultModuleId: 'uniequip_002_ascln', subName: '伏击客' },
 ]);
 export const KAZDEL_EXISTING = Object.freeze([
   { key: 'vigna', baseId: 'chess_char_1_05', tier: 1, bonds: [KAZDEL_BOND, 'skillfulShip'] },
@@ -24,7 +25,7 @@ export const KAZDEL_EXISTING = Object.freeze([
   { key: 'mudrock', baseId: 'chess_char_4_18', tier: 4, bonds: ['soloShip', KAZDEL_BOND] },
 ]);
 
-export const KAZDEL_DESCRIPTION = '战斗开始时按3/6/9名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的3×3区域发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击也伤害友军，亡魂始终免疫；9名阶段只伤害敌军。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
+export const KAZDEL_DESCRIPTION = '战斗开始时按3/6/9名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的3×3区域发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击仅误伤炮击所属玩家自己的活体友军，伤害为对敌伤害的50%（400+每层众魂7.5点）；其他玩家友军免疫炮击及其衍生伤害，亡魂始终免疫；9名阶段只伤害敌军。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
 
 function ordinaryModulePhase(ctx, id, level) {
   const raw = ctx.battleEquipTable?.[id]?.phases.find(p => p.equipLevel === level);
@@ -48,6 +49,10 @@ export function kazdelGarrison(key, gold) {
   const grade = gold ? 1 : 0, id = `garrison_kazdel_${key}_${gold ? 'b' : 'a'}`;
   let desc, bb, bbStr = {};
   switch (key) {
+    case 'ascalon':
+      bb = { slow: [0.2, 0.3][grade], interval: 3, layer: [1, 2][grade] };
+      desc = `活体本体在场时，攻击范围内敌人移动速度额外降低${bb.slow * 100}%，与原生减速相乘；累计每${bb.interval}秒范围内存在受此减速的敌人，为已激活的【卡兹戴尔】增加${bb.layer}层。无目标暂停累计，不按目标数量倍增；每位玩家同名仅取最强有效来源，魂灵不生效`;
+      break;
     case 'vigna':
       bb = { layer: [2, 4][grade] }; bbStr = { bond_ids: `${KAZDEL_BOND},skillfulShip` };
       desc = `战斗中，本体首次有效阵亡时，使已激活的【卡兹戴尔】与【灵巧】各增加${bb.layer}层；炮击造成的友方阵亡不产层`;
@@ -213,7 +218,7 @@ export async function applyKazdelData(files, source = null) {
 
 export function validateKazdelData({ chess, bonds, garrisons, tokens, config }) {
   const errors = [], visible = bonds[KAZDEL_BOND]?.visibleMembers || [];
-  if (visible.length !== 10 || new Set(visible.map(id => chess[id]?.charId)).size !== 10) errors.push('Kazdel must have ten distinct visible members');
+  if (visible.length !== 11 || new Set(visible.map(id => chess[id]?.charId)).size !== 11) errors.push('Kazdel must have eleven distinct visible members');
   for (const spec of KAZDEL_ADDITIONS) for (const gold of [false, true]) {
     const c = chess[`chess_kazdel_${spec.key}_${gold ? 'b' : 'a'}`];
     const count = ['odd', 'meteorite', 'paprika'].includes(spec.key) ? 2 : 3;
@@ -244,5 +249,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   const { refreshRhineTranslations } = await import('./rhine-i18n.mjs');
   await refreshRhineTranslations(out);
-  console.log('Kazdel overlay complete: six new operators, ten members, ordinary modules and native Wisadel shadows.');
+  console.log('Kazdel overlay complete: seven new operators, eleven members, ordinary modules and native Wisadel shadows.');
 }

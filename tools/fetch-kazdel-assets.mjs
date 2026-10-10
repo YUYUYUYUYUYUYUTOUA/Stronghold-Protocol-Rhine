@@ -38,6 +38,6 @@ manifest.stats.skills = Object.keys(manifest.skills).length;
 const { hash: _hash, ...body } = manifest;
 manifest.hash = contentHash(body);
 await writeFile(path, JSON.stringify(manifest) + '\n');
-console.log('Kazdel art ready: all ten operator portraits, avatars, skill icons, models and faction icon.');
+console.log('Kazdel art ready: all eleven operator portraits, avatars, skill icons, models and faction icon.');
 }
 if (!restartForEnvProxy()) await main();

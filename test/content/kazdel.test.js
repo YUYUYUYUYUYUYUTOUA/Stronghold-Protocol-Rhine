@@ -6,7 +6,7 @@ import { KAZDEL_BOND as K, KAZDEL_CHARACTERS as CHAR } from '../../shared/kazdel
 import { chainHealNext, acquireTargets } from '../../server/sim/ai.js';
 import { canReceiveHeal } from '../../server/sim/damage.js';
 import { soulBaseline } from '../../server/sim/content/kazdel/souls.js';
-import { cannonKeys } from '../../server/sim/content/kazdel/cannon.js';
+import { cannonKeys, cannonSource, tickCannon } from '../../server/sim/content/kazdel/cannon.js';
 
 const bond = (count = 3, layers = 0) => ({ active: true, count, tier: count >= 9 ? 3 : count >= 6 ? 2 : 1, layers });
 const entry = (key, row = 10, col = 5) => ({ chessId: `kaz_${key}`, row, col });
@@ -29,7 +29,7 @@ function fixture(keys = ['vigna'], { elite = false, count = 3, layers = 0, bonds
   h.step();
   return h;
 }
-const die = (h, u, source = null, tags = []) => h.b.dealDamage(source, u, { amount: 1e9, type: 'true', canDodge: false, tags });
+const die = (h, u, source = null, tags = []) => h.b.dealDamage(source, u, { amount: 1e9, type: 'true', canDodge: false, tags, kazdelCannonOwnerId: tags.includes('kazdelCannon') ? 'p1' : null });
 const soul = u => u.kazdelSoulUnit;
 const layers = (h, id = K, owner = 'p1') => h.b.getPlayer(owner).bonds[id].layers;
 const shots = h => h.events.filter(e => e[0] === 'fx' && e[1] === 'kazdelCannonImpact');
@@ -412,4 +412,92 @@ test('tile-square at edge never wraps negative columns; same-seed replay and dea
     return hashOf([h.b.result(),h.b.snapshot(),h.events]);
   };
   assert.equal(run(),run());
+});
+
+for (const kind of ['normal', 'unite', 'boss', 'hidden']) for (const stage of [2, 3]) {
+  test(`${kind}: cannon stage ${stage} halves only its owner's direct friendly hit, with unchanged enemy damage`, () => {
+    const players = [
+      { playerId: 'p1', seat: 0, coords: 'field', units: [entry('plain', 10, 5)], bonds: { [K]: bond(6, 11) } },
+      { playerId: 'p2', seat: 1, coords: 'field', units: [entry('plain2', 10, 6)], bonds: { [K]: bond(9, 30) } },
+    ];
+    const h = fixture(['plain', 'plain2'], { kind, players, rect: { r0: 0, r1: 18, c0: 0, c1: 20 } });
+    const own = h.unit('kaz_plain'), other = h.unit('kaz_plain2');
+    for (const u of h.b.allyUnits) u.profile.noAttack = true;
+    const e = h.spawn('kaz_enemy', { pos: [10, 5] });
+    const hp = [own.hp, other.hp, e.hp], ps = h.b.getPlayer('p1');
+    const state = { ps, stage, cannon: cannonSource(ps, stage), charge: 15, lastFireAt: -Infinity,
+      warning: { x: 5, y: 10, startedAt: -3, until: 0 } };
+    tickCannon(h.b, state, 0, 11, () => {});
+    assert.equal(hp[0] - own.hp, stage === 2 ? 482.5 : 0);
+    assert.equal(other.hp, hp[1]);
+    assert.equal(hp[2] - e.hp, 965);
+    assert.equal(state.charge, 0);
+    assert.ok(checkInvariants(h.b));
+  });
+}
+
+test('cannon owner survives immediate and delayed derivatives, from copies, nested cannons, buffs and projectiles', () => {
+  const players = ['p1', 'p2'].map((playerId, seat) => ({ playerId, seat, coords: 'field',
+    units: [entry(seat ? 'plain2' : 'plain', 10, 5 + seat)], bonds: { [K]: bond(6) } }));
+  const h = fixture(['plain', 'plain2'], { players, kind: 'unite' });
+  const a = h.unit('kaz_plain'), b = h.unit('kaz_plain2');
+  for (const u of [a, b]) u.profile.noAttack = true;
+  const e = h.spawn('kaz_enemy', { pos: [10, 5] });
+  const ca = cannonSource(h.b.getPlayer('p1'), 2), cb = cannonSource(h.b.getPlayer('p2'), 2);
+  let saved;
+  h.b.on('damaged', c => {
+    if (c.target !== e || c.source !== ca) return;
+    saved = c.dmg;
+    h.b.dealDamage(cb, a, { amount: 100, type: 'true' }); // nested other owner's cannon
+    h.b.dealDamage(e, b, { amount: 100, type: 'true' });
+    h.b.loseHp(b, 100, { source: a });
+    h.b.kill(b, e);
+    h.b.dealDamage(e, a, { amount: 10, type: 'true' }); // original owner restored
+    h.b.after(.1, () => { h.b.loseHp(a, 10); h.b.loseHp(b, 100); h.b.kill(b); });
+    const timer = h.b.every(.1, () => { h.b.loseHp(b, 100); timer.cancel(); });
+    h.b.addProjectile({ from: e, to: { x: b.x, y: b.y }, speed: 10, onHit: () => h.b.loseHp(b, 100) });
+    h.b.addBuff(b, { key: 'owner-test', duration: .2, onTick: () => h.b.loseHp(b, 100), onExpire: () => h.b.kill(b) });
+  });
+  const hp = [a.hp, b.hp];
+  h.b.dealDamage(ca, e, { amount: 10, type: 'true' });
+  assert.equal(saved.kazdelCannonOwnerId, 'p1');
+  h.b.loseHp(a, 10, { source: b, from: saved });
+  h.b.loseHp(b, 100, { source: a, from: saved });
+  h.b.dealDamage(e, b, { ...saved, amount: 100 });
+  h.run(.5);
+  assert.equal(a.hp, hp[0] - 30);
+  assert.equal(b.hp, hp[1]); assert.ok(b.alive);
+  assert.equal(h.b._kazdelCannonDamageDepth, 0);
+  assert.equal(h.b._kazdelCannonOwnerId, undefined);
+  h.b.loseHp(b, 10); assert.equal(b.hp, hp[1] - 10, 'ordinary damage is not protected');
+  assert.equal(h.b.dealDamage(null, b, { amount: 100, type: 'true', tags: ['kazdelCannon'] }), 0, 'missing owner fails closed');
+  assert.ok(checkInvariants(h.b));
+});
+
+test('a real cannon-killed polluted enemy damages only the cannon owner through its delayed death zone', () => {
+  const players = ['p1', 'p2'].map((playerId, seat) => ({ playerId, seat, coords: 'field',
+    units: [entry(seat ? 'plain2' : 'plain', 10, 5 + seat)], bonds: { [K]: bond(6) } }));
+  const h = fixture(['plain', 'plain2'], { players });
+  for (const u of h.b.allyUnits) u.profile.noAttack = true;
+  const [a, b] = h.b.allyUnits, hp = [a.hp, b.hp];
+  const e = h.spawn('enemy_1267_nhpbr', { pos: [10, 5] });
+  die(h, e, cannonSource(h.b.getPlayer('p1'), 2));
+  h.run(2.2);
+  assert.equal(a.hp, hp[0] - 100);
+  assert.equal(b.hp, hp[1]);
+  assert.equal(layers(h), 0); assert.equal(layers(h, K, 'p2'), 0);
+  assert.ok(checkInvariants(h.b));
+});
+
+test('direct-kill death records retain owner and stage9 protection when reused outside the cannon stack', () => {
+  for (const stage of [2, 3]) {
+    const h = fixture(['plain'], { count: stage === 2 ? 6 : 9 }), a = h.unit('kaz_plain');
+    const e = h.spawn('kaz_enemy', { pos: [10, 5] }); let saved;
+    h.b.on('death', c => { if (c.unit === e) saved = c.dmg; });
+    h.b.kill(e, cannonSource(h.b.getPlayer('p1'), stage));
+    assert.equal(saved.kazdelCannonOwnerId, 'p1');
+    const hp = a.hp;
+    h.b.loseHp(a, 100, { from: saved });
+    assert.equal(hp - a.hp, stage === 2 ? 100 : 0);
+  }
 });

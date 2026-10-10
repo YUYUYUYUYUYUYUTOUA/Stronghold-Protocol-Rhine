@@ -46,10 +46,10 @@ function fire(battle, state, layers, onFire) {
   onFire(state);
   const targets = battle.enemies.filter(e => present(e) && bodyInKeys(e, keys));
   if (state.stage === C.friendlyFireStage) for (const a of battle.allyUnits) {
-    if (present(a) && !a.kazdelSoul && a.kind !== 'device' && keys.has(a.tileR * COLS + a.tileC)) targets.push(a);
+    if (a.ownerId === state.ps.playerId && present(a) && !a.kazdelSoul && a.kind !== 'device' && keys.has(a.tileR * COLS + a.tileC)) targets.push(a);
   }
   for (const target of targets) battle.dealDamage(state.cannon, target, {
-    amount, type: 'true', canDodge: false, noSp: true,
+    amount: amount * (target.side === 'ally' ? C.friendlyFireRatio : 1), type: 'true', canDodge: false, noSp: true,
     tags: state.stage >= C.enemiesOnlyStage ? ['kazdelCannon', 'kazdelCannonEnemiesOnly'] : ['kazdelCannon'], ignoreSelect: true,
   });
   return true;

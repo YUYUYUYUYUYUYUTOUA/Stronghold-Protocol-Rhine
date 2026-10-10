@@ -10,7 +10,7 @@ const tables = await Promise.all(names.map(async name => {
 }));
 const [chars, skills, ranges, equipment, battleEquipment] = tables;
 const ownerIds = ['char_290_vigna', 'char_4131_odda', 'char_219_meteo', 'char_4151_tinman', 'char_4071_peper',
-  'char_4088_hodrer', 'char_4087_ines', 'char_311_mudrok', 'char_4133_logos', 'char_1035_wisdel'];
+  'char_4088_hodrer', 'char_4087_ines', 'char_311_mudrok', 'char_4133_logos', 'char_1035_wisdel', 'char_4132_ascln'];
 const tokenIds = new Set();
 function visitToken(x) {
   if (!x || typeof x !== 'object') return;

@@ -253,7 +253,7 @@ test('full and lite builds retain expansion asset inputs: shipped plans load and
       import { kazdelArtInput } from './tools/assets/kazdel-plan.mjs';
       import { rhineArtInput } from './tools/assets/rhine-plan.mjs';
       const kazdel = kazdelArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
-      assert.equal(Object.keys(kazdel.assets07.operators).length, 10);
+      assert.equal(Object.keys(kazdel.assets07.operators).length, 11);
       assert.equal(kazdel.assets07.operators.char_4131_odda.name, '奥达');
       assert.equal(kazdel.assets07.operators.char_4131_odda.skills.length, 2);
       const rhine = rhineArtInput({ operators: {} }, { chess: [] });

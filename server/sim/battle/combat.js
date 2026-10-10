@@ -4,7 +4,7 @@
 
 import { dealDamage as pipeDamage, heal as pipeHeal, applyHpLoss, makeDamageInfo, reduceElement, leaderHitCancelled } from '../damage.js';
 import { effectiveProfile, performAttack, acquireTargets } from '../ai.js';
-import { withKazdelCannonOrigin } from '../kazdelOrigin.js';
+import { withKazdelCannonOrigin, kazdelCannonOwner } from '../kazdelOrigin.js';
 
 // Mark immediate derivatives (split HP loss, reflection, death procs) with their cannon origin too.
 // Delayed effects retain it through the existing `from` DamageInfo contract.
@@ -15,8 +15,9 @@ function cannonOrigin(battle, source, dmg, run) {
   const tags = [...(dmg?.tags ?? [])];
   if (!tags.includes('kazdelCannon')) tags.push('kazdelCannon');
   if (safeAllies && !tags.includes('kazdelCannonEnemiesOnly')) tags.push('kazdelCannonEnemiesOnly');
-  const tagged = { ...dmg, tags };
-  return withKazdelCannonOrigin(battle, safeAllies, () => run(tagged));
+  const ownerId = kazdelCannonOwner(battle, source, dmg);
+  const tagged = { ...dmg, tags, kazdelCannonOwnerId: ownerId };
+  return withKazdelCannonOrigin(battle, safeAllies, () => run(tagged), ownerId);
 }
 
 export class BattleCombat {

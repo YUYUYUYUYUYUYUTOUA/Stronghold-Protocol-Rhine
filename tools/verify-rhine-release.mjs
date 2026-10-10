@@ -33,6 +33,7 @@ const KAZDEL_ROSTER = [
   ['chess_kazdel_meteorite', 'char_219_meteo', 2, ['preciShip'], ['skchr_meteo_1', 'skchr_meteo_2'], ['uniequip_002_meteo']],
   ['chess_char_2_19', 'char_4151_tinman', 2, ['investShip', 'skillfulShip'], ['skchr_tinman_1', 'skchr_tinman_2'], ['uniequip_002_tinman']],
   ['chess_kazdel_paprika', 'char_4071_peper', 3, ['deputShip'], ['skcom_heal_rage[3]', 'skchr_peper_2'], ['uniequip_002_peper']],
+  ['chess_kazdel_ascalon', 'char_4132_ascln', 3, [], ['skchr_ascln_1', 'skchr_ascln_2', 'skchr_ascln_3'], ['uniequip_002_ascln', 'uniequip_003_ascln']],
   ['chess_kazdel_hoederer', 'char_4088_hodrer', 4, ['steadShip'], ['skchr_hodrer_1', 'skchr_hodrer_2', 'skchr_hodrer_3'], ['uniequip_002_hodrer', 'uniequip_003_hodrer']],
   ['chess_char_4_04', 'char_4087_ines', 4, ['visiShip', 'raidShip'], ['skchr_ines_1', 'skchr_ines_2', 'skchr_ines_3'], ['uniequip_002_ines']],
   ['chess_char_4_18', 'char_311_mudrok', 4, ['soloShip'], ['skcom_def_up[3]', 'skchr_mudrok_2', 'skchr_mudrok_3'], ['uniequip_002_mudrok', 'uniequip_003_mudrok']],
@@ -58,7 +59,7 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
 
   const urls = new Set([
     '/art/kazdel/bond.svg', '/shared/kazdel.js', '/shared/openingBans.js',
-    '/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
+    '/sim/content/kazdel/ascalon.js', '/sim/content/kits/ops/op-ascln.js', '/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
     '/sim/content/kits/kazdel.js', '/sim/content/index.js', '/sim/kazdelOrigin.js',
     '/sim/damage.js', '/sim/units.js', '/sim/buffs.js', '/sim/snapshot.js', '/sim/ai.js', '/sim/projectiles.js',
     '/sim/battle/combat.js', '/sim/battle/events.js', '/sim/battle/hooks.js',

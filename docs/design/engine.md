@@ -180,3 +180,10 @@ Each domain file `server/sim/content/{tokens,bonds,garrisons,items,bands,enemies
 - choices: 机变 families (悬赏决策 bounties, 道具补给, 机密商店, 战术决策 team/personal buffs). 悬赏决策 = the official structure of its round (choices.json `bountyDrafts`, 86 drafted cards: R3 a fixed set of six 两场 cards, R9 6 of a boss group's list, R11 6 of a seen 7-card list; §21.2); 机密商店 (R11 the official composition) and 战术决策 can offer the same card twice (`shopDraft` / `tacticDraft`); bounty cards carry `descRaw`; no draft offers a multi-round card, and 教鞭's lasts two battles (`choices.js MULTI_ROUND_BOUNTY_BATTLES`, §20.6). Pointing Stick (教鞭) offers up to three private Tactical Training cards during PREP; the owner confirms one through `g.choice` with its `choiceId`, with Ready blocked until confirmation or the existing prep deadline's auto-pick. “神秘顾客” remains random (META §2.5).
 
 ---
+
+
+### 莱茵扩展：卡兹戴尔炮击友伤（未发布，2026-10-10）
+
+按维护者授权，六人档炮击只误伤所属玩家的活体友军，直接炮击伤害为敌方的 50%（`400 + 7.5 × S`）；敌方仍为 `800 + 15 × S`。其他玩家友军免疫炮击及同步／延迟衍生伤害。归属从炮源经 DamageInfo、生命流失的 `from` 及回调传递，不能以反伤者、承伤者或客户端战场权威玩家替代。缺失归属的炮击不伤害友军。九人档仅伤敌方，魂灵始终免疫，误伤及其衍生死亡不产层或充能。详见 [卡兹戴尔说明](../KAZDEL.md)。
+
+三阶阿斯卡纶仅有卡兹戴尔主盟约。活体本体的范围新增减速为普通 20%、精锐 30%，与原生减速相乘，同名新增光环全场仅取最强。每位玩家独立累计有有效目标的时间，每 3 秒结算普通 1、精锐 2 层，仅对已激活盟约和允许产层的战斗生效；多个敌人或重复本体不倍增，空档保留不足 3 秒的余量，魂灵不参与。原生面板、三技能、天赋和模组复用固定版本数据与已有阿斯卡纶技能实现。

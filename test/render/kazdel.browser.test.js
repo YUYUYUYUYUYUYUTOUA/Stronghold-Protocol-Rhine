@@ -23,13 +23,13 @@ describe('Kazdel native-battle visual integration in Chrome',{skip:enabled?false
   after(async()=>{await browser?.close();await srv?.close();});
   async function open(query){const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewport({width:1600,height:900});await page.goto(`${BASE||`http://127.0.0.1:${srv.port}`}/dev/kazdel-demo.html?paused=1&${query}`);await page.waitForFunction('window.__kazdelDemo?.ready',{timeout:60000});return {page,errors};}
 
-  test('six-person cannon warning covers exactly nine cells, donor soul survives pause, and all ten roster cards work',async()=>{
+  test('six-person cannon warning covers exactly nine cells, donor soul survives pause, and all eleven roster cards work',async()=>{
     const {page,errors}=await open('count=6&t=6.3');
     try{
       await page.waitForFunction('window.__kazdelDemo.view.debug.fx.kazdelWarnings.length===1');
       await page.waitForFunction('[...window.__kazdelDemo.view.debug.views.values()].find(v=>v.info.kazdelSoul)?.spineReady');
       const state=await page.evaluate(()=>{const d=window.__kazdelDemo,v=[...d.view.debug.views.values()].find(v=>v.info.kazdelSoul),s=d.battle.snapshot().kazdel[0];return {stage:s.stage,charge:s.charge,warning:s.warning,soul:{form:v.form,spine:v.info.spine,alpha:v.body.alpha},roster:document.querySelectorAll('[data-roster]').length,errors:d.errors};});
-      assert.equal(state.stage,2);assert.ok(state.charge>12&&state.charge<15);assert.equal(state.soul.spine,'char_290_vigna');assert.equal(state.soul.form,'kazdelSoul');assert.equal(state.soul.alpha,.58);assert.equal(state.roster,10);assert.deepEqual(state.errors,[]);
+      assert.equal(state.stage,2);assert.ok(state.charge>12&&state.charge<15);assert.equal(state.soul.spine,'char_290_vigna');assert.equal(state.soul.form,'kazdelSoul');assert.equal(state.soul.alpha,.58);assert.equal(state.roster,11);assert.deepEqual(state.errors,[]);
       assert.match(await page.$eval('#hud',e=>e.textContent),/敌我均伤/);
       const footprint=await page.evaluate(async()=>{const {cannonTiles}=await import('/js/render/fx/kazdel.js');const d=window.__kazdelDemo,s=d.battle.snapshot().kazdel[0];return cannonTiles(s.warning.x,s.warning.y,d.battle.rect);});assert.equal(footprint.length,9);
       await page.screenshot({path:path.join(OUT,'kazdel-six-warning.png')});

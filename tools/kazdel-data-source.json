@@ -13,7 +13,8 @@
       "https://prts.wiki/w/%E4%BC%8A%E5%86%85%E4%B8%9D",
       "https://prts.wiki/w/%E6%B3%A5%E5%B2%A9",
       "https://prts.wiki/w/%E9%80%BB%E5%90%84%E6%96%AF",
-      "https://prts.wiki/w/%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94"
+      "https://prts.wiki/w/%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94",
+      "https://prts.wiki/w/%E9%98%BF%E6%96%AF%E5%8D%A1%E7%BA%B6"
     ],
     "files": [
       "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/a550f5e048bb94e7cdefc6eb97a4091f0c4c7add/zh_CN/gamedata/excel/character_table.json",
@@ -9380,6 +9381,1056 @@
             },
             {
               "id": "31063",
+              "count": 3,
+              "type": "MATERIAL"
+            }
+          ]
+        }
+      ]
+    },
+    "char_4132_ascln": {
+      "name": "阿斯卡纶",
+      "description": "对攻击范围内<@ba.kw>所有敌人</>造成伤害\\n拥有50%的物理和法术闪避且不容易成为敌人的<@ba.kw>攻击目标</>",
+      "sortIndex": 29,
+      "spTargetType": "NONE",
+      "spTargetId": null,
+      "canUseGeneralPotentialItem": true,
+      "canUseActivityPotentialItem": false,
+      "potentialItemId": "p_char_4132_ascln",
+      "activityPotentialItemId": null,
+      "classicPotentialItemId": null,
+      "nationId": "rhodes",
+      "groupId": "sweep",
+      "teamId": null,
+      "mainPower": {
+        "nationId": "rhodes",
+        "groupId": "sweep",
+        "teamId": null
+      },
+      "subPower": [
+        {
+          "nationId": null,
+          "groupId": "babel",
+          "teamId": null
+        }
+      ],
+      "displayNumber": "SW00",
+      "appellation": "Ascalon",
+      "position": "MELEE",
+      "tagList": [
+        "减速",
+        "输出"
+      ],
+      "itemUsage": "S.W.E.E.P.主管阿斯卡纶，烟影之中，伺机而动。",
+      "itemDesc": "她在你身边的时间，远比你想象的要长。",
+      "itemObtainApproach": "招募寻访",
+      "isNotObtainable": false,
+      "isSpChar": false,
+      "maxPotentialLevel": 5,
+      "rarity": "TIER_6",
+      "profession": "SPECIAL",
+      "subProfessionId": "stalker",
+      "trait": {
+        "candidates": [
+          {
+            "unlockCondition": {
+              "phase": "PHASE_0",
+              "level": 1
+            },
+            "requiredPotentialRank": 0,
+            "blackboard": [
+              {
+                "key": "prob",
+                "value": 0.5,
+                "valueStr": null
+              }
+            ],
+            "overrideDescripton": null,
+            "prefabKey": null,
+            "rangeId": null
+          }
+        ]
+      },
+      "phases": [
+        {
+          "characterPrefabKey": "char_4132_ascln",
+          "rangeId": "y-1",
+          "maxLevel": 50,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 702,
+                "atk": 410,
+                "def": 146,
+                "magicResistance": 10,
+                "cost": 19,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 50,
+              "data": {
+                "maxHp": 949,
+                "atk": 587,
+                "def": 215,
+                "magicResistance": 10,
+                "cost": 19,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ],
+          "evolveCost": null
+        },
+        {
+          "characterPrefabKey": "char_4132_ascln",
+          "rangeId": "y-1",
+          "maxLevel": 80,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 949,
+                "atk": 587,
+                "def": 215,
+                "magicResistance": 20,
+                "cost": 21,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 80,
+              "data": {
+                "maxHp": 1233,
+                "atk": 763,
+                "def": 283,
+                "magicResistance": 20,
+                "cost": 21,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ],
+          "evolveCost": [
+            {
+              "id": "3281",
+              "count": 5,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30012",
+              "count": 12,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30052",
+              "count": 4,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "characterPrefabKey": "char_4132_ascln",
+          "rangeId": "y-1",
+          "maxLevel": 90,
+          "attributesKeyFrames": [
+            {
+              "level": 1,
+              "data": {
+                "maxHp": 1233,
+                "atk": 763,
+                "def": 283,
+                "magicResistance": 30,
+                "cost": 21,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            },
+            {
+              "level": 90,
+              "data": {
+                "maxHp": 1623,
+                "atk": 954,
+                "def": 333,
+                "magicResistance": 30,
+                "cost": 21,
+                "blockCnt": 0,
+                "moveSpeed": 1,
+                "attackSpeed": 100,
+                "baseAttackTime": 3.5,
+                "respawnTime": 70,
+                "hpRecoveryPerSec": 0,
+                "spRecoveryPerSec": 1,
+                "maxDeployCount": 1,
+                "maxDeckStackCnt": 0,
+                "tauntLevel": -1,
+                "massLevel": 0,
+                "baseForceLevel": 0,
+                "stunImmune": false,
+                "silenceImmune": false,
+                "sleepImmune": false,
+                "frozenImmune": false,
+                "levitateImmune": false,
+                "disarmedCombatImmune": false,
+                "fearedImmune": false,
+                "palsyImmune": false,
+                "attractImmune": false,
+                "teleportImmune": false,
+                "groundBoundImmune": false
+              }
+            }
+          ],
+          "evolveCost": [
+            {
+              "id": "3283",
+              "count": 4,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30135",
+              "count": 4,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30054",
+              "count": 6,
+              "type": "MATERIAL"
+            }
+          ]
+        }
+      ],
+      "skills": [
+        {
+          "skillId": "skchr_ascln_1",
+          "overridePrefabKey": null,
+          "overrideTokenKey": null,
+          "levelUpCostCond": [
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 28800,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 8,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31064",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30063",
+                  "count": 4,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 57600,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 12,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31064",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31074",
+                  "count": 8,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 86400,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 15,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30155",
+                  "count": 6,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30014",
+                  "count": 5,
+                  "type": "MATERIAL"
+                }
+              ]
+            }
+          ],
+          "unlockCond": {
+            "phase": "PHASE_0",
+            "level": 1
+          }
+        },
+        {
+          "skillId": "skchr_ascln_2",
+          "overridePrefabKey": null,
+          "overrideTokenKey": null,
+          "levelUpCostCond": [
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 28800,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 8,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30094",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31063",
+                  "count": 6,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 57600,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 12,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31024",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30064",
+                  "count": 6,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 86400,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 15,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30115",
+                  "count": 6,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31024",
+                  "count": 6,
+                  "type": "MATERIAL"
+                }
+              ]
+            }
+          ],
+          "unlockCond": {
+            "phase": "PHASE_1",
+            "level": 1
+          }
+        },
+        {
+          "skillId": "skchr_ascln_3",
+          "overridePrefabKey": null,
+          "overrideTokenKey": null,
+          "levelUpCostCond": [
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 28800,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 8,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30044",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31083",
+                  "count": 3,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 57600,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 12,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30044",
+                  "count": 4,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "31034",
+                  "count": 6,
+                  "type": "MATERIAL"
+                }
+              ]
+            },
+            {
+              "unlockCond": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "lvlUpTime": 86400,
+              "levelUpCost": [
+                {
+                  "id": "3303",
+                  "count": 15,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30125",
+                  "count": 6,
+                  "type": "MATERIAL"
+                },
+                {
+                  "id": "30104",
+                  "count": 5,
+                  "type": "MATERIAL"
+                }
+              ]
+            }
+          ],
+          "unlockCond": {
+            "phase": "PHASE_2",
+            "level": 1
+          }
+        }
+      ],
+      "displayTokenDict": null,
+      "talents": [
+        {
+          "candidates": [
+            {
+              "unlockCondition": {
+                "phase": "PHASE_0",
+                "level": 1
+              },
+              "requiredPotentialRank": 0,
+              "prefabKey": "1",
+              "name": "死亡拘审",
+              "description": "攻击对敌人施加效果：移动速度降低12％，每秒受到6％阿斯卡纶当前攻击力的法术伤害，持续18秒，效果最多叠加三层",
+              "rangeId": null,
+              "blackboard": [
+                {
+                  "key": "move_speed",
+                  "value": -0.12,
+                  "valueStr": null
+                },
+                {
+                  "key": "atk_ratio",
+                  "value": 0.06,
+                  "valueStr": null
+                },
+                {
+                  "key": "max_stack_cnt",
+                  "value": 3,
+                  "valueStr": null
+                },
+                {
+                  "key": "debuff_duration",
+                  "value": 18,
+                  "valueStr": null
+                },
+                {
+                  "key": "interval",
+                  "value": 1,
+                  "valueStr": null
+                }
+              ],
+              "tokenKey": null,
+              "isHideTalent": false
+            },
+            {
+              "unlockCondition": {
+                "phase": "PHASE_1",
+                "level": 1
+              },
+              "requiredPotentialRank": 0,
+              "prefabKey": "1",
+              "name": "死亡拘审",
+              "description": "攻击对敌人施加效果：移动速度降低15％，每秒受到8％阿斯卡纶当前攻击力的法术伤害，持续18秒，效果最多叠加三层",
+              "rangeId": null,
+              "blackboard": [
+                {
+                  "key": "move_speed",
+                  "value": -0.15,
+                  "valueStr": null
+                },
+                {
+                  "key": "atk_ratio",
+                  "value": 0.08,
+                  "valueStr": null
+                },
+                {
+                  "key": "max_stack_cnt",
+                  "value": 3,
+                  "valueStr": null
+                },
+                {
+                  "key": "debuff_duration",
+                  "value": 18,
+                  "valueStr": null
+                },
+                {
+                  "key": "interval",
+                  "value": 1,
+                  "valueStr": null
+                }
+              ],
+              "tokenKey": null,
+              "isHideTalent": false
+            },
+            {
+              "unlockCondition": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "requiredPotentialRank": 0,
+              "prefabKey": "1",
+              "name": "死亡拘审",
+              "description": "攻击对敌人施加效果：移动速度降低18％，每秒受到10％阿斯卡纶当前攻击力的法术伤害，持续25秒，效果最多叠加三层",
+              "rangeId": null,
+              "blackboard": [
+                {
+                  "key": "move_speed",
+                  "value": -0.18,
+                  "valueStr": null
+                },
+                {
+                  "key": "atk_ratio",
+                  "value": 0.1,
+                  "valueStr": null
+                },
+                {
+                  "key": "max_stack_cnt",
+                  "value": 3,
+                  "valueStr": null
+                },
+                {
+                  "key": "debuff_duration",
+                  "value": 25,
+                  "valueStr": null
+                },
+                {
+                  "key": "interval",
+                  "value": 1,
+                  "valueStr": null
+                }
+              ],
+              "tokenKey": null,
+              "isHideTalent": false
+            }
+          ]
+        },
+        {
+          "candidates": [
+            {
+              "unlockCondition": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "requiredPotentialRank": 0,
+              "prefabKey": "2",
+              "name": "噬光残影",
+              "description": "攻击速度+8，自身周围四格有高台时，攻击速度额外+6",
+              "rangeId": null,
+              "blackboard": [
+                {
+                  "key": "attack_speed",
+                  "value": 8,
+                  "valueStr": null
+                },
+                {
+                  "key": "attack_speed_add",
+                  "value": 6,
+                  "valueStr": null
+                },
+                {
+                  "key": "cnt",
+                  "value": 1,
+                  "valueStr": null
+                }
+              ],
+              "tokenKey": null,
+              "isHideTalent": false
+            },
+            {
+              "unlockCondition": {
+                "phase": "PHASE_2",
+                "level": 1
+              },
+              "requiredPotentialRank": 4,
+              "prefabKey": "2",
+              "name": "噬光残影",
+              "description": "攻击速度+10<@ba.talpu>（+2）</>，自身周围四格有高台时，攻击速度额外+6",
+              "rangeId": null,
+              "blackboard": [
+                {
+                  "key": "attack_speed",
+                  "value": 10,
+                  "valueStr": null
+                },
+                {
+                  "key": "attack_speed_add",
+                  "value": 6,
+                  "valueStr": null
+                },
+                {
+                  "key": "cnt",
+                  "value": 1,
+                  "valueStr": null
+                }
+              ],
+              "tokenKey": null,
+              "isHideTalent": false
+            }
+          ]
+        }
+      ],
+      "potentialRanks": [
+        {
+          "type": "BUFF",
+          "description": "部署费用-1",
+          "buff": {
+            "attributes": {
+              "abnormalFlags": null,
+              "abnormalImmunes": null,
+              "abnormalAntis": null,
+              "abnormalCombos": null,
+              "abnormalComboImmunes": null,
+              "attributeModifiers": [
+                {
+                  "attributeType": "COST",
+                  "formulaItem": "ADDITION",
+                  "value": -1,
+                  "loadFromBlackboard": false,
+                  "fetchBaseValueFromSourceEntity": false
+                }
+              ]
+            }
+          },
+          "equivalentCost": null
+        },
+        {
+          "type": "BUFF",
+          "description": "再部署时间-4秒",
+          "buff": {
+            "attributes": {
+              "abnormalFlags": null,
+              "abnormalImmunes": null,
+              "abnormalAntis": null,
+              "abnormalCombos": null,
+              "abnormalComboImmunes": null,
+              "attributeModifiers": [
+                {
+                  "attributeType": "RESPAWN_TIME",
+                  "formulaItem": "ADDITION",
+                  "value": -4,
+                  "loadFromBlackboard": false,
+                  "fetchBaseValueFromSourceEntity": false
+                }
+              ]
+            }
+          },
+          "equivalentCost": null
+        },
+        {
+          "type": "BUFF",
+          "description": "生命上限+160",
+          "buff": {
+            "attributes": {
+              "abnormalFlags": null,
+              "abnormalImmunes": null,
+              "abnormalAntis": null,
+              "abnormalCombos": null,
+              "abnormalComboImmunes": null,
+              "attributeModifiers": [
+                {
+                  "attributeType": "MAX_HP",
+                  "formulaItem": "ADDITION",
+                  "value": 160,
+                  "loadFromBlackboard": false,
+                  "fetchBaseValueFromSourceEntity": false
+                }
+              ]
+            }
+          },
+          "equivalentCost": null
+        },
+        {
+          "type": "CUSTOM",
+          "description": "第二天赋效果增强",
+          "buff": null,
+          "equivalentCost": null
+        },
+        {
+          "type": "BUFF",
+          "description": "部署费用-1",
+          "buff": {
+            "attributes": {
+              "abnormalFlags": null,
+              "abnormalImmunes": null,
+              "abnormalAntis": null,
+              "abnormalCombos": null,
+              "abnormalComboImmunes": null,
+              "attributeModifiers": [
+                {
+                  "attributeType": "COST",
+                  "formulaItem": "ADDITION",
+                  "value": -1,
+                  "loadFromBlackboard": false,
+                  "fetchBaseValueFromSourceEntity": false
+                }
+              ]
+            }
+          },
+          "equivalentCost": null
+        }
+      ],
+      "favorKeyFrames": [
+        {
+          "level": 0,
+          "data": {
+            "maxHp": 0,
+            "atk": 0,
+            "def": 0,
+            "magicResistance": 0,
+            "cost": 0,
+            "blockCnt": 0,
+            "moveSpeed": 0,
+            "attackSpeed": 0,
+            "baseAttackTime": 0,
+            "respawnTime": 0,
+            "hpRecoveryPerSec": 0,
+            "spRecoveryPerSec": 0,
+            "maxDeployCount": 0,
+            "maxDeckStackCnt": 0,
+            "tauntLevel": 0,
+            "massLevel": 0,
+            "baseForceLevel": 0,
+            "stunImmune": false,
+            "silenceImmune": false,
+            "sleepImmune": false,
+            "frozenImmune": false,
+            "levitateImmune": false,
+            "disarmedCombatImmune": false,
+            "fearedImmune": false,
+            "palsyImmune": false,
+            "attractImmune": false,
+            "teleportImmune": false,
+            "groundBoundImmune": false
+          }
+        },
+        {
+          "level": 50,
+          "data": {
+            "maxHp": 200,
+            "atk": 0,
+            "def": 40,
+            "magicResistance": 0,
+            "cost": 0,
+            "blockCnt": 0,
+            "moveSpeed": 0,
+            "attackSpeed": 0,
+            "baseAttackTime": 0,
+            "respawnTime": 0,
+            "hpRecoveryPerSec": 0,
+            "spRecoveryPerSec": 0,
+            "maxDeployCount": 0,
+            "maxDeckStackCnt": 0,
+            "tauntLevel": 0,
+            "massLevel": 0,
+            "baseForceLevel": 0,
+            "stunImmune": false,
+            "silenceImmune": false,
+            "sleepImmune": false,
+            "frozenImmune": false,
+            "levitateImmune": false,
+            "disarmedCombatImmune": false,
+            "fearedImmune": false,
+            "palsyImmune": false,
+            "attractImmune": false,
+            "teleportImmune": false,
+            "groundBoundImmune": false
+          }
+        }
+      ],
+      "allSkillLvlup": [
+        {
+          "unlockCond": {
+            "phase": "PHASE_0",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3301",
+              "count": 5,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "unlockCond": {
+            "phase": "PHASE_0",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3301",
+              "count": 5,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30021",
+              "count": 5,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30051",
+              "count": 4,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "unlockCond": {
+            "phase": "PHASE_0",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3302",
+              "count": 8,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30032",
+              "count": 5,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "unlockCond": {
+            "phase": "PHASE_1",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3302",
+              "count": 8,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30042",
+              "count": 4,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30022",
+              "count": 3,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "unlockCond": {
+            "phase": "PHASE_1",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3302",
+              "count": 8,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30013",
+              "count": 8,
+              "type": "MATERIAL"
+            }
+          ]
+        },
+        {
+          "unlockCond": {
+            "phase": "PHASE_1",
+            "level": 1
+          },
+          "lvlUpCost": [
+            {
+              "id": "3303",
+              "count": 8,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "30023",
+              "count": 6,
+              "type": "MATERIAL"
+            },
+            {
+              "id": "31053",
               "count": 3,
               "type": "MATERIAL"
             }
@@ -19145,6 +20196,1147 @@
         }
       ]
     },
+    "skchr_ascln_1": {
+      "skillId": "skchr_ascln_1",
+      "iconId": null,
+      "hidden": false,
+      "levels": [
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 10,
+            "initSp": 0,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.05,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 1,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 10,
+            "initSp": 1,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.15,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 1,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 10,
+            "initSp": 2,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.3,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 1,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 2,
+            "spCost": 10,
+            "initSp": 2,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.3,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 2,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 2,
+            "spCost": 9,
+            "initSp": 2,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.5,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 2,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 2,
+            "spCost": 9,
+            "initSp": 3,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.6,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 2,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 3,
+            "spCost": 8,
+            "initSp": 4,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.7,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 3,
+            "spCost": 8,
+            "initSp": 4,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.8,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 3,
+            "spCost": 7,
+            "initSp": 4,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 1.8,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "追袭",
+          "rangeId": null,
+          "description": "下次攻击的攻击力提升至<@ba.vup>{atk_scale:0%}</>，并连续攻击两次\\n<@ba.rem>可充能{cnt}次</>",
+          "skillType": "AUTO",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 3,
+            "spCost": 7,
+            "initSp": 4,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_1",
+          "duration": -1,
+          "blackboard": [
+            {
+              "key": "atk_scale",
+              "value": 2.1,
+              "valueStr": null
+            },
+            {
+              "key": "cnt",
+              "value": 3,
+              "valueStr": null
+            }
+          ]
+        }
+      ]
+    },
+    "skchr_ascln_2": {
+      "skillId": "skchr_ascln_2",
+      "iconId": null,
+      "hidden": false,
+      "levels": [
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 30,
+            "initSp": 0,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.2,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 29,
+            "initSp": 1,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.3,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.2,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 28,
+            "initSp": 3,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.4,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.25,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 27,
+            "initSp": 5,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.5,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.3,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 26,
+            "initSp": 6,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.6,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.35,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 25,
+            "initSp": 8,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.7,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.35,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 24,
+            "initSp": 10,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 0.9,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.4,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 23,
+            "initSp": 13,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 1,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.45,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 22,
+            "initSp": 14,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 1.2,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.5,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "恩赐",
+          "rangeId": null,
+          "description": "攻击力<@ba.vup>+{atk:0%}</>，使攻击范围内地面敌人移动速度<@ba.vup>{move_speed:0%}</>，并在其被击倒时对周围敌人施加一层第一天赋效果",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 20,
+            "initSp": 15,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_2",
+          "duration": 35,
+          "blackboard": [
+            {
+              "key": "atk",
+              "value": 1.3,
+              "valueStr": null
+            },
+            {
+              "key": "move_speed",
+              "value": -0.6,
+              "valueStr": null
+            },
+            {
+              "key": "range_radius",
+              "value": 1.3,
+              "valueStr": null
+            }
+          ]
+        }
+      ]
+    },
+    "skchr_ascln_3": {
+      "skillId": "skchr_ascln_3",
+      "iconId": null,
+      "hidden": false,
+      "levels": [
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>小幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 60,
+            "initSp": 20,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -0.7,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.1,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.03,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.1,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.1,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>小幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 58,
+            "initSp": 20,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -0.7,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.03,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.1,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.1,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>小幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 56,
+            "initSp": 20,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -0.7,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.03,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.15,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.15,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 53,
+            "initSp": 25,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.2,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.04,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.15,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.15,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 52,
+            "initSp": 25,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.2,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.04,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.2,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 51,
+            "initSp": 25,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.2,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.04,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.25,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.25,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>较大幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 49,
+            "initSp": 30,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.5,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.2,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.05,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.3,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.3,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>较大幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 47,
+            "initSp": 30,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.5,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.3,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.06,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.35,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.35,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>较大幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 46,
+            "initSp": 30,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.5,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.4,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.07,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.5,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.5,
+              "valueStr": null
+            }
+          ]
+        },
+        {
+          "name": "降临",
+          "rangeId": "y-10",
+          "description": "攻击范围<@ba.vup>扩大</>，攻击力<@ba.vup>+{atk:0%}</>，攻击间隔<@ba.vup>较大幅度缩短</>，使攻击范围内的地面敌人物理与法术命中率<@ba.vup>{attack@damage_hitrate_physical:0%}</>。自身更易受到敌人攻击，敌人未命中自身或自身闪避时回复<@ba.vup>{attack@hp_ratio:0%}</>最大生命值",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "spData": {
+            "spType": "INCREASE_WITH_TIME",
+            "levelUpCost": null,
+            "maxChargeTime": 1,
+            "spCost": 45,
+            "initSp": 35,
+            "increment": 1
+          },
+          "prefabId": "skchr_ascln_3",
+          "duration": 45,
+          "blackboard": [
+            {
+              "key": "base_attack_time",
+              "value": -1.5,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 0.5,
+              "valueStr": null
+            },
+            {
+              "key": "taunt_level",
+              "value": 2,
+              "valueStr": null
+            },
+            {
+              "key": "attack@hp_ratio",
+              "value": 0.08,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_physical",
+              "value": -0.5,
+              "valueStr": null
+            },
+            {
+              "key": "attack@damage_hitrate_magical",
+              "value": -0.5,
+              "valueStr": null
+            }
+          ]
+        }
+      ]
+    },
     "sktok_wisdel_wward": {
       "skillId": "sktok_wisdel_wward",
       "iconId": null,
@@ -20260,6 +22452,84 @@
         }
       ]
     },
+    "y-10": {
+      "id": "y-10",
+      "direction": 1,
+      "grids": [
+        {
+          "row": 2,
+          "col": -1
+        },
+        {
+          "row": 2,
+          "col": 0
+        },
+        {
+          "row": 2,
+          "col": 1
+        },
+        {
+          "row": 1,
+          "col": -1
+        },
+        {
+          "row": 1,
+          "col": 0
+        },
+        {
+          "row": 1,
+          "col": 1
+        },
+        {
+          "row": 1,
+          "col": 2
+        },
+        {
+          "row": 0,
+          "col": -1
+        },
+        {
+          "row": 0,
+          "col": 0
+        },
+        {
+          "row": 0,
+          "col": 1
+        },
+        {
+          "row": 0,
+          "col": 2
+        },
+        {
+          "row": -1,
+          "col": -1
+        },
+        {
+          "row": -1,
+          "col": 0
+        },
+        {
+          "row": -1,
+          "col": 1
+        },
+        {
+          "row": -1,
+          "col": 2
+        },
+        {
+          "row": -2,
+          "col": -1
+        },
+        {
+          "row": -2,
+          "col": 0
+        },
+        {
+          "row": -2,
+          "col": 1
+        }
+      ]
+    },
     "y-2": {
       "id": "y-2",
       "direction": 1,
@@ -20359,6 +22629,11 @@
       "char_1035_wisdel": [
         "uniequip_001_wisdel",
         "uniequip_002_wisdel"
+      ],
+      "char_4132_ascln": [
+        "uniequip_001_ascln",
+        "uniequip_002_ascln",
+        "uniequip_003_ascln"
       ]
     },
     "equipDict": {
@@ -20657,6 +22932,45 @@
         "typeName2": "X",
         "type": "ADVANCED",
         "charId": "char_1035_wisdel",
+        "isSpecialEquip": false,
+        "showEvolvePhase": "PHASE_2",
+        "unlockEvolvePhase": "PHASE_2"
+      },
+      "uniequip_001_ascln": {
+        "uniEquipId": "uniequip_001_ascln",
+        "uniEquipName": "阿斯卡纶证章",
+        "uniEquipIcon": "uniequip_001_ascln",
+        "typeIcon": "original",
+        "typeName1": "ORIGINAL",
+        "typeName2": null,
+        "type": "INITIAL",
+        "charId": "char_4132_ascln",
+        "isSpecialEquip": false,
+        "showEvolvePhase": "PHASE_2",
+        "unlockEvolvePhase": "PHASE_0"
+      },
+      "uniequip_002_ascln": {
+        "uniEquipId": "uniequip_002_ascln",
+        "uniEquipName": "“无形，无情”",
+        "uniEquipIcon": "uniequip_002_ascln",
+        "typeIcon": "amb-x",
+        "typeName1": "AMB",
+        "typeName2": "X",
+        "type": "ADVANCED",
+        "charId": "char_4132_ascln",
+        "isSpecialEquip": false,
+        "showEvolvePhase": "PHASE_2",
+        "unlockEvolvePhase": "PHASE_2"
+      },
+      "uniequip_003_ascln": {
+        "uniEquipId": "uniequip_003_ascln",
+        "uniEquipName": "“阿斯卡纶的眼睛”",
+        "uniEquipIcon": "uniequip_003_ascln",
+        "typeIcon": "amb-y",
+        "typeName1": "AMB",
+        "typeName2": "Y",
+        "type": "ADVANCED",
+        "charId": "char_4132_ascln",
         "isSpecialEquip": false,
         "showEvolvePhase": "PHASE_2",
         "unlockEvolvePhase": "PHASE_2"
@@ -25322,6 +27636,652 @@
             {
               "key": "attack_speed",
               "value": 7,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        }
+      ]
+    },
+    "uniequip_002_ascln": {
+      "phases": [
+        {
+          "equipLevel": 1,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "DISPLAY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": "攻击范围内所有敌人移动速度<@ba.kw>-20%</>",
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [],
+                    "overrideDescripton": null,
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            },
+            {
+              "resKey": "ascln_equip_1_1_p1",
+              "target": "TALENT",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "",
+                    "talentIndex": -1,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "10",
+                    "name": null,
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.2,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": true
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "max_hp",
+              "value": 180,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 15,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        },
+        {
+          "equipLevel": 2,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "DISPLAY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": "攻击范围内所有敌人移动速度<@ba.kw>-20%</>",
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [],
+                    "overrideDescripton": null,
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            },
+            {
+              "resKey": "ascln_equip_1_2_p1",
+              "target": "TALENT",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "",
+                    "talentIndex": -1,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "10",
+                    "name": null,
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.2,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": true
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            },
+            {
+              "resKey": null,
+              "target": "TALENT_DATA_ONLY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "攻击对敌人施加效果：移动速度降低18％，每秒受到11％阿斯卡纶当前攻击力的法术伤害，持续27秒，效果最多叠加三层",
+                    "talentIndex": 0,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "1",
+                    "name": "死亡拘审",
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.18,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "atk_ratio",
+                        "value": 0.11,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "max_stack_cnt",
+                        "value": 3,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "debuff_duration",
+                        "value": 27,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "interval",
+                        "value": 1,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": false
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "max_hp",
+              "value": 230,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 33,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        },
+        {
+          "equipLevel": 3,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "DISPLAY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": "攻击范围内所有敌人移动速度<@ba.kw>-20%</>",
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [],
+                    "overrideDescripton": null,
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            },
+            {
+              "resKey": "ascln_equip_1_3_p1",
+              "target": "TALENT",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "",
+                    "talentIndex": -1,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "10",
+                    "name": null,
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.2,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": true
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            },
+            {
+              "resKey": null,
+              "target": "TALENT_DATA_ONLY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "攻击对敌人施加效果：移动速度降低18％，每秒受到11％阿斯卡纶当前攻击力的法术伤害，持续30秒，效果最多叠加三层",
+                    "talentIndex": 0,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "1",
+                    "name": "死亡拘审",
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.18,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "atk_ratio",
+                        "value": 0.11,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "max_stack_cnt",
+                        "value": 3,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "debuff_duration",
+                        "value": 30,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "interval",
+                        "value": 1,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": false
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "max_hp",
+              "value": 270,
+              "valueStr": null
+            },
+            {
+              "key": "atk",
+              "value": 53,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        }
+      ]
+    },
+    "uniequip_003_ascln": {
+      "phases": [
+        {
+          "equipLevel": 1,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "TRAIT_DATA_ONLY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [
+                      {
+                        "key": "prob",
+                        "value": 0.65,
+                        "valueStr": null
+                      }
+                    ],
+                    "overrideDescripton": "对攻击范围内<@ba.kw>所有敌人</>造成伤害\\n拥有65%的物理和法术闪避且不容易成为敌人的<@ba.kw>攻击目标</>",
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "atk",
+              "value": 55,
+              "valueStr": null
+            },
+            {
+              "key": "def",
+              "value": 25,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        },
+        {
+          "equipLevel": 2,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "TRAIT_DATA_ONLY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [
+                      {
+                        "key": "prob",
+                        "value": 0.65,
+                        "valueStr": null
+                      }
+                    ],
+                    "overrideDescripton": "对攻击范围内<@ba.kw>所有敌人</>造成伤害\\n拥有65%的物理和法术闪避且不容易成为敌人的<@ba.kw>攻击目标</>",
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            },
+            {
+              "resKey": "ascln_equip_2_2_p1",
+              "target": "TALENT",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "攻击对敌人施加效果：移动速度降低18％，每秒受到10％阿斯卡纶当前攻击力的法术伤害，持续25秒，效果最多叠加三层，拥有该效果的敌人被击倒时阿斯卡纶回复5%生命",
+                    "talentIndex": 0,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "1",
+                    "name": "死亡拘审",
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.18,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "atk_ratio",
+                        "value": 0.1,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "max_stack_cnt",
+                        "value": 3,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "debuff_duration",
+                        "value": 25,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "interval",
+                        "value": 1,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "hp_ratio",
+                        "value": 0.05,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": false
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "atk",
+              "value": 70,
+              "valueStr": null
+            },
+            {
+              "key": "def",
+              "value": 45,
+              "valueStr": null
+            }
+          ],
+          "tokenAttributeBlackboard": {}
+        },
+        {
+          "equipLevel": 3,
+          "parts": [
+            {
+              "resKey": null,
+              "target": "TRAIT_DATA_ONLY",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": null
+              },
+              "overrideTraitDataBundle": {
+                "candidates": [
+                  {
+                    "additionalDescription": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "blackboard": [
+                      {
+                        "key": "prob",
+                        "value": 0.65,
+                        "valueStr": null
+                      }
+                    ],
+                    "overrideDescripton": "对攻击范围内<@ba.kw>所有敌人</>造成伤害\\n拥有65%的物理和法术闪避且不容易成为敌人的<@ba.kw>攻击目标</>",
+                    "prefabKey": null,
+                    "rangeId": null
+                  }
+                ]
+              }
+            },
+            {
+              "resKey": "ascln_equip_2_3_p1",
+              "target": "TALENT",
+              "isToken": false,
+              "validInGameTag": null,
+              "validInMapTag": null,
+              "addOrOverrideTalentDataBundle": {
+                "candidates": [
+                  {
+                    "displayRangeId": false,
+                    "upgradeDescription": "攻击对敌人施加效果：移动速度降低18％，每秒受到10％阿斯卡纶当前攻击力的法术伤害，持续25秒，效果最多叠加三层，拥有该效果的敌人被击倒时阿斯卡纶回复10%生命",
+                    "talentIndex": 0,
+                    "validModeIndices": null,
+                    "unlockCondition": {
+                      "phase": "PHASE_2",
+                      "level": 60
+                    },
+                    "requiredPotentialRank": 0,
+                    "prefabKey": "1",
+                    "name": "死亡拘审",
+                    "description": null,
+                    "rangeId": null,
+                    "blackboard": [
+                      {
+                        "key": "move_speed",
+                        "value": -0.18,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "atk_ratio",
+                        "value": 0.1,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "max_stack_cnt",
+                        "value": 3,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "debuff_duration",
+                        "value": 25,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "interval",
+                        "value": 1,
+                        "valueStr": null
+                      },
+                      {
+                        "key": "hp_ratio",
+                        "value": 0.1,
+                        "valueStr": null
+                      }
+                    ],
+                    "tokenKey": null,
+                    "isHideTalent": false
+                  }
+                ]
+              },
+              "overrideTraitDataBundle": {
+                "candidates": null
+              }
+            }
+          ],
+          "attributeBlackboard": [
+            {
+              "key": "atk",
+              "value": 80,
+              "valueStr": null
+            },
+            {
+              "key": "def",
+              "value": 60,
               "valueStr": null
             }
           ],

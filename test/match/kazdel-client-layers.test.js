@@ -59,3 +59,17 @@ test('real four-player FUNNY seed 113 R13 Odda result survives client validation
   assert.ok(result.perPlayer.p_1.layerGains.kazdelShip > 60 + 4 * s.round);
   assert.equal(validateClientResult(s, result, { gd: new GameData(data, s.modeId) }).ok, true);
 });
+
+test('Ascalon client layer allowance is confined to its active Kazdel bond and normal battles', () => {
+  for (const grade of ['a', 'b']) {
+    const s = spec(`chess_kazdel_ascalon_${grade}`);
+    assert.equal(check(s, { kazdelShip: 200 }).ok, true);
+    assert.equal(check(s, { steadShip: 65 }).ok, false);
+    s.players[0].bonds.kazdelShip.active = false;
+    assert.equal(check(s, { kazdelShip: 65 }).ok, false);
+    for (const kind of ['unite', 'boss', 'hidden']) {
+      const other = spec(`chess_kazdel_ascalon_${grade}`); other.kind = kind;
+      assert.equal(check(other, { kazdelShip: 200 }).ok, false);
+    }
+  }
+});
