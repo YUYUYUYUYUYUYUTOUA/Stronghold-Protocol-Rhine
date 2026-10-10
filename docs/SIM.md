@@ -1547,3 +1547,7 @@ window — `push` / `pull`; a wall-shortened slide keeps its row time, a wall at
 platforms/mounds are ground obstacles that elevate operators; the generic kit maps 凋亡 to `apoptosis` (侵蚀 has no element key
 yet — enemy content must pick one); 抵抗 covers the control statuses of `RESIST_STATUSES` (the official term lists 晕眩/寒冷/
 冻结/恐惧/诱导…, the rest follow the operator kits that grant it) and caps at 0.95; tactical points prefer enemy path tiles.
+
+### 卡兹戴尔舍身装备与21格炮击（未发布）
+
+`shared/kazdel.js kazdelCannonTiles` 是模拟命中与渲染预警的共同来源；5×5去四角，按战场矩形裁剪。仅3／6档，9名以上仍六档，自身友军100%炮伤，其他玩家与魂灵免疫。来源沿同步／延迟回调传递，误伤死亡不产层或充能。装备通用属性仅继承一次；战刃在魂灵对敌命中时读取原携带者的有效装备，同名最强、配对替换，绝不累乘到魂灵基础属性。

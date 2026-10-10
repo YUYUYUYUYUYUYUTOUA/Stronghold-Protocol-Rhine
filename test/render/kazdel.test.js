@@ -25,19 +25,19 @@ test('a soul starts in its persistent donor form with translucent body and opaqu
   v.destroy();
 });
 
-test('cannon footprint includes every diagonal of the nine cells and clips only outside the field',()=>{
-  const cells=cannonTiles(6,10);assert.equal(cells.length,9);
+test('cannon footprint includes every diagonal of the 21 cells except the outer corners and clips only outside the field',()=>{
+  const cells=cannonTiles(6,10);assert.equal(cells.length,21);
   assert.ok(cells.some(([r,c])=>r===9&&c===5));assert.ok(cells.some(([r,c])=>r===11&&c===7));
-  assert.deepEqual(cannonTiles(2,9,{r0:9,r1:12,c0:2,c1:10}),[[9,2],[9,3],[10,2],[10,3]]);
+  assert.deepEqual(cannonTiles(2,9,{r0:9,r1:12,c0:2,c1:10}),[[9,2],[9,3],[9,4],[10,2],[10,3],[10,4],[11,2],[11,3]]);
   assert.deepEqual(cannonTiles(NaN,2),[]);
 });
 
 test('persistent warnings use render-time snapshots, freeze on pause and clear independently per owner',()=>{
   const polygons=[],fx=Object.create(FxSystem.prototype),g={clear(){polygons.length=0;return this;},lineStyle(){return this;},beginFill(){return this;},drawPolygon(p){polygons.push(p);return this;},endFill(){return this;},moveTo(){return this;},lineTo(){return this;}};
   Object.assign(fx,{ctx:{cam:()=>cam,heightAt:()=>0},kazdelGfx:g});
-  fx.syncKazdel([state(),state('p2',3,11)],9);fx._updateKazdel();assert.equal(polygons.length,18);
+  fx.syncKazdel([state(),state('p2',2,11)],9);fx._updateKazdel();assert.equal(polygons.length,42);
   const paused=structuredClone(polygons);fx._updateKazdel();assert.deepEqual(polygons,paused);
-  fx.syncKazdel([state(),state('p2',3,11)],10.5);fx._updateKazdel();assert.equal(polygons.length,9);
+  fx.syncKazdel([state(),state('p2',2,11)],10.5);fx._updateKazdel();assert.equal(polygons.length,21);
   fx.syncKazdel([],10.5);fx._updateKazdel();assert.equal(polygons.length,0);
 });
 
@@ -48,10 +48,10 @@ test('impact replaces event warning with square flashes and a visible strike, in
     Object.assign(fx,{ctx:{cam:()=>cam,heightAt:()=>0,settings:{quality},view:id=>id===1?body:soul,timeScale:()=>1},
       tileFlashes:[],tileFlash:(...x)=>flashes.push(x),particle:(...x)=>particles.push(x),burst(){},smoke(){},_beam:(...x)=>beams.push(x),
       ring(){throw Error('a square cannon must not draw a circular footprint');}});
-    fx.simFx('kazdelCannonWarning',6,10,{ownerId:'p1',dur:2});assert.equal(flashes[0][0].length,9);assert.equal(flashes[0][4].key,'kazdel-warning:p1');
+    fx.simFx('kazdelCannonWarning',6,10,{ownerId:'p1',dur:2});assert.equal(flashes[0][0].length,21);assert.equal(flashes[0][4].key,'kazdel-warning:p1');
     fx.tileFlashes.push({key:'kazdel-warning:p1'},{key:'another'});
     fx.simFx('kazdelCannonImpact',6,10,{ownerId:'p1'});assert.deepEqual(fx.tileFlashes,[{key:'another'}]);
-    assert.equal(flashes[1][0].length,9);assert.equal(particles[0][0],'pillar');
+    assert.equal(flashes[1][0].length,21);assert.equal(particles[0][0],'pillar');
     fx.simFx('kazdelSoulHeal',5,10,{source:1,target:2});assert.equal(beams.length,1);
     fx.simFx('kazdelSoulEnd',5,10,{id:2,soulOf:1,reason:'kazdelReturn'});assert.equal(beams.length,2);
   }

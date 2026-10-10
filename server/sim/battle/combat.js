@@ -11,13 +11,11 @@ import { withKazdelCannonOrigin, kazdelCannonOwner } from '../kazdelOrigin.js';
 function cannonOrigin(battle, source, dmg, run) {
   const cannon = source?.kazdelCannon || dmg?.tags?.includes('kazdelCannon') || battle._kazdelCannonDamageDepth > 0;
   if (!cannon) return run(dmg);
-  const safeAllies = source?.kazdelCannonSafeAllies || dmg?.tags?.includes('kazdelCannonEnemiesOnly') || battle._kazdelCannonSafeAlliesDepth > 0;
   const tags = [...(dmg?.tags ?? [])];
   if (!tags.includes('kazdelCannon')) tags.push('kazdelCannon');
-  if (safeAllies && !tags.includes('kazdelCannonEnemiesOnly')) tags.push('kazdelCannonEnemiesOnly');
   const ownerId = kazdelCannonOwner(battle, source, dmg);
   const tagged = { ...dmg, tags, kazdelCannonOwnerId: ownerId };
-  return withKazdelCannonOrigin(battle, safeAllies, () => run(tagged), ownerId);
+  return withKazdelCannonOrigin(battle, () => run(tagged), ownerId);
 }
 
 export class BattleCombat {

@@ -4,6 +4,7 @@ import { gainLayers, garrisonRecord, isMember } from './support/index.js';
 import { createSoul, refreshSoul } from './kazdel/souls.js';
 import { cannonSource, tickCannon } from './kazdel/cannon.js';
 import { tickAscalon } from './kazdel/ascalon.js';
+import { kazdelEquipmentDamage } from './items/battle.js';
 
 const present = u => !!u?.alive && u.deployed && !u.hidden && !u.removed;
 const soulOrBody = u => present(u) || present(u?.kazdelSoulUnit);
@@ -134,6 +135,7 @@ export function install(battle) {
     const m = kazdelTrait(owner, 'meteorite');
     if (m && target.blockedBy?.kazdelSoul && target.blockedBy.side === source.side) dmg.mul *= 1 + m.damage_bonus;
     if (source.kazdelSoul) {
+      if (target.side === 'enemy' && !dmg.tags?.includes('kazdelCannon')) dmg.mul *= 1 + kazdelEquipmentDamage(battle, source);
       const w = bestAura(s, 'wisdel');
       if (w) dmg.mul *= 1 + w.bb.damage_bonus;
     }

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { buildSkill, statsFrom, interpolateAttrs, baseTalentList, traitRecord, rangeGrid, immunitiesOf,
   unlocked, bestCandidate, moduleAttr, moduleTalentChanges, splitModuleParts, OPERATOR_POTENTIAL, withPotential } from './build-data.mjs';
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
-import { KAZDEL_BOND, KAZDEL_CHARACTERS, KAZDEL_BALANCE, KAZDEL_CANNON, KAZDEL_GARRISON_KEYS, applyKazdelOpeningBans } from '../shared/kazdel.js';
+import { KAZDEL_BOND, KAZDEL_CHARACTERS, KAZDEL_BALANCE, KAZDEL_CANNON, KAZDEL_GARRISON_KEYS, KAZDEL_EQUIPMENT, applyKazdelOpeningBans } from '../shared/kazdel.js';
 
 const clone = x => structuredClone(x);
 export const WISDEL_TOKEN = 'token_10035_wisdel_wward';
@@ -25,7 +25,7 @@ export const KAZDEL_EXISTING = Object.freeze([
   { key: 'mudrock', baseId: 'chess_char_4_18', tier: 4, bonds: ['soloShip', KAZDEL_BOND] },
 ]);
 
-export const KAZDEL_DESCRIPTION = '战斗开始时按3/6/9名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的3×3区域发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击仅误伤炮击所属玩家自己的活体友军，伤害为对敌伤害的50%（400+每层众魂7.5点）；其他玩家友军免疫炮击及其衍生伤害，亡魂始终免疫；9名阶段只伤害敌军。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
+export const KAZDEL_DESCRIPTION = '战斗开始时按3/6名不同【卡兹戴尔】干员锁定档位，倒地不降低档位。每层众魂使卡兹戴尔本体生命上限+10。3名时，每枚己方卡兹戴尔棋子每次真正阵亡后产生一名亡魂；亡魂继承本体职业的普攻方式、范围、防御与法抗，不继承主动技能、原生天赋和装备触发效果，明确作用于亡魂的卡兹戴尔特质继续生效。亡魂生命上限为本体基础值的60%+每层众魂10点，攻击力为本体基础值的80%+每层众魂3点（基础值不含众魂与临时技能加成）。亡魂不占人口或盟约人数，无时间限制，阵亡、本体复活或战斗结束时消失。医疗亡魂只治疗亡魂；锡人二技能也可治疗亡魂，其他干员和装置治疗无效。6名时获得众魂炮：容量15，每秒充能1+每层众魂0.005，每枚己方卡兹戴尔本体首次有效阵亡额外充能3；向敌方最密集的5×5去四角区域（共21格，按战场边界裁剪）发射800+每层众魂15点真实伤害，炮击间隔至少3秒，命中前预警2秒，预警计入间隔。6名阶段炮击仅误伤炮击所属玩家自己的活体友军，伤害为对敌伤害的100%（800+每层众魂15点）；其他玩家友军免疫炮击及其衍生伤害，亡魂始终免疫；9名及以上仍按6名档位生效。炮击及其衍生伤害造成的友方阵亡仍可产生亡魂，但不获得死亡产层与充能；召唤物、亡魂死亡和主动撤退也不产层。同名卫戍光环只取最高值。';
 
 function ordinaryModulePhase(ctx, id, level) {
   const raw = ctx.battleEquipTable?.[id]?.phases.find(p => p.equipLevel === level);
@@ -170,6 +170,41 @@ function compileWisdelToken(files) {
     count: first.count, variants };
 }
 
+// Owner-approved equipment; use the same generated records and upgrade path as ordinary items.
+function applyKazdelEquipment({ items, effects }) {
+  for (const [index, [key, r]] of Object.entries(KAZDEL_EQUIPMENT).entries()) for (const gold of [false, true]) {
+    const grade = gold ? 1 : 0, blade = key === 'blade', name = blade ? '众魂战刃' : '舍身刻印';
+    const baseId = `${r.key}_a`, goldenId = `${r.key}_b`, id = gold ? goldenId : baseId;
+    const stat = { max_hp: r.hp[grade], atk: r.attack[grade] };
+    const special = blade ? { damage_bonus: r.damageBonus, combo_damage_bonus: r.comboDamageBonus } : {};
+    const buffs = [{ key: 'env_gbuff_new_with_verify', countType: 'NONE', bb: stat, bbStr: { key: 'attr_common_global_buff' } }];
+    if (blade) buffs.push({ key: 'env_gbuff_new_with_verify', countType: 'NONE', bb: special,
+      bbStr: { key: 'kazdel_blade', equip_chess_id: KAZDEL_EQUIPMENT.sigil.key } });
+    const desc = `最大生命值${r.hp[grade] * 100}%，攻击力+${r.attack[grade] * 100}%` + (blade
+      ? `；携带者属于【卡兹戴尔】且己方盟约激活时，其对应魂灵对敌伤害+${r.damageBonus * 100}%；同一携带者同时装备“舍身刻印”时改为+${r.comboDamageBonus * 100}%。同名专属效果只取最高，不影响其他魂灵或炮击。`
+      : '；可与“众魂战刃”配对。与“变形同构体”同时携带时，额外获得【卡兹戴尔】盟约。');
+    const effectId = `eff_kazdel_${key}_${gold ? 'b' : 'a'}`;
+    effects[effectId] = { effectId, effectType: 'EQUIP', name, desc, descRaw: desc,
+      counterType: 'NONE', continuedRound: -1, decoIconId: null, enemyPrice: 0,
+      buffs: clone(buffs), params: { ...stat, ...special } };
+    items[id] = { id, baseId, goldenId, isGolden: gold, trapId: `trap_kazdel_${key}`, iconId: `trap_kazdel_${key}`,
+      identifier: 520 + index * 2 + grade, name, itemType: 'EQUIP', tier: r.tier, shopSortId: 20 + index,
+      price: gold ? 5 : r.price, hideInShop: false, shopExcluded: false, shopExcludedBy: null,
+      mergeable: !gold, upgradeNum: gold ? 0 : 2, upgradeChessId: gold ? null : goldenId, duration: gold ? 0 : -1,
+      giveBondId: blade ? null : KAZDEL_BOND, givePowerId: null, canGiveBond: false, requiresBondId: null,
+      effectId, effectName: name, desc, descRaw: desc, buffs, params: clone(effects[effectId].params),
+      category: blade ? 'BOND_SIGNATURE' : 'STAT', kind: 'passive', family: 'kazdel',
+      implFormula: 'HP% += max_hp; ATK% += atk. Blade: corresponding Kazdel soul enemy damage *= 1 + strongest live bonus (combo replaces base).',
+      rangeGrid: [[0, 0]], flavor: null };
+  }
+  const mapping = '与“舍身刻印”同时携带时，额外获得【卡兹戴尔】盟约。';
+  for (const it of Object.values(items).filter(i => i.canGiveBond)) {
+    for (const rec of [it, effects[it.effectId]].filter(Boolean)) for (const field of ['desc', 'descRaw']) {
+      if (!String(rec[field] || '').includes(mapping)) rec[field] = `${rec[field] || ''}\n${mapping}`;
+    }
+  }
+}
+
 export async function applyKazdelData(files, source = null) {
   const ctx = source || JSON.parse(await readFile(new URL('./kazdel-data-source.json', import.meta.url), 'utf8'));
   if (!Number.isInteger(ctx.potRank)) {
@@ -212,6 +247,7 @@ export async function applyKazdelData(files, source = null) {
     mode.inactiveBondIds = mode.inactiveBondIds.filter(id => id !== KAZDEL_BOND);
   }
   applyKazdelOpeningBans(config);
+  applyKazdelEquipment(files);
   tokens[WISDEL_TOKEN] = compileWisdelToken(files);
   return files;
 }
@@ -238,7 +274,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   if (args.length && (args.length !== 2 || args[0] !== '--out')) throw new Error('usage: node tools/kazdel-data.mjs [--out data]');
   const out = resolve(args[1] || fileURLToPath(new URL('../data', import.meta.url)));
-  const names = ['chess', 'bonds', 'garrisons', 'tokens', 'effects', 'config', 'backups'];
+  const names = ['chess', 'bonds', 'garrisons', 'tokens', 'effects', 'config', 'backups', 'items'];
   const files = Object.fromEntries(await Promise.all(names.map(async n => [n, JSON.parse(await readFile(join(out, `${n}.json`), 'utf8'))])));
   await applyKazdelData(files);
   const errors = validateKazdelData(files);

@@ -51,6 +51,8 @@ const hitTrue = (h, src, tgt, amount) => h.b.dealDamage(src, tgt, { amount, type
 // stats (直接乘算: each equipment % is its own multiplier)
 
 const STAT_CASES = [
+  ['chess_item_kazdel_sigil_a', { maxHp: 1700, atk: 625 }], ['chess_item_kazdel_sigil_b', { maxHp: 1600, atk: 700 }],
+  ['chess_item_kazdel_blade_a', { maxHp: 1600, atk: 700 }], ['chess_item_kazdel_blade_b', { maxHp: 1500, atk: 800 }],
   ['chess_item_rhine_terminal_a', { atk: 575 }], ['chess_item_rhine_terminal_b', { atk: 625 }],
   ['chess_item_rhine_mainframe_a', { maxHp: 2900 }], ['chess_item_rhine_mainframe_b', { maxHp: 3400 }],
   // [item id, expected stats (partial), note]
@@ -687,8 +689,8 @@ test('变形同构体: carrier counts as a member of the other item\'s giveBondI
   assert.deepEqual([...unitBonds(h2.unit('t_op'))], [], 'the bond item alone grants nothing');
   // every giveBondId item grants its bond (including the Rhine expansion).
   const grants = Object.values(DATA.items).filter((r) => r.giveBondId && !r.isGolden);
-  assert.equal(grants.length, 19);
-  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 15);
+  assert.equal(grants.length, 20);
+  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 16);
   for (const r of grants) {
     const hh = fight({ units: [{ chessId: 't_op', row: 10, col: 4, items: [r.id, A('6_09')] }] });
     assert.ok(unitBonds(hh.unit('t_op')).includes(r.giveBondId), r.id);
@@ -1284,5 +1286,5 @@ test('coverage: every equipment (normal + golden) and every Art is exercised by 
   // items whose numbers are asserted in the stat table, the proc tests or the meta tests
   const missing = Object.keys(DATA.items).filter((id) => !COVER.has(id)).sort();
   assert.deepEqual(missing, []);
-  assert.equal(Object.keys(DATA.items).length, 119);
+  assert.equal(Object.keys(DATA.items).length, 123);
 });

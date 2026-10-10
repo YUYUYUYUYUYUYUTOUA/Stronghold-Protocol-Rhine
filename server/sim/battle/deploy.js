@@ -87,7 +87,6 @@ export class BattleDeploy {
     if (killer?.kazdelCannon || this._kazdelCannonDamageDepth > 0 || dmg?.tags?.includes('kazdelCannon')) {
       const tags = [...(dmg?.tags ?? [])];
       if (!tags.includes('kazdelCannon')) tags.push('kazdelCannon');
-      if ((killer?.kazdelCannonSafeAllies || this._kazdelCannonSafeAlliesDepth > 0) && !tags.includes('kazdelCannonEnemiesOnly')) tags.push('kazdelCannonEnemiesOnly');
       dmg = { ...dmg, tags, kazdelCannonOwnerId: kazdelCannonOwner(this, killer, dmg) };
     }
     if (this._hooks.kill) this.emit('kill', { killer, victim: unit, dmg });

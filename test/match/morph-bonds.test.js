@@ -72,15 +72,15 @@ test('缪尔赛思 hands out 变形同构体 on purchase (garrison_76), the boug
   h.invariants();
 });
 
-test('every pairing (18 original bond items plus the Rhine terminal, normal / golden): the wearer counts in prep, views, battle input and real battle', () => {
+test('every pairing (18 original bond items plus Rhine terminal and Kazdel sigil, normal / golden): the wearer counts in prep, views, battle input and real battle', () => {
   const grants = Object.values(DATA.items).filter((r) => r.giveBondId);
-  const original = grants.filter((r) => r.giveBondId !== 'rhineShip');
+  const original = grants.filter((r) => !['rhineShip', 'kazdelShip'].includes(r.giveBondId));
   const rhine = grants.filter((r) => r.giveBondId === 'rhineShip');
   assert.equal(original.length, 36);
   assert.equal(new Set(original.map((r) => r.giveBondId)).size, 14, 'all 14 original bond pairings remain present');
   assert.deepEqual(rhine.map((r) => r.id).sort(), ['chess_item_rhine_terminal_a', 'chess_item_rhine_terminal_b']);
-  assert.equal(grants.length, 38);
-  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 15);
+  assert.equal(grants.length, 40);
+  assert.equal(new Set(grants.map((r) => r.giveBondId)).size, 16);
   for (const r of grants) {
     const bond = r.giveBondId;
     const iso = r.isGolden ? ISO_B : ISO; // golden bond items with the golden 变形同构体, normal with normal

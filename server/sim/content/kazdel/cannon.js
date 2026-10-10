@@ -1,16 +1,12 @@
 // Independent charge and tile-square targeting; the cannon is not a deployed unit or an SP recipient.
-import { KAZDEL_CANNON as C } from '../../../../shared/kazdel.js';
+import { KAZDEL_CANNON as C, kazdelCannonTiles } from '../../../../shared/kazdel.js';
 import { Unit } from '../../units.js';
 import { bodyInKeys } from '../../body.js';
 import { COLS, ROWS } from '../../constants.js';
 
 const present = u => u.alive && u.deployed && !u.hidden && !u.removed;
-export function cannonKeys(x, y) {
-  const keys = new Set();
-  for (let r = y - C.radius; r <= y + C.radius; r++) for (let c = x - C.radius; c <= x + C.radius; c++) {
-    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) keys.add(r * COLS + c);
-  }
-  return keys;
+export function cannonKeys(x, y, bounds = { r0: 0, r1: ROWS - 1, c0: 0, c1: COLS - 1 }) {
+  return new Set(kazdelCannonTiles(x, y, bounds).map(([r, c]) => r * COLS + c));
 }
 function chooseTarget(battle) {
   const enemies = battle.enemies.filter(e => present(e) && !e.s.flags.untargetable);
@@ -23,22 +19,21 @@ function chooseTarget(battle) {
   let best = null, count = -1;
   // Stable tile order resolves ties independently of spawn / Map insertion order.
   for (const [key, tile] of [...candidates].sort((a, b) => a[0] - b[0])) {
-    const keys = cannonKeys(tile.x, tile.y), n = enemies.filter(e => bodyInKeys(e, keys)).length;
+    const keys = cannonKeys(tile.x, tile.y, battle.rect), n = enemies.filter(e => bodyInKeys(e, keys)).length;
     if (n > count) { count = n; best = { ...tile, key }; }
   }
   return best;
 }
-export function cannonSource(ps, stage) {
+export function cannonSource(ps) {
   const source = new Unit({ id: -1 - ps.seat, side: 'ally', kind: 'device', ownerId: ps.playerId,
     defId: 'kazdel_cannon', name: '众魂大炮', base: { atk: 0, maxHp: 1, spRecovery: 0 } });
   source.kazdelCannon = true;
-  source.kazdelCannonSafeAllies = stage >= C.enemiesOnlyStage;
   return source;
 }
 function fire(battle, state, layers, onFire) {
   const at = state.warning ?? chooseTarget(battle);
   if (!at) return false;
-  const keys = cannonKeys(at.x, at.y), amount = C.damageBase + C.damagePerLayer * layers;
+  const keys = cannonKeys(at.x, at.y, battle.rect), amount = C.damageBase + C.damagePerLayer * layers;
   state.charge = 0;
   state.lastFireAt = battle.time;
   state.warning = null;
@@ -50,7 +45,7 @@ function fire(battle, state, layers, onFire) {
   }
   for (const target of targets) battle.dealDamage(state.cannon, target, {
     amount: amount * (target.side === 'ally' ? C.friendlyFireRatio : 1), type: 'true', canDodge: false, noSp: true,
-    tags: state.stage >= C.enemiesOnlyStage ? ['kazdelCannon', 'kazdelCannonEnemiesOnly'] : ['kazdelCannon'], ignoreSelect: true,
+    tags: ['kazdelCannon'], ignoreSelect: true,
   });
   return true;
 }

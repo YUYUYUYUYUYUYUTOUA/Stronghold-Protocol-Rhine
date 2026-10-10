@@ -229,10 +229,9 @@ export function absorbShields(battle, target, amount, type = null) {
 export function kazdelCannonImmune(battle, source, target, dmg) {
   const cannon = source?.kazdelCannon || dmg?.tags?.includes('kazdelCannon') || battle._kazdelCannonDamageDepth > 0;
   if (!cannon) return false;
-  const safeAllies = source?.kazdelCannonSafeAllies || dmg?.tags?.includes('kazdelCannonEnemiesOnly') || battle._kazdelCannonSafeAlliesDepth > 0;
   const ownerId = kazdelCannonOwner(battle, source, dmg);
   // Missing provenance must never turn a cannon derivative into team-wide friendly fire.
-  return !!target?.kazdelSoul || (target?.side === 'ally' && (safeAllies || ownerId == null || target.ownerId !== ownerId));
+  return !!target?.kazdelSoul || (target?.side === 'ally' && (ownerId == null || target.ownerId !== ownerId));
 }
 
 export function dealDamage(battle, source, target, dmgIn) {

@@ -56,7 +56,7 @@ describe('变形同构体 — the client rule', () => {
   test('the client rule equals the server\'s (bondsMeta.pieceBonds) for every bond item, normal and golden', () => {
     const gd = new GameData(getData({ log: { warn() {}, error() {}, info() {} } }), 'mode_multi_hard');
     const grants = Object.values(items).filter((r) => r.giveBondId);
-    assert.equal(grants.length, 38, '18 upstream bond items plus the Rhine terminal × normal / golden');
+    assert.equal(grants.length, 40, '18 upstream bond items plus Rhine terminal and Kazdel sigil × normal / golden');
     for (const r of grants) {
       for (const iso of [ISO, ISO_B]) {
         const p = { id: WEARER, items: [{ id: r.id }, { id: iso }] };

@@ -8,7 +8,7 @@ import { canReceiveHeal } from '../../server/sim/damage.js';
 import { soulBaseline } from '../../server/sim/content/kazdel/souls.js';
 import { cannonKeys, cannonSource, tickCannon } from '../../server/sim/content/kazdel/cannon.js';
 
-const bond = (count = 3, layers = 0) => ({ active: true, count, tier: count >= 9 ? 3 : count >= 6 ? 2 : 1, layers });
+const bond = (count = 3, layers = 0) => ({ active: true, count, tier: count >= 6 ? 2 : 1, layers });
 const entry = (key, row = 10, col = 5) => ({ chessId: `kaz_${key}`, row, col });
 function fixture(keys = ['vigna'], { elite = false, count = 3, layers = 0, bonds = {}, ...opts } = {}) {
   const chess = {}, kits = {};
@@ -303,7 +303,7 @@ test('merged fields keep death resources/cannon states per player; Tin aura and 
   const hp=e.hp;h.b.dealDamage(m,e,{amount:100,type:'true'});assert.equal(hp-e.hp,120);
   for(const u of h.b.allyUnits)u.profile.noAttack=true;
   h.run(15);const owners=new Set(shots(h).map(e=>e[4].ownerId));assert.deepEqual(owners,new Set(['p1','p2']));
-  const snap=h.b.snapshot().kazdel;assert.equal(snap[0].stage,2);assert.equal(snap[1].stage,3);
+  const snap=h.b.snapshot().kazdel;assert.equal(snap[0].stage,2);assert.equal(snap[1].stage,2);
   assert.equal(snap[0].layers,12);assert.equal(snap[1].layers,40);
   assert.ok(checkInvariants(h.b));
 });
@@ -323,7 +323,7 @@ test('active Harmony recipients inherit Kazdel HP/soul/death charge through cano
   }
 });
 
-test('cannon derivatives cannot hit souls; stage9 additionally shields living allies across damage, HP loss and direct kills', () => {
+test('cannon derivatives cannot hit souls; nine members still take own friendly fire across damage, HP loss and direct kills', () => {
   for(const count of [6,9]) {
     const h=fixture(['plain','plain2'],{count}),living=h.unit('kaz_plain'),fallen=h.unit('kaz_plain2');die(h,fallen);const s=soul(fallen);
     const e=h.spawn('kaz_enemy',{pos:[9,8]}); const hp=living.hp,sh=s.hp;
@@ -334,23 +334,23 @@ test('cannon derivatives cannot hit souls; stage9 additionally shields living al
       h.b.dealDamage(e,living,{amount:100,type:'true'});
       h.b.loseHp(living,100,{source:e});
     });
-    die(h,e,null,count===9?['kazdelCannon','kazdelCannonEnemiesOnly']:['kazdelCannon']);
-    assert.equal(s.hp,sh);assert.equal(s.alive,true);assert.equal(hp-living.hp,count===9?0:200);
+    die(h,e,null,['kazdelCannon']);
+    assert.equal(s.hp,sh);assert.equal(s.alive,true);assert.equal(hp-living.hp,200);
     assert.equal(h.b._kazdelCannonDamageDepth,0);
     // A delayed copy of the origin DamageInfo retains the same protection without any open damage frame.
     assert.equal(h.b.loseHp(s,100,{from:{tags:['kazdelCannon']}}),0);
-    assert.equal(h.b.loseHp(living,100,{from:{tags:['kazdelCannon','kazdelCannonEnemiesOnly']}}),0);
+    assert.equal(h.b.loseHp(living,100,{from:{tags:['kazdelCannon']}}),0);
     assert.ok(checkInvariants(h.b));
   }
 });
 
-test('actual enemy death pollution retains cannon origin on scheduled ticks: souls immune at6/9, living allies safe only at9', () => {
+test('actual enemy death pollution retains cannon origin on scheduled ticks: souls immune at6/9, own living allies take damage at both counts', () => {
   for(const count of [6,9]) {
     const h=fixture(['plain','plain2'],{count}),living=h.unit('kaz_plain'),fallen=h.unit('kaz_plain2');
     die(h,fallen);const s=soul(fallen);for(const u of h.b.allyUnits)u.profile.noAttack=true;
     const e=h.spawn('enemy_1267_nhpbr',{pos:[living.tileR,living.tileC]});const hp=living.hp,sh=s.hp;
-    die(h,e,null,count===9?['kazdelCannon','kazdelCannonEnemiesOnly']:['kazdelCannon']);h.run(2.2);
-    assert.equal(s.hp,sh);assert.equal(hp-living.hp,count===9?0:100);assert.equal(layers(h),0);
+    die(h,e,null,['kazdelCannon']);h.run(2.2);
+    assert.equal(s.hp,sh);assert.equal(hp-living.hp,100);assert.equal(layers(h),0);
     assert.equal(h.b._kazdelCannonDamageDepth,0);assert.ok(checkInvariants(h.b));
   }
 });
@@ -364,8 +364,8 @@ test('cannon-created projectile and buff callbacks preserve origin, while ordina
     h.b.addProjectile({from:e,to:{x:s.x,y:s.y},speed:10,onHit:()=>h.b.dealDamage(e,s,{amount:100,type:'true'})});
     h.b.addBuff(body,{key:'cannon:derived',duration:.2,onTick:()=>h.b.loseHp(body,100),onExpire:()=>h.b.loseHp(s,100)});
   });
-  die(h,e,null,['kazdelCannon','kazdelCannonEnemiesOnly']);h.run(1);
-  assert.equal(body.hp,hp);assert.equal(s.hp,sh);assert.equal(h.b._kazdelCannonDamageDepth,0);
+  die(h,e,null,['kazdelCannon']);h.run(1);
+  assert.ok(body.hp<hp);assert.equal(s.hp,sh);assert.equal(h.b._kazdelCannonDamageDepth,0);
   h.b.after(.1,()=>h.b.loseHp(s,100));h.run(.2);assert.equal(s.hp,sh-100);
   assert.ok(checkInvariants(h.b));
 });
@@ -382,11 +382,11 @@ test('stage6 cannon friendly fire cannot generate layers or charge, including im
   assert.ok(checkInvariants(h.b));
 });
 
-test('stage9 cannon never harms living allies, ignores souls at all tiers, and cannot survive by itself', () => {
+test('nine members keep six-member friendly fire, ignores souls at all tiers, and cannot survive by itself', () => {
   const h=fixture(['vigna','plain'],{count:9});const v=h.unit('kaz_vigna'),p=h.unit('kaz_plain');
   h.spawn('kaz_enemy',{pos:[v.tileR,v.tileC]});v.profile.noAttack=true;p.profile.noAttack=true;
   const hp=v.hp;die(h,p);const s=soul(p);s.profile.noAttack=true;const sh=s.hp;
-  h.run(15);assert.equal(v.hp,hp);assert.equal(s.hp,sh);assert.ok(shots(h).length);
+  h.run(15);assert.ok(v.hp<hp);assert.equal(s.hp,sh);assert.ok(shots(h).length);
   die(h,v,null,['kazdelCannon']);die(h,soul(v));die(h,s);
   const count=shots(h).length,charge=h.b.snapshot().kazdel[0].charge;h.run(20);
   assert.equal(shots(h).length,count);assert.equal(h.b.snapshot().kazdel[0].charge,charge);
@@ -414,10 +414,35 @@ test('tile-square at edge never wraps negative columns; same-seed replay and dea
   assert.equal(run(),run());
 });
 
-for (const kind of ['normal', 'unite', 'boss', 'hidden']) for (const stage of [2, 3]) {
-  test(`${kind}: cannon stage ${stage} halves only its owner's direct friendly hit, with unchanged enemy damage`, () => {
+test('21-cell cannon hits every included cell, excludes all four corners and clips to the battle rectangle', () => {
+  for (const clipped of [false, true]) {
+    const rect = clipped ? { r0: 10, r1: 12, c0: 5, c1: 10 } : { r0: 0, r1: 18, c0: 0, c1: 20 };
+    const h = fixture(['plain'], { count: 9, rect, units: [entry('plain', 11, 6)] });
+    const enemies = [];
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
+      const e = h.spawn('kaz_enemy', { pos: [10 + dr, 5 + dc] });
+      // Spawn path fitting can relocate an enemy; this test probes exact cell centres.
+      e.x = 5 + dc; e.y = 10 + dr;
+      enemies.push({ e, hp: e.hp, included: !(Math.abs(dr) === 2 && Math.abs(dc) === 2)
+        && 10 + dr >= rect.r0 && 10 + dr <= rect.r1 && 5 + dc >= rect.c0 && 5 + dc <= rect.c1 });
+    }
+    const ps = h.b.getPlayer('p1'), state = { ps, stage: 2, cannon: cannonSource(ps), charge: 15,
+      lastFireAt: -Infinity, warning: { x: 5, y: 10, startedAt: -3, until: 0 } };
+    tickCannon(h.b, state, 0, 0, () => {});
+    for (const { e, hp, included } of enemies) assert.equal(hp - e.hp, included ? 800 : 0, `${e.x},${e.y}`);
+    assert.equal(cannonKeys(5, 10, rect).size, clipped ? 8 : 21);
+    assert.equal(h.b.snapshot().kazdel[0].stage, 2);
+    assert.deepEqual(h.b.errors, []);
+    // The clipped case deliberately contains outside-field targets to verify exclusion.
+    if (!clipped) assert.ok(checkInvariants(h.b));
+  }
+});
+
+for (const kind of ['normal', 'unite', 'boss', 'hidden']) for (const count of [6, 9]) {
+  const stage = 2;
+  test(`${kind}: cannon count ${count} fully damages only its owner's direct friendly hit, with unchanged enemy damage`, () => {
     const players = [
-      { playerId: 'p1', seat: 0, coords: 'field', units: [entry('plain', 10, 5)], bonds: { [K]: bond(6, 11) } },
+      { playerId: 'p1', seat: 0, coords: 'field', units: [entry('plain', 10, 5)], bonds: { [K]: bond(count, 11) } },
       { playerId: 'p2', seat: 1, coords: 'field', units: [entry('plain2', 10, 6)], bonds: { [K]: bond(9, 30) } },
     ];
     const h = fixture(['plain', 'plain2'], { kind, players, rect: { r0: 0, r1: 18, c0: 0, c1: 20 } });
@@ -428,7 +453,7 @@ for (const kind of ['normal', 'unite', 'boss', 'hidden']) for (const stage of [2
     const state = { ps, stage, cannon: cannonSource(ps, stage), charge: 15, lastFireAt: -Infinity,
       warning: { x: 5, y: 10, startedAt: -3, until: 0 } };
     tickCannon(h.b, state, 0, 11, () => {});
-    assert.equal(hp[0] - own.hp, stage === 2 ? 482.5 : 0);
+    assert.equal(hp[0] - own.hp, 965);
     assert.equal(other.hp, hp[1]);
     assert.equal(hp[2] - e.hp, 965);
     assert.equal(state.charge, 0);
@@ -489,15 +514,16 @@ test('a real cannon-killed polluted enemy damages only the cannon owner through 
   assert.ok(checkInvariants(h.b));
 });
 
-test('direct-kill death records retain owner and stage9 protection when reused outside the cannon stack', () => {
-  for (const stage of [2, 3]) {
-    const h = fixture(['plain'], { count: stage === 2 ? 6 : 9 }), a = h.unit('kaz_plain');
+test('direct-kill death records retain owner at six and nine members when reused outside the cannon stack', () => {
+  for (const count of [6, 9]) {
+  const stage = 2;
+    const h = fixture(['plain'], { count }), a = h.unit('kaz_plain');
     const e = h.spawn('kaz_enemy', { pos: [10, 5] }); let saved;
     h.b.on('death', c => { if (c.unit === e) saved = c.dmg; });
     h.b.kill(e, cannonSource(h.b.getPlayer('p1'), stage));
     assert.equal(saved.kazdelCannonOwnerId, 'p1');
     const hp = a.hp;
     h.b.loseHp(a, 100, { from: saved });
-    assert.equal(hp - a.hp, stage === 2 ? 100 : 0);
+    assert.equal(hp - a.hp, 100);
   }
 });

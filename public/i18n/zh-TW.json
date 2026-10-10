@@ -1192,8 +1192,6 @@
   "战争巨炮": "War Cannon",
   "战争巨炮充能": "War Cannon Charge",
   "仅伤敌军": "Enemies Only",
-  "敌我均伤 · 亡魂免疫": "Friendly Fire · Souls Immune",
-  "九宫格轰击预警 · {seconds}秒": "3×3 Bombardment Warning · {seconds}s",
   "亡魂": "Soul",
   "众魂归来": "Souls Return",
   "继承本体的普通攻击与攻击范围，默认不继承主动技能与触发效果；不占人口，不再产生死亡层数。": "Inherits the owner's normal attacks and attack range, but normally no active skills or triggered effects. Uses no deployment capacity and grants no further death stacks.",
@@ -1300,5 +1298,7 @@
   "锁定面板最大生命值最高的敌人，目标死亡或永久离场后重新选敌并清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。": "Locks onto the enemy with the highest maximum HP. When it dies or permanently leaves, selects a new target and resets the damage increase. After 20 seconds, it also deals True damage equal to 0.5% of the target's maximum HP each second. Against a leader, each drill uses the full shared maximum HP.",
   "全场攻击，选择面板最大生命值最高的敌人，锁定至其死亡或永久离场；只有一级，仅9莱茵生命可用。持续输出每秒增伤5%，20秒达到上限并开始每秒追加最大生命值0.5%的真实伤害；领袖直接按完整共享最大生命值计算。": "Targets the enemy with the highest maximum HP anywhere on the field, remaining locked until it dies or permanently leaves. One stage, available only with 9 Rhine Lab operators. Each second of effective output adds 5% of the initial damage, reaching the cap after 20 seconds, then adding True damage equal to 0.5% of maximum HP each second. Against a leader, each drill uses the full shared maximum HP.",
   "仅9莱茵生命时可部署，只有一级，无阶段突破。全场选择面板最大生命值最高的敌人，锁定后仅在目标死亡或永久离场时转移火力；暂时无法攻击时暂停输出。基础每秒法术伤害为装置基础攻击的150%，持续输出每秒增加初始伤害的5%，20秒后达到300%；换目标时清空增伤。满20秒后，每秒额外造成目标最大生命值0.5%的真实伤害，领袖直接按完整共享最大生命值计算。": "Deployable only with 9 Rhine Lab operators; one stage, with no breakthroughs. Targets the selectable enemy with the highest maximum HP anywhere on the field and stays locked until it dies or permanently leaves. Output pauses while the target cannot be attacked. Base Arts damage per second is 150% of the device's base ATK, increasing by 5% of the initial damage each second of effective output, up to 300% after 20 seconds. Changing targets resets the increase. After 20 seconds, it also deals True damage equal to 0.5% of the target's maximum HP each second. Against a leader, each drill uses the full shared maximum HP.",
-  "_about": " Extension interface strings currently use the English translation where no local translation is available."
+  "_about": " Extension interface strings currently use the English translation where no local translation is available.",
+  "自身干员承受100%炮伤 · 队友与魂灵免疫": "Own operators take 100% cannon damage · Teammates and souls immune",
+  "21格轰击预警 · {seconds}秒": "21-cell bombardment warning · {seconds}s"
 }

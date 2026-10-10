@@ -1,17 +1,10 @@
-// Kazdel feedback: persistent, snapshot-driven square telegraphs and short soul/impact cues.
+// Kazdel feedback: persistent, snapshot-driven tile telegraphs and short soul/impact cues.
 import { cannonStates } from '../../kazdelState.js';
 import { KAZDEL_CANNON } from '../../../../shared/kazdel.js';
+import { kazdelCannonTiles as cannonTiles } from '../../../../shared/kazdel.js';
+export { cannonTiles };
 
-/** The cannon always affects the complete 3×3 cells, clipped to the current battle field. */
-export function cannonTiles(x, y, bounds) {
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return [];
-  const row = Math.round(y), col = Math.round(x), out = [];
-  for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-    const r = row + dr, c = col + dc;
-    if (!bounds || (r >= bounds.r0 && r <= bounds.r1 && c >= bounds.c0 && c <= bounds.c1)) out.push([r, c]);
-  }
-  return out;
-}
+/** Simulation and renderer share the same clipped 21-cell footprint. */
 
 export class FxKazdel {
   /** Called with the snapshot at the render clock: reconnects restore warnings, paused clocks hold them. */
@@ -53,7 +46,7 @@ export class FxKazdel {
       this.tileFlashes = this.tileFlashes.filter(f => f.key !== `kazdel-warning:${ex.ownerId}`);
       this.tileFlash(cannonTiles(at.x, at.y, this.ctx.fieldRect?.()), 0xffc69d, .48, false);
       const p = this.ctx.cam().project(at.x, at.y, at.z);
-      // A vertical red-white strike and dark debris; the footprint itself is square, never a circle.
+      // A vertical red-white strike and dark debris; the footprint uses the same 21 cells as damage.
       this.particle('pillar', p.x, p.y, { tint: 0xffc7af, life: .35, s0: p.s / 55, s1: p.s / 80, a0: 1, a1: 0, ay: 1 });
       this.burst(p.x, p.y - p.s * .2, p.s, this.rich ? 12 : 5, 0xdf625c, { speed: 2, life: .5 });
       this.smoke(p.x, p.y, p.s * 1.2, 0x25151c, .7);

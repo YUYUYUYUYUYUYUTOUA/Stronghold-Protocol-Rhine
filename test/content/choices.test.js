@@ -93,9 +93,9 @@ test('coverage: every 悬赏 / 战术决策 effect and every 道具补给 / 机�
   const ids = choiceCardIds(DATA);
   assert.equal(ids.bounty.length, 129, '129 ENEMY_GAIN effects');
   assert.equal(ids.tactic.length, 43, '43 BUFF_GAIN effects');
-  // 58 normal EQUIP items (including the two Rhine additions) − the 5 effect-only ones.
-  assert.equal(ids.items.length, 53, '53 shop items');
-  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a']) {
+  // 60 normal EQUIP items (including two Rhine and two Kazdel additions) − the 5 effect-only ones.
+  assert.equal(ids.items.length, 55, '55 shop items');
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a', 'chess_item_kazdel_sigil_a', 'chess_item_kazdel_blade_a']) {
     assert.ok(ids.items.includes(id), `${id} is an equipment supply card`);
     const effectId = DATA.items[id].effectId;
     assert.equal(DATA.effects[effectId].effectType, 'EQUIP');
@@ -333,7 +333,7 @@ test('Rhine equipment supply handlers grant free items and a second shop pick me
   const h = makeMatch({ mode: 'solo', registry: REG, fake: true }).start();
   h.toPrep(1);
   const m = h.m, ps = h.ps('p_0'), funds = ps.funds;
-  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a']) {
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a', 'chess_item_kazdel_sigil_a', 'chess_item_kazdel_blade_a']) {
     applyCard(m, ps, { kind: 'item', id, family: 'supply' });
     assert.ok(ownedItems(ps).some(p => p.id === id));
     applyCard(m, ps, { kind: 'item', id, family: 'shop' });

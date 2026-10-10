@@ -15,19 +15,20 @@ const state={ownerId:'p1',stage:2,charge:7.5,maxCharge:15};
 test('cannon progress validates malformed packets without confusing owners or exceeding capacity',()=>{
   assert.deepEqual(cannonStates(null),[]);
   assert.equal(cannonStates([{},null,{...state,stage:1}]).length,0);
-  const list=cannonStates([state,{...state,ownerId:'p2',stage:3,charge:99},{...state,ownerId:3,charge:-2,maxCharge:0,warning:{x:1,y:2,until:NaN}}]);
+  const list=cannonStates([state,{...state,ownerId:'p2',stage:2,charge:99},{...state,ownerId:3,charge:-2,maxCharge:0,warning:{x:1,y:2,until:NaN}}]);
   assert.deepEqual(list.map(s=>[s.ownerId,s.charge,s.max]),[['p1',7.5,15],['p2',15,15],[3,0,15]]);
   assert.equal(list[2].warning,null);
 });
 
-test('HUD differentiates six-person friendly fire, nine-person enemy-only and an accessible paused warning',()=>{
+test('HUD differentiates owner-only full friendly fire and an accessible paused warning',()=>{
   assert.equal(KazdelCannonHud({states:[]}),null);
-  assert.notEqual(cannonModeText(2),cannonModeText(3));
-  const vnode=KazdelCannonHud({states:[state,{...state,ownerId:'p2',stage:3,warning:{x:6,y:10,until:10}}],gameTime:9.5,players:[{playerId:'p2',name:'队友'}]});
+  assert.match(cannonModeText(),/100%/);
+  assert.equal(cannonStates([{...state,stage:3}]).length,0);
+  const vnode=KazdelCannonHud({states:[state,{...state,ownerId:'p2',stage:2,warning:{x:6,y:10,until:10}}],gameTime:9.5,players:[{playerId:'p2',name:'队友'}]});
   const bars=nodes(vnode).filter(n=>n.props?.role==='progressbar');assert.equal(bars.length,2);
   assert.equal(bars[0].props['aria-valuenow'],7.5);assert.equal(bars[0].props['aria-valuemax'],15);
-  assert.match(text(vnode),/敌我均伤/);assert.match(text(vnode),/0.5秒/);assert.match(text(vnode),/队友/);
-  assert.match(text(KazdelCannonHud({states:[{...state,stage:3}],gameTime:12})),/仅伤敌军/);
+  assert.match(text(vnode),/自身干员/);assert.match(text(vnode),/0.5秒/);assert.match(text(vnode),/队友/);
+  assert.equal(KazdelCannonHud({states:[{...state,stage:3}],gameTime:12}),null);
 });
 
 test('normal battle HUD includes the resolved counter; Kazdel follows authoritative game time and state',()=>{

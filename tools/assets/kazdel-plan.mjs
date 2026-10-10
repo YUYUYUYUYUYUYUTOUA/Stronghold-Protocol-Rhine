@@ -1,7 +1,7 @@
 // Native art for the Kazdel presets, using the existing offline/download pipeline and its mirrors.
 import { readFileSync } from 'node:fs';
 import { RAW } from './sources.mjs';
-import { KAZDEL_BOND, KAZDEL_CHARACTERS } from '../../shared/kazdel.js';
+import { KAZDEL_BOND, KAZDEL_CHARACTERS, KAZDEL_EQUIPMENT } from '../../shared/kazdel.js';
 
 const source = JSON.parse(readFileSync(new URL('../kazdel-data-source.json', import.meta.url), 'utf8'));
 const model = (id, folder) => Object.fromEntries(['skel', 'atlas', 'png'].map(ext => [ext, { url: `${RAW.fexli}spine/${id}/${id}/${folder}/${id}.${ext}` }]));
@@ -28,6 +28,9 @@ export function kazdelArtInput(input) {
 }
 
 export function addKazdelArt(manifest) {
+  manifest.items ||= {};
+  for (const key of Object.keys(KAZDEL_EQUIPMENT)) manifest.items[`trap_kazdel_${key}`] = `/art/kazdel/${key}.svg`;
+  if (manifest.stats) manifest.stats.items = Object.keys(manifest.items).length;
   manifest.bonds ||= {};
   manifest.bonds[KAZDEL_BOND] = '/art/kazdel/bond.svg';
   if (manifest.stats) manifest.stats.bonds = Object.keys(manifest.bonds).length;
