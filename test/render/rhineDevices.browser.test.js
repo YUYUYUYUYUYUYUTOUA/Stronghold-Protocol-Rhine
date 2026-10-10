@@ -166,7 +166,14 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
       assert.equal(area.persistent, true);
       assert.equal(area.pulse, 0, 'restoring the continuous slow does not replay a bind');
       assert.equal(area.stoppedField, false, 'inactive UnitInfo must not restore a stale field after reconnect');
-      await page.waitForFunction('window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703" && f.t > 5)', { timeout: 10000 });
+      // Exercise six seconds of the real FX lifetime directly: headless frame rates must not determine expiry.
+      const retained = await page.evaluate(() => {
+        const fx = window.__demo.view.debug.fx;
+        for (let i = 0; i < 180; i++) fx._updateTileFlashes(1 / 30);
+        const field = fx.tileFlashes.find(f => f.key === 'rhineEcology:703');
+        return { alive: !!field, elapsed: field?.t, persistent: field?.dur === Infinity };
+      });
+      assert.equal(retained.alive, true); assert.ok(retained.elapsed > 5); assert.equal(retained.persistent, true);
       await page.screenshot({ path: path.join(OUT, 'rhine-ecology-reconnect.png') });
       await page.evaluate(() => window.__demo.view.debug.fx.simFx('rhineEcology', 5, 10, { source: 703, stage: 2, continuous: true, active: false }));
       await page.waitForFunction('window.__demo.view.debug.views.get(703).info.researchActive === false && !window.__demo.view.debug.fx.tileFlashes.some(f => f.key === "rhineEcology:703")');

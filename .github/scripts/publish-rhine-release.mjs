@@ -43,6 +43,13 @@ async function sha(file) {
   else for await (const chunk of fs.createReadStream(file, { highWaterMark: 4 * 1024 * 1024 })) hash.update(chunk);
   return hash.digest('hex');
 }
+async function verifyApprovedArt(directory) {
+  for (const [relative, expected] of Object.entries(request.approvedArt || {})) {
+    assert.match(relative, /^public\/art\/(?:kazdel|rhine)\/[a-z0-9-]+\.png$/);
+    assert.match(expected, /^[0-9a-f]{64}$/);
+    assert.equal(await sha(path.join(directory, relative)), expected, relative);
+  }
+}
 const progress = message => console.log(`${new Date().toISOString()} ${message}`);
 function extract(archive, destination) {
   assert.equal(fs.existsSync(destination), false, destination);
@@ -150,7 +157,7 @@ async function main() {
       assert.ok(matches.length <= 1, 'Ambiguous release drafts; refusing to create another.');
       const created = matches[0] || JSON.parse(command('gh', ['api', '--method', 'POST', `repos/${repo}/releases`, '--input', '-'], {
         input: JSON.stringify({ tag_name: request.tag, target_commitish: request.sourceCommit,
-          name: `${request.tag} · 卡兹戴尔炮击与阿斯卡纶`, body: request.releaseNotes, draft: true, prerelease: false }),
+          name: request.releaseName || `${request.tag} · 莱茵与卡兹戴尔扩展`, body: request.releaseNotes, draft: true, prerelease: false }),
       }));
       assert.equal(created.draft, true);
       request.draftReleaseId = created.id;
@@ -172,6 +179,7 @@ async function main() {
   assert.equal(process.platform, 'win32', 'This job validates the real bundled Windows runtime.');
   assert.equal(draft.draft, true, 'Published releases must never be overwritten by a rebuild.');
   assert.equal(command('git', ['-C', source, 'rev-parse', 'HEAD']).trim(), request.sourceCommit);
+  await verifyApprovedArt(source);
   fs.mkdirSync(root);
   progress('Downloading and checking the previous release.');
   const downloads = path.join(root, 'downloads'); fs.mkdirSync(downloads);
@@ -229,10 +237,14 @@ async function main() {
     runtimeVersion: request.runtimeVersion, runtimeSourceUrl: runtimeBase + runtimeArchiveName, runtimeSha256: runtimeSha });
   assert.equal(built.manifest.sourceCommit, request.sourceCommit);
   assert.equal(built.manifest.sourceDirty, false);
+  await verifyApprovedArt(built.destination);
   progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
   const tests = runTests(node, built.destination, [
     'test/content/kazdel.test.js', 'test/content/kazdel_ascalon.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
+    'test/content/kazdel_soul_skills.test.js', 'test/content/kazdel_equipment.test.js', 'test/kazdel_equipment_data.test.js',
+    'test/content/reactive-origin.test.js', 'test/content/rhine.test.js', 'test/match/rhineResearch.test.js',
+    'test/match/rhine-client-layers.test.js', 'test/content/garrisons_battle.test.js',
     'test/content/rhine_device_rework.test.js', 'test/match/rhine-laser-field-share.test.js',
     'test/kazdel_data.test.js', 'test/rhine_data.test.js', 'test/i18n.test.js', 'test/i18n-packs.test.js',
     'test/tools/verify-rhine-release.test.js', 'test/rhine-bundle-update.test.js', 'test/rhine-online-update.test.js',
@@ -250,9 +262,9 @@ async function main() {
     const browserOutput = path.join(built.destination, 'test/e2e/out');
     assert.equal(fs.existsSync(browserOutput), false);
     browserTests = {
-      kazdelSimulation: runTests(node, built.destination, ['test/sim/kazdel.browser.test.js'],
+      kazdelSimulation: runTests(node, built.destination, ['test/sim/kazdel.browser.test.js', 'test/sim/reactive-origin.browser.test.js'],
         path.join(root, 'browser-kazdel-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js'],
+      renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
         path.join(root, 'browser-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
       statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
@@ -285,6 +297,7 @@ async function main() {
   extract(archive, path.join(root, 'unpacked-verification'));
   const unpacked = path.join(root, 'unpacked-verification/Stronghold-Protocol-Rhine');
   const verified = await verifyTree(unpacked);
+  await verifyApprovedArt(unpacked);
   assert.deepEqual(verified, built.manifest);
   progress('Compressed package passed full file-manifest verification; preparing updater toolkit.');
   const toolDirectory = path.join(root, 'Rhine-Update-Tool-Windows'); fs.mkdirSync(toolDirectory);
@@ -313,22 +326,36 @@ async function main() {
   assert.deepEqual(updatePlan.conflicts, []);
   const privateFixture = path.join(previous, 'release-validation-private.txt');
   fs.writeFileSync(privateFixture, 'preserve private player files');
+  const privateConfigs = ['.env', 'scripts/service.env.cmd'];
+  for (const relative of privateConfigs) {
+    const file = path.join(previous, relative);
+    assert.equal(fs.existsSync(file), false, 'Release payload must not contain private configuration');
+    fs.writeFileSync(file, 'release validation synthetic private configuration');
+  }
+  const checkPrivateConfigs = () => {
+    for (const relative of privateConfigs) assert.equal(fs.readFileSync(path.join(previous, relative), 'utf8'),
+      'release validation synthetic private configuration', relative);
+  };
   const updated = await updater.applyUpdate({ source: unpacked, target: previous });
   assert.equal(updated.status, 'updated');
   assert.equal(JSON.parse(fs.readFileSync(path.join(previous, 'bundle-manifest.json'))).sourceCommit, request.sourceCommit);
   assert.equal(fs.readFileSync(privateFixture, 'utf8'), 'preserve private player files');
+  checkPrivateConfigs();
   assert.equal((await updater.applyUpdate({ source: unpacked, target: previous })).status, 'already-current');
+  checkPrivateConfigs();
   assert.equal((await updater.rollbackUpdate({ target: previous, backup: updated.backup })).status, 'rolled-back');
   assert.equal(JSON.parse(fs.readFileSync(path.join(previous, 'bundle-manifest.json'))).sourceCommit, oldManifest.sourceCommit);
   assert.equal(fs.readFileSync(privateFixture, 'utf8'), 'preserve private player files');
+  checkPrivateConfigs();
   const updateChecks = { from: request.previousTag, to: request.tag, changedFiles: updated.changedFiles,
     conflicts: 0, apply: 'passed', privateFilesPreserved: 'passed', repeat: 'already-current', rollback: 'passed',
-    platform: process.platform, realWindowsProcessGuard: true };
+    privateConfigurationsPreserved: privateConfigs, platform: process.platform, realWindowsProcessGuard: true };
   progress('Actual previous-package update, private-file preservation, repeat update and rollback passed.');
   const archiveSha = await sha(archive), toolSha = await sha(toolZip);
   fs.writeFileSync(path.join(assets, 'SHA256SUMS.txt'), `${archiveSha}  ${archiveName}\n`);
   fs.writeFileSync(path.join(assets, 'UPDATE-TOOL-SHA256.txt'), `${toolSha}  ${toolName}\n`);
   const report = { ...request.sourceValidation, createdAt: new Date().toISOString(), sourceCommit: request.sourceCommit,
+    approvedArt: request.approvedArt || {},
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
     updateChecks,

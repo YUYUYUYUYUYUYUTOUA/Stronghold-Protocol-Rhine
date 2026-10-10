@@ -1,6 +1,6 @@
 # 莱茵生命 · 联合科研（非官方扩展）
 
-当前正式版本：`v0.2.2-rhine.1`；正式开发分支：`codex/rhine-upstream-021`。2026-10-08 装置重做已合入正式版，后续常规更新直接在正式分支维护，不再要求先更新装置实验分支。
+当前正式版本：`v0.2.2-rhine.3`；正式开发分支：`codex/rhine-upstream-021`。2026-10-08 装置重做已合入正式版，后续常规更新直接在正式分支维护，不再要求先更新装置实验分支。
 
 本扩展基于 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) v0.2.2（官方发布提交 `62eb1134`），保留原玩法及该版本修复，并加入莱茵生命研究路线。修改日期为 2026-10-10。它是独立同人扩展，不是上游官方更新；修改范围见 [RHINE-CHANGES.md](RHINE-CHANGES.md)。
 

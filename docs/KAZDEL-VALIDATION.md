@@ -1,5 +1,7 @@
 # 卡兹戴尔炮击与三阶阿斯卡纶源码验证记录
 
+> 本文保留 v0.2.2-rhine.2 的历史验收记录。v0.2.2-rhine.3 已按维护者后续确认改为自身干员承受 100% 炮伤、九人沿用六档，并补齐原生魂灵与莱茵三阶机制；下文的半伤、独立九档和反伤递归未修复描述不代表当前规则。当前规则见 [KAZDEL.md](KAZDEL.md)、[RHINE.md](RHINE.md) 与 [RHINE-CHANGES.md](RHINE-CHANGES.md)，发行实测以对应 Release 的 RELEASE-VALIDATION.json 为准。
+
 日期：2026-10-10。范围由维护者在本轮确认：六人档炮击友伤减半且只影响所属玩家；新增三阶阿斯卡纶，仅卡兹戴尔主盟约。初始实现阶段不含推送、合并、Release 或部署；随后维护者另行授权正式主线推送与 v0.2.2-rhine.2 发行，整合包实测结果以该 Release 附件 RELEASE-VALIDATION.json 为准。
 
 ## 基线与实现

@@ -222,6 +222,34 @@ describe('supplied Kazdel icon: real interface and transparent Pixi display', { 
       await assertPageErrors(page, errors, 'layer');
     } finally { await page.close(); }
   });
+  test('approved sigil and blade PNGs reach real equipment details and the Kazdel isomorph tag', async () => {
+    const { page, errors } = await open('/dev/game-mock.html?phase=PREP&board=2d&shot=1');
+    try {
+      await page.waitForFunction('window.__MOCK__ && window.__SP_VIEW__?.raw?.debug', { timeout:30000 });
+      await page.evaluate(() => window.__MOCK__.mutate(s => {
+        s.priv.board[0].id = 'chess_char_1_01_a';
+        s.priv.board[0].items = [{uid:9901,id:'chess_item_kazdel_sigil_a'}, {uid:9902,id:'chess_item_6_09_e_a'}];
+      }));
+      await page.waitForSelector('.pbanner--overlay', {hidden:true});
+      const p = await page.evaluate(() => { const u=window.__MOCK__.S().priv.board[0]; return window.__SP_VIEW__.tileScreen(u.row,u.col); });
+      await page.mouse.click(p.x,p.y);
+      await page.waitForSelector('.dpanel--chess .dbond.is-granted[data-bond="kazdelShip"]');
+      await page.waitForFunction(() => [...document.querySelectorAll('.dpanel img')].some(i=>i.src.endsWith('/art/kazdel/sigil-v2.png') && i.naturalWidth===256));
+      await shot(page,'kazdel-v2-sigil-isomorph.png');
+      await page.evaluate(() => window.__MOCK__.mutate(s => {
+        s.priv.board[0].items = [{uid:9901,id:'chess_item_kazdel_sigil_a'}, {uid:9903,id:'chess_item_kazdel_blade_a'}];
+      }));
+      await page.waitForFunction(() => [...document.querySelectorAll('.dpanel img')].some(i=>i.src.endsWith('/art/kazdel/blade-v2.png') && i.naturalWidth===256));
+      const shown = await page.$$eval('.dpanel img', imgs => imgs.filter(i=>/\/(sigil|blade)-v2\.png$/.test(i.src)).map(i=>({src:new URL(i.src).pathname,size:[i.naturalWidth,i.naturalHeight]})));
+      assert.deepEqual(shown.map(i=>i.src).sort(), ['/art/kazdel/blade-v2.png','/art/kazdel/sigil-v2.png']);
+      for (const i of shown) assert.deepEqual(i.size,[256,256]);
+      evidence.checks.push({entry:'real equipped details: approved sigil/blade and paired Kazdel tag',shown});
+      await page.$eval('.dpanel img[src$="/art/kazdel/blade-v2.png"]', el => el.scrollIntoView({block:'center'}));
+      await shot(page,'kazdel-v2-equipment-details.png');
+      await assertPageErrors(page,errors,'equipment');
+    } finally { await page.close(); }
+  });
+
   test('approved drill PNG renders with its beam at the purple barrel in low quality', async () => {
     const { page, errors } = await open('/dev/render-demo.html?scene=prep&paused=1&board=2d&quality=low&panel=0');
     try {
