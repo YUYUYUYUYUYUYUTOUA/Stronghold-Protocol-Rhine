@@ -91,11 +91,11 @@ function expectedPairings() {
 }
 
 describe('§21.26 1 — 变形同构体: the pairing list (gameLogic morphPairings)', () => {
-  test('from the data: 14 upstream bonds plus Rhine in bonds.json order, 18 upstream items plus its terminal', () => {
+  test('from the data: 14 upstream bonds plus Rhine and Kazdel in bonds.json order, 18 upstream items plus terminal and sigil', () => {
     const rows = morphPairings(ITEMS, BONDS);
     const want = expectedPairings();
-    assert.equal(rows.length, 14 + 1, '14 upstream bonds plus Rhine');
-    assert.equal(want.size, 14 + 1);
+    assert.equal(rows.length, 14 + 2, '14 upstream bonds plus Rhine and Kazdel');
+    assert.equal(want.size, 14 + 2);
     assert.deepEqual(rows.map((r) => r.bondId), BONDS.map((b) => b.bondId).filter((id) => want.has(id)), 'bonds.json order');
     for (const r of rows) {
       assert.equal(r.name, bonds[r.bondId].name);
@@ -104,10 +104,10 @@ describe('§21.26 1 — 变形同构体: the pairing list (gameLogic morphPairin
       assert.equal(r.off, false);
       assert.equal(r.worn, false);
     }
-    assert.equal(rows.reduce((n, r) => n + r.items.length, 0), 18 + 1, '18 upstream bond items plus the Rhine terminal');
+    assert.equal(rows.reduce((n, r) => n + r.items.length, 0), 18 + 2, '18 upstream bond items plus Rhine terminal and Kazdel sigil');
     const rhine = rows.find((r) => r.bondId === 'rhineShip');
     assert.deepEqual(rhine.items.map((it) => it.name), ['莱茵实验终端']);
-    assert.equal(rows.filter((r) => r.bondId !== 'rhineShip').reduce((n, r) => n + r.items.length, 0), 18,
+    assert.equal(rows.filter((r) => !['rhineShip', 'kazdelShip'].includes(r.bondId)).reduce((n, r) => n + r.items.length, 0), 18,
       'all original item families remain represented');
     const vic = rows.find((r) => r.bondId === 'victoriaShip');
     assert.deepEqual(vic.items.map((it) => it.name), ['维式重锤', '战栗维式重锤', '坚固维式重锤', '加速维式重锤', '灼燃维式重锤'], 'by tier: the hammer series');
@@ -121,7 +121,7 @@ describe('§21.26 1 — 变形同构体: the pairing list (gameLogic morphPairin
     const talent = ct[items[ISO].trapId].talents[0].candidates.at(-1).description.replace(/\\n/g, '\n');
     const pairs = [...talent.matchAll(/“([^”]+)”(?:系列装备)?→【([^】]+)】盟约/g)].map(([, item, bond]) => ({ item, bond }));
     assert.equal(pairs.length, 14, talent);
-    const rows = morphPairings(ITEMS, BONDS).filter((r) => r.bondId !== 'rhineShip');
+    const rows = morphPairings(ITEMS, BONDS).filter((r) => !['rhineShip', 'kazdelShip'].includes(r.bondId));
     assert.deepEqual(pairs.map((p) => p.bond).sort(), rows.map((r) => r.name).sort(), 'the same 14 bonds');
     for (const p of pairs) {
       const r = rows.find((x) => x.name === p.bond);
@@ -160,13 +160,13 @@ describe('§21.26 1 — 变形同构体: the pairing list (gameLogic morphPairin
 describe('§21.26 1 — 变形同构体 on the cards', () => {
   const funny = modeOffBonds(getMode('mode_multi_funny'));
 
-  test('the item card (shop / reward / hand): a 天赋 section with 14 upstream lines plus Rhine, 本局禁用 struck through, no highlight', () => {
+  test('the item card (shop / reward / hand): a 天赋 section with 14 upstream lines plus Rhine and Kazdel, 本局禁用 struck through, no highlight', () => {
     const v = ItemDetail({ item: items[ISO], piece: null, editable: false, onDestroy() {}, offBonds: funny });
     const sec = [...walk(v)].find((x) => x.type?.name === 'Section' && x.props.title === '天赋');
     assert.ok(sec, 'a 天赋 section (the item text points at its 天赋栏)');
     assert.match(textOf(v), /搭配以下装备时，携带者视为对应盟约的成员：/);
     const rows = byClass(v, 'dmorph__row');
-    assert.equal(rows.length, 14 + 1, '14 upstream lines plus Rhine');
+    assert.equal(rows.length, 14 + 2, '14 upstream lines plus Rhine and Kazdel');
     const off = rows.filter((r) => hasClass(r, 'is-off'));
     assert.deepEqual(off.map((r) => r.props['data-bond']), ['lateranoShip', 'egirShip', 'kazimierzShip', 'arcaneShip', 'raidShip']);
     for (const r of off) assert.match(textOf(r), /本局禁用/);
@@ -183,7 +183,7 @@ describe('§21.26 1 — 变形同构体 on the cards', () => {
     const blocks = ChessDetail({ chess: chess[WEARER], piece, editable: false, bonds: [], offBonds: funny, loadout: null });
     const equip = blocks.find((b) => b?.key === 'equip');
     const rows = byClass(equip, 'dmorph__row');
-    assert.equal(rows.length, 14 + 1, '14 upstream lines plus Rhine');
+    assert.equal(rows.length, 14 + 2, '14 upstream lines plus Rhine and Kazdel');
     const worn = rows.filter((r) => hasClass(r, 'is-worn'));
     assert.deepEqual(worn.map((r) => r.props['data-bond']), ['victoriaShip']);
     assert.match(textOf(worn[0]), /生效中/);

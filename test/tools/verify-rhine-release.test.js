@@ -109,7 +109,7 @@ test('release smoke rejects an obsolete Kazdel roster, wrong tier or supplementa
   const cases = [
     [f => { delete f.bonds.kazdelShip; }, /served Kazdel covenant missing/],
     [f => { f.bonds.kazdelShip.name = '萨卡兹'; }, /main covenant name mismatch/],
-    [f => { f.bonds.kazdelShip.thresholds = [3, 6]; }, /threshold mismatch/],
+    [f => { f.bonds.kazdelShip.thresholds = [3, 6, 9]; }, /threshold mismatch/],
     [f => { f.bonds.kazdelShip.visibleMembers.pop(); }, /visible roster mismatch/],
     [f => { delete f.chess.chess_kazdel_logos_b; }, /character forms missing/],
     [f => { f.chess.chess_kazdel_hoederer_a.tier = 5; }, /tier mismatch/],

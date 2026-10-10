@@ -49,7 +49,7 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
   assert.ok(bond, 'served Kazdel covenant missing');
   assert.equal(bond.name, '卡兹戴尔', 'Kazdel main covenant name mismatch');
   assert.equal(bond.isCore, true, 'Kazdel must be a main covenant');
-  assert.deepEqual(bond.thresholds, [3, 6, 9], 'Kazdel threshold mismatch');
+  assert.deepEqual(bond.thresholds, [3, 6], 'Kazdel threshold mismatch');
   const expectedMembers = KAZDEL_ROSTER.map(([id]) => `${id}_a`).sort();
   assert.deepEqual([...bond.visibleMembers].sort(), expectedMembers, 'Kazdel visible roster mismatch');
   assert.deepEqual([...bond.members].sort(), expectedMembers, 'Kazdel covenant roster mismatch');
