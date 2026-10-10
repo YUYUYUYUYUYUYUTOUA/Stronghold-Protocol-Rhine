@@ -19,7 +19,7 @@ assert.match(request.previousTag, /^v\d+\.\d+\.\d+-rhine\.\d+$/);
 assert.match(request.sourceCommit, /^[0-9a-f]{40}$/);
 assert.match(request.previousArchiveSha256, /^[0-9a-f]{64}$/);
 assert.match(request.runtimeVersion, /^v24\.\d+\.\d+$/);
-assert.ok(Number.isSafeInteger(request.draftReleaseId) && request.draftReleaseId > 0);
+if (request.draftReleaseId != null) assert.ok(Number.isSafeInteger(request.draftReleaseId) && request.draftReleaseId > 0);
 assert.equal(request.previousArchiveName, `Stronghold-Protocol-Rhine-${request.previousTag}-Windows-x64.zip`);
 if (request.upstreamResources) {
   const resources = request.upstreamResources;
@@ -138,6 +138,22 @@ function zip(directory, destination) {
   command('python', [path.join(automation, '.github/scripts/rhine-release-archive.py'), 'zip', directory, destination]);
 }
 async function main() {
+  if (request.draftReleaseId == null) {
+    const found = spawnSync('gh', ['api', `repos/${repo}/releases/tags/${request.tag}`], quiet);
+    if (found.status === 0) request.draftReleaseId = JSON.parse(found.stdout).id;
+    else {
+      assert.equal(process.argv[2], 'request', 'Only request validation may create a release draft.');
+      assert.match(found.stderr || '', /HTTP 404/, 'Release lookup failed; do not create a duplicate.');
+      assert.equal(api(`git/ref/tags/${request.tag}`).object.sha, request.sourceCommit);
+      assert.ok(typeof request.releaseNotes === 'string' && request.releaseNotes.trim());
+      const created = JSON.parse(command('gh', ['api', '--method', 'POST', `repos/${repo}/releases`, '--input', '-'], {
+        input: JSON.stringify({ tag_name: request.tag, target_commitish: request.sourceCommit,
+          name: `${request.tag} · 卡兹戴尔炮击与阿斯卡纶`, body: request.releaseNotes, draft: true, prerelease: false }),
+      }));
+      assert.equal(created.draft, true);
+      request.draftReleaseId = created.id;
+    }
+  }
   const draft = api(`releases/${request.draftReleaseId}`);
   assert.equal(draft.tag_name, request.tag);
   const tag = api(`git/ref/tags/${request.tag}`);
@@ -212,7 +228,7 @@ async function main() {
   progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
   const tests = runTests(node, built.destination, [
-    'test/content/kazdel.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
+    'test/content/kazdel.test.js', 'test/content/kazdel_ascalon.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
     'test/content/rhine_device_rework.test.js', 'test/match/rhine-laser-field-share.test.js',
     'test/kazdel_data.test.js', 'test/rhine_data.test.js', 'test/i18n.test.js', 'test/i18n-packs.test.js',
     'test/tools/verify-rhine-release.test.js', 'test/rhine-bundle-update.test.js', 'test/rhine-online-update.test.js',
@@ -230,6 +246,8 @@ async function main() {
     const browserOutput = path.join(built.destination, 'test/e2e/out');
     assert.equal(fs.existsSync(browserOutput), false);
     browserTests = {
+      kazdelSimulation: runTests(node, built.destination, ['test/sim/kazdel.browser.test.js'],
+        path.join(root, 'browser-kazdel-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
       renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js'],
         path.join(root, 'browser-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
       statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
@@ -286,12 +304,30 @@ async function main() {
     assert.equal(await sha(file), entry.sha256);
   }
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(extractedTool, 'TOOL-MANIFEST.json'), 'utf8')), toolManifest);
+  const updater = await import(pathToFileURL(path.join(source, 'scripts/rhine-bundle-update.mjs')));
+  const updatePlan = await updater.planUpdate({ source: unpacked, target: previous });
+  assert.deepEqual(updatePlan.conflicts, []);
+  const privateFixture = path.join(previous, 'release-validation-private.txt');
+  fs.writeFileSync(privateFixture, 'preserve private player files');
+  const updated = await updater.applyUpdate({ source: unpacked, target: previous });
+  assert.equal(updated.status, 'updated');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(previous, 'bundle-manifest.json'))).sourceCommit, request.sourceCommit);
+  assert.equal(fs.readFileSync(privateFixture, 'utf8'), 'preserve private player files');
+  assert.equal((await updater.applyUpdate({ source: unpacked, target: previous })).status, 'already-current');
+  assert.equal((await updater.rollbackUpdate({ target: previous, backup: updated.backup })).status, 'rolled-back');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(previous, 'bundle-manifest.json'))).sourceCommit, oldManifest.sourceCommit);
+  assert.equal(fs.readFileSync(privateFixture, 'utf8'), 'preserve private player files');
+  const updateChecks = { from: request.previousTag, to: request.tag, changedFiles: updated.changedFiles,
+    conflicts: 0, apply: 'passed', privateFilesPreserved: 'passed', repeat: 'already-current', rollback: 'passed',
+    platform: process.platform, realWindowsProcessGuard: true };
+  progress('Actual previous-package update, private-file preservation, repeat update and rollback passed.');
   const archiveSha = await sha(archive), toolSha = await sha(toolZip);
   fs.writeFileSync(path.join(assets, 'SHA256SUMS.txt'), `${archiveSha}  ${archiveName}\n`);
   fs.writeFileSync(path.join(assets, 'UPDATE-TOOL-SHA256.txt'), `${toolSha}  ${toolName}\n`);
   const report = { ...request.sourceValidation, createdAt: new Date().toISOString(), sourceCommit: request.sourceCommit,
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
+    updateChecks,
     packagedWindows: { node: request.runtimeVersion, tests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
@@ -310,6 +346,13 @@ async function main() {
     assert.equal(asset.size, fs.statSync(file).size, asset.name);
     assert.equal(asset.digest, `sha256:${await sha(file)}`, asset.name);
   }
+  const downloaded = path.join(root, 'downloaded-release-verification'); fs.mkdirSync(downloaded);
+  command('gh', ['release', 'download', request.tag, '--repo', repo, '--dir', downloaded]);
+  for (const name of assetNames) {
+    assert.equal(fs.statSync(path.join(downloaded, name)).size, fs.statSync(path.join(assets, name)).size, name);
+    assert.equal(await sha(path.join(downloaded, name)), await sha(path.join(assets, name)), name);
+  }
+  progress('All five uploaded attachments were downloaded again and their byte counts and SHA256 hashes verified.');
   if (request.prepareOnly === true) {
     progress('All five assets are verified. Release remains a draft for the final source-validation check.');
     return;
@@ -320,7 +363,13 @@ async function main() {
   command('gh', ['api', '--method', 'PATCH', `repos/${repo}/releases/${request.draftReleaseId}`, '--input', publication]);
   const latest = api('releases/latest');
   assert.equal(latest.tag_name, request.tag); assert.equal(latest.draft, false); assert.equal(latest.prerelease, false);
-  console.log(`Published and verified: ${latest.html_url}`);
+  const online = await import(pathToFileURL(path.join(source, 'scripts/rhine-online-update.mjs')));
+  const selected = online.selectRelease(latest);
+  assert.equal(selected.tag, request.tag); assert.equal(selected.commit, request.sourceCommit);
+  assert.equal(selected.zip.sha256, archiveSha);
+  assert.equal(online.parseChecksum(fs.readFileSync(path.join(downloaded, 'SHA256SUMS.txt'), 'utf8'), archiveName), archiveSha);
+  assert.equal(latest.assets.length, 5);
+  console.log(`Published and verified: ${latest.html_url}; online updater selects ${selected.tag} at ${selected.commit}`);
 }
 try {
   await main();
@@ -330,7 +379,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['packaged-tests.log', 'browser-render.log', 'browser-stats.log']) {
+    for (const name of ['packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }
