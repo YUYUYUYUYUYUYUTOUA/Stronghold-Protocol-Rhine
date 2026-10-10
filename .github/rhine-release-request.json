@@ -1,12 +1,12 @@
 {
-  "tag": "v0.2.2-rhine.1",
-  "sourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80",
-  "draftReleaseId": 408249524,
-  "previousTag": "v0.2.1-rhine.4",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.1-rhine.4-Windows-x64.zip",
-  "previousArchiveSha256": "143dee12a0632efbbb23162a6beecdd4a200a968b9f2aa4013a29b81941e65ee",
+  "tag": "v0.2.2-rhine.2",
+  "sourceCommit": "f4e2235e562c9a98d382a8b060e9e739d3b83769",
+  "previousTag": "v0.2.2-rhine.1",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.1-Windows-x64.zip",
+  "previousArchiveSha256": "99c4f9173d2929eaef62af5801028669f7a87331fe955f86b3c1fb162dbe67bf",
   "runtimeVersion": "v24.21.0",
-  "prepareOnly": true,
+  "prepareOnly": false,
+  "releaseNotes": "本次正式更新：卡兹戴尔炮击友伤修复与三阶阿斯卡纶。\n\n- 六人档炮击保留误伤风味，只对炮击所属玩家的活体友军造成半额真伤（400 + 7.5 × 众魂层数）；敌方仍为 800 + 15 × 层数。共享战场中其他玩家的干员受到保护，同步与延迟衍生伤害保留炮击归属。\n- 九人档仅伤敌方、魂灵免疫、误伤及其衍生死亡不产层或充能保持不变。\n- 新增三阶阿斯卡纶，仅卡兹戴尔主盟约。本体范围额外减速 20%／30%，每 3 秒有效留怪 +1／2 层；多个目标不倍增，同名每玩家取最强有效来源，无目标暂停，魂灵不继承。\n\n更新方式：结束对局并关闭服务后，在原安装目录运行「联网更新.bat」或「更新旧版.bat」。旧配置与私人文件保留；有本地源码冲突时工具会停止而不是覆盖。首次安装下载完整 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。服务器由用户自行更新。\n\n验收：包内官方 Node.js 24 的 Windows 回归、Edge 渲染及卡兹戴尔跨端仿真、HTTP／WebSocket、全部文件清单、旧包升级／重复更新／回滚、上传后重新下载 SHA256 核对通过后才公开发布。实际数量见 RELEASE-VALIDATION.json；SHA256SUMS.txt 对应完整包，UPDATE-TOOL-SHA256.txt 对应独立更新工具。\n\n已知限制：完整 CI 并非全绿。随机战斗 96 的玛恩纳与「余音」反伤链超过 32 层；已在未修改的 509a666c 基线用两者最小场景复现，触发深度保护后跳过递归处理器。本次不混入该既有机制的修复。未进行真人多人平衡试玩或人工 BAT 点击验收。\n\n基于 sganggs/Stronghold-Protocol v0.2.2 的非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\nCI 补充：Windows Node 22 另有在线更新测试进程异常退出（3221226505），上一正式基线 CI 亦出现相同错误；四组 CI 的服务冒烟因前置失败跳过。包内 Node 24 的独立更新与服务验收结果另见附件。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.2",
@@ -15,244 +15,99 @@
     "sha256": "7a4342af163cae9972a7bc73081f152702092d9e8aec4d3938cf1a9cc9cfc31e"
   },
   "sourceValidation": {
-    "version": "v0.2.2-rhine.1",
-    "sourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80",
+    "version": "v0.2.2-rhine.2",
+    "sourceCommit": "f4e2235e562c9a98d382a8b060e9e739d3b83769",
+    "validatedGameplayCommit": "f53c489f83899c1c0fc9c8e35a7d05a5d3d00370",
     "basedOn": {
       "tag": "v0.2.2",
       "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f"
     },
     "tests": {
-      "sourceFull": {
-        "total": 6306,
-        "pass": 6257,
-        "fail": 8,
-        "cancelled": 0,
-        "skipped": 41,
-        "platform": "linux",
-        "node": "v24.21.0",
-        "matchSeeds": 20,
-        "browserOptInSuites": false,
-        "failedCaseResolutions": [
-          {
-            "case": "spectator lobby timeout under contention",
-            "resolution": "unchanged isolated suite: 10 passed"
-          },
-          {
-            "case": "4 humans FUNNY: Odda 150 layers rejected by legacy per-round client bound",
-            "resolution": "uncapped eligible Odda/Hoederer trait allowance; real R13 replay and full 20-seed group passed"
-          },
-          {
-            "case": "six-player progress fixture",
-            "resolution": "updated expected upstream resolved field; suite passed"
-          },
-          {
-            "case": "sixth-player progress validation fixture",
-            "resolution": "reinforcement kills may exceed initial total in upstream; positive and invalid-negative cases passed"
-          },
-          {
-            "case": "2 updater boot fixture tests",
-            "resolution": "stub new upstream limiter and doctor dependencies; real boot guards passed"
-          },
-          {
-            "case": "heavy two-player boss performance under contention",
-            "resolution": "unchanged isolated test passed at 0.4046 ms/tick"
-          },
-          {
-            "case": "Kazdel HUD fixture",
-            "resolution": "updated expected upstream resolved field; suite passed"
-          }
-        ],
-        "note": "The entire 6306-test run was not repeated after the fixes. Every failed case was rerun in its original suite/group; additional focused and final packaged regression passed.",
-        "simulationDiagnostics": {
-          "status": "nonfatal hook-depth guard diagnostics observed in some full-match co-op simulations",
-          "actors": [
-            "异客",
-            "刺玫",
-            "余音 enemy_9023_acdums"
-          ],
-          "behavior": "existing depth-32 guard skips recursively nested handlers; match-engine assertions still pass",
-          "upstreamModulesUnchanged": [
-            "server/sim/content/bosses.js",
-            "server/sim/content/kits/ops/chess_char_1_06-vendla.js",
-            "server/sim/content/kits/ops/chess_char_6_05-pasngr.js",
-            "server/sim/content/kits/shared/tier1.js"
-          ],
-          "note": "This is recorded as a simulation limitation, not claimed as a zero-simulation-error result."
-        }
-      },
-      "finalAdaptation": {
-        "total": 36,
-        "pass": 36,
+      "kazdelCombined": {
+        "pass": 65,
         "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+        "skipped": 1
       },
-      "clientCombat": {
-        "total": 45,
-        "pass": 45,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+      "runtime": {
+        "pass": 43,
+        "fail": 0
       },
-      "funnyFull20SeedRetest": {
-        "total": 1,
+      "browserNodeParity": {
         "pass": 1,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+        "scenarios": 8,
+        "fail": 0
       },
-      "isolatedLobbyRetest": {
-        "total": 10,
-        "pass": 10,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+      "golden": {
+        "matched": 283,
+        "changed": 0
       },
-      "isolatedPerformanceRetest": {
-        "total": 1,
-        "pass": 1,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+      "releasePreflight": {
+        "pass": 85,
+        "fail": 0
       },
-      "sixPlayerAndBootRetest": {
-        "total": 18,
-        "pass": 18,
+      "updaterAndBundle": {
+        "pass": 59,
         "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
+        "skipped": 4
       },
-      "kazdelHudRetest": {
-        "total": 4,
+      "releaseBootstrapGuards": {
         "pass": 4,
         "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
-      },
-      "packagedLinuxRegression": {
-        "total": 255,
-        "pass": 242,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 13,
-        "platform": "linux",
-        "node": "v24.21.0",
-        "validatedSourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf"
-      },
-      "i18n": {
-        "total": 24,
-        "pass": 24,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
-      },
-      "statsBrowserLinux": {
-        "total": 1,
-        "pass": 1,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0"
-      },
-      "goldenScenarios": {
-        "matched": 283,
-        "validatedGameplayCommit": "068e1fae7c38239fab9e57ce0d4e44cccd732d3b",
-        "note": "Subsequent gameplay fix changes the fork-specific Kazdel client-layer guard; native replay inputs and content remain unchanged."
-      },
-      "nativeWindowsInitialAttempt": {
-        "validatedSourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
-        "packagedRegression": {
-          "total": 255,
-          "pass": 253,
-          "fail": 0,
-          "skipped": 2
-        },
-        "browserRenderer": {
-          "total": 8,
-          "pass": 7,
-          "fail": 1,
-          "skipped": 0
-        },
-        "failedCaseResolution": "Outdated browser fixture expected 44 selected cells for the global drill. Updated it to assert selected global-attack details, full shared maximum HP calculation, and no local range overlay. Full native Windows browser rerun is required before publication."
-      },
-      "laserInspectionRetest": {
-        "total": 7,
-        "pass": 7,
-        "fail": 0,
-        "skipped": 0,
-        "platform": "linux",
-        "node": "v24.21.0",
-        "validatedSourceCommit": "1cee58a8b9cd2b14086ed0e8a058520960a2db80"
+        "cases": [
+          "create missing draft",
+          "reuse existing published release",
+          "reject forbidden lookup",
+          "reject tag mismatch"
+        ]
       }
     },
     "checks": {
       "lintErrors": 0,
+      "lintWarnings": 141,
       "typecheck": "passed",
-      "importBoundaries": "passed with 3 allowed existing Node loader diagnostics",
-      "strictUiCatalogs": {
-        "languages": [
-          "en",
-          "ja",
-          "ko",
-          "zh-TW"
-        ],
-        "msgidsPerLanguage": 1244,
-        "coveragePercent": 100,
-        "errors": 0
+      "importBoundaries": "exit 0 with 3 existing nodeData.js diagnostics",
+      "strictI18n": "4 packs each 1244/1244"
+    },
+    "ci": {
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38044784271",
+      "status": "not green; baseline reflection recursion reproduced independently",
+      "ubuntuNode22": {
+        "pass": 6247,
+        "fail": 1,
+        "skipped": 68
+      },
+      "ubuntuNode24": {
+        "pass": 6247,
+        "fail": 1,
+        "skipped": 68
+      },
+      "windowsNode24": {
+        "pass": 6258,
+        "fail": 1,
+        "skipped": 57
+      },
+      "windowsNode22": {
+        "pass": 6235,
+        "fail": 2,
+        "skipped": 57,
+        "additionalFailure": "rhine-online-update.test.js process exit 3221226505; same signature on baseline CI 37981682978"
+      },
+      "tooling": "passed",
+      "smoke": "all four jobs skipped after test failure; separate packaged smoke is required"
+    },
+    "knownIssues": [
+      {
+        "name": "Mlynar / Echo recursive reflection",
+        "test": "test/sim/fuzz.test.js battle 96",
+        "baseline": "509a666cc76e61e689c7ffbd3eb36e2d9de35088",
+        "reproducedWithoutNewContent": true,
+        "effect": "depth-32 guard skips recursive hit/damaged handlers",
+        "fixed": false
       }
-    },
-    "resources": {
-      "upstreamPackageFilesVerified": 6453,
-      "vanillaSnapshotsByteExact": 22,
-      "previousPackageFilesVerified": 22537,
-      "previousPackageSha256": "143dee12a0632efbbb23162a6beecdd4a200a968b9f2aa4013a29b81941e65ee",
-      "resolvedDependencyLock": "identical after normalizing project name/version",
-      "officialRuntimeFilesVerified": 1993,
-      "officialRuntimeArchiveSha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
-      "runtimeVersion": "v24.21.0",
-      "voiceCharsPerLanguage": 197,
-      "voiceLinesPerLanguage": 2758
-    },
-    "updateChecks": {
-      "from": "v0.2.1-rhine.4",
-      "to": "v0.2.2-rhine.1",
-      "changedFiles": 3253,
-      "conflictProtection": "passed",
-      "localConfigAndPrivateFilesPreserved": "passed",
-      "repeatUpdate": "already-current",
-      "rollback": "passed",
-      "stoppedFixtureGuardCalls": 10,
-      "platform": "linux",
-      "windowsProcessDetection": "not executed; stopped fixture supplied to updater core",
-      "validatedSourceCommit": "5b5793d415069f1b92ce790150a3252043c1d369",
-      "finalPreflight": {
-        "sourceCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
-        "changedFiles": 3259,
-        "conflicts": 0
-      }
-    },
-    "cloudRenderer": {
-      "status": "not passed: Chromium WebGL shader initialization stalled",
-      "nativeWindowsBrowserChecks": "required by publisher before assets are uploaded"
-    },
-    "validatedGameplayCommit": "58f01aabd2043faacb370299f6dbba13f38161cf",
-    "releaseCandidateChange": "After validated gameplay commit, only release-request metadata and the global-drill browser fixture changed; product code is unchanged."
+    ],
+    "localLimitations": [
+      "No manual multiplayer balance trial or manual BAT launch.",
+      "Initial Linux full-suite failure counts and retest scope are documented in docs/KAZDEL-VALIDATION.md."
+    ]
   }
 }
