@@ -732,18 +732,19 @@ test('Rhine Astgenne: first activation grants each active bond once, including a
   }
 });
 
-test('Rhine Dorothy: distinct physical activations use the owner cap and ignore repeated trap events', () => {
+test('Rhine Dorothy: retired trap events never award research; attack trait is dispatched by Rhine content', () => {
   for (const suffix of ['a', 'b']) {
-    const gid = `garrison_rhine_dorothy_${suffix}`, n = suffix === 'b' ? 4 : 2;
+    const gid = `garrison_rhine_dorothy_${suffix}`;
+    assert.equal(GR(gid).effectKey, 'RHINE_DOROTHY_ATTACK');
+    assert.equal(GR(gid).bb.atk_per_layer, suffix === 'b' ? 2 : 1);
     const h = battle({ units: [{ id: 'doro', g: [gid], row: 10, col: 4 }], bonds: { rhineShip: B() } });
     const owner = h.unit('doro'), token = { ownerUnit: owner, mem: {} };
     for (let seq = 1; seq <= 20; seq++) {
       token.mem.dorothyTriggered = seq;
       h.b.emit('trapTriggered', { owner, token, deploySeq: seq });
       h.b.emit('trapTriggered', { owner, token, deploySeq: seq });
-      assert.equal(gains(h).rhineShip, Math.min(seq * n, 12 * n));
     }
-    cover(gid);
+    assert.equal(gains(h).rhineShip ?? 0, 0); cover(gid);
   }
 });
 
