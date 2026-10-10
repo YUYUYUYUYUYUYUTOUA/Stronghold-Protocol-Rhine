@@ -1,12 +1,12 @@
 {
-  "tag": "v0.2.2-rhine.2",
-  "sourceCommit": "f4e2235e562c9a98d382a8b060e9e739d3b83769",
-  "previousTag": "v0.2.2-rhine.1",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.1-Windows-x64.zip",
-  "previousArchiveSha256": "99c4f9173d2929eaef62af5801028669f7a87331fe955f86b3c1fb162dbe67bf",
+  "tag": "v0.2.2-rhine.3",
+  "sourceCommit": "523cca24df3f6ab5823ff36cccbdd8ae42dd5fc3",
+  "previousTag": "v0.2.2-rhine.2",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.2-Windows-x64.zip",
+  "previousArchiveSha256": "3580a9ccb07cfb6e8fbac51df8063ddef5e57a0929510ce771542ec965485613",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseNotes": "本次正式更新：卡兹戴尔炮击友伤修复与三阶阿斯卡纶。\n\n- 六人档炮击保留误伤风味，只对炮击所属玩家的活体友军造成半额真伤（400 + 7.5 × 众魂层数）；敌方仍为 800 + 15 × 层数。共享战场中其他玩家的干员受到保护，同步与延迟衍生伤害保留炮击归属。\n- 九人档仅伤敌方、魂灵免疫、误伤及其衍生死亡不产层或充能保持不变。\n- 新增三阶阿斯卡纶，仅卡兹戴尔主盟约。本体范围额外减速 20%／30%，每 3 秒有效留怪 +1／2 层；多个目标不倍增，同名每玩家取最强有效来源，无目标暂停，魂灵不继承。\n\n更新方式：结束对局并关闭服务后，在原安装目录运行「联网更新.bat」或「更新旧版.bat」。旧配置与私人文件保留；有本地源码冲突时工具会停止而不是覆盖。首次安装下载完整 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。服务器由用户自行更新。\n\n验收：包内官方 Node.js 24 的 Windows 回归、Edge 渲染及卡兹戴尔跨端仿真、HTTP／WebSocket、全部文件清单、旧包升级／重复更新／回滚、上传后重新下载 SHA256 核对通过后才公开发布。实际数量见 RELEASE-VALIDATION.json；SHA256SUMS.txt 对应完整包，UPDATE-TOOL-SHA256.txt 对应独立更新工具。\n\n已知限制：完整 CI 并非全绿。随机战斗 96 的玛恩纳与「余音」反伤链超过 32 层；已在未修改的 509a666c 基线用两者最小场景复现，触发深度保护后跳过递归处理器。本次不混入该既有机制的修复。未进行真人多人平衡试玩或人工 BAT 点击验收。\n\n基于 sganggs/Stronghold-Protocol v0.2.2 的非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\nCI 补充：Windows Node 22 另有在线更新测试进程异常退出（3221226505），上一正式基线 CI 亦出现相同错误；四组 CI 的服务冒烟因前置失败跳过。包内 Node 24 的独立更新与服务验收结果另见附件。",
+  "releaseNotes": "本次正式更新：卡兹戴尔装备、完整原生魂灵、莱茵三阶机制与批准的 v2 美术。\n\n- 卡兹戴尔新增印记与巨刃装备及同构标签组合；战争巨炮为 5×5 去四角的 21 格范围，超出战场的格子裁剪。按维护者后续确认，自身活体干员承受 100% 炮击伤害，其他玩家干员与魂灵免疫，敌方伤害不变；九人及以上沿用六人档。误伤及其衍生死亡不产层或充能。\n- 魂灵完整继承原体所选原生技能、全部原生天赋和模组行为，独立初始化 SP、弹药、技能次数与召唤物归属；不继承装备触发或仅活体生效的卫戍产层特质。原有基础属性公式、治疗组隔离、本体回归清理与死亡资源规则保留。\n- 梅尔普通／精锐每次有效工作仍为 1／2 层；同玩家同场普通主战的全部梅尔及装置共享 24／48 层预算，混合品质按 48，重部署不刷新。钻机预热 20 秒后，每秒真伤为目标完整共享最大生命值 ×（0.0005 + 0.000005 × 当前科研层数）。多萝西改为每科研层固定增加 1／2 攻击，与六莱茵加算；取消陷阱科研产层，原生技能与梦想家保留。\n- 保留用户原始卡兹戴尔徽记；接入批准的印记、巨刃及钻机 v2 素材，修正实际炮口与光束首帧对齐。修复余音／反击及法术护盾／反击递归，保留首轮合法效果，不提高递归上限。\n\n更新方式：结束对局并关闭服务，在原安装目录运行「联网更新.bat」或「更新旧版.bat」。配置及私人文件保留，本地源码冲突会停止更新。首次安装下载完整 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。本次未部署服务器。\n\n发行检查包括包内 Windows Node 24 回归、Edge 渲染及跨端仿真、HTTP／WebSocket、全文件清单、上一正式包升级／保留私人配置／重复更新／回滚，以及五个附件上传后重新下载的 SHA256 核验。实际结果与 CI 结论见 RELEASE-VALIDATION.json；完整包和独立更新工具分别对应 SHA256SUMS.txt、UPDATE-TOOL-SHA256.txt。\n\n未进行真人多人平衡试玩或人工 BAT 点击验收。本地完整并行 CI 曾有重 Boss 性能阈值失败，随后原阈值的隔离三次复验通过；没有放宽阈值或跳过测试。\n\n基于 sganggs/Stronghold-Protocol v0.2.2 的非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n源码主线 CI 38073772108：Ubuntu Node 22／24、Windows Node 24、tooling 通过；Windows Node 22 的在线更新测试仍以 3221226505 异常退出，与此前正式基线相同，该组后续冒烟跳过。包内采用 Node 24，另行执行原生 Windows 安装包服务与更新验收。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.2",
@@ -15,100 +15,142 @@
     "sha256": "7a4342af163cae9972a7bc73081f152702092d9e8aec4d3938cf1a9cc9cfc31e"
   },
   "sourceValidation": {
-    "version": "v0.2.2-rhine.2",
-    "sourceCommit": "f4e2235e562c9a98d382a8b060e9e739d3b83769",
-    "validatedGameplayCommit": "f53c489f83899c1c0fc9c8e35a7d05a5d3d00370",
+    "version": "v0.2.2-rhine.3",
+    "sourceCommit": "523cca24df3f6ab5823ff36cccbdd8ae42dd5fc3",
+    "validatedGameplayCommit": "ff6c15aad6e7992eff0c6d1a7a5e68445ef2a61e",
     "basedOn": {
       "tag": "v0.2.2",
       "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f"
     },
     "tests": {
-      "kazdelCombined": {
-        "pass": 65,
-        "fail": 0,
-        "skipped": 1
+      "localFullCi": {
+        "tests": 6424,
+        "pass": 6356,
+        "fail": 1,
+        "skipped": 67,
+        "failure": "Concurrent heavy boss performance: best 0.5601 ms/tick exceeds local 0.5 ms limit."
       },
-      "runtime": {
-        "pass": 43,
-        "fail": 0
-      },
-      "browserNodeParity": {
+      "bossPerformanceIsolated": {
         "pass": 1,
-        "scenarios": 8,
-        "fail": 0
+        "fail": 0,
+        "microsecondsPerTick": [
+          399.9,
+          275.2,
+          214.3
+        ],
+        "thresholdMs": 0.5,
+        "thresholdChanged": false
       },
       "golden": {
         "matched": 283,
         "changed": 0
       },
-      "releasePreflight": {
-        "pass": 85,
-        "fail": 0
-      },
-      "updaterAndBundle": {
-        "pass": 59,
-        "fail": 0,
-        "skipped": 4
-      },
-      "releaseBootstrapGuards": {
+      "browserNodeParity": {
         "pass": 4,
         "fail": 0,
-        "cases": [
-          "create missing draft",
-          "reuse existing published release",
-          "reject forbidden lookup",
-          "reject tag mismatch"
-        ]
+        "skipped": 0
+      },
+      "fullArtBrowser": {
+        "distinctTestsPassed": 13,
+        "skipped": 0,
+        "initialRun": {
+          "pass": 10,
+          "fail": 3
+        },
+        "repairedRetestsPassed": 3,
+        "repairs": [
+          "Assert 21 full cells and field clipping separately.",
+          "Capture the actual short impact renderer call instead of racing its 480ms expiry.",
+          "Advance the real continuous-field FX lifetime directly instead of depending on headless frame rate."
+        ],
+        "note": "All 13 passed across the initial run and targeted reruns; the packaged Windows run repeats the complete suite."
+      },
+      "soulNativeTargeted": {
+        "pass": 116,
+        "fail": 0
+      },
+      "rhineAiEstimates": {
+        "pass": 26,
+        "fail": 0
+      },
+      "releasePreflight": {
+        "tests": 119,
+        "pass": 107,
+        "fail": 0,
+        "skipped": 12,
+        "skipReason": "Native Windows PowerShell, ZIP and launcher checks unavailable on Linux."
+      },
+      "docsAndCannonRenderer": {
+        "pass": 37,
+        "fail": 0
       }
     },
     "checks": {
       "lintErrors": 0,
-      "lintWarnings": 141,
+      "lintWarnings": 143,
       "typecheck": "passed",
-      "importBoundaries": "exit 0 with 3 existing nodeData.js diagnostics",
-      "strictI18n": "4 packs each 1244/1244"
+      "importBoundaries": "passed; existing nodeData.js diagnostics unchanged",
+      "strictI18n": "4 packs each 1243/1243",
+      "approvedArtHashes": "checked against approved v2 delivery and original Kazdel badge"
     },
     "ci": {
-      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38044784271",
-      "status": "not green; baseline reflection recursion reproduced independently",
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38073772108",
+      "status": "completed",
+      "conclusion": "failure",
+      "tooling": "success",
       "ubuntuNode22": {
-        "pass": 6247,
-        "fail": 1,
-        "skipped": 68
+        "conclusion": "success",
+        "pass": 6353,
+        "fail": 0,
+        "skipped": 71
       },
       "ubuntuNode24": {
-        "pass": 6247,
-        "fail": 1,
-        "skipped": 68
+        "conclusion": "success",
+        "pass": 6353,
+        "fail": 0,
+        "skipped": 71
       },
       "windowsNode24": {
-        "pass": 6258,
-        "fail": 1,
-        "skipped": 57
+        "conclusion": "success",
+        "pass": 6364,
+        "fail": 0,
+        "skipped": 60
       },
       "windowsNode22": {
-        "pass": 6235,
-        "fail": 2,
-        "skipped": 57,
-        "additionalFailure": "rhine-online-update.test.js process exit 3221226505; same signature on baseline CI 37981682978"
+        "conclusion": "failure",
+        "pass": 6341,
+        "fail": 1,
+        "skipped": 60,
+        "failure": "rhine-online-update.test.js process exits 3221226505; same signature on earlier formal baseline CI"
       },
-      "tooling": "passed",
-      "smoke": "all four jobs skipped after test failure; separate packaged smoke is required"
+      "smoke": "passed on Ubuntu Node22/24 and Windows Node24; skipped after test failure on Windows Node22"
     },
     "knownIssues": [
       {
+        "name": "Windows Node22 updater test process exception",
+        "fixed": false,
+        "exitCode": 3221226505,
+        "packagedRuntime": "Node24; actual package update checks are recorded independently"
+      },
+      {
         "name": "Mlynar / Echo recursive reflection",
-        "test": "test/sim/fuzz.test.js battle 96",
-        "baseline": "509a666cc76e61e689c7ffbd3eb36e2d9de35088",
-        "reproducedWithoutNewContent": true,
-        "effect": "depth-32 guard skips recursive hit/damaged handlers",
-        "fixed": false
+        "fixed": true,
+        "commit": "57d1aebd",
+        "goldenChange": "hidden-boss_10-solo records the first legitimate thorns counterattack; subsequent 283 goldens unchanged"
       }
     ],
     "localLimitations": [
       "No manual multiplayer balance trial or manual BAT launch.",
-      "Initial Linux full-suite failure counts and retest scope are documented in docs/KAZDEL-VALIDATION.md."
+      "Full local parallel CI had one performance failure; original-threshold isolated retest passed.",
+      "Automated browser checks are not a manual visual or multiplayer playtest."
     ]
   },
-  "draftReleaseId": 408881289
+  "releaseName": "v0.2.2-rhine.3 · 原生魂灵、卡兹戴尔装备与莱茵三阶",
+  "approvedArt": {
+    "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
+    "public/art/kazdel/sigil-v2.png": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
+    "public/art/kazdel/blade-v2.png": "efb4a69c233e80b8a80cc9b6dd3c186a1267a066a58454669b96ebe13b6a8901",
+    "public/art/rhine/laser-v2.png": "c0e347854abbe73057185fe6c4c8d356141b34617d308462dcd2d6559962a265",
+    "public/art/rhine/laser-unit-v2.png": "ce32bbb5567d268cb1eed127c9b3bdd45a9e48416314947ac080f7de3495db8e"
+  }
 }
