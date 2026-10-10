@@ -876,6 +876,16 @@ answer `kits/shared/tier1.js byEnemyAttack` (星熊 S2, 泡泡, 刺玫 S2, 余 S
 instance) and skip `'counter'` / `'reflect'` damage. When the guard trips, the logged error names the open frames
 (`chain: hit(enemy_x→chess_y) > damaged(chess_y) > …`).
 
+Enemy reactive derivatives must retain the triggering damage's `counter` / `reflect` tags: Echo's on-damage pulse
+(HP damage and apoptosis fill) and the arts-barrier spring's retaliation do so locally. [ASSUMED] This applies the
+remake's existing no-counter-on-counter rule through an intermediate enemy reaction, not a new global event filter.
+An ordinary hit, a pipe/string strike or Echo's independent ensemble still allows a first legal counter; its resulting
+enemy pulse still lands and increments Echo's form counter, but cannot re-arm another counter. Damage source, credit,
+mitigation, healing, SP, kill/death hooks and unrelated attack tags are not replaced or copied. The depth-32 guard stays
+unchanged. `test/content/reactive-origin.test.js` covers the minimized Mlynar/Echo, Passenger/Vendla/Echo and
+Bubble/spring loops; `test/sim/reactive-origin.browser.test.js` compares Node and Chromium across all four field kinds.
+
+
 ---
 
 ## 6. Engine helpers (content must use these)
