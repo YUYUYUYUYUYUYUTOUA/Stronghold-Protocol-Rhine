@@ -215,9 +215,14 @@ test('bot device estimates use merged medical control/healing, energy stages and
     const laserRec = rhineBotRecord(h.m, ps, laser);
     assert.equal(laserRec.stats.atk, 510);
     assert.equal(laserRec._rhineLaser, true);
+    assert.equal(laserRec._rhineLayers, 10);
     assert.equal(rhineLaserExposure(510, 0, 1e6), 0);
     assert.equal(rhineLaserExposure(510, 20, 1e6), 15300);
-    assert.equal(rhineLaserExposure(510, 40, 1e6), 135700);
+    assert.equal(rhineLaserExposure(510, 40, 1e6), 45700);
+    assert.equal(rhineLaserExposure(510, 40, 1e6, laserRec._rhineLayers), 46700);
+    for (const [layers, expected] of [[300,75700],[350,80700],[400,85700]]) {
+      assert.equal(rhineLaserExposure(510, 40, 1e6, layers), expected);
+    }
   } finally { h.m.dispose(); }
 });
 

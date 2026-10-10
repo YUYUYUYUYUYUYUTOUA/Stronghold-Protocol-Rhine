@@ -232,7 +232,7 @@ export function bountyKillChance(m, ps, card) {
   // A drill is one locked target. Credit it conservatively only when this bounty is at least as tough as the wave.
   if (hp >= Math.max(...model.routes.map((r) => r.panelMaxHp || r.hp))) {
     const duration = route.tiles.length * tileTime + (held ? LAYOUT_PARAMS.hold : 0);
-    for (const u of units) if (u.laser) exp += rhineLaserExposure(u.vs, duration, hp);
+    for (const u of units) if (u.laser) exp += rhineLaserExposure(u.vs, duration, hp, u.rec._rhineLayers);
   }
   return 1 - Math.exp(-exp / (BOUNTY_KILL * hp));
 }
@@ -859,20 +859,21 @@ export function rhineBotRecord(m, ps, piece) {
     rec.stats.bat = Math.max(RB.energyPulseInterval, RB.energyCharges / chargeRate);
   } else {
     rec.stats.atk = attack * RB.laserBaseScale; rec.stats.bat = 1; rec._rhineLaser = true;
+    rec._rhineLayers = Math.max(0, Number(ps.layers?.[RHINE_BOND]) || 0);
     rec.rangeGrid = [];
   }
   rec._botDpsId = `${piece.id}|${stage}|${rec.stats.atk}|${rec.stats.bat}`;
   return rec;
 }
 
-/** Integrated drill damage for one uninterrupted target, including its own field's post-ramp HP damage. */
-export function rhineLaserExposure(initialDps, seconds, maxHp = 0) {
+/** Integrated drill damage for one uninterrupted target, including current research and the full target's post-ramp HP damage. */
+export function rhineLaserExposure(initialDps, seconds, maxHp = 0, layers = 0) {
   const duration = Math.max(0, Number(seconds) || 0);
   const ramp = Math.min(duration, RB.laserRampSeconds);
   const after = Math.max(0, duration - RB.laserRampSeconds);
   const rampFactor = 0.5 * RB.laserRampPerSecond * ramp * ramp;
   return initialDps * (duration + rampFactor + after * RB.laserRampPerSecond * RB.laserRampSeconds)
-    + after * Math.max(0, maxHp) * RB.laserTrueHpRatio;
+    + after * Math.max(0, maxHp) * (RB.laserTrueHpRatio + Math.max(0, Number(layers) || 0) * RB.laserTrueHpRatioPerLayer);
 }
 
 /**
@@ -977,7 +978,7 @@ class Layout {
       }
       if (rt === laserTarget) {
         const duration = rt.tileTime * rt.tiles.length + (rt.dwell || 0);
-        for (const u of this.units) if (u.laser) exp += rhineLaserExposure(u.dps, duration, rt.laserMaxHp || rt.hp) / Math.max(1, rt.n);
+        for (const u of this.units) if (u.laser) exp += rhineLaserExposure(u.dps, duration, rt.laserMaxHp || rt.hp, u.rec._rhineLayers) / Math.max(1, rt.n);
       }
       total += rt.n * (1 - Math.exp(-exp / (p.kill * rt.hp)));
     }
