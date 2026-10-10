@@ -146,7 +146,9 @@ async function main() {
       assert.match(found.stderr || '', /HTTP 404/, 'Release lookup failed; do not create a duplicate.');
       assert.equal(api(`git/ref/tags/${request.tag}`).object.sha, request.sourceCommit);
       assert.ok(typeof request.releaseNotes === 'string' && request.releaseNotes.trim());
-      const created = JSON.parse(command('gh', ['api', '--method', 'POST', `repos/${repo}/releases`, '--input', '-'], {
+      const matches = api('releases?per_page=100').filter(release => release.tag_name === request.tag);
+      assert.ok(matches.length <= 1, 'Ambiguous release drafts; refusing to create another.');
+      const created = matches[0] || JSON.parse(command('gh', ['api', '--method', 'POST', `repos/${repo}/releases`, '--input', '-'], {
         input: JSON.stringify({ tag_name: request.tag, target_commitish: request.sourceCommit,
           name: `${request.tag} · 卡兹戴尔炮击与阿斯卡纶`, body: request.releaseNotes, draft: true, prerelease: false }),
       }));
@@ -160,6 +162,8 @@ async function main() {
   assert.equal(tag.object.type, 'commit');
   assert.equal(tag.object.sha, request.sourceCommit);
   if (process.argv[2] === 'request') {
+    // GitHub's by-tag endpoint may hide drafts; carry the verified numeric ID to the next process.
+    fs.writeFileSync(path.join(automation, '.github/rhine-release-request.json'), JSON.stringify(request, null, 2) + '\n');
     fs.appendFileSync(process.env.GITHUB_OUTPUT, `source_commit=${request.sourceCommit}\npublished=${!draft.draft}\n`);
     console.log(`Requested ${request.tag} at ${request.sourceCommit}; published=${!draft.draft}`);
     return;

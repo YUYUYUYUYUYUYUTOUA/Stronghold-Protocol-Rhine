@@ -109,5 +109,6 @@
       "No manual multiplayer balance trial or manual BAT launch.",
       "Initial Linux full-suite failure counts and retest scope are documented in docs/KAZDEL-VALIDATION.md."
     ]
-  }
+  },
+  "draftReleaseId": 408881289
 }
