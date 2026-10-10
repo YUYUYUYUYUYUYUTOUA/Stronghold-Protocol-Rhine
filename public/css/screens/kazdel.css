@@ -5,4 +5,8 @@
 .kazdel-cannon p{margin:0;line-height:1.4;color:#d3aaa5}.kazdel-cannon.is-warning{border-color:#ff846c;background:rgba(61,22,25,.96)}.kazdel-cannon.is-warning p{color:#ffc6a2}
 .ff-unit.is-kazdel-soul .ff-unit__art{opacity:.6;filter:brightness(.35) sepia(1) saturate(3) hue-rotate(315deg);box-shadow:0 0 12px #d03b5270;border-color:#da5d69}
 .dtag-kazdel-soul{color:#ffafad;border-color:#975b65;background:#311923}
+/* The supplied PNG is a dark glyph on transparent pixels. Follow the existing bond monochrome display rules;
+   keep the original image bytes and alpha, and fit its 812:876 shape inside each existing icon box. */
+.lo-card__bond[src="/art/kazdel/bond.png"],.lo-bond__icon[src="/art/kazdel/bond.png"],.kazdel-cannon header img[src="/art/kazdel/bond.png"],.kpreview h1 img[src="/art/kazdel/bond.png"]{object-fit:contain;filter:brightness(0) invert(.9)}
+.dbond.is-off .dbond__icon img[src="/art/kazdel/bond.png"],.ibond.is-off .bglyph img[src="/art/kazdel/bond.png"]{filter:brightness(0) invert(.55)}
 @media(max-width:900px){.kazdel-cannon-hud{top:2.3rem;width:2.4rem;max-width:27vw}.kazdel-cannon{padding:.065rem}.kazdel-cannon header small{display:none}}

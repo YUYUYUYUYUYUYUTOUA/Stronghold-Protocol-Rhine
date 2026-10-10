@@ -25,7 +25,7 @@ function kazdelPackageFixture(t) {
     async get(url) {
       const file = new URL(artifactPath(url), fixtureRoot);
       if (!fs.existsSync(file)) {
-        // Retain actual tracked code and the SVG so semantic assertions are exercised. Binary artwork is
+        // Retain actual tracked code and covenant PNG so semantic assertions are exercised. Downloaded artwork is
         // opaque to this verifier: distinct URL-derived bytes test both local and HTTP SHA comparisons.
         const bytes = url.startsWith('/assets/') ? Buffer.from(`Kazdel asset fixture: ${url}\n`) : await get(url);
         fs.mkdirSync(new URL('./', file), { recursive: true });
@@ -99,7 +99,7 @@ test('release smoke verifies all eleven Kazdel members, native loadouts, Tinman 
   assert.equal(Object.keys(artifacts).length, requested.length);
   assert.ok(Object.values(artifacts).every(value => /^[a-f0-9]{64}$/.test(value)));
   for (const url of ['/sim/content/kazdel/ascalon.js', '/sim/content/kits/ops/op-ascln.js', '/shared/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
-    '/sim/kazdelOrigin.js', '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/art/kazdel/bond.svg',
+    '/sim/kazdelOrigin.js', '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/art/kazdel/bond.png',
     '/assets/spine/op/char_4131_odda/front/char_4131_odda.skel', '/assets/spine/op/char_4131_odda/back/char_4131_odda.atlas']) {
     assert.ok(requested.includes(url), `${url} must be verified through the actual HTTP mount`);
   }
@@ -122,6 +122,18 @@ test('release smoke rejects an obsolete Kazdel roster, wrong tier or supplementa
   }
 });
 
+test('release smoke rejects the retired Kazdel SVG mapping and a non-PNG even when HTTP matches local bytes', async t => {
+  const retired = data();
+  retired.assets.bonds.kazdelShip = '/art/kazdel/bond.svg';
+  await assert.rejects(verifyKazdelRelease({ fetched: retired, get }), /Kazdel covenant icon mismatch/);
+  const fixture = kazdelPackageFixture(t);
+  const url = '/art/kazdel/bond.png';
+  await fixture.get(url);
+  fs.writeFileSync(new URL(artifactPath(url), fixture.packageRoot), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+  await assert.rejects(verifyKazdelRelease({ fetched: data(), packageRoot: fixture.packageRoot, get: fixture.get }),
+    /Kazdel icon must be a PNG/);
+});
+
 test('release smoke rejects missing native skills, modules and their art instead of accepting a data-only card', async () => {
   const cases = [
     [f => { f.chess.chess_kazdel_odd_a.skills.pop(); }, /native skill roster mismatch/],
@@ -142,7 +154,7 @@ test('release smoke catches stale Kazdel combat, cannon provenance, interface an
   const fixture = kazdelPackageFixture(t);
   for (const stale of ['/sim/content/kazdel.js', '/sim/content/kazdel/souls.js', '/sim/content/kazdel/cannon.js',
     '/sim/kazdelOrigin.js', '/sim/content/kits/ops/chess_char_1_16-tinman.js', '/shared/kazdel.js',
-    '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/css/screens/kazdel.css', '/art/kazdel/bond.svg',
+    '/js/ui/kazdelHud.js', '/js/render/fx/kazdel.js', '/css/screens/kazdel.css', '/art/kazdel/bond.png',
     '/assets/skill/skchr_odda_2.png', '/assets/module/ham-x.png',
     '/assets/spine/op/char_4131_odda/front/char_4131_odda.skel']) {
     await assert.rejects(verifyKazdelRelease({ fetched: data(), packageRoot: fixture.packageRoot, get: async url => {

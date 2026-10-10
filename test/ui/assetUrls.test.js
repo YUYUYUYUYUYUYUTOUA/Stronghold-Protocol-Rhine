@@ -5,8 +5,12 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { addKazdelArt } from '../../tools/assets/kazdel-plan.mjs';
+import { pngSize } from '../../tools/assets/formats.mjs';
+import { decodePng } from '../../tools/crop-board-atlas.mjs';
 import {
   uiUrl, chessAvatarUrl, chessPortraitUrl, skillIconUrl, profIconUrl, subProfIconUrl, bondIconUrl, bandIconUrl, itemIconUrl,
   enemyIconUrl, tokenAvatarUrl, factionIconUrl, titleIconUrl, effectIconUrl,
@@ -88,5 +92,26 @@ describe('assetUrls', () => {
       assert.ok(image.length > 100, `${url} must contain image data`);
     }
     assert.equal(inManifest('/art/rhine/not-in-manifest.png'), false, 'art prefix alone does not make an URL valid');
+  });
+  test('Kazdel covenant resolves the supplied PNG with original pixels, aspect and transparent edges', () => {
+    const url = '/art/kazdel/bond.png';
+    assert.equal(bondIconUrl(m, 'kazdelShip'), url);
+    assert.equal(addKazdelArt({}).bonds.kazdelShip, url, 'asset generation must retain the bundled PNG mapping');
+    assert.ok(inManifest(url));
+    const image = readFileSync(path.join(ROOT, 'public', url.slice(1)));
+    assert.deepEqual(pngSize(image), { width: 812, height: 876 });
+    assert.equal(createHash('sha256').update(image).digest('hex'),
+      '89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201', 'preserve user-supplied source bytes');
+    assert.equal(image[24], 8, 'retain 8-bit pixels');
+    assert.equal(image[25], 6, 'retain RGBA alpha');
+    const { w, h, rgba } = decodePng(image);
+    assert.deepEqual([w, h], [812, 876], 'retain the original non-square dimensions');
+    const alpha = { transparent: 0, partial: 0, opaque: 0 };
+    for (let i = 3; i < rgba.length; i += 4) {
+      if (rgba[i] === 0) alpha.transparent++;
+      else if (rgba[i] === 255) alpha.opaque++;
+      else alpha.partial++;
+    }
+    assert.deepEqual(alpha, { transparent: 527893, partial: 16902, opaque: 166517 }, 'retain the transparent background and antialiasing');
   });
 });

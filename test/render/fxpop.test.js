@@ -45,11 +45,12 @@ class Container {
   destroy() { this.destroyed = true; for (const c of this.children) c.destroy?.(); }
 }
 class BitmapText { constructor(text) { this.text = text; this.anchor = new Point(0); this.position = new Point(0); this.tint = 0xffffff; } destroy() {} }
+class ColorMatrixFilter { destroy() {} }
 
 function fx() {
   const f = Object.create(FxSystem.prototype);
   Object.assign(f, {
-    P: { Sprite, Container, BitmapText, BLEND_MODES: { ADD: 1 } },
+    P: { Sprite, Container, BitmapText, ColorMatrixFilter, BLEND_MODES: { ADD: 1 } },
     tex: { glow: new Tex(64, 64) }, pops: [],
     ctx: { screenSize: () => ({ width: 1920, height: 1080 }), fieldTop: () => 200, layers: { screen: { addChild() {} } } },
   });
@@ -86,6 +87,28 @@ describe('FxSystem.pop: the bond icon is 46 px whenever its image loads (user pl
     const sp = iconOf(f, icon);
     f._updatePops(2);
     assert.equal(f.pops.length, 0);
+    assert.doesNotThrow(() => icon.load());
+    assert.ok(sp.destroyed);
+  });
+
+  test('dark Kazdel art keeps its non-square ratio and loading lifecycle with a display-only inverse', () => {
+    const f = fx();
+    const icon = new Tex(812, 876, false);
+    f.pop(icon, '+3', 0xffffff, 0, true);
+    const sp = iconOf(f, icon);
+    assert.equal(sp.visible, false);
+    assert.equal(sp.texture, icon, 'use the supplied texture without rewriting image pixels');
+    const matrix = sp.filters[0].matrix;
+    // The real Pixi shader applies this matrix to unpremultiplied RGB, then premultiplies with the result alpha.
+    const pixel = [0, 0, 0, .5];
+    const result = pixel.map((_, row) => pixel.reduce((sum, value, col) => sum + matrix[row * 5 + col] * value, matrix[row * 5 + 4]));
+    assert.deepEqual(result.map((value, channel) => channel < 3 ? value * result[3] : value), [.5, .5, .5, .5], 'half-transparent edges stay bright and retain alpha');
+    icon.load();
+    assert.equal(drawn(sp), 46);
+    assert.equal(sp.scale.x, sp.scale.y, 'fit preserves the 812:876 ratio');
+    f.pop(new Tex(100, 100), '+1', 0xffffff, 1);
+    assert.equal(f.pops.at(-1).c.children[1].filters, undefined, 'other bond icons retain their display');
+    f._updatePops(2);
     assert.doesNotThrow(() => icon.load());
     assert.ok(sp.destroyed);
   });

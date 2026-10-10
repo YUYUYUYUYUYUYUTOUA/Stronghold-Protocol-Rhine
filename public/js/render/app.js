@@ -114,6 +114,7 @@
 // working. createFieldView stays here: it is one closure over the view's own state.
 
 import { GEO, ANIM } from '../../../shared/constants.js';
+import { KAZDEL_BOND } from '../../../shared/kazdel.js';
 import { fxForm } from '../../../shared/protocol.js';
 import { Camera, presetCamera, lerpCamera, easeInOutCubic, pickTile, normRect } from './projection.js';
 import { SnapshotBuffer, frameTime } from './interp.js';
@@ -1502,7 +1503,7 @@ export async function createFieldView(host, options = {}) {
         const url = assets.bondIcon ? assets.bondIcon(bondId) : null;
         let tex = null;
         if (url) { try { tex = P.Texture.from(url); } catch { tex = null; } }
-        fx.pop(tex, `+${n}`, 0xffffff, layerPops.size);
+        fx.pop(tex, `+${n}`, 0xffffff, layerPops.size, bondId === KAZDEL_BOND);
         break;
       }
       case 'bounty': {
