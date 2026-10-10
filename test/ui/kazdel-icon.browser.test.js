@@ -178,6 +178,13 @@ describe('supplied Kazdel icon: real interface and transparent Pixi display', { 
         const { net } = await import('/js/net.js');
         const { data } = await import('/js/data.js');
         await PIXI.Assets.load('/art/kazdel/bond.png');
+        // Hold the actual pop at a visible frame; slow software GPU screenshots
+        // must not race its 1.4-second production lifetime.
+        const fx = window.__SP_VIEW__.raw.debug.fx, updatePops = fx._updatePops;
+        fx._updatePops = function(dt) {
+          const iconPop = this.pops.find(p => p.c.children.some(s => s.filters?.length));
+          return updatePops.call(this, iconPop?.t >= .35 ? 0 : Math.min(dt, .05));
+        };
         const S = window.__MOCK__.S();
         const members = data.list('chess').filter(c => c.visible && !c.isGolden && c.bonds?.includes('kazdelShip')).slice(0,3);
         if (members.length !== 3) throw new Error('three real Kazdel members are required');
@@ -215,4 +222,42 @@ describe('supplied Kazdel icon: real interface and transparent Pixi display', { 
       await assertPageErrors(page, errors, 'layer');
     } finally { await page.close(); }
   });
+  test('approved drill PNG renders with its beam at the purple barrel in low quality', async () => {
+    const { page, errors } = await open('/dev/render-demo.html?scene=prep&paused=1&board=2d&quality=low&panel=0');
+    try {
+      await page.waitForFunction('window.__demo?.ready', { timeout: 40000 });
+      await page.evaluate(() => {
+        const v = window.__demo.view; v.setCamera('normal', { instant: true });
+        v.enterBattle({ fieldId: 'v2-art', kind: 'normal', stageId: 'act2autochess_m01', units: [
+          { id: 711, kind: 'token', side: 'ally', defId: 'token_rhine_laser', x: 5, y: 10, maxHp: 1,
+            researchStage: 0, researchLaserTarget: 712, researchLaserProgress: 10, researchLaserActive: true },
+          { id: 712, kind: 'enemy', side: 'enemy', defId: 'enemy_1007_slime', x: 9, y: 11, maxHp: 10000 },
+        ] });
+        v.pushSnapshot({ gt: 10, units: [[711,5,10,1,1,0,0,0,0], [712,9,11,10000,10000,0,0,0,0]] });
+      });
+      await page.waitForFunction('window.__demo.view.debug.views.get(711)?._pic?.shown === "img" && window.__demo.view.debug.views.get(711).researchActor.beamActive');
+      const geometry = await page.evaluate(() => {
+        const u = window.__demo.view.debug.views.get(711), sp = u.fallback, a = u.researchActor;
+        const lines = a.laserGfx.geometry.graphicsData.filter(g => g.shape.points?.length === 4);
+        // Measured emitter centroid in the actual 384px decoded/cropped texture.
+        const expected = [sp.x + (311.875 - sp.texture.frame.x - sp.anchor.x * sp.texture.width) * sp.scale.x,
+          sp.y + (137.153 - sp.texture.frame.y - sp.anchor.y * sp.texture.height) * sp.scale.y];
+        return { actual: lines.at(-1).shape.points.slice(0,2), expected,
+          frame: { x: sp.texture.frame.x, y: sp.texture.frame.y, width: sp.texture.width, height: sp.texture.height },
+          tint: a.core.tint, active: a.beamActive };
+      });
+      assert.deepEqual(geometry.frame, { x:44, y:22, width:296, height:340 });
+      for (let i=0;i<2;i++) assert.ok(Math.abs(geometry.actual[i]-geometry.expected[i]) < 1, JSON.stringify(geometry));
+      assert.equal(geometry.tint, 0xe6a4ff);
+      evidence.checks.push({ entry:'approved drill actual cropped texture and beam origin', ...geometry });
+      await shot(page, 'rhine-v2-drill-beam.png');
+      await page.evaluate(() => window.__demo.view.debug.fx.simFx('rhineLaser', 9, 11, { source:711, target:712, active:true, progress:20 }));
+      await page.waitForFunction('window.__demo.view.debug.views.get(711).researchActor.core.tint === 0xff674f');
+      await shot(page, 'rhine-v2-drill-full.png');
+      await page.evaluate(() => window.__demo.view.debug.fx.simFx('rhineLaser', 9, 11, { source:711, target:712, active:false, progress:20 }));
+      assert.equal(await page.evaluate(() => window.__demo.view.debug.views.get(711).researchActor.beamActive), false);
+      await assertPageErrors(page, errors, 'drill');
+    } finally { await page.close(); }
+  });
+
 });

@@ -6,7 +6,7 @@ import { RHINE_BALANCE, rhineDeviceStage } from '../../../shared/rhineResearch.j
 export const RHINE_LOOK = Object.freeze({
   medical: { width: 1.08, height: 0.74, head: 0.96, tint: 0x6fe8c1, core: [-0.055, 0.26] },
   energy: { width: 0.83, height: 1.16, head: 1.27, tint: 0xffbc70, core: [0.045, 0.57] },
-  laser: { width: 0.98, height: 1.2, head: 1.28, tint: 0xe6a4ff, core: [0.35, 0.58] },
+  laser: { width: 0.98, height: 1.2, head: 1.28, tint: 0xe6a4ff, core: [0.405, 0.6613] },
 });
 
 /** Pure pose in tile units. Only the drone floats; the tower and cultivation tank stay on their feet. */
@@ -99,7 +99,8 @@ export class ResearchDeviceActor {
     if (!state.active) return;
     this.beamActive = true;
     const sp = v.fallback, l = this.look, scale = Math.min(l.width / sp.texture.width, l.height / sp.texture.height) * s;
-    const ax = l.core[0] * sp.texture.width * scale, ay = -l.core[1] * sp.texture.height * scale;
+    const ax = sp.position.x + l.core[0] * sp.texture.width * scale;
+    const ay = sp.position.y - l.core[1] * sp.texture.height * scale;
     const p = v.ctx.fx?._bodyPt ? v.ctx.fx._bodyPt(target, .5, this.beamPoint)
       : cam.project(target.x, target.y, (target.z || 0) + .6, this.beamPoint);
     const bx = p.x - v.root.x, by = p.y - v.root.y;
@@ -155,5 +156,8 @@ export class ResearchDeviceActor {
         if (laser) { detail.tint = laser.color; detail.alpha *= this.beamActive ? 1 + laser.progress : .5; }
       }
     });
+    // Texture loading/camera changes can resize the sprite after advance(). Keep
+    // the visible beam on this frame's emitter rather than the previous pose.
+    if (this.key === 'laser') this.drawLaser(0);
   }
 }

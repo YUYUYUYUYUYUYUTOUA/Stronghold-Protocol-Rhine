@@ -19,9 +19,9 @@ test('Kazdel equipment icons resolve through the client manifest and survive ass
   const manifest = JSON.parse(readFileSync(new URL('../data/assets.json', import.meta.url), 'utf8'));
   const rebuilt = addKazdelArt({});
   for (const key of Object.keys(KAZDEL_EQUIPMENT)) for (const gold of [false, true]) {
-    const record = data.items[item(key, gold)], path = `/art/kazdel/${key}.svg`;
+    const record = data.items[item(key, gold)], path = `/art/kazdel/${key}-v2.png`;
     assert.equal(itemIconUrl(manifest, record), path); assert.equal(itemIconUrl(rebuilt, record), path);
-    assert.match(readFileSync(new URL(`../public${path}`, import.meta.url), 'utf8'), /<svg/);
+    assert.equal(readFileSync(new URL(`../public${path}`, import.meta.url)).subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   }
 });
 

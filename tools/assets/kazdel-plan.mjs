@@ -29,7 +29,7 @@ export function kazdelArtInput(input) {
 
 export function addKazdelArt(manifest) {
   manifest.items ||= {};
-  for (const key of Object.keys(KAZDEL_EQUIPMENT)) manifest.items[`trap_kazdel_${key}`] = `/art/kazdel/${key}.svg`;
+  for (const key of Object.keys(KAZDEL_EQUIPMENT)) manifest.items[`trap_kazdel_${key}`] = `/art/kazdel/${key}-v2.png`;
   if (manifest.stats) manifest.stats.items = Object.keys(manifest.items).length;
   manifest.bonds ||= {};
   manifest.bonds[KAZDEL_BOND] = '/art/kazdel/bond.png';

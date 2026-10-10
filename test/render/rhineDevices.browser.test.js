@@ -176,17 +176,17 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
     } finally { await page.close(); }
   });
 
-  test('laser card exposes the nine-member gate, one level, decoded local SVG and global attack without a local range overlay', async () => {
+  test('laser card exposes the nine-member gate, one level, decoded local PNG and global attack without a local range overlay', async () => {
     const { page, problems } = await open('dev/game-mock.html?phase=PREP&variant=rhineRange&researchDevice=laser&rhineCount=9&board=2d&shot=1',
       'window.__SP_VIEW__?.raw?.debug?.views.get("p:902")?._pic?.shown === "img"');
     try {
       const card = await page.$eval('[data-research="laser"]', el => ({ text: el.innerText, progress: !!el.querySelector('.rhine-card__progress'), next: !!el.querySelector('.rhine-card__next'), image: el.querySelector('img').naturalWidth }));
       assert.match(card.text, /单级.*9莱茵生命/); assert.equal(card.progress, false); assert.equal(card.next, false); assert.ok(card.image > 0);
       const art = await page.evaluate(async () => {
-        const r = await fetch('/art/rhine/laser.svg');
+        const r = await fetch('/art/rhine/laser-unit-v2.png');
         return { ok: r.ok, type: r.headers.get('content-type'), lamps: window.__SP_VIEW__.raw.debug.views.get('p:902').researchActor.lights.length };
       });
-      assert.equal(art.ok, true); assert.match(art.type, /image\/svg\+xml/); assert.equal(art.lamps, 1);
+      assert.equal(art.ok, true); assert.match(art.type, /image\/png/); assert.equal(art.lamps, 1);
       const p = await page.evaluate(() => window.__SP_VIEW__.tileScreen(10, 6)); await page.mouse.click(p.x, p.y);
       await page.waitForFunction(() => document.querySelector('.dpanel--token')?.textContent.includes('全场攻击')
         && !window.__SP_VIEW__.raw.debug.tiles.highlights.has('selRange'));

@@ -36,13 +36,13 @@ function kazdelPackageFixture(t) {
   };
 }
 
-test('release smoke verifies the shipped laser gate, fixed stage and all five HTTP artifact mounts', async () => {
+test('release smoke verifies the shipped laser gate, fixed stage and all six HTTP artifact mounts', async () => {
   const artifacts = {}, requested = [];
   assert.deepEqual(await verifyRhineDeviceRelease({ fetched: data(), artifacts, get: async url => {
     requested.push(url);
     return get(url);
-  } }), { laser: true, minCount: 9, maxStage: 0, httpArtifacts: 5 });
-  assert.deepEqual(requested, ['/art/rhine/laser.svg', '/js/render/rhineDevices.js', '/shared/rhineResearch.js',
+  } }), { laser: true, minCount: 9, maxStage: 0, httpArtifacts: 6 });
+  assert.deepEqual(requested, ['/art/rhine/laser-v2.png', '/art/rhine/laser-unit-v2.png', '/js/render/rhineDevices.js', '/shared/rhineResearch.js',
     '/shared/rhineRange.js', '/sim/content/rhine.js']);
   assert.ok(Object.values(artifacts).every(value => /^[a-f0-9]{64}$/.test(value)));
 });
@@ -65,8 +65,8 @@ test('release smoke rejects a stale laser asset mapping and the retired standalo
   await assert.rejects(verifyRhineDeviceRelease({ fetched: retired, get }), /standalone ecology token should be removed/);
 });
 
-test('release smoke catches missing or stale SVG, renderer, shared parameters, range and combat HTTP bytes', async () => {
-  for (const stale of ['/art/rhine/laser.svg', '/js/render/rhineDevices.js', '/shared/rhineResearch.js',
+test('release smoke catches missing or stale PNG, renderer, shared parameters, range and combat HTTP bytes', async () => {
+  for (const stale of ['/art/rhine/laser-v2.png', '/art/rhine/laser-unit-v2.png', '/js/render/rhineDevices.js', '/shared/rhineResearch.js',
     '/shared/rhineRange.js', '/sim/content/rhine.js']) {
     await assert.rejects(verifyRhineDeviceRelease({ fetched: data(), get: async url => url === stale
       ? Buffer.from('<!doctype html>old app fallback') : get(url) }), /served device artifact mismatch/);

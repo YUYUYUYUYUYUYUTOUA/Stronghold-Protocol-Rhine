@@ -147,18 +147,18 @@ export async function verifyRhineDeviceRelease({ fetched, get, artifacts = {}, p
   assert.equal(laser.tokenId, definition.tokenId);
   assert.ok(fetched.bonds.rhineShip.spec.researchDevices.includes(definition.tokenId), 'laser missing from Rhine device roster');
   assert.equal(fetched.tokens.token_rhine_ecology, undefined, 'standalone ecology token should be removed');
-  assert.equal(fetched.assets.tokens[definition.tokenId].avatar, '/art/rhine/laser.svg');
+  assert.equal(fetched.assets.tokens[definition.tokenId].avatar, definition.sprite);
   assert.equal(laser.assets.icon, definition.icon);
   assert.equal(laser.assets.sprite, definition.sprite);
-  for (const url of ['/art/rhine/laser.svg', '/js/render/rhineDevices.js', '/shared/rhineResearch.js', '/shared/rhineRange.js', '/sim/content/rhine.js']) {
+  for (const url of [definition.icon, definition.sprite, '/js/render/rhineDevices.js', '/shared/rhineResearch.js', '/shared/rhineRange.js', '/sim/content/rhine.js']) {
     // These are the static mounts used by server/http/static.js: / → public, /shared → shared, /sim → server/sim.
     const local = url.startsWith('/shared/') ? url.slice(1) : url.startsWith('/sim/') ? `server${url}` : `public${url}`;
     const bytes = await get(url);
     assert.equal(hash(bytes), hash(fs.readFileSync(new URL(local, packageRoot))), `${url} served device artifact mismatch`);
     artifacts[url] = hash(bytes);
-    if (url.endsWith('laser.svg')) assert.match(bytes.toString('utf8'), /<svg\b/, 'laser icon must be an SVG');
+    if (url.endsWith('.png')) assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', 'laser asset must be a PNG');
   }
-  return { laser: true, minCount: definition.minCount, maxStage: definition.maxStage, httpArtifacts: 5 };
+  return { laser: true, minCount: definition.minCount, maxStage: definition.maxStage, httpArtifacts: 6 };
 }
 
 async function main() {
