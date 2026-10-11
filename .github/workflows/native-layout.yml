@@ -1,0 +1,44 @@
+name: Diagnose native room AI control
+on:
+  push:
+    branches: [codex/rhine-release-diagnostics-024]
+    paths: [layout-diagnostic.js, .github/workflows/native-layout.yml]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: diagnostic
+      - uses: actions/checkout@v7
+        with:
+          ref: ffc6a923c0342530f429fb6289bf748c0bfe7062
+          path: source
+      - name: Restore identical dependencies and released resources
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.2.2-rhine.3 --repo $env:GITHUB_REPOSITORY --pattern Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip --dir downloads
+          gh release download v0.2.4 --repo sganggs/Stronghold-Protocol --pattern Stronghold-Protocol-v0.2.4.zip --dir upstream
+          python -m zipfile -e downloads/Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip previous
+          python -m zipfile -e upstream/Stronghold-Protocol-v0.2.4.zip upstream-files
+          $old = 'previous/Stronghold-Protocol-Rhine'
+          $fresh = (Get-ChildItem upstream-files -Recurse -Filter package.json | Where-Object { $_.DirectoryName -notmatch 'node_modules' } | Select-Object -First 1).DirectoryName
+          foreach ($part in @('public/assets','public/fonts','public/vendor','node_modules')) {
+            Copy-Item "$old/$part" "source/$part" -Recurse -Force
+            if ($part -ne 'node_modules') { Copy-Item "$fresh/$part/*" "source/$part/" -Recurse -Force }
+          }
+          Copy-Item diagnostic/layout-diagnostic.js source/test/ui/six-player-layout.e2e.test.js -Force
+          Copy-Item diagnostic/client-exact.mjs source/test/e2e/client.mjs -Force
+      - name: Run exact candidate assertions on Windows
+        shell: pwsh
+        run: |
+          $env:SP_E2E = '1'
+          $env:SP_E2E_SWIFTSHADER = '1'
+          $env:CHROME_PATH = "${env:ProgramFiles(x86)}/Microsoft/Edge/Application/msedge.exe"
+          Set-Location source
+          ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec --test-concurrency=1 test/ui/six-player-layout.e2e.test.js
