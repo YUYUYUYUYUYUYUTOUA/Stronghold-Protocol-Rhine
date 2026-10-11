@@ -56,9 +56,9 @@ async function createSixHumanRoom(clients, rhineEnabled) {
   for (const [i, client] of clients.slice(1).entries()) {
     await client.open(`?room=${room.code}`);
     await client.enter(`六人验收${i + 2}`);
-    await lowQuality(client);
     await client.waitFor(s => s.room?.code === room.code, 'join six-human room');
     await warmClient(client, rhineEnabled);
+    await lowQuality(client);
   }
   for (const client of clients.slice(1)) await client.click('.room-bar__right button', '准备就绪');
   await host.click('.room-bar__right button', '开始模拟');
