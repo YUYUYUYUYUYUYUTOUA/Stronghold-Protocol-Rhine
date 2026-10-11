@@ -26,6 +26,14 @@ function exercise(b, source, tick) {
   for (let i = 0; i < 91; i++) b.step();
   const out = { hit, owners: b.allyUnits.map(u => u.ownerId), layers: b.players.map(p => p.bonds.kazdelShip.layers),
     hp: b.allyUnits.map(u => u.hp), slow: e.s.moveSpeed, kazdel: b.snapshot().kazdel, errors: b.errors };
+  // The same actual cannon must also leave both players' newly created native souls unharmed.
+  b.kill(a); b.kill(ally);
+  const souls = [a.kazdelSoulUnit, ally.kazdelSoulUnit], soulHp = souls.map(u => u.hp);
+  state.charge = 15; state.lastFireAt = -Infinity;
+  state.warning = { x: 5, y: 10, startedAt: b.time - 3, until: b.time };
+  tick(b, state, b.time, 0, () => {});
+  out.soulHits = souls.map((u, i) => soulHp[i] - u.hp);
+  out.soulsAlive = souls.map(u => u.alive);
   b.forceEnd();
   return { ...out, result: b.result() };
 }
@@ -57,6 +65,8 @@ test('Kazdel cannon ownership and Ascalon native data/clock agree in Chromium an
         return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds), C.cannonSource, C.tickCannon);
       }, { spec, body: exercise.toString() });
       assert.deepEqual(node.hit, [800, 0, 800]);
+      assert.deepEqual(node.soulHits, [0, 0]);
+      assert.deepEqual(node.soulsAlive, [true, true]);
       assert.deepEqual(node.errors, []);
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${count}`);
       assert.deepEqual(node.layers, kind === 'normal' ? [1, 2] : [0, 0]);

@@ -36,7 +36,7 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
   const settingsBeforeGuide = (page, screen, guideClass) => page.evaluate((s, g) => {
     const btn = document.querySelector(`${s} [data-testid="settings-btn"]`);
     const guide = document.querySelector(`${s} .${g}`);
-    return !!btn && !!guide && btn.nextElementSibling === guide && /设置/.test(btn.textContent) && btn.querySelector('svg.btn__icon') != null;
+    return !!btn && !!guide && btn.nextElementSibling === guide && /设置/.test(btn.getAttribute('aria-label') || btn.textContent) && btn.querySelector('svg.btn__icon') != null;
   }, screen, guideClass);
   const modalText = (page) => page.evaluate(() => document.querySelector('.modal')?.textContent.replace(/\s+/g, ' ').trim() ?? null);
 
@@ -53,7 +53,7 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     await page.waitForSelector('.lobby-screen', { timeout: 15000 });
     await sleep(500);
 
-    assert.ok(await settingsBeforeGuide(page, '.lobby-screen .topbar__right', 'lobby-guide'), '设置 sits right before 玩法说明 in the lobby\'s top bar');
+    assert.ok(await settingsBeforeGuide(page, '.lobby-screen .topbar__tools', 'lobby-guide'), '设置 sits right before 玩法说明 in the lobby\'s top bar');
     assert.equal(await modalText(page), null, 'closed until asked');
     await page.click('.lobby-screen [data-testid="settings-btn"]');
     await page.waitForSelector('.modal', { timeout: 5000 });
@@ -61,8 +61,10 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     assert.match(text, /设置/);
     assert.match(text, /背景音乐/);
     assert.match(text, /快捷键/);
-    assert.doesNotMatch(text, /棋盘/, 'no board-style option (declined)');
-    assert.doesNotMatch(text, /后台/, 'no background-music option (declined)');
+    // The text-size hint mentions the unchanged board scale; the declined options concern controls, not help copy.
+    const optionLabels = await page.$$eval('.modal .set-row__label', (nodes) => nodes.map((n) => n.textContent).join(' '));
+    assert.doesNotMatch(optionLabels, /棋盘/, 'no board-style option (declined)');
+    assert.doesNotMatch(optionLabels, /后台/, 'no background-music option (declined)');
     await page.keyboard.press('Escape');
     await sleep(300);
     assert.equal(await modalText(page), null, 'Esc closes it');

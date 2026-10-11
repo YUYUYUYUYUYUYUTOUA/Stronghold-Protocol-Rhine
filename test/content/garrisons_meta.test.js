@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeMatch, give, giveItem, DATA } from '../match/harness.js';
+import { getDataProfile } from '../../server/data.js';
 import { createRegistry } from '../../server/match/effectsMeta.js';
 import { triggerGainEffects } from '../../server/sim/content/garrisons.js';
 
@@ -860,6 +861,25 @@ test('森蚺 / 乌啾: migrated copiers run the front operator\'s prep-end / pre
   assert.equal(w.ps.shop.freeRefreshes, 3);
 });
 
+// Maintainer-confirmed replay of the linked official-game footage (#473): only Ptilopsis copying these two gifts.
+for (const targetId of ['chess_char_4_12_a', 'chess_char_6_03_a']) {
+  for (const ownRow of [false, true]) for (const sourceRow of [false, true]) {
+    test(`白面 copies ${targetId} gift without either row condition (own=${ownRow}, source=${sourceRow})`, () => {
+      const s = setup(11, getDataProfile(false));
+      const white = give(s.m, s.ps, 'chess_char_4_21_a', 'board', [11, 4]); white.dir = 'DOWN';
+      give(s.m, s.ps, targetId, 'board', [10, 4]);
+      const fillers = plain(c => c.position === 'RANGED').slice(0, 4); let filler = 0;
+      for (const [r, on] of [[11, ownRow], [10, sourceRow]]) if (on) {
+        give(s.m, s.ps, fillers[filler++], 'board', [r, 3]);
+        give(s.m, s.ps, fillers[filler++], 'board', [r, 5]);
+      }
+      s.ps.recompute(); const before = s.ps.round.gainedChess;
+      s.roundStart();
+      assert.equal(s.ps.round.gainedChess - before, 1 + (sourceRow ? 1 : 0), 'copier always gives one; original still checks its own row');
+      s.h.invariants();
+    });
+  }
+}
 test('白面鸮: active Rhine research grants +2/+4 per actual deployed member, counting normal/elite duplicates', () => {
   const mayer = 'chess_rhine_mayer_a';
   const silence = Object.values(DATA.chess).find((c) => c.visible && !c.isGolden && c.charId === 'char_108_silent').chessId;

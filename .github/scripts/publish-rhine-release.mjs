@@ -241,6 +241,11 @@ async function main() {
   progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
   const tests = runTests(node, built.destination, [
+    'test/content/community-round29.test.js', 'test/content/echo-counter-023.test.js',
+    'test/content/op_clemnt.test.js', 'test/content/new-modules-023.test.js',
+    'test/content/lemuen-wanted-023.test.js', 'test/content/necras-trigger-023.test.js', 'test/content/heal-triggers-023.test.js',
+    'test/match/shared-stock.test.js', 'test/match/rhine-upstream024.test.js',
+    'test/match/setup-reroll.test.js', 'test/match/setup-reroll-ws.test.js',
     'test/content/kazdel.test.js', 'test/content/kazdel_ascalon.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
     'test/content/kazdel_soul_skills.test.js', 'test/content/kazdel_equipment.test.js', 'test/kazdel_equipment_data.test.js',
     'test/content/reactive-origin.test.js', 'test/content/rhine.test.js', 'test/match/rhineResearch.test.js',
@@ -266,6 +271,12 @@ async function main() {
         path.join(root, 'browser-kazdel-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
       renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
         path.join(root, 'browser-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
+      rhineOperators: runTests(node, built.destination, ['test/render/rhineOperators.browser.test.js'],
+        path.join(root, 'browser-rhine-operators.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
+      upstreamRenderer: runTests(node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
+        path.join(root, 'browser-upstream-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
+      upstreamUi: runTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js'],
+        path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge } }),
       statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
     };
@@ -410,7 +421,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log']) {
+    for (const name of ['packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }

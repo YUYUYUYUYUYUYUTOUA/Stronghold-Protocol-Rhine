@@ -139,7 +139,7 @@ Duration end cleans the window and emits `skillEnd`; it leaves zero charges and 
 Redeployment opens a new full window. Permanent passives retain `passive`; first-kill recasts of 缄默德克萨斯 explicitly
 restart a full window. Special timed kits and their effect rules are described in SIM §7.2.
 
-Auto-trigger rules (`skillTrigger.rule` in data — the official 技能策略, PRTS 卫戍协议/帮助 §作战阶段 技能操作; §20.2): `DEFAULT` (SP ready AND about to attack/heal AND an enemy/injured ally inside the **initial** range, or an enemy the unit blocks; with `trigger.allies` + `hpAtMost` an ally of the skill grid at or below that HP ratio — 塞雷娅 S1 急救, whose cast replaces that attack and is withdrawn with its charge if the ally recovers first), `SKILL_RANGE` (a MANUAL skill with a 技能范围 of its own, not an attack-range change: any living enemy, stealthed ones included, on the skill range, checked every tick — "仅在技能范围内存在敌人（无视其不可选中）时释放技能"; 13 skills / 26 records by the official rule, 14 / 28 in the data with 余 S2's deviation, §22.10), `ACTIVE_RANGE` (the owner's deliberate deviation of 2026-10-05, 0.2.0: a MANUAL skill on the basic strategy — or, by the owner's further decisions of the same day, on the `SEARCH` row, and 深巡 S2 on top of its §21.29 DEFAULT — whose attack range while it runs strictly contains the operator's own range — its rangeId grid, or the own range grown by `ability_range_forward_extend` — checks the DEFAULT condition on that running range every tick, no attack needed; `customRangeGrid` = the running range, `rawRule` the official row (DEFAULT, SEARCH, 深巡's TAKE_DAMAGE); 39 skills / 78 records, of them 薄绿 S1, 蜜蜡 S1, 卡涅利安 S3, 玛恩纳 S2 and 安洁莉娜 S3 from SEARCH; 烛煌 S2 / S3, whose ranges do not contain her 3-1, keep DEFAULT), `TAKE_DAMAGE` (on taking damage — any damage, 无来源 included, never a 流失; every MANUAL 重装 skill, §21.12 — but the six of the deliberate deviation, §21.29: 深巡 / 雷蛇 S2, 号角 S2 / S3 and 灰毫 S1 / S2 are `DEFAULT`, `rawRule` keeping the official TAKE_DAMAGE — 深巡 S2 then `ACTIVE_RANGE` on its 3-2; and 余 S2, `SKILL_RANGE` on its x-1 (§22.10); the 重装 of data/backups.json — the 补位 stand-ins 预备干员-重装 / Mechanist and every 自选 重装 — cast with an enemy in range, `DEFAULT` (or `ACTIVE_RANGE` when the skill's running range is larger), by the owner's decisions of 2026-10-05), `SP_FULL` (immediately — 执旗手 / 战术家 / 吟游者 MANUAL skills, AUTO DP skills such as 焰尾 S1, 凛御银灰 S1 (伺夜 S1 / S2 too, but only while his pack is on the field — PRTS 备注 「仅场上存在狼群时可触发技能」, the kit's own cast; the owner's decision of 2026-10-05 for S1; S1 also while the pack sits in its 战术点形态, which the cast ends — S2 too since 0.2.0: its DP at once, its gift kept for the returning pack [ASSUMED: S2's 备注 uses S1's words]; 黑键 S2 荒芜回响 likewise only while one placeable tile of his range is free, no enemy needed — PRTS 备注 「攻击范围内不存在可部署位时，技能不会被触发」, its kit's cast, 0.2.0), and, by their kits, AUTO skills whose effects act on allies only: 引星棘刺 S1, 浊心斯卡蒂 S2, 纯烬艾雅法拉 S1 — the owner's decision of 2026-10-05 for the last), `CUSTOM_RANGE` (enemy inside the custom grid), `SEARCH` (an enemy inside the initial range, checked every tick — no attack needed; 解放者 / 阵法术师 MANUAL skills and 安洁莉娜 S2, those without a larger running range), `GDGLOW_SKILL_2` (a valid target anywhere on the field: 荒芜拉普兰德, 纯烬艾雅法拉 S3), special ids. In every enemy condition a registered ally target (白铁's 铁钳号·原型机, an enemy-camp summon our attacks select) counts like an enemy for a skill that acts on it (the owner's rule of 2026-10-08): one acting through the unit's own attacks, or whose kit flags `allyTargets` (its selectors take the device too — 蕾缪安 S3, 艾丽妮 S3, 陈 S2, 引星棘刺 S2); [ASSUMED] a skill that picks enemies only is not opened by it. The class rows cover **every MANUAL skill** of the class and never an AUTO skill (AUTO skills keep their own rule — an inference: PRTS names whole classes; the data's `skillIndex 0` / `-1` sentinel argues the other way, §20.2). **Operation cooldown**: the engine auto-casts a MANUAL skill no sooner than `AUTO_OP_COOLDOWN` (3 s) after its previous cast and after the unit's battle-start deployment ("自动操作具有3s冷却，在完成一次操作或作战开始时部署的单位将进入冷却"; `Battle._deploy` initial, `battle.flags.startOpCooldown`); kits with an automatic cast of their own check `skill.opCooling`; a pending "next attack" never takes a second charge. Permanent passive skills are always on; finite deployment effects use the duration lifecycle above.
+Auto-trigger rules (`skillTrigger.rule` in data — the official 技能策略, PRTS 卫戍协议/帮助 §作战阶段 技能操作; §20.2): `DEFAULT` (SP ready AND about to attack/heal AND an enemy/injured ally inside the **initial** range, or an enemy the unit blocks; with `trigger.allies` + `hpAtMost`, attack cadence ready and a healable ally of the skill grid at or below that HP ratio suffice without an enemy — 塞雷娅 / 黍 S1 (§28.10), whose cast replaces that attack and is withdrawn with its charge if the ally recovers first), `SKILL_RANGE` (a MANUAL skill with a 技能范围 of its own, not an attack-range change: any living enemy, stealthed ones included, on the skill range, checked every tick — "仅在技能范围内存在敌人（无视其不可选中）时释放技能"; 13 skills / 26 records by the official rule, 14 / 28 in the data with 余 S2's deviation, §22.10), `ACTIVE_RANGE` (the owner's deliberate deviation of 2026-10-05, 0.2.0: a MANUAL skill on the basic strategy — or, by the owner's further decisions of the same day, on the `SEARCH` row, and 深巡 S2 on top of its §21.29 DEFAULT — whose attack range while it runs strictly contains the operator's own range — its rangeId grid, or the own range grown by `ability_range_forward_extend` — checks the DEFAULT condition on that running range every tick, no attack needed; `customRangeGrid` = the running range, `rawRule` the official row (DEFAULT, SEARCH, 深巡's TAKE_DAMAGE); 39 skills / 78 records, of them 薄绿 S1, 蜜蜡 S1, 卡涅利安 S3, 玛恩纳 S2 and 安洁莉娜 S3 from SEARCH; 烛煌 S2 / S3, whose ranges do not contain her 3-1, keep DEFAULT), `TAKE_DAMAGE` (on taking damage — any damage, 无来源 included, never a 流失; every MANUAL 重装 skill, §21.12 — but the six of the deliberate deviation, §21.29: 深巡 / 雷蛇 S2, 号角 S2 / S3 and 灰毫 S1 / S2 are `DEFAULT`, `rawRule` keeping the official TAKE_DAMAGE — 深巡 S2 then `ACTIVE_RANGE` on its 3-2; and 余 S2, `SKILL_RANGE` on its x-1 (§22.10); the 重装 of data/backups.json — the 补位 stand-ins 预备干员-重装 / Mechanist and every 自选 重装 — cast with an enemy in range, `DEFAULT` (or `ACTIVE_RANGE` when the skill's running range is larger), by the owner's decisions of 2026-10-05), `SP_FULL` (immediately — 执旗手 / 战术家 / 吟游者 MANUAL skills, AUTO DP skills such as 焰尾 S1, 凛御银灰 S1 (伺夜 S1 / S2 too, but only while his pack is on the field — PRTS 备注 「仅场上存在狼群时可触发技能」, the kit's own cast; the owner's decision of 2026-10-05 for S1; S1 also while the pack sits in its 战术点形态, which the cast ends — S2 too since 0.2.0: its DP at once, its gift kept for the returning pack [ASSUMED: S2's 备注 uses S1's words]; 黑键 S2 荒芜回响 likewise only while one placeable tile of his range is free, no enemy needed — PRTS 备注 「攻击范围内不存在可部署位时，技能不会被触发」, its kit's cast, 0.2.0), and, by their kits, AUTO skills whose effects act on allies only: 引星棘刺 S1, 浊心斯卡蒂 S2, 纯烬艾雅法拉 S1 — the owner's decision of 2026-10-05 for the last), `CUSTOM_RANGE` (enemy inside the custom grid), `SEARCH` (an enemy inside the initial range, checked every tick — no attack needed; 解放者 / 阵法术师 MANUAL skills and 安洁莉娜 S2, those without a larger running range), `GDGLOW_SKILL_2` (a valid target anywhere on the field: 荒芜拉普兰德, 纯烬艾雅法拉 S3), special ids. In every enemy condition a registered ally target (白铁's 铁钳号·原型机, an enemy-camp summon our attacks select) counts like an enemy for a skill that acts on it (the owner's rule of 2026-10-08): one acting through the unit's own attacks, or whose kit flags `allyTargets` (its selectors take the device too — 蕾缪安 S3, 艾丽妮 S3, 陈 S2, 引星棘刺 S2); [ASSUMED] a skill that picks enemies only is not opened by it. The class rows cover **every MANUAL skill** of the class and never an AUTO skill (AUTO skills keep their own rule — an inference: PRTS names whole classes; the data's `skillIndex 0` / `-1` sentinel argues the other way, §20.2). **Operation cooldown**: the engine auto-casts a MANUAL skill no sooner than `AUTO_OP_COOLDOWN` (3 s) after its previous cast and after the unit's battle-start deployment ("自动操作具有3s冷却，在完成一次操作或作战开始时部署的单位将进入冷却"; `Battle._deploy` initial, `battle.flags.startOpCooldown`); kits with an automatic cast of their own check `skill.opCooling`; a pending "next attack" never takes a second charge. Permanent passive skills are always on; finite deployment effects use the duration lifecycle above.
 
 **SkillSpec** (authored per chess in `sim/content/kits/tierN.js`; values come from the chess's skill blackboard at its level — normal Lv4, elite Lv7 — so a spec is a *function of the blackboard*):
 ```js
@@ -171,9 +171,14 @@ Profession traits (default behaviours implemented once in the engine, keyed by `
 
 Each domain file `server/sim/content/{tokens,bonds,garrisons,items,bands,enemies,bosses,devices,choices}.js` exports `install(battle)` (battle side; called once per Battle by `content/index.js → installContent`) and `registerMeta(registry)` (prep side; called once at server boot by `match/effectsMeta.js`, API documented in `docs/META.md`). Kits live one per file in `content/kits/ops/` (`export default { [baseChessId]: (bb, chess, def) => Kit }`), listed in `content/kits/index.js` (guide: `content/kits/README.md`). Content must be **data-driven from blackboards** (numbers never hard-coded when a blackboard key exists). Every effect gets at least one unit test in `test/content/*.test.js` using the `test/helpers/battleHarness.js` harness (provided by sim-core).
 
-- kits: all 112 visible chess + hidden ones used by effects (盟约·辅助干员), default skill + talents + trait specifics; tokens.
+- kits: all 112 visible chess + hidden ones used by effects (盟约·辅助干员), default skill + talents + trait specifics; tokens. The 72 non-collaboration 6★ DIY operators include 克莱门莎 (§28.1); her launch-day provisional mechanics are local to her kit. 黍 GUA-Y and 乌尔比安 CRU-Y follow the generated module blackboards and existing module-level rules (§28.2).
+  克莱门莎 S2 removes dead, hidden, self-bound / teleport-immune and unreachable passengers before checking new
+  boarding in the same tick. Each released passenger returns its current weight to the cabin's remaining budget
+  and frees its slot (§28.27); neither corpses nor failed carries reserve capacity.
 - bonds: 23 (battle + meta), exact per-layer formulas from research 02.
 - garrisons: 43 effect keys (IN_BATTLE via hooks; SERVER_* via meta registry).
+  远牙's granted `garrison_108_a/b` additionally gains on both directions of `dollSwap`, sharing its deployment
+  cap and active-bond checks (player-confirmed, §28.5). This extra trigger is specific to that granted trait.
 - items: 56 equipment (+golden) + 3 Arts; 变形同构体 bond grant; VI-tier set/combos.
 - bands: 40 strategies (meta + battle). 鸭爵 “神秘顾客” swaps 0–2 ground enemies (not the leader, its parts or bounties; on a pair boss field only the player's half — the boss / hidden `onBattleStart` event carries `routes` and `side`) in every teammate's normal / Final Assault / Hidden Core battle from R5 into the act2 鸭爵 / 高普尼克 / 流泪小子 / 圆仔 (lpr 1, 1 fund to the killer, 联防 included) (§21.5); the swaps carry the spawn tag `'duck'`, and the swapped 流泪小子 hides again 1 s after a block ends, not the official 0 s (the owner's decision of 2026-10-07, §25.22.6).
 - enemies: special-type behaviours (FLY, TIMES, ELEMENT, DOT, INVISIBLE, REFLECTION, SPECIAL) and notable individual abilities from `data/enemies.json`; bosses 1–10 scripted — the huge leaders (假想敌：胄 ×2, 假想敌：管 ×2, 盐风主教昆图斯, 阿利斯泰尔, “萨米的意志”) are 自缚 + 无法被阻挡 (PRTS 天赋; `content/bosses.js SELF_BOUND`: a persistent noMove + unblockable buff from spawn) with their hit area (§19.4); 圆仔 and 鸭爵 are 无法被阻挡 (PRTS 天赋, §21.5); the knock-out forms follow PRTS — 深池逐火 余烬 (5 / 10 hits, 隐匿, blockable, back after 10 s), 转译基底·α (damage cancelled until its 2 s change into 寻仇者 / 特战术师 / 幽灵), the leaders' 重生, 守墓石像's statue and flight — and every 重生 clears what operators put on the enemy and restarts its skills from their initial cooldown (§21.4, §21.19); the mode's air units are 静态刚体, never moved (§21.9); leader parts (斩胄之剑 / 破胄之锤 / 碎铳之簧) pass every damage they take to their leader 1:1 as 无来源 HP loss (`PART_TRANSFER` 1, PRTS "等量"), a 假想敌：胄 drone that dies costs it 2 % of the pool (`DRONE_LINK_BASE 'pool'`) (§20.10, §20.13); devices/terrain.
@@ -181,15 +186,62 @@ Each domain file `server/sim/content/{tokens,bonds,garrisons,items,bands,enemies
 
 ---
 
+蕾缪安's wanted tiles extend both attacks and the existing content skill-trigger range (§28.4). New detection
+requires selectability; an attached timer needs continuous detection range, and each on-field source owns its timers
+and marks. Leaving clears that source's state without clearing another still-deployed source's marks.
 
-### 莱茵扩展：卡兹戴尔炮击友伤（未发布，2026-10-10）
+凯尔希·思衡托 S2 uses its mixed attack/heal target condition for automatic activation: either an injured, healable ally
+or a selectable enemy in its expanded running range; operation cooldown and other controls still apply (§28.10).
+
+### Additional DEFAULT trigger targets (§28.13)
+
+`addTriggerRange(fn, { attackOnly: true })` extends the DEFAULT target check at the owner's next attack opportunity.
+It does not create a per-tick trigger. 蕾缪安 S1–S3 use only their own wanted targets; 死芒 S1/S2 use targets blocked by
+living summons owned by that operator. Sleeping or otherwise unselectable enemies do not count. This only changes
+the condition for activation: 死芒 S2 still links inside its own effect range. Other registered summon areas retain
+the existing per-tick behavior. The optional flag defaults to false for compatibility.
+
+赤刃明霄陈 S3 also registers selectable air targets in its expanded attack grid for `ACTIVE_RANGE` automation
+(§28.26): its sword wave can hit flyers while its normal attacks remain ground-only. The existing operation cooldown,
+silence and control checks apply. [ASSUMED] The activation area is that grid plus permanent attack-range extension,
+not every tile the roaming wave might eventually reach.
+
+
+0.2.3 echo/counter interaction (DESIGN §28.24): recursively earned “余音” pulses are drained FIFO by that echo in the
+same call, retaining the earned attack value and the lethal-hit pulse. [ASSUMED] This local order avoids exhausting
+the hook-depth guard on scaled hit-count HP; the guard remains unchanged for other recursive handlers.
+
+### Community corrections (2026-10-10, §28.25)
+
+- A normal enemy attack's post-hit status belongs to the target's deployment at the strike. If lethal damage
+  immediately redeploys the target (不屈), that old attack cannot stun the new deployment.
+- Bard continuous regeneration, including 浊心斯卡蒂's replacement trait, continues through stun; leaving the field
+  stops refreshing its aura. Stun still prevents attacks and skill use.
+- 黄沙罗盘 SP ignores both an active skill's recovery lock and `noSp`, including the caster and other 萨尔贡 recipients
+  of the 浓茶 combination. Other SP gifts retain their existing restrictions.
+- 克莱门莎's 崇高牺牲 strategy requires 阿戈尔 to be active before a knock-out grants layers.
+- 隐秘核心 铳 takes 20% physical/arts damage while another gun or spring remains. The condition is checked on each hit
+  as well as by its aura tick, including the first hit and immediately after the last companion leaves.
+
+Sources and the feedback items requiring no simulation change are recorded in [§28.25](../history/0.2.3.md#2825-community-feedback-of-2026-10-10).
+
+Community corrections in §29 are normative: Raid's one reselect after a revive uses taunt then route distance and jumps while unblocked, after refreshing contact on the current tile; ordinary polls stay on route distance and the empty-range rule. Healing cast conditions include curable elemental injury; Pinecone S2 growth restarts per deployment; crest consumption is checked on damage. Mixed Skadi/Stead redirects preserve ancestry and both take their share from the pre-redirect hit, so the victim keeps the remainder and the total is conserved. Clementia S2 secondary splash is 100% ATK within a 1.1 collision radius (four additional ground targets), while its main hit and 1.5-radius vortex keep their own coefficients. Final-mode leaders retain their erosion immunity, explicitly stated in the PRTS mode tips. 整备 does not upgrade a purchase when the golden's second copy would exceed shared item stock, and it does not spend its charge in that case.
+
+Raid alone may land on an empty deployment half in multiplayer (`mode_multi_*`) Final Assault / Hidden Core battles
+(#475, maintainer-approved, §29.13): rows 2–5, cols 2–18, subject to the existing field rect, terrain, occupied/downed
+tile and attack-reach checks. Hand/temp rows, empty halves in single-player mode or lone-helper 联防 stay excluded.
+The general `onOwnBoard`/`onFieldBoard` contracts, other movement, summons and preparation placement remain unchanged.
+
+香槟炸弹 also rejects ordinary allied auras and inspiration as a device, through its shared internal selection barrier (§29.11). This does not isolate other unhealable summons or alter its detonation.
+
+### 莱茵扩展：卡兹戴尔炮击友伤（2026-10-10）
 
 按维护者授权，六人档炮击只误伤所属玩家的活体友军，直接炮击伤害为敌方的 100%（`800 + 15 × S`）；敌方仍为 `800 + 15 × S`。其他玩家友军免疫炮击及同步／延迟衍生伤害。归属从炮源经 DamageInfo、生命流失的 `from` 及回调传递，不能以反伤者、承伤者或客户端战场权威玩家替代。缺失归属的炮击不伤害友军。只保留三／六档，9 名及以上仍为六档；炮击为 5×5 去四角的 21 格，命中和客户端预警共用边界裁剪函数。魂灵始终免疫，误伤及其衍生死亡不产层或充能。详见 [卡兹戴尔说明](../KAZDEL.md)。
 
 三阶阿斯卡纶仅有卡兹戴尔主盟约。活体本体的范围新增减速为普通 20%、精锐 30%，与原生减速相乘，同名新增光环全场仅取最强。每位玩家独立累计有有效目标的时间，每 3 秒结算普通 1、精锐 2 层，仅对已激活盟约和允许产层的战斗生效；多个敌人或重复本体不倍增，空档保留不足 3 秒的余量，魂灵不参与。原生面板、三技能、天赋和模组复用固定版本数据与已有阿斯卡纶技能实现。
 
 
-### 反应伤害的来源标记（未发布修复，2026-10-10）
+### 反应伤害的来源标记（2026-10-10）
 
 “余音”受伤脉冲和“碎铳之簧”法术护盾的反击若由 `counter`／`reflect` 伤害引出，保留这两个标记（余音的法术伤害和凋亡损伤均保留），供现有干员反击过滤使用。普通命中、管／弦敲击和独立合奏仍允许首轮合法反击；反击引出的脉冲仍造成伤害、累计形态切换次数，但不会再次激活反击。[ASSUMED] 这是将本项目既有“反击不再引发反击”约定应用到中间衍生伤害；不声称新确认了官方底层实现。来源／归属、数值、减伤、附带治疗、技力和死亡事件保持原路径，32 层保护不变。
 
@@ -210,3 +262,6 @@ Each domain file `server/sim/content/{tokens,bonds,garrisons,items,bands,enemies
 生命／攻击基础公式仍为H0×60%+10S、A0×80%+3S；原生天赋与技能在此魂灵基础值之上正常生效，层数刷新不重复叠乘。原生自我恢复和防止致命伤／一次复活可生效；只有真正离场才清除魂灵，原生退场效果正常执行。本体重新部署与战斗结束仍强制清理魂灵，不触发人口或盟约人数增加，不产死亡层数／炮击充能，不继承装备触发器或阿斯卡纶等额外活体产层特质。魂灵及其治疗召唤物处于魂灵治疗组，活体医疗与装置限制及锡人二技能例外保留。召唤物选用本体的实际技能／品质／模组数据，其运行归属为新魂灵，按原技能规则离场或保留。
 
 炮击所生魂灵是独立战斗单位，新安装的原生技能／天赋定时回调不携带致死炮击标记；原炮击与真正衍生反击的归属链不变。原生技能目标选择可识别魂灵的干员身份，但经济、阵容人数、战斗开始阵容统计和额外卫戍特质仍按活体棋子处理。
+
+
+0.2.4 莱茵适配：余音FIFO条目同时保存攻击值与counter/reflect来源，保留本扩展既有反击边界；不会因套用上游队列而恢复递归反击。扩展平衡规则见[RHINE-CHANGES.md](../RHINE-CHANGES.md)。

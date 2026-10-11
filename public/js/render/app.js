@@ -122,7 +122,7 @@ import { TileField } from './tiles.js';
 import { UnitView, ItemView, DeviceView, FORMS, syncView } from './units.js';
 import { FxSystem, ensureDamageFonts } from './fx.js';
 import { createDragController, pieceTile, dragStandTile } from './drag.js';
-import { backdropTextures, shadowTexture, refreshTierChips, silhouetteTexture } from './textures.js';
+import { backdropTextures, shadowTexture, refreshTierChips, refreshDownLabels, silhouetteTexture } from './textures.js';
 import { TILE_H, TIER_COLORS, COLORS } from './style.js';
 import { loadBoardArt } from './boardArt.js';
 import { ImpostorAtlas } from './impostor.js';
@@ -433,6 +433,13 @@ export async function createFieldView(host, options = {}) {
   }
   // Attach the board only after synchronous setup completes; enable3d also guards late arrivals.
   const boardReady = Promise.all([threePromise, packPromise]).then(([THREE, pack]) => (THREE && pack ? enable3d(THREE, pack) : false), () => false);
+  let boardRetry = null;
+  function retryBoard() {
+    if (!want3d || destroyed || board3d || recover.off || recover.timer || boardRetry) return;
+    boardRetry = Promise.all([loadThree(), loadBoardPack(assets)])
+      .then(([THREE, pack]) => enable3d(THREE, pack), () => false)
+      .finally(() => { boardRetry = null; });
+  }
   // the official soft shadow sprite replaces the procedural one once loaded (may already be cached; asked again when the
   // manifest arrives late)
   let shadowAsked = false;
@@ -459,8 +466,8 @@ export async function createFieldView(host, options = {}) {
   }
   loadShadow();
   ensureDamageFonts();
-  // web fonts may land after the first chips were drawn
-  if (document.fonts?.ready) document.fonts.ready.then(() => { if (!destroyed) refreshTierChips(); }).catch(() => {});
+  // web fonts may land after the first chips / redeploy-ring labels were drawn
+  if (document.fonts?.ready) document.fonts.ready.then(() => { if (!destroyed) { refreshTierChips(); refreshDownLabels(); } }).catch(() => {});
 
   // ---- camera ---------------------------------------------------------------------------------------------
 
@@ -799,8 +806,16 @@ export async function createFieldView(host, options = {}) {
       if (e.area === 'board' && info.dir && !held.has(e.uid) && typeof v.setDir === 'function') v.setDir(info.dir);
     }
     for (const k of [...views.keys()]) if (String(k).startsWith('p:') && !seen.has(Number(String(k).slice(2)))) dropView(k);
-    // the boss round's prep: the pair partner's board on its half of the boss field (item 51; display only)
-    syncMates(prepXf.kind === 'bossPrep' && src.bossMate && Array.isArray(src.bossMate.units) ? src.bossMate.units : []);
+    // The 外勤医疗 reserve medic is visible before battle but not a movable board piece. Map its board-space slot to
+    // the displayed boss half exactly as for the player's own pieces; the partner's units already use field coordinates.
+    const mapChars = Array.isArray(src.prepMapChars) ? src.prepMapChars.map((u) => {
+      if (!u || !Number.isInteger(u.x) || !Number.isInteger(u.y)) return null;
+      const p = prepXf.toDisp(u.y, u.x);
+      const dir = prepXf.dirToDisp(u.dir);
+      return { ...u, x: p.col, y: p.row, dir, facing: dir === 'LEFT' ? -1 : 1 };
+    }).filter(Boolean) : [];
+    const mate = prepXf.kind === 'bossPrep' && src.bossMate && Array.isArray(src.bossMate.units) ? src.bossMate.units : [];
+    syncReadOnlyPrepUnits([...mapChars, ...mate]);
     prepPieces = list.filter((e) => e.key && views.has(e.key));
     if (dragState && !views.has(dragState.key)) { drag.reset(); endDragVisual(false); }
     holdScene(false); // the prep pieces reference their models now (a battle's hold ends here)
@@ -808,11 +823,10 @@ export async function createFieldView(host, options = {}) {
   }
 
   /**
-   * The pair partner's pieces in the Final Assault / Hidden Core prep (m.private bossMate units: UnitInfo in boss-field
-   * coordinates, facing as the battle will place them): read-only 'm:<uid>' views — not prep pieces, so they are never
-   * picked, dragged or swept with the own ones; a view is rebuilt when its body, tile or facing changes.
+   * The reserve medic and a boss pair's partner pieces: read-only 'm:<uid>' views. These are not prep pieces, so they
+   * are never picked, dragged or swept with the own board; a view is rebuilt when its body, tile or facing changes.
    */
-  function syncMates(units) {
+  function syncReadOnlyPrepUnits(units) {
     const keep = new Set();
     for (const u of units) {
       const info = u && Number.isInteger(u.uid) ? renderInfo({ ...u, id: `m:${u.uid}` }) : null;
@@ -1473,7 +1487,9 @@ export async function createFieldView(host, options = {}) {
         if (e[1] === 'displace') {
           const d = e[4] && typeof e[4] === 'object' ? e[4] : null;
           const v = d && d.id != null ? views.get(d.id) : null;
-          if (v && v.slideTo) v.slideTo(Number(e[2]), Number(e[3]), Number(d.dur) > 0 ? { dur: Number(d.dur) } : {});
+          if (v && v.slideTo) v.slideTo(Number(e[2]), Number(e[3]), {
+            ...(Number(d.dur) > 0 ? { dur: Number(d.dur) } : {}), keepFacing: d.keepFacing === true,
+          });
         }
         // an enemy's mode change — the `form` of a sim setForm fx (shared/protocol.js fxForm: 掠海漂移体 → 爬行模式, user
         // playtest #5 item 1; 转译基底's forms, a 逐火 ember and its revival, the leaders' 重生, 守墓石像 — user report after
@@ -1534,7 +1550,9 @@ export async function createFieldView(host, options = {}) {
     const extra = e[4] && typeof e[4] === 'object' ? e[4] : null;
     const v = extra && extra.id != null ? views.get(extra.id) : null;
     // `dur`: the push / pull's 失衡 time in game seconds (battle/displacement.js) — the slide's length
-    if (v && v.slideTo) v.slideTo(Number(e[2]), Number(e[3]), Number(extra.dur) > 0 ? { at: slideAt, dur: Number(extra.dur) } : { at: slideAt });
+    if (v && v.slideTo) v.slideTo(Number(e[2]), Number(e[3]), {
+      at: slideAt, ...(Number(extra.dur) > 0 ? { dur: Number(extra.dur) } : {}), keepFacing: extra.keepFacing === true,
+    });
   }
   let renderT0Battle = null;   // game time of the first rendered battle frame (spawn puffs skip the initial wave)
   let downSeq = 0;             // syncBattle pass counter: a view still marked down after a pass left the `down` list
@@ -1753,6 +1771,7 @@ export async function createFieldView(host, options = {}) {
   // load it again at once (their bounded retries never run while hidden: no frames).
   function onAssets() {
     if (destroyed) return;
+    retryBoard();
     loadShadow();
     loadMountains();
     if (mode === 'prep' && lastPrep) setPrep(lastPrep.ps, lastPrep.o);
@@ -1764,6 +1783,7 @@ export async function createFieldView(host, options = {}) {
   setupCleanup.push(() => offAssets?.());
   const onVisible = () => {
     if (destroyed || globalThis.document?.visibilityState !== 'visible') return;
+    retryBoard();
     if (assets.loaded === false && typeof assets.ready === 'function') assets.ready();
     for (const v of views.values()) v.retryAssets?.();
     for (const v of penViews.values()) v.retryAssets?.();

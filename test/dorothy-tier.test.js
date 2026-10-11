@@ -22,5 +22,5 @@ test('Rhine Dorothy is tier IV in the generator, shop and both normal/elite reco
   const onlyDorothy = { filter: (id) => id === 'chess_rhine_dorothy_a' };
   assert.equal(pool.roll(createRng(4), { ...onlyDorothy, maxTier: 3 }), null);
   assert.equal(pool.roll(createRng(4), { ...onlyDorothy, maxTier: 4 }), 'chess_rhine_dorothy_a');
-  assert.equal(gd.poolCopies('chess_rhine_dorothy_a'), DATA.config.economy.poolCopies[4]);
+  assert.equal(gd.poolCopies('chess_rhine_dorothy_a'), DATA.config.economy.poolCopies[4] * 2);
 });

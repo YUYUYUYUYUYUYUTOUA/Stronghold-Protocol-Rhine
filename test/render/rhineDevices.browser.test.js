@@ -116,7 +116,8 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
       });
       assert.ok(Math.abs(partial.share - 2 / 3) < .001); assert.equal(partial.below, true); assert.equal(partial.tint, 0xffbc70);
       await page.screenshot({ path: path.join(OUT, 'rhine-charge-partial.png') });
-      await page.evaluate(() => window.__demo.view.pushSnapshot({ gt: .5, units: [[701,6,10,1,1,3,3,0,0], [702,8,10,1000,1000,0,0,0,0]] }));
+      // Keep a normal network heartbeat beyond the interpolation delay; a single final packet is held behind it.
+      await page.evaluate(() => { for (const gt of [.5, .8]) window.__demo.view.pushSnapshot({ gt, units: [[701,6,10,1,1,3,3,0,0], [702,8,10,1000,1000,0,0,0,0]] }); });
       await page.waitForFunction('window.__demo.view.debug.views.get(701).spGlow.visible && window.__demo.view.debug.views.get(701).researchActor.core.tint === 0xffe8c4');
       const readyAt = await page.evaluate(() => performance.now());
       await page.waitForFunction(start => performance.now() - start > 5000 && window.__demo.view.debug.views.get(701).spGlow.visible,
@@ -135,7 +136,7 @@ describe('Rhine grid ranges, charge gauge and pulse cues in Chromium', { skip: e
       assert.equal(activation.beams, 1); assert.ok(activation.rings >= 2); assert.equal(activation.pulse, 1);
       assert.deepEqual(activation.tiles, activation.expected);
       await page.screenshot({ path: path.join(OUT, 'rhine-pulse-low-quality.png') });
-      await page.evaluate(() => window.__demo.view.pushSnapshot({ gt: 1, units: [[701,6,10,1,1,0,3,0,0], [702,8,10,900,1000,0,0,0,0]] }));
+      await page.evaluate(() => { for (const gt of [1, 1.3]) window.__demo.view.pushSnapshot({ gt, units: [[701,6,10,1,1,0,3,0,0], [702,8,10,900,1000,0,0,0,0]] }); });
       await page.waitForFunction('window.__demo.view.debug.views.get(701).sp < .01');
       await page.waitForFunction('window.__demo.view.debug.fx.beamList.length === 0 && window.__demo.view.debug.views.get(701).researchActor.pulse === 0');
       assert.deepEqual(problems, []);

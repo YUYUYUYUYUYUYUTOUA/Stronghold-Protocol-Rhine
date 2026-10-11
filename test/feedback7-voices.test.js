@@ -71,7 +71,7 @@ test('data/assets.json: native and extension operators have matching Chinese/Jap
   assert.equal(m.stats.voiceJpChars, Object.keys(jp).length);
   assert.equal(m.stats.voiceChars, Object.keys(cn).length);
   const vanilla = readJson('data/vanilla/assets.json');
-  assert.equal(Object.keys(vanilla.audio.voiceJp).length, 191);
+  assert.equal(Object.keys(vanilla.audio.voiceJp).length, 192);
   const extensionIds = ['char_242_otter', 'char_219_meteo', 'char_135_halo', 'char_4071_peper', 'char_4131_odda', 'char_4224_turdus'];
   assert.deepEqual(Object.keys(jp).sort(), [...Object.keys(vanilla.audio.voiceJp), ...extensionIds].sort());
   // the JP tree is the Chinese one with the folder swapped: same slots, same lines in the same order, same file names
@@ -79,7 +79,7 @@ test('data/assets.json: native and extension operators have matching Chinese/Jap
   const lines = [];
   const walk = (x) => { if (typeof x === 'string') lines.push(x); else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.values(x).forEach(walk); };
   walk(jp);
-  assert.equal(lines.length, 2674 + extensionIds.length * 14);
+  assert.equal(lines.length, 2688 + extensionIds.length * 14);
   for (const u of lines) assert.match(u, /^\/assets\/audio\/voice\/jp\/char_[^/]+\/cn_\d+\.mp3$/);
   // no voice: the 17 stand-ins of data/backups.json (预备干员 / 原型干员), the mode's 盟约·辅助干员, every summon
   const backups = readJson('data/backups.json');

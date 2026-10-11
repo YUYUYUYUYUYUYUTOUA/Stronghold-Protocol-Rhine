@@ -3563,8 +3563,19 @@ function enemyScaleFor(table, type, difficulty, round, isHidden) {
  * Build data/config.json: modes (rounds, timers, shop, enemy scaling), economy, bans, timers,
  * titles, tips, broadcasts, trophies and other global tunables.
  */
-function buildConfig(ctx, waves, stages, bands) {
+function buildConfig(ctx, waves, stages, bands, chess, items) {
   const { act, ac } = ctx;
+  // Original experiment: 路标档案馆, BV1eLXXBqEgF (2026-03-29), 0:30 / 1:30 / 2:00.
+  // These are concurrent stock counts, not limits on appearances or total purchases during a match.
+  const stockByName = (records, counts) => Object.fromEntries(Object.entries(counts).map(([name, count]) => {
+    const rec = Object.values(records).find((r) => !r.isGolden && r.name === name);
+    if (!rec) throw new Error(`pool stock: missing ${name}`);
+    return [rec.chessId || rec.id, count];
+  }));
+  const chessStock = stockByName(chess, { 普罗旺斯: 10, 德克萨斯: 10, 跃跃: 10, 古米: 10, 格雷伊: 10,
+    风丸: 8, 赫默: 12, 休谟斯: 12, 砾: 12, 蒂比: 12, 调香师: 12 });
+  const itemStock = stockByName(items, { 简易通讯机: 5, 蜂鸣器: 6, 防暴盾: 6, 浓缩嗅盐: 6,
+    寻呼模块: 7, 伪装服: 7, 拉特兰桥夹: 7, 商业包装方案: 2 });
   const addendum = ctx.research.core?._criticAddendum || {};
   const multipliers = addendum.enemyStatMultipliers || DEFAULT_ENEMY_MULTIPLIERS;
   if (!addendum.enemyStatMultipliers) warn('config: using built-in enemy multiplier table (research 01 _criticAddendum missing)');
@@ -3670,7 +3681,10 @@ function buildConfig(ctx, waves, stages, bands) {
       storeCntMax: act.constData.storeCntMax,
       equipPerChess: 2, maxArtsPerRound: 2,
       poolCopies: { 1: 12, 2: 14, 3: 18, 4: 16, 5: 8, 6: 5 },
-      poolCopiesOverrides: { chess_char_6_11_a: 4 },
+      poolCopiesOverrides: chessStock,
+      coopPoolMultiplier: 2,
+      itemPoolCopies: { 1: 4, 2: 6, 3: 7, 4: 8, 5: 7, 6: 3 },
+      itemPoolCopiesOverrides: itemStock,
       goldenCopies: 3,
       mergeCount: 3,
       mergeCountOverrides: Object.fromEntries(Object.entries(act.charChessDataDict).filter(([, c]) => !c.isGolden && c.upgradeNum && c.upgradeNum !== 3).map(([id, c]) => [id, c.upgradeNum])),
@@ -3698,8 +3712,8 @@ function buildConfig(ctx, waves, stages, bands) {
     timers: {
       infoCheck: step('INFO_CHECK')?.time ?? 25, infoCheckHint: step('INFO_CHECK')?.hintTime ?? 5,
       // bandTurn: one turn of the co-op strategy draft = its only countdown (server/match/Match.js BAND_TURN_SECONDS,
-      // [ASSUMED] — user playtest #4 item 4; the official data only has the whole step's 50 s, kept for reference)
-      bandDraft: step('BAND_CHECK')?.time ?? 50, bandDraftHint: step('BAND_CHECK')?.hintTime ?? 15, bandTurn: 30,
+      // owner official-play report 2026-10-10: 50 s per turn; the official whole-step value stays as reference)
+      bandDraft: step('BAND_CHECK')?.time ?? 50, bandDraftHint: step('BAND_CHECK')?.hintTime ?? 15, bandTurn: 50,
       battleCheck: step('BATTLE_CHECK')?.time ?? 3,
       spFirst: 30, spTurn: act.modeDataDict.mode_multi_normal?.specialPhaseTime ?? 16,
       soloPrepTimeData: 300, soloSpTimeData: act.modeDataDict.mode_single_normal?.specialPhaseTime ?? 150,
@@ -4081,7 +4095,7 @@ async function main() {
   // the bonds each strategy is built around (DESIGN §21.26): the bot skips, and the strategy draft marks 本局禁用, a band
   // whose bond the mode switches off
   for (const b of Object.values(bands)) b.bondIds = bandBondIds(b, { bonds, pools: choices.pools });
-  const config = buildConfig(ctx, waves, stages, bands);
+  const config = buildConfig(ctx, waves, stages, bands, chess, items);
   const files = { config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages, bosses, tokens, backups };
 
   // Check the native forms at every rank before annotating and applying extension overlays.

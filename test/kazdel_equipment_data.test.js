@@ -68,10 +68,13 @@ test('Kazdel equipment: acquiring two copies merges once and normal upgrade effe
     const merged = ps.acquireItem(item(key));
     assert.equal(merged.id, item(key, true)); assert.equal(ps.stats.itemMerges, 1);
     assert.equal(ps.find(first.uid), null);
-    const next = ps.acquireItem(item(key));
-    assert.equal(ps.upgradeItem(next), true); assert.equal(next.id, item(key, true));
-    assert.equal(ps.upgradeItem(next), false, 'an elite item cannot upgrade again');
-    h.invariants();
+    h.invariants(); h.m.dispose();
+    // A separate pool has room for the second copy required by an upgrade (0.2.4 finite equipment stock).
+    const upgrade = makeMatch({ mode: 'solo', fake: true }).start().toPrep(1), owner = upgrade.ps('p_0');
+    const next = owner.acquireItem(item(key));
+    assert.equal(owner.upgradeItem(next), true); assert.equal(next.id, item(key, true));
+    assert.equal(owner.upgradeItem(next), false, 'an elite item cannot upgrade again');
+    upgrade.invariants(); upgrade.m.dispose();
   }
 });
 

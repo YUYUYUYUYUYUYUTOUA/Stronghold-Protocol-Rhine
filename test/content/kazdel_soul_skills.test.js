@@ -186,3 +186,21 @@ test('A soul born from a cannon death starts independent native callbacks and re
   }, 'p1');
   assert.ok(u.kazdelSoulUnit?.alive); assert.equal(nativeCallback(), null); valid(h);
 });
+
+for (const skillIndex of [0, 1, 2]) test(`Upstream 0.2.4 Clementia DIY soul preserves native skill ${skillIndex + 1} and independent state`, () => {
+  const h = field(undefined, { diy: { slot: 6, charId: 'char_4231_clemnt', skillIndex }, elite: true, items: morph, dir: 'RIGHT' });
+  const s = h.soul;
+  assert.equal(s.def.charId, 'char_4231_clemnt');
+  assert.equal(s.skill.id, `skchr_clemnt_${skillIndex + 1}`);
+  assert.notEqual(s.skill, h.body.skill); assert.notEqual(s.mem, h.body.mem);
+  assert.deepEqual(s.items, []);
+  const enemy = h.spawn('dummy', { pos: [10, 5] });
+  s.skill.gainSp(999, 'init'); assert.ok(s.skill.activate('test'));
+  h.b.forceAttack(s, [enemy]); h.run(4);
+  assert.ok(enemy.hp < enemy.s.maxHp, 'the real inherited skill/attack pipeline damages the target');
+  const layers = h.b.getPlayer('p1').bonds[K].layers;
+  h.b.retreat(s, { reason: 'kazdelReturn', permanent: true }); h.step();
+  assert.equal(s.alive, false); assert.equal(h.b.getPlayer('p1').bonds[K].layers, layers);
+  for (const hooks of Object.values(h.b._hooks)) assert.ok(hooks.every(x => x.owner !== s));
+  valid(h);
+});

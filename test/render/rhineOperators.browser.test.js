@@ -49,7 +49,10 @@ describe('Rhine added operators actual art, loadout stats and traps in Chromium'
     const expected = await page.evaluate(async key => {
      const chess = await (await fetch('/data/chess.json')).json();
      const rec = chess[`chess_rhine_${key}_b`];
-     return { baseAtk:rec.statsBase.atk, modules:rec.modules.map(m=>({id:m.uniEquipId, atk:rec.statsBase.atk+(m.attr.atk||0)})) };
+     const effects = await (await fetch('/data/effects.json')).json();
+     const { cultivateMul, CULTIVATE_DEFAULT } = await import('/shared/potential.js');
+     const mul = cultivateMul(effects, CULTIVATE_DEFAULT).atk;
+     return { baseAtk:Math.round(rec.statsBase.atk * mul), modules:rec.modules.map(m=>({id:m.uniEquipId, atk:Math.round((rec.statsBase.atk+(m.attr.atk||0)) * mul)})) };
     },key);
     const atk = () => page.$eval('.lo-sec--stats .dstats',n=>[...n.querySelectorAll('.dstat')].find(v=>v.querySelector('.dstat__k').textContent==='攻击').querySelector('.dstat__v').textContent);
     for (const module of expected.modules) {
