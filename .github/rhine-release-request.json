@@ -1,12 +1,12 @@
 {
-  "tag": "v0.2.4-rhine.1",
-  "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+  "tag": "v0.2.4-rhine.2",
+  "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
   "previousTag": "v0.2.2-rhine.3",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip",
   "previousArchiveSha256": "d252aa867c433915fc7ab3fe9671441e7832919326409994a02ae205b404ef63",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。",
+  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n首个0.2.4候选保留为未公开验收草稿。本次仅修正六客户端验收的加载同步，玩法、BAN数量和性能阈值均不改变。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.4",
@@ -196,7 +196,7 @@
       "skipped": 0,
       "targetedEslint": "passed"
     },
-    "finalSourceCi": {
+    "runtimeBaselineCi": {
       "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
       "runId": 38119267287,
       "jobs": [
@@ -263,9 +263,121 @@
           "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
         }
       }
+    },
+    "candidate1NativeValidation": {
+      "tag": "v0.2.4-rhine.1",
+      "published": false,
+      "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+      "run": 38120550762,
+      "unitTests": {
+        "tests": 579,
+        "pass": 577,
+        "fail": 0,
+        "skipped": 2
+      },
+      "browserTests": {
+        "pass": 34,
+        "fail": 2,
+        "notRun": 1
+      },
+      "failure": "Both six-human profile cases timed out at the 15-second global network-idle fixture wait, before battle assertions. Narrow layout and 33 preceding browser tests passed.",
+      "httpAndUpdateChecks": "not run after browser-group failure"
+    },
+    "candidate2Delta": {
+      "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
+      "runtimeCodeIdenticalTo": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+      "changed": "Only test synchronization and version/audit documentation; the test now awaits actual simulator module/data readiness before refreshing.",
+      "behaviorAndPerformanceAssertionsUnchanged": true,
+      "docsTests": {
+        "tests": 31,
+        "pass": 31,
+        "fail": 0,
+        "skipped": 0
+      },
+      "targetedEslint": "passed",
+      "browserRetest": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0,
+        "durationMs": 425577.464801
+      }
+    },
+    "candidate1ReleaseRequestCi": {
+      "sourceCommit": "2c2fdfacfd79686f6ab390c6728d1a2da504309b",
+      "runId": 38120550735,
+      "jobs": [
+        {
+          "id": 114414201780,
+          "name": "test (ubuntu-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 114414201892,
+          "name": "test (windows-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 114414201935,
+          "name": "tooling (lint, imports, typecheck)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "id": 114414201961,
+          "name": "test (windows-latest, node 22)",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "id": 114414201986,
+          "name": "test (ubuntu-latest, node 22)",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "counts": {
+        "ubuntu22": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "ubuntu24": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "windows24": {
+          "tests": 6700,
+          "pass": 6639,
+          "fail": 0,
+          "skipped": 61
+        },
+        "windows22": {
+          "tests": 6678,
+          "pass": 6616,
+          "fail": 1,
+          "skipped": 61,
+          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
+        }
+      }
+    },
+    "candidate1TagPerformanceFailure": {
+      "run": 38120550714,
+      "job": 114414201974,
+      "platform": "Windows Node24",
+      "bestMsPerTick": 1.0055710555555561,
+      "thresholdMsPerTick": 1,
+      "thresholdChanged": false,
+      "rerunWorkflow": 38120550714,
+      "note": "Same-source branch CI and release-request CI passed. The one failed job was rerun with its original threshold; final run state is available on GitHub."
     }
   },
-  "releaseName": "v0.2.4-rhine.1 · 上游0.2.4兼容更新",
+  "releaseName": "v0.2.4-rhine.2 · 上游0.2.4兼容更新",
   "approvedArt": {
     "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
     "public/art/kazdel/sigil-v2.png": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
