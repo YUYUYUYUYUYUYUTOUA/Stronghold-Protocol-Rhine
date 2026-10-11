@@ -1,0 +1,67 @@
+name: Diagnose native six-client GPU priority
+on:
+  push:
+    branches: [codex/rhine-release-diagnostics-024]
+    paths: [six-player-priority.js, .github/workflows/native-six-priority.yml]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [rhine, vanilla]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: diagnostic
+      - uses: actions/checkout@v7
+        with:
+          ref: ffc6a923c0342530f429fb6289bf748c0bfe7062
+          path: source
+      - name: Restore identical dependencies and released resources
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.2.2-rhine.3 --repo $env:GITHUB_REPOSITORY --pattern Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip --dir downloads
+          gh release download v0.2.4 --repo sganggs/Stronghold-Protocol --pattern Stronghold-Protocol-v0.2.4.zip --dir upstream
+          python -m zipfile -e downloads/Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip previous
+          python -m zipfile -e upstream/Stronghold-Protocol-v0.2.4.zip upstream-files
+          $old = 'previous/Stronghold-Protocol-Rhine'
+          $fresh = (Get-ChildItem upstream-files -Recurse -Filter package.json | Where-Object { $_.DirectoryName -notmatch 'node_modules' } | Select-Object -First 1).DirectoryName
+          foreach ($part in @('public/assets','public/fonts','public/vendor','node_modules')) {
+            Copy-Item "$old/$part" "source/$part" -Recurse -Force
+            if ($part -ne 'node_modules') { Copy-Item "$fresh/$part/*" "source/$part/" -Recurse -Force }
+          }
+          Copy-Item diagnostic/six-player-priority.js source/test/ui/six-player-balance.e2e.test.js -Force
+      - name: Run unchanged assertions with boot diagnostics
+        shell: pwsh
+        run: |
+          $env:SP_E2E = '1'
+          $env:CHROME_PATH = "${env:ProgramFiles(x86)}/Microsoft/Edge/Application/msedge.exe"
+          Set-Location source
+          $monitor = Start-Job -ScriptBlock {
+            $last = @{}
+            for ($sample = 0; $sample -lt 60; $sample++) {
+              $roles = @{}
+              Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | ForEach-Object { $roles[[int]$_.ProcessId] = if ($_.CommandLine -match '--type=([^ ]+)') {$Matches[1]} else {'browser'}; if ($_.CommandLine -match '--utility-sub-type=([^ ]+)') { $roles[[int]$_.ProcessId] += ':' + $Matches[1] } }
+              $rows = Get-Process | Where-Object { $_.ProcessName -in @('node','msedge','MsMpEng','System') } | ForEach-Object {
+                $before = $last[$_.Id]; $last[$_.Id] = $_.CPU
+                [pscustomobject]@{pid=$_.Id; name=$_.ProcessName; cpu=$_.CPU; delta=if ($null -ne $before) {[math]::Round($_.CPU-$before,2)} else {0}; priority=[string]$_.PriorityClass; role=$roles[$_.Id]; threads=$_.Threads.Count; mb=[math]::Round($_.WorkingSet64/1MB)}
+              }
+              Write-Output ('PERF ' + [DateTime]::UtcNow.ToString('o') + ' ' + ($rows | Sort-Object delta -Descending | Select-Object -First 15 | ConvertTo-Json -Compress))
+              Start-Sleep -Seconds 10
+            }
+          }
+          try {
+            ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec "--test-name-pattern=^${{ matrix.profile }}:" test/ui/six-player-balance.e2e.test.js
+            $testExit = $LASTEXITCODE
+          } finally {
+            Stop-Job $monitor
+            Receive-Job $monitor
+            Remove-Job $monitor
+          }
+          exit $testExit
