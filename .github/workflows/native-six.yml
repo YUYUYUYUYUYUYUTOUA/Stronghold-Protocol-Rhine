@@ -8,7 +8,11 @@ permissions:
 jobs:
   diagnose:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [rhine, vanilla]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,4 +43,4 @@ jobs:
           $env:SP_E2E = '1'
           $env:CHROME_PATH = "${env:ProgramFiles(x86)}/Microsoft/Edge/Application/msedge.exe"
           Set-Location source
-          ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec test/ui/six-player-balance.e2e.test.js
+          ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec "--test-name-pattern=^${{ matrix.profile }}:" test/ui/six-player-balance.e2e.test.js

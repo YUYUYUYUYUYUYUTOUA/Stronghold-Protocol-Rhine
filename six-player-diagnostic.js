@@ -23,10 +23,18 @@ const inventory = c => c.page.evaluate(() => {
   return [...(p?.hand || []), ...(p?.temp || []), ...(p?.board || [])].filter(Boolean);
 });
 
+async function lowQuality(client) {
+  await client.click('[data-testid="settings-btn"]');
+  await client.click('.set-seg button', '低');
+  await client.click('.modal__actions button', '完成');
+  assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).quality), 'low');
+}
+
 async function createSixHumanRoom(clients, rhineEnabled) {
   const host = clients[0];
   await host.open();
   await host.enter('六人验收1');
+  await lowQuality(host);
   await host.click('.mode-card', '同盟模拟');
   await host.click('.diff-card', '绝境模拟');
   await host.click('.create-box button', '创建同盟');
@@ -39,6 +47,7 @@ async function createSixHumanRoom(clients, rhineEnabled) {
   for (const [i, client] of clients.slice(1).entries()) {
     await client.open(`?room=${room.code}`);
     await client.enter(`六人验收${i + 2}`);
+    await lowQuality(client);
     await client.waitFor(s => s.room?.code === room.code, 'join six-human room');
   }
   for (const client of clients.slice(1)) await client.click('.room-bar__right button', '准备就绪');
@@ -190,7 +199,7 @@ for (const rhineEnabled of [true, false]) {
         return browser;
       } };
       const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
-        { w: i === 5 ? 1280 : 1920, h: i === 5 ? 720 : 1080, prefix: `six-balance-${profile}-p${i + 1}` }));
+        { w: 1280, h: 720, prefix: `six-balance-${profile}-p${i + 1}` }));
       try {
         console.log(profile, 'start room', new Date().toISOString());
         for (const client of clients) {
