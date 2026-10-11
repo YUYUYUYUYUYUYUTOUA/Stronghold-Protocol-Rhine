@@ -3,7 +3,6 @@ import { KAZDEL_BOND as BOND, KAZDEL_BALANCE as B, KAZDEL_CANNON as C, KAZDEL_GA
 import { gainLayers, garrisonRecord, isMember } from './support/index.js';
 import { createSoul, refreshSoul } from './kazdel/souls.js';
 import { cannonSource, tickCannon } from './kazdel/cannon.js';
-import { tickAscalon } from './kazdel/ascalon.js';
 import { kazdelEquipmentDamage } from './items/battle.js';
 
 const present = u => !!u?.alive && u.deployed && !u.hidden && !u.removed;
@@ -78,7 +77,6 @@ export function install(battle) {
   }));
   if (!states.some(s => s.stage || s.originals.some(u => Object.keys(G).some(k => kazdelTrait(u, k))))) return;
   const byOwner = new Map(states.map(s => [s.ps.playerId, s]));
-  const ascalonStates = states.filter(s => s.originals.some(u => kazdelTrait(u, 'ascalon')));
   battle._kazdelView = () => states.filter(s => s.stage).map(s => ({ ownerId: s.ps.playerId, stage: s.stage,
     layers: layersOf(s), charge: s.charge, maxCharge: C.capacity, rate: C.chargePerSec + C.chargePerLayer * layersOf(s),
     warning: s.warning ? { ...s.warning } : null, lastFireAt: Number.isFinite(s.lastFireAt) ? s.lastFireAt : null }));
@@ -92,7 +90,6 @@ export function install(battle) {
     if (s && unit.kind === 'op') updateWisdelAttack(battle, s, unit);
   }, { priority: -100 });
   battle.on('tick', ({ dt }) => {
-    if (ascalonStates.length) tickAscalon(battle, ascalonStates, dt, kazdelTrait);
     for (const s of states) { updatePassives(battle, s, states); tickCannon(battle, s, dt, layersOf(s), onFire); }
   }, { priority: -50 });
   // Track actual positive body damage, then count distinct enemies that really die; soul damage never feeds Odda.

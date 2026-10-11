@@ -246,7 +246,7 @@ async function main() {
     'test/content/lemuen-wanted-023.test.js', 'test/content/necras-trigger-023.test.js', 'test/content/heal-triggers-023.test.js',
     'test/match/shared-stock.test.js', 'test/match/rhine-upstream024.test.js',
     'test/match/setup-reroll.test.js', 'test/match/setup-reroll-ws.test.js',
-    'test/content/kazdel.test.js', 'test/content/kazdel_ascalon.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
+    'test/content/kazdel.test.js', 'test/content/kazdel_kits.test.js', 'test/content/op_wisdel.test.js',
     'test/content/kazdel_soul_skills.test.js', 'test/content/kazdel_equipment.test.js', 'test/kazdel_equipment_data.test.js',
     'test/content/reactive-origin.test.js', 'test/content/rhine.test.js', 'test/match/rhineResearch.test.js',
     'test/match/rhine-client-layers.test.js', 'test/content/garrisons_battle.test.js',
@@ -256,7 +256,7 @@ async function main() {
     'test/rhine-bundle-launch.test.js',
     'test/extension-potential.test.js', 'test/room-rhine-profile.test.js', 'test/vanilla-data.test.js',
     'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
-    'test/match/kazdel-client-layers.test.js', 'test/match/six-player.test.js',
+    'test/match/kazdel-client-layers.test.js', 'test/match/six-player.test.js', 'test/match/six-player-round-beacons.test.js',
     'test/protocol-seats.test.js', 'test/rhine-update-boot.test.js', 'test/ui/kazdel.test.js',
   ], path.join(root, 'packaged-tests.log'));
   let browserTests = null;

@@ -13,7 +13,7 @@ test('co-op pool doubles the measured single-player capacities; only visible, un
   const pool = new SharedPool(gd, { banned: [] });
   const caps = { 1: 12, 2: 14, 3: 18, 4: 16, 5: 8, 6: 5 };
   assert.equal(pool.entries.size, gd.visibleChess.length);
-  assert.equal(pool.entries.size, 126);
+  assert.equal(pool.entries.size, 125);
   for (const [id, e] of pool.entries) {
     const expect = 2 * (DATA.config.economy.poolCopiesOverrides[id] ?? caps[e.tier]);
     assert.equal(e.cap, expect, id);
@@ -22,7 +22,7 @@ test('co-op pool doubles the measured single-player capacities; only visible, un
   }
   const banned = [gd.visibleChess[0], gd.visibleChess[5]];
   const p2 = new SharedPool(gd, { banned });
-  assert.equal(p2.entries.size, 124);
+  assert.equal(p2.entries.size, 123);
   assert.ok(!p2.has(banned[0]) && p2.left(banned[0]) === 0 && p2.take(banned[0]) === 0);
 });
 
@@ -61,10 +61,10 @@ test('odds sanity: level L rolls only tiers â‰¤ L; level 1 only tier 1; shares â
   }
   // Rhine + Kazdel roster, full pools and no bans.
   const s6 = pool.tierShares(6);
-  const want = { 1: 0.1400, 2: 0.1815, 3: 0.2566, 4: 0.2489, 5: 0.1089, 6: 0.0642 };
+  const want = { 1: 0.1357, 2: 0.1739, 3: 0.2609, 4: 0.2530, 5: 0.1107, 6: 0.0659 };
   for (const t of Object.keys(want)) assert.ok(Math.abs(s6[t] - want[t]) < 0.01, `T${t} ${s6[t]}`);
   const s2 = pool.tierShares(2);
-  assert.ok(Math.abs(s2[1] - 0.4355) < 0.01 && Math.abs(s2[2] - 0.5645) < 0.01);
+  assert.ok(Math.abs(s2[1] - 0.4383) < 0.01 && Math.abs(s2[2] - 0.5617) < 0.01);
 });
 
 test('rolls are copy-weighted: an exhausted chess never rolls; tier/filter options work', () => {
@@ -166,7 +166,7 @@ test('the match pool excludes banned chess; m.public lists disabled bonds and ba
   assert.equal(pub.drawnDisabledBonds.length, 9);
   assert.ok(pub.bannedChess.length > 0);
   for (const id of pub.bannedChess) assert.ok(!h.m.pool.has(id), `${id} should not be in the pool`);
-  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 126);
+  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 125);
   checkInvariants(h.m);
   h.m.dispose();
 });

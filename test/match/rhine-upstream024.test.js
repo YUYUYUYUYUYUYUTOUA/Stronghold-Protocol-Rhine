@@ -9,7 +9,7 @@ import { KAZDEL_EQUIPMENT } from '../../shared/kazdel.js';
 test('all Rhine/Kazdel operators share the upstream doubled co-op stock without changing solo capacities', () => {
   const solo = new GameData(DATA, 'mode_single_normal'), coop = new GameData(DATA, 'mode_multi_normal');
   const entries = Object.values(DATA.chess).filter(c => c.extension && c.visible && !c.isGolden);
-  assert.ok(entries.length >= 13);
+  assert.ok(entries.length >= 12);
   for (const c of entries) {
     const expected = DATA.config.economy.poolCopiesOverrides?.[c.chessId] ?? DATA.config.economy.poolCopies[c.tier];
     assert.equal(solo.poolCopies(c.chessId), expected, c.chessId);
@@ -32,3 +32,17 @@ for (const spec of [...Object.values(RHINE_EQUIPMENT), ...Object.values(KAZDEL_E
     checkInvariants(m); m.dispose();
   });
 }
+
+test('retired tier-III Ascalon cannot be acquired through stale custom card IDs', () => {
+  const h = makeMatch({ mode: 'solo', fake: true }).start().toPrep();
+  try {
+    const ps = h.ps('p_0');
+    for (const grade of ['a', 'b']) {
+      const id = `chess_kazdel_ascalon_${grade}`;
+      assert.equal(h.m.gd.chess(id), null);
+      assert.equal(h.m.pool.has(id), false);
+      assert.equal(ps.acquireChess(id), null);
+    }
+    checkInvariants(h.m);
+  } finally { h.m.dispose(); }
+});

@@ -83,7 +83,7 @@ test('a full hand receives the beacon in temp and can use it during the same pre
     h.toPrep(1);
     const ps = h.ps('p_0');
     ps.bandId = null;
-    for (let i = 0; i < ps.hand.length; i++) ps.hand[i] = ps.newPiece('item', 'chess_item_1_03_e_b');
+    for (let i = 0; i < ps.hand.length; i++) ps.hand[i] = ps.newPiece('item', 'chess_item_6_01_m');
     h.m.startRound(10);
     const beacon = ps.temp.find((p) => p?.id === BEACON);
     assert.ok(beacon, 'hand overflow reaches the existing temp inventory');
@@ -101,8 +101,8 @@ test('both inventories full retain their contents and report the existing reward
     h.toPrep(1);
     const ps = h.ps('p_0');
     ps.bandId = null;
-    for (let i = 0; i < ps.hand.length; i++) ps.hand[i] = ps.newPiece('item', 'chess_item_1_03_e_b');
-    for (let i = 0; i < ps.temp.length; i++) ps._putTemp(i, ps.newPiece('item', 'chess_item_1_03_e_b'));
+    for (let i = 0; i < ps.hand.length; i++) ps.hand[i] = ps.newPiece('item', 'chess_item_6_01_m');
+    for (let i = 0; i < ps.temp.length; i++) ps._putTemp(i, ps.newPiece('item', 'chess_item_6_01_m'));
     const before = held(ps).map((p) => p.uid);
     h.m.startRound(10);
     assert.equal(beacons(ps).length, 0);
@@ -161,7 +161,7 @@ for (const rhine of [true, false]) for (const golden of [false, true]) {
       const mate = m.gd.visibleChess.find((id) => id !== core && m.gd.chess(id).bonds.includes(bond) && legalTileFor(m, receiver, id));
       assert.ok(mate);
       give(m, receiver, mate, 'board', legalTileFor(m, receiver, mate));
-      for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
+      for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_6_01_m');
       const original = golden ? m.gd.goldenIdOf(core) : core;
       const target = give(m, sender, original);
       const beacon = beacons(sender).find((p) => p.meta.sixPlayerBeaconRound === 14);
@@ -253,8 +253,8 @@ test('a full R14 recipient keeps the immediate elite gift pending and receives i
     const mate = m.gd.visibleChess.find((id) => id !== core && m.gd.chess(id).bonds.includes(bond) && legalTileFor(m, receiver, id));
     assert.ok(mate);
     give(m, receiver, mate, 'board', legalTileFor(m, receiver, mate));
-    for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
-    for (let i = 0; i < receiver.temp.length; i++) receiver.temp[i] ||= receiver.newPiece('item', 'chess_item_1_03_e_b');
+    for (let i = 0; i < receiver.hand.length; i++) receiver.hand[i] ||= receiver.newPiece('item', 'chess_item_6_01_m');
+    for (let i = 0; i < receiver.temp.length; i++) receiver.temp[i] ||= receiver.newPiece('item', 'chess_item_6_01_m');
     const original = m.gd.goldenIdOf(core);
     const target = give(m, sender, original);
     const beacon = beacons(sender).find((p) => p.meta.sixPlayerBeaconRound === 14);
@@ -273,6 +273,25 @@ test('a full R14 recipient keeps the immediate elite gift pending and receives i
     assert.ok(!sender.effects.some((e) => e.id === pending.id), 'successful retry removes the gift once');
     m.onReconnect(receiver.playerId);
     assert.equal(held(receiver).filter((p) => p.kind === 'chess' && p.id === original).length, 1);
+    h.invariants();
+  } finally { h.m.dispose(); }
+});
+
+for (const rhine of [true, false]) test(`${rhine ? 'Rhine' : 'vanilla'} milestone beacons are independent of exhausted ordinary stock`, () => {
+  const h = makeMatch({ humans: 6, data: getDataProfile(rhine, { log: QUIET }), rhineEnabled: rhine, fake: true }).start();
+  try {
+    h.toPrep(1);
+    const owner = h.ps('p_0'), pool = h.m.itemPool, cap = pool.cap(BEACON);
+    for (let i = 0; i < cap; i++) assert.ok(owner.acquireItem(BEACON, { source: 'buy' }));
+    assert.equal(owner.acquireItem(BEACON, { source: 'sixPlayerBeacon' }), null, 'wrong round cannot bypass stock');
+    h.m.startRound(10);
+    for (const ps of h.m.order) assert.equal(beacons(ps).filter(p => p.meta.sixPlayerBeaconRound === 10).length, 1);
+    assert.equal(pool.held(BEACON), cap);
+    assert.equal(owner.acquireItem(BEACON, { source: 'buy' }), null);
+    h.ps('p_1').eliminate(10);
+    assert.equal(pool.left(BEACON), 0, 'removing a system supply does not release ordinary stock');
+    owner.eliminate(10);
+    assert.equal(pool.left(BEACON), cap, 'ordinary owned stock still returns');
     h.invariants();
   } finally { h.m.dispose(); }
 });

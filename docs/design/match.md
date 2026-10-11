@@ -141,3 +141,9 @@ before mutation; data preparation failure leaves the old opening intact. This is
 mode rule. Unrelated result-screen changes from PR #408 are not included.
 
 The shared DIY detail preview (stats, range, trait, talents, potential, cultivation and matching normal/elite skill descriptions) follows roster loadout resolution. Jessica shield placement is limited to her four orthogonal neighbors. The two Ptilopsis prep-gift copy exceptions are defined in §29.3 and META; no generic change to all copied conditions is implied.
+
+### Rhine 0.2.4 extension compatibility
+
+The six-seat R10/R12/R14 ordinary beacon is a guaranteed system supply, separate from shared shop item stock. Its server-created `sixPlayerBeaconRound` marker is set before recomputation; holding, consuming or eliminating this supply neither reserves nor releases shop copies. Ordinary purchases and effect grants remain stock-limited. See [MULTIPLAYER.md](../MULTIPLAYER.md).
+
+The extension's tier-III Ascalon was retired by owner request on 2026-10-11. Both custom forms, covenant membership and the additional live-body slow/layer generator are absent; upstream self-selected Ascalon remains. See [KAZDEL.md](../KAZDEL.md).

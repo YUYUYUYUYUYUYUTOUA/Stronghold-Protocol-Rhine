@@ -10,7 +10,7 @@ export const KAZDEL_EQUIPMENT = Object.freeze({
 export const KAZDEL_CHARACTERS = Object.freeze({
   vigna: 'char_290_vigna', odda: 'char_4131_odda', meteorite: 'char_219_meteo',
   tinman: 'char_4151_tinman', paprika: 'char_4071_peper', hoederer: 'char_4088_hodrer',
-  ines: 'char_4087_ines', mudrock: 'char_311_mudrok', logos: 'char_4133_logos', wisdel: 'char_1035_wisdel', ascalon: 'char_4132_ascln',
+  ines: 'char_4087_ines', mudrock: 'char_311_mudrok', logos: 'char_4133_logos', wisdel: 'char_1035_wisdel',
 });
 export const KAZDEL_BALANCE = Object.freeze({
   thresholds: Object.freeze([3, 6]), bodyHpPerLayer: 10,
@@ -34,7 +34,7 @@ export function kazdelCannonTiles(x, y, bounds) {
   return out;
 }
 export const KAZDEL_GARRISON_KEYS = Object.freeze({
-  ascalon: 'KAZDEL_ASCALON_HOLD', vigna: 'KAZDEL_VIGNA_DEATH', odda: 'KAZDEL_ODDA_DEATH',
+  vigna: 'KAZDEL_VIGNA_DEATH', odda: 'KAZDEL_ODDA_DEATH',
   meteorite: 'KAZDEL_METEORITE_SOUL_BLOCKED', tinman: 'KAZDEL_TINMAN_SOUL_AURA',
   paprika: 'KAZDEL_PAPRIKA_SOUL_HEAL', hoederer: 'KAZDEL_HOEDERER_DEATH',
   mudrock: 'KAZDEL_MUDROCK_SOUL_HP', logos: 'KAZDEL_LOGOS_SOUL_ATTACK', wisdel: 'KAZDEL_WISDEL_SOUL_DAMAGE',

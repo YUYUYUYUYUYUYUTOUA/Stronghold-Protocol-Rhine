@@ -79,7 +79,7 @@ test('Soul native summon variants retain donor skill/grade and new owner identit
 });
 
 test('Soul Ascalon keeps native dread and skill but never the live-body Kazdel production aura', () => {
-  const h = field('chess_kazdel_ascalon_a', { skillIndex: 1 }), s = h.soul;
+  const h = field('chess_char_5_diy1_a', { diy: { slot: 'chess_char_5_diy1_a', charId: 'char_4132_ascln', skillIndex: 1 }, items: morph }), s = h.soul;
   const e = h.spawn('dummy', { pos: [10, 4] }), layers = h.b.getPlayer('p1').bonds[K].layers;
   s.skill.setSpTotal(s.skill.spCost); assert.ok(s.skill.activate('test'));
   h.b.forceAttack(s, [e]); h.run(7);
@@ -89,7 +89,7 @@ test('Soul Ascalon keeps native dread and skill but never the live-body Kazdel p
 });
 
 test('Soul stat refresh keeps the inherited base formula through native skill buffs', () => {
-  const h = field('chess_kazdel_ascalon_a', { skillIndex: 1 }), s = h.soul;
+  const h = field('chess_char_5_diy1_a', { diy: { slot: 'chess_char_5_diy1_a', charId: 'char_4132_ascln', skillIndex: 1 }, items: morph }), s = h.soul;
   const base = soulBaseline(h.body), layers = h.b.getPlayer('p1').bonds[K].layers;
   close(s.base.maxHp, .6 * base.maxHp + 10 * layers); close(s.base.atk, .8 * base.atk + 3 * layers);
   s.skill.setSpTotal(s.skill.spCost); s.skill.activate('test'); h.run(2);

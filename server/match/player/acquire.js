@@ -7,6 +7,7 @@
 
 import { pieceDir, parseDir, mergeTile } from '../board.js';
 import { MAX_OFFER_SLOTS } from './common.js';
+import { milestoneBeaconRound } from '../beaconSupply.js';
 import { onMerge } from '../botEmotes.js';
 
 export class PlayerAcquire {
@@ -288,11 +289,13 @@ export class PlayerAcquire {
   acquireItem(itemId, { source = 'grant', toTemp = false, silent = false, deferMerge = false } = {}) {
     const rec = this.gd.item(itemId);
     if (!rec) return null;
-    if (!this.m.itemPool.canGain(itemId)) {
+    const supplyRound = milestoneBeaconRound(this.m, itemId, source);
+    if (!supplyRound && !this.m.itemPool.canGain(itemId)) {
       this.m.toast(this, 'warn', '装备库存不足，未获得该装备');
       return null;
     }
     let piece = this.newPiece('item', itemId);
+    if (supplyRound) piece.meta.sixPlayerBeaconRound = supplyRound;
     // A prep-end grant may sit beside an identical copy until the next prep. The invariant counts only copies
     // without this mark, so the fight that is about to start is not reported as a missed merge.
     if (deferMerge) piece.deferMerge = true;

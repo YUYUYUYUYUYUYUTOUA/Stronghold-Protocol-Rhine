@@ -38,7 +38,7 @@ function exercise(b, source, tick) {
   return { ...out, result: b.result() };
 }
 
-test('Kazdel cannon ownership and Ascalon native data/clock agree in Chromium and Node across field kinds', {
+test('Kazdel cannon ownership and native data agree in Chromium and Node across field kinds', {
   skip: enabled ? false : 'set SIM_E2E=1 and CHROME_PATH (no art required)', timeout: 90000,
 }, async () => {
   const { startServer } = await import('../../server/index.js');
@@ -55,7 +55,7 @@ test('Kazdel cannon ownership and Ascalon native data/clock agree in Chromium an
       const spec = buildBattleSpec({ fieldId: `kaz:${kind}`, kind, seed: 417, stageId: 'act2autochess_m01',
         rect: { r0: 0, r1: 18, c0: 0, c1: 20 }, timeLimit: 30, players: ['p1', 'p2'].map((playerId, seat) => ({
           playerId, seat, coords: 'field', bonds: { kazdelShip: { active: true, count, layers: 0 } },
-          units: [{ uid: seat + 1, chessId: `chess_kazdel_ascalon_${seat ? 'b' : 'a'}`, row: 10, col: 5 + seat, moduleId: 'none' }],
+          units: [{ uid: seat + 1, chessId: `chess_kazdel_hoederer_${seat ? 'b' : 'a'}`, row: 10, col: 5 + seat, moduleId: 'none' }],
         })), flags: { autoFinish: false }, spawns: [] });
       const node = exercise(createBattleFromSpec(spec, ds), cannonSource, tickCannon);
       const web = await page.evaluate(async ({ spec, body }) => {
@@ -69,7 +69,7 @@ test('Kazdel cannon ownership and Ascalon native data/clock agree in Chromium an
       assert.deepEqual(node.soulsAlive, [true, true]);
       assert.deepEqual(node.errors, []);
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${count}`);
-      assert.deepEqual(node.layers, kind === 'normal' ? [1, 2] : [0, 0]);
+      assert.deepEqual(node.layers, [0, 0], 'no passive production from the retired Ascalon trait');
     }
     assert.deepEqual(errors, []);
   } finally { await browser?.close(); await srv.close(); }
@@ -106,7 +106,7 @@ test('Kazdel equipment generated data, inheritance and owner-only combo agree in
       const spec = buildBattleSpec({ fieldId: `equipment:${kind}`, kind, seed: 418, stageId: 'act2autochess_m01',
         rect: { r0: 0, r1: 18, c0: 0, c1: 20 }, timeLimit: 30, players: ['p1', 'p2'].map((playerId, seat) => ({
           playerId, seat, coords: 'field', bonds: { kazdelShip: { active: true, count: 9, layers: 100 } },
-          units: [{ uid: seat + 1, chessId: 'chess_kazdel_ascalon_a', row: 10, col: 5 + seat, moduleId: 'none',
+          units: [{ uid: seat + 1, chessId: 'chess_kazdel_hoederer_a', row: 10, col: 5 + seat, moduleId: 'none',
             items: [`chess_item_kazdel_blade_${q}`, ...(seat ? [] : [`chess_item_kazdel_sigil_${q}`])] }],
         })), flags: { autoFinish: false }, spawns: [] });
       const node = exerciseEquipment(createBattleFromSpec(spec, ds));
@@ -175,7 +175,7 @@ test('Soul native skills, talents, summons, metadata and cleanup match Chromium/
           bonds: { kazdelShip: { active: true, count: 3, layers: 20 } },
           units: [
             { uid: seat * 2 + 1, chessId: `chess_kazdel_wisdel_${seat ? 'b' : 'a'}`, row: 10 + seat * 3, col: 4, skillIndex: 2 },
-            { uid: seat * 2 + 2, chessId: `chess_kazdel_ascalon_${seat ? 'b' : 'a'}`, row: 10 + seat * 3, col: 5, skillIndex: 1 },
+            { uid: seat * 2 + 2, chessId: `chess_kazdel_hoederer_${seat ? 'b' : 'a'}`, row: 10 + seat * 3, col: 5, skillIndex: 1 },
           ] })), flags: { autoFinish: false }, spawns: [] });
       const node = exerciseSoulSkills(createBattleFromSpec(spec, ds));
       const web = await page.evaluate(async ({ spec, body }) => {

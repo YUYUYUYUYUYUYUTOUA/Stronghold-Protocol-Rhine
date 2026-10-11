@@ -16,7 +16,6 @@ export const KAZDEL_ADDITIONS = Object.freeze([
   { key: 'hoederer', characterKey: 'hoederer', charId: KAZDEL_CHARACTERS.hoederer, tier: 4, bonds: [KAZDEL_BOND, 'steadShip'], skillId: 'skchr_hodrer_3', defaultModuleId: 'uniequip_002_hodrer', subName: '重剑手' },
   { key: 'logos', characterKey: 'logos', charId: KAZDEL_CHARACTERS.logos, tier: 5, bonds: [KAZDEL_BOND, 'arcaneShip'], skillId: 'skchr_logos_3', defaultModuleId: 'uniequip_002_logos', subName: '中坚术师' },
   { key: 'wisdel', characterKey: 'wisdel', charId: KAZDEL_CHARACTERS.wisdel, tier: 6, bonds: [KAZDEL_BOND, 'preciShip'], skillId: 'skchr_wisdel_3', defaultModuleId: 'uniequip_002_wisdel', subName: '投掷手' },
-  { key: 'ascalon', characterKey: 'ascalon', charId: KAZDEL_CHARACTERS.ascalon, tier: 3, bonds: [KAZDEL_BOND], skillId: 'skchr_ascln_2', defaultModuleId: 'uniequip_002_ascln', subName: '伏击客' },
 ]);
 export const KAZDEL_EXISTING = Object.freeze([
   { key: 'vigna', baseId: 'chess_char_1_05', tier: 1, bonds: [KAZDEL_BOND, 'skillfulShip'] },
@@ -49,10 +48,6 @@ export function kazdelGarrison(key, gold) {
   const grade = gold ? 1 : 0, id = `garrison_kazdel_${key}_${gold ? 'b' : 'a'}`;
   let desc, bb, bbStr = {};
   switch (key) {
-    case 'ascalon':
-      bb = { slow: [0.2, 0.3][grade], interval: 3, layer: [1, 2][grade] };
-      desc = `活体本体在场时，攻击范围内敌人移动速度额外降低${bb.slow * 100}%，与原生减速相乘；累计每${bb.interval}秒范围内存在受此减速的敌人，为已激活的【卡兹戴尔】增加${bb.layer}层。无目标暂停累计，不按目标数量倍增；每位玩家同名仅取最强有效来源，魂灵不生效`;
-      break;
     case 'vigna':
       bb = { layer: [2, 4][grade] }; bbStr = { bond_ids: `${KAZDEL_BOND},skillfulShip` };
       desc = `战斗中，本体首次有效阵亡时，使已激活的【卡兹戴尔】与【灵巧】各增加${bb.layer}层；炮击造成的友方阵亡不产层`;
@@ -212,6 +207,11 @@ export async function applyKazdelData(files, source = null) {
     return applyPotentialOverlay(files, applyKazdelData, ctx);
   }
   const { chess, bonds, garrisons, effects, config, tokens } = files;
+  // Retire the custom tier-III card, including reruns over an older generated overlay. Native DIY Ascalon remains.
+  for (const grade of ['a', 'b']) {
+    delete chess[`chess_kazdel_ascalon_${grade}`];
+    delete garrisons[`garrison_kazdel_ascalon_${grade}`];
+  }
   for (const [index, spec] of KAZDEL_ADDITIONS.entries()) for (const gold of [false, true]) {
     const c = compileChess(ctx, files, spec, gold, index);
     chess[c.chessId] = c;
@@ -254,7 +254,7 @@ export async function applyKazdelData(files, source = null) {
 
 export function validateKazdelData({ chess, bonds, garrisons, tokens, config }) {
   const errors = [], visible = bonds[KAZDEL_BOND]?.visibleMembers || [];
-  if (visible.length !== 11 || new Set(visible.map(id => chess[id]?.charId)).size !== 11) errors.push('Kazdel must have eleven distinct visible members');
+  if (visible.length !== 10 || new Set(visible.map(id => chess[id]?.charId)).size !== 10) errors.push('Kazdel must have ten distinct visible members');
   for (const spec of KAZDEL_ADDITIONS) for (const gold of [false, true]) {
     const c = chess[`chess_kazdel_${spec.key}_${gold ? 'b' : 'a'}`];
     const count = ['odd', 'meteorite', 'paprika'].includes(spec.key) ? 2 : 3;
@@ -285,5 +285,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   const { refreshRhineTranslations } = await import('./rhine-i18n.mjs');
   await refreshRhineTranslations(out);
-  console.log('Kazdel overlay complete: seven new operators, eleven members, ordinary modules and native Wisadel shadows.');
+  console.log('Kazdel overlay complete: six new operators, ten members, ordinary modules and native Wisadel shadows.');
 }

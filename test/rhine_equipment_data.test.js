@@ -63,10 +63,12 @@ test('Rhine equipment: acquiring two copies merges once and normal upgrade effec
     const merged = ps.acquireItem(item(key));
     assert.equal(merged.id, item(key, true)); assert.equal(ps.stats.itemMerges, 1);
     assert.equal(ps.find(first.uid), null);
-    const next = ps.acquireItem(item(key));
-    assert.equal(ps.upgradeItem(next), true); assert.equal(next.id, item(key, true));
-    assert.equal(ps.upgradeItem(next), false, 'an elite item cannot upgrade again');
-    h.invariants();
+    h.invariants(); h.m.dispose();
+    const fresh = makeMatch({ mode: 'solo', fake: true }).start(); fresh.toPrep(1);
+    const owner = fresh.ps('p_0'), next = owner.acquireItem(item(key));
+    assert.equal(owner.upgradeItem(next), true); assert.equal(next.id, item(key, true));
+    assert.equal(owner.upgradeItem(next), false, 'an elite item cannot upgrade again');
+    fresh.invariants(); fresh.m.dispose();
   }
 });
 

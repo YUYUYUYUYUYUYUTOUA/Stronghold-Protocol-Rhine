@@ -10,9 +10,10 @@ import { pairPlayers } from '../finalAssault.js';
 import { botPickBand } from '../bot.js';
 import { OK, fail, DELAYS, BAND_TURN_SECONDS } from './common.js';
 
+import { ROUND_BEACON_ITEM } from '../beaconSupply.js';
+
 /** Starting-seat supply, granted once per player at the named prep rounds. */
 const SIX_PLAYER_BEACON_ROUNDS = new Set([10, 12, 14]);
-const ROUND_BEACON_ITEM = 'chess_item_5_04_e_a';
 
 export class MatchPhases {
   enterInfoCheck() {
@@ -291,8 +292,7 @@ export class MatchPhases {
         if (ps.counters[key]) continue;
         ps.counters[key] = 1;
         // Use the existing reward path: normal hand placement, overflow temp, onGain and full-inventory warning.
-        const beacon = ps.acquireItem(ROUND_BEACON_ITEM, { source: 'sixPlayerBeacon' });
-        if (beacon) beacon.meta.sixPlayerBeaconRound = r;
+        ps.acquireItem(ROUND_BEACON_ITEM, { source: 'sixPlayerBeacon' });
       }
     }
     for (const ps of alive) ps.recompute();

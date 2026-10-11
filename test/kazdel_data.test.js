@@ -15,12 +15,12 @@ const files = Object.fromEntries(await Promise.all(names.map(async n => [n, awai
 const source = await read('tools/kazdel-data-source');
 const vanilla = { chess: await read('data/vanilla/chess'), garrisons: await read('data/vanilla/garrisons'), config: await read('data/vanilla/config') };
 
-test('Kazdel data: 11 distinct members, approved tiers and 3/6 main-faction thresholds', () => {
+test('Kazdel data: 10 distinct members, approved tiers and 3/6 main-faction thresholds', () => {
   const bond = files.bonds[KAZDEL_BOND];
   assert.deepEqual(validateKazdelData(files), []);
   assert.deepEqual(bond.thresholds, [3, 6]);
   assert.equal(bond.isCore, true);
-  assert.equal(bond.visibleMembers.length, 11);
+  assert.equal(bond.visibleMembers.length, 10);
   assert.deepEqual(new Set(bond.visibleMembers.map(id => files.chess[id].charId)), new Set(Object.values(KAZDEL_CHARACTERS)));
   for (const spec of KAZDEL_ADDITIONS) for (const suffix of ['a', 'b']) {
     const c = files.chess[`chess_kazdel_${spec.key}_${suffix}`];
@@ -49,7 +49,6 @@ test('Kazdel data: soul and cannon formulas are shared with no hidden expiry or 
 
 test('Kazdel data: ten ordinary/elite trait blackboards match the approved effects', () => {
   const expect = {
-    ascalon: [{ slow: .2, interval: 3, layer: 1 }, { slow: .3, interval: 3, layer: 2 }],
     vigna: [{ layer: 2 }, { layer: 4 }], odda: [{ layer: 1 }, { layer: 2 }],
     meteorite: [{ damage_bonus: .2 }, { damage_bonus: .4 }], tinman: [{ aspd: 15, radius: 1 }, { aspd: 30, radius: 1 }],
     paprika: [{ heal_bonus: .25 }, { heal_bonus: .5 }], hoederer: [{ layer: 6 }, { layer: 10 }],
@@ -109,7 +108,7 @@ test('Kazdel data: all general modules, first-module defaults, no-module fallbac
       const selected = loadoutRecord(c, resolveRecordLoadout(c, { moduleId: m.uniEquipId }));
       assert.deepEqual(selected.stats, composeStats(c.statsBase, m.attr));
     }
-    if (['hoederer', 'logos', 'wisdel', 'ascalon'].includes(spec.key)) for (const suffix of ['a', 'b']) {
+    if (['hoederer', 'logos', 'wisdel'].includes(spec.key)) for (const suffix of ['a', 'b']) {
       const form = files.chess[`chess_kazdel_${spec.key}_${suffix}`];
       const native = files.backups.units[spec.charId].forms[Object.values(form.status).join('/')];
       assert.deepEqual(form.statsBase || form.stats, native.stats);
@@ -199,4 +198,21 @@ test('Kazdel data: all mapped native art resolves to installed files', {
   for (const path of await kazdelArtPaths()) {
     const bytes = await readFile(new URL(`../public${path}`, import.meta.url)); assert.ok(bytes.length > 0, path);
   }
+});
+
+test('retired custom Ascalon is removed even when regenerating an old overlay; native DIY is preserved', async () => {
+  const rebuilt = structuredClone(files);
+  for (const grade of ['a', 'b']) {
+    const id = `chess_kazdel_ascalon_${grade}`;
+    rebuilt.chess[id] = { ...structuredClone(files.chess[`chess_kazdel_hoederer_${grade}`]), chessId: id };
+    rebuilt.garrisons[`garrison_kazdel_ascalon_${grade}`] = { owners: [id] };
+  }
+  await applyKazdelData(rebuilt, source);
+  for (const grade of ['a', 'b']) {
+    assert.equal(rebuilt.chess[`chess_kazdel_ascalon_${grade}`], undefined);
+    assert.equal(rebuilt.garrisons[`garrison_kazdel_ascalon_${grade}`], undefined);
+  }
+  assert.ok(rebuilt.backups.units.char_4132_ascln, 'upstream self-selected operator remains supported');
+  for (const b of Object.values(rebuilt.bonds)) assert.ok(!b.members.some(id => id.startsWith('chess_kazdel_ascalon')));
+  assert.deepEqual(validateKazdelData(rebuilt), []);
 });
