@@ -278,7 +278,7 @@ async function main() {
       upstreamUi: runTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js'],
         path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge } }),
       sixSeatUi: runTests(node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
-        path.join(root, 'browser-six-seat.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge } }),
+        path.join(root, 'browser-six-seat.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
       statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
     };

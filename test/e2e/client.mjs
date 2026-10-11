@@ -126,13 +126,13 @@ export async function startRealServer(opts = {}) {
  * hidden — no animation frames, so the Pixi view and visibility checks stall).
  */
 export class Client {
-  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop' } = {}) {
-    Object.assign(this, { puppeteer, base, label, w, h, prefix, problems: [], log: [], shots: [] });
+  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop', browserArgs = [] } = {}) {
+    Object.assign(this, { puppeteer, base, label, w, h, prefix, browserArgs, problems: [], log: [], shots: [] });
   }
 
   async open(query = '') {
     mkdirSync(OUT, { recursive: true });
-    this.browser = await this.puppeteer.launch({ executablePath: CHROME, headless: true, args: CHROME_ARGS, protocolTimeout: PROTOCOL_TIMEOUT_MS });
+    this.browser = await this.puppeteer.launch({ executablePath: CHROME, headless: true, args: [...CHROME_ARGS, ...this.browserArgs], protocolTimeout: PROTOCOL_TIMEOUT_MS });
     const [first] = await this.browser.pages();
     const page = first || await this.browser.newPage();
     this.page = page;
