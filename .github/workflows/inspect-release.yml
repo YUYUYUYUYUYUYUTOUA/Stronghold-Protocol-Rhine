@@ -1,0 +1,26 @@
+name: Inspect Rhine Release Validation
+on:
+  push:
+    branches: [codex/rhine-release-diagnostics-024]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Read failed draft validation report
+        shell: bash
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/630089271" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/release-report.json"
+          python - <<'PY'
+          import json, os, pathlib
+          report = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'release-report.json').read_text())
+          print('Status:', report.get('status'))
+          print('Source:', report.get('sourceCommit'))
+          print('Error:', report.get('error'))
+          print(report.get('logs', {}).get('browser-six-seat.log', 'Six-seat log absent'))
+          PY
