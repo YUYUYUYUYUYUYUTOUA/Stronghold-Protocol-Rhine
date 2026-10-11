@@ -1,12 +1,12 @@
 {
-  "tag": "v0.2.4-rhine.2",
-  "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
+  "tag": "v0.2.4-rhine.3",
+  "sourceCommit": "1e48ce66b6e8b575b2738cdbda876de66255a80a",
   "previousTag": "v0.2.2-rhine.3",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip",
   "previousArchiveSha256": "d252aa867c433915fc7ab3fe9671441e7832919326409994a02ae205b404ef63",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n首个0.2.4候选保留为未公开验收草稿。本次仅修正六客户端验收的加载同步，玩法、BAN数量和性能阈值均不改变。",
+  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n前两份0.2.4候选保留为未公开验收草稿。本次修正六客户端验收的真实加载同步与Windows软件GPU调度，并限制自动发布为新请求触发；玩法、BAN数量、测试断言和性能阈值均不改变。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.4",
@@ -72,7 +72,8 @@
     "limitations": [
       "No human multiplayer balance playtest or manual BAT clicking.",
       "Linux local validation uses Node v24.19.0; packaged Windows validation uses the included v24.21.0.",
-      "Upstream raw-client cache-dependent tests are skipped when their optional source cache is absent."
+      "Upstream raw-client cache-dependent tests are skipped when their optional source cache is absent.",
+      "Windows Node22 full CI retains the pre-existing rhine-online-update.test.js process crash3221226505. The distributed runtime is Node24 and has separate native package/update checks."
     ],
     "browserNodeParity": {
       "distinctTestsPassed": 3,
@@ -374,10 +375,122 @@
       "thresholdMsPerTick": 1,
       "thresholdChanged": false,
       "rerunWorkflow": 38120550714,
-      "note": "Same-source branch CI and release-request CI passed. The one failed job was rerun with its original threshold; final run state is available on GitHub."
+      "note": "Same-source branch CI and release-request CI passed. The one failed job was rerun with its original threshold; final run state is available on GitHub.",
+      "rerunResult": {
+        "job": 114417569807,
+        "tests": 6700,
+        "pass": 6639,
+        "fail": 0,
+        "skipped": 61,
+        "thresholdChanged": false
+      }
+    },
+    "candidate2NativeValidation": {
+      "tag": "v0.2.4-rhine.2",
+      "published": false,
+      "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
+      "run": 38122061981,
+      "unitTests": {
+        "tests": 579,
+        "pass": 577,
+        "fail": 0,
+        "skipped": 2
+      },
+      "browserTests": {
+        "pass": 34,
+        "fail": 2,
+        "notRun": 1
+      },
+      "failure": "Both six-human profile cases failed with CDP/runtime timeouts; narrow layout and preceding33 browser tests passed.",
+      "httpAndUpdateChecks": "not run after browser-group failure"
+    },
+    "candidate3Delta": {
+      "runtimeCodeIdenticalTo": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+      "changed": "Browser-only software WebGL, real sequential simulator readiness, real low-quality controls,720p host and five640x360 teammates; owned Windows GPU processes matched to inherited fixture priority. Automatic release now triggers only for request-file changes.",
+      "gameplayAssertionsRemoved": 0,
+      "singleCaseTimeoutMs": 300000,
+      "combatSpeed": 16,
+      "performanceThresholdsChanged": false,
+      "targetedEslint": "passed",
+      "docsAndReleaseTools": {
+        "tests": 43,
+        "pass": 43,
+        "fail": 0,
+        "skipped": 0
+      },
+      "typecheck": "passed",
+      "imports": "passed non-strict existing check; three existing sim-node imports reported",
+      "nativeDiagnostic": {
+        "run": 38128405047,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0,
+        "rhineDurationMs": 201281.7716,
+        "vanillaDurationMs": 222145.0305,
+        "assertions": "All six real UI clients, R14 gifts and refresh deduplication, beacon use, doubled boss pool, complete settlement, three authoritative uploads and exact replay hashes."
+      },
+      "exactNativeFollowup": {
+        "run": 38128770486,
+        "tests": 3,
+        "pass": 2,
+        "fail": 1,
+        "skipped": 0,
+        "rhineDurationMs": 189228.1786,
+        "vanillaDurationMs": 176231.8495,
+        "failure": "Independent layout test timed out waiting for AI seat count during room setup, before combat. Both exact-source six-human combat profiles fully passed."
+      },
+      "sourceCi": {
+        "precedingCandidateRun": 38128920462,
+        "immutableTag": "v0.2.4-rhine.3",
+        "note": "Final immutable-tag and release-request CI run on push; their completed results are linked from GitHub Actions. No pending CI is represented as passed here."
+      },
+      "rootCauseEvidence": {
+        "processRoleRun": 38127542224,
+        "finding": "Busy GPU processes AboveNormal versus inherited BelowNormal Node/server/browser/network; independent healthz timeouts and CPU samples.",
+        "source": "https://chromium.googlesource.com/chromium/src/+/main/content/gpu/gpu_main.cc",
+        "normalGpuOnlyRun": 38127642730,
+        "normalGpuOnlyResult": "both fail; still higher than fixture priority",
+        "matchedPriority720Run": 38127923583,
+        "matchedPriority720Result": "vanilla pass200042ms;Rhine300000ms global timeout after beacon with healthy server",
+        "matchedPriorityCompactRun": 38128405047,
+        "matchedPriorityCompactResult": "both pass; no assertions or deadlines relaxed"
+      },
+      "staleAutomaticRequest": {
+        "run": 38128839454,
+        "conclusion": "cancelled",
+        "publicLatestUnchanged": true,
+        "candidate2FailureAssetUnchanged": 630144772
+      },
+      "layoutTimingFollowup": {
+        "diagnosticRun": 38129355030,
+        "diagnosticResult": "unchanged layout with per-add logs passed28300.891ms; intermittent timing, exact root not established",
+        "change": "Use real Puppeteer locator click with stable bounds/enabled state and same15000ms click deadline for two AI-add call sites. All layout assertions/viewports unchanged.",
+        "local": {
+          "pass": 1,
+          "fail": 0,
+          "skipped": 0,
+          "durationMs": 30702.297786
+        },
+        "nativeRun": 38129542061,
+        "native": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "skipped": 0,
+          "durationMs": 27720.8085
+        }
+      }
+    },
+    "candidate2SourceCi": {
+      "run": 38122061907,
+      "conclusion": "tooling,Ubuntu22/24,Windows24 passed;Windows22 inherited updater exit3221226505 only"
+    },
+    "candidate2RequestCi": {
+      "run": 38122061975,
+      "conclusion": "tooling,Ubuntu22/24,Windows24 passed;Windows22 inherited updater exit3221226505 only"
     }
   },
-  "releaseName": "v0.2.4-rhine.2 · 上游0.2.4兼容更新",
+  "releaseName": "v0.2.4-rhine.3 · 上游0.2.4兼容更新",
   "approvedArt": {
     "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
     "public/art/kazdel/sigil-v2.png": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
