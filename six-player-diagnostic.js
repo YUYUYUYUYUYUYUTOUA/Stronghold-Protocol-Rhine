@@ -183,7 +183,13 @@ for (const rhineEnabled of [true, false]) {
   test(`${profile}: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool`,
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
       const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
-      const puppeteer = (await import('puppeteer-core')).default;
+      const nativePuppeteer = (await import('puppeteer-core')).default;
+      let sharedBrowser;
+      const puppeteer = { launch: async options => {
+        sharedBrowser ||= await nativePuppeteer.launch(options);
+        const context = await sharedBrowser.createBrowserContext();
+        return { pages: () => context.pages(), newPage: () => context.newPage(), process: () => null, close: () => context.close() };
+      } };
       const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
         { w: 1280, h: 720, prefix: `six-balance-${profile}-p${i + 1}` }));
       try {
@@ -200,6 +206,7 @@ for (const rhineEnabled of [true, false]) {
         }
         await createSixHumanRoom(clients, rhineEnabled);
         console.log(profile, 'room ready', new Date().toISOString());
+        for (const client of clients) assert.equal(await client.page.evaluate(() => document.hidden), false, 'every isolated client stays visible');
         const rewards = await Promise.all(clients.map(inventory));
         for (const [i, pieces] of rewards.entries()) {
           const awarded = pieces.filter(p => p.kind === 'item' && p.id === BEACON);
@@ -284,6 +291,7 @@ for (const rhineEnabled of [true, false]) {
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
         await Promise.all(clients.map(client => client.close()));
+        await sharedBrowser?.close();
         await srv.stop();
       }
     });
