@@ -180,7 +180,13 @@ describe('supplied Kazdel icon: real interface and transparent Pixi display', { 
         await PIXI.Assets.load('/art/kazdel/bond.png');
         // Hold the actual pop at a visible frame; slow software GPU screenshots
         // must not race its 1.4-second production lifetime.
-        const fx = window.__SP_VIEW__.raw.debug.fx, updatePops = fx._updatePops;
+        const fx = window.__SP_VIEW__.raw.debug.fx, updatePops = fx._updatePops, pop = fx.pop;
+        // Sample the actual event-created pop at a visible animation time without depending on software-GPU FPS.
+        fx.pop = function(...args) {
+          const result = pop.apply(this, args);
+          if (args[4]) updatePops.call(this, .35);
+          return result;
+        };
         fx._updatePops = function(dt) {
           const iconPop = this.pops.find(p => p.c.children.some(s => s.filters?.length));
           return updatePops.call(this, iconPop?.t >= .35 ? 0 : Math.min(dt, .05));
