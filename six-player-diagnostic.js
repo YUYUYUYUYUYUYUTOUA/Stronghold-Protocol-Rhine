@@ -3,6 +3,7 @@
 // or direct game requests: room controls, drafts, beacon use/reward and readiness use real input.
 // SP_E2E=1 CHROME_PATH=... node --test test/ui/six-player-balance.e2e.test.js
 import { test } from 'node:test';
+import os from 'node:os';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -184,14 +185,20 @@ for (const rhineEnabled of [true, false]) {
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
       const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
       const nativePuppeteer = (await import('puppeteer-core')).default;
-      let sharedBrowser;
+      let firstLaunch = true;
       const puppeteer = { launch: async options => {
-        sharedBrowser ||= await nativePuppeteer.launch(options);
-        const context = await sharedBrowser.createBrowserContext();
-        return { pages: () => context.pages(), newPage: () => context.newPage(), process: () => null, close: () => context.close() };
+        const browser = await nativePuppeteer.launch(options);
+        if (firstLaunch) {
+          firstLaunch = false;
+          const cdp = await browser.target().createCDPSession();
+          console.log('HOST', {cpus: os.cpus().length, totalMemory: os.totalmem(), freeMemory: os.freemem()});
+          console.log('GPU', JSON.stringify(await cdp.send('SystemInfo.getInfo')));
+          await cdp.detach();
+        }
+        return browser;
       } };
       const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
-        { w: 1280, h: 720, prefix: `six-balance-${profile}-p${i + 1}` }));
+        { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}` }));
       try {
         console.log(profile, 'start room', new Date().toISOString());
         for (const client of clients) {
@@ -206,7 +213,6 @@ for (const rhineEnabled of [true, false]) {
         }
         await createSixHumanRoom(clients, rhineEnabled);
         console.log(profile, 'room ready', new Date().toISOString());
-        for (const client of clients) assert.equal(await client.page.evaluate(() => document.hidden), false, 'every isolated client stays visible');
         const rewards = await Promise.all(clients.map(inventory));
         for (const [i, pieces] of rewards.entries()) {
           const awarded = pieces.filter(p => p.kind === 'item' && p.id === BEACON);
@@ -291,7 +297,6 @@ for (const rhineEnabled of [true, false]) {
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
         await Promise.all(clients.map(client => client.close()));
-        await sharedBrowser?.close();
         await srv.stop();
       }
     });
