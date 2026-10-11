@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { getPriority, setPriority, constants as osConstants } from 'node:os';
+import { getPriority, setPriority } from 'node:os';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
@@ -215,8 +215,9 @@ for (const rhineEnabled of [true, false]) {
         assert.equal(gpuProcesses.length, 1, 'one owned browser GPU process');
         for (const p of gpuProcesses) {
           const before = getPriority(p.id);
-          setPriority(p.id, osConstants.priority.PRIORITY_NORMAL);
-          assert.equal(getPriority(p.id), osConstants.priority.PRIORITY_NORMAL);
+          const fixturePriority = getPriority(process.pid);
+          setPriority(p.id, fixturePriority);
+          assert.equal(getPriority(p.id), fixturePriority);
           console.log('GPU priority', p.id, before, getPriority(p.id));
         }
         await processCdp.detach();
