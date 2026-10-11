@@ -46,9 +46,11 @@ jobs:
           $monitor = Start-Job -ScriptBlock {
             $last = @{}
             for ($sample = 0; $sample -lt 60; $sample++) {
+              $roles = @{}
+              Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" | ForEach-Object { $roles[[int]$_.ProcessId] = if ($_.CommandLine -match '--type=([^ ]+)') {$Matches[1]} else {'browser'}; if ($_.CommandLine -match '--utility-sub-type=([^ ]+)') { $roles[[int]$_.ProcessId] += ':' + $Matches[1] } }
               $rows = Get-Process | Where-Object { $_.ProcessName -in @('node','msedge','MsMpEng','System') } | ForEach-Object {
                 $before = $last[$_.Id]; $last[$_.Id] = $_.CPU
-                [pscustomobject]@{pid=$_.Id; name=$_.ProcessName; cpu=$_.CPU; delta=if ($null -ne $before) {[math]::Round($_.CPU-$before,2)} else {0}; threads=$_.Threads.Count; mb=[math]::Round($_.WorkingSet64/1MB)}
+                [pscustomobject]@{pid=$_.Id; name=$_.ProcessName; cpu=$_.CPU; delta=if ($null -ne $before) {[math]::Round($_.CPU-$before,2)} else {0}; priority=[string]$_.PriorityClass; role=$roles[$_.Id]; threads=$_.Threads.Count; mb=[math]::Round($_.WorkingSet64/1MB)}
               }
               Write-Output ('PERF ' + [DateTime]::UtcNow.ToString('o') + ' ' + ($rows | Sort-Object delta -Descending | Select-Object -First 15 | ConvertTo-Json -Compress))
               Start-Sleep -Seconds 10
