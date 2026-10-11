@@ -177,12 +177,13 @@ for (const rhineEnabled of [true, false]) {
       const nativePuppeteer = (await import('puppeteer-core')).default;
       let firstLaunch = true;
       const puppeteer = { launch: async options => {
-        const browser = await nativePuppeteer.launch({...options, args: [...options.args, '--use-gl=angle', '--use-angle=swiftshader']});
+        const browser = await nativePuppeteer.launch({...options, args: [...options.args, '--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader']});
         if (firstLaunch) {
           firstLaunch = false;
           const cdp = await browser.target().createCDPSession();
           const info = await cdp.send('SystemInfo.getInfo');
-          console.log('GPU backend', info.gpu.auxAttributes.glRenderer, info.gpu.auxAttributes.displayType);
+          console.log('GPU backend', info.gpu.auxAttributes.glRenderer, info.gpu.auxAttributes.displayType, info.gpu.featureStatus);
+          assert.equal(info.gpu.featureStatus.gpu_compositing, 'disabled_software');
           assert.match(info.gpu.auxAttributes.glRenderer, /SwiftShader/i);
           await cdp.detach();
         }
