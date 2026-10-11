@@ -1,151 +1,271 @@
 {
-  "tag": "v0.2.2-rhine.3",
-  "sourceCommit": "523cca24df3f6ab5823ff36cccbdd8ae42dd5fc3",
-  "previousTag": "v0.2.2-rhine.2",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.2-Windows-x64.zip",
-  "previousArchiveSha256": "3580a9ccb07cfb6e8fbac51df8063ddef5e57a0929510ce771542ec965485613",
+  "tag": "v0.2.4-rhine.1",
+  "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+  "previousTag": "v0.2.2-rhine.3",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip",
+  "previousArchiveSha256": "d252aa867c433915fc7ab3fe9671441e7832919326409994a02ae205b404ef63",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseNotes": "本次正式更新：卡兹戴尔装备、完整原生魂灵、莱茵三阶机制与批准的 v2 美术。\n\n- 卡兹戴尔新增印记与巨刃装备及同构标签组合；战争巨炮为 5×5 去四角的 21 格范围，超出战场的格子裁剪。按维护者后续确认，自身活体干员承受 100% 炮击伤害，其他玩家干员与魂灵免疫，敌方伤害不变；九人及以上沿用六人档。误伤及其衍生死亡不产层或充能。\n- 魂灵完整继承原体所选原生技能、全部原生天赋和模组行为，独立初始化 SP、弹药、技能次数与召唤物归属；不继承装备触发或仅活体生效的卫戍产层特质。原有基础属性公式、治疗组隔离、本体回归清理与死亡资源规则保留。\n- 梅尔普通／精锐每次有效工作仍为 1／2 层；同玩家同场普通主战的全部梅尔及装置共享 24／48 层预算，混合品质按 48，重部署不刷新。钻机预热 20 秒后，每秒真伤为目标完整共享最大生命值 ×（0.0005 + 0.000005 × 当前科研层数）。多萝西改为每科研层固定增加 1／2 攻击，与六莱茵加算；取消陷阱科研产层，原生技能与梦想家保留。\n- 保留用户原始卡兹戴尔徽记；接入批准的印记、巨刃及钻机 v2 素材，修正实际炮口与光束首帧对齐。修复余音／反击及法术护盾／反击递归，保留首轮合法效果，不提高递归上限。\n\n更新方式：结束对局并关闭服务，在原安装目录运行「联网更新.bat」或「更新旧版.bat」。配置及私人文件保留，本地源码冲突会停止更新。首次安装下载完整 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。本次未部署服务器。\n\n发行检查包括包内 Windows Node 24 回归、Edge 渲染及跨端仿真、HTTP／WebSocket、全文件清单、上一正式包升级／保留私人配置／重复更新／回滚，以及五个附件上传后重新下载的 SHA256 核验。实际结果与 CI 结论见 RELEASE-VALIDATION.json；完整包和独立更新工具分别对应 SHA256SUMS.txt、UPDATE-TOOL-SHA256.txt。\n\n未进行真人多人平衡试玩或人工 BAT 点击验收。本地完整并行 CI 曾有重 Boss 性能阈值失败，随后原阈值的隔离三次复验通过；没有放宽阈值或跳过测试。\n\n基于 sganggs/Stronghold-Protocol v0.2.2 的非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n源码主线 CI 38073772108：Ubuntu Node 22／24、Windows Node 24、tooling 通过；Windows Node 22 的在线更新测试仍以 3221226505 异常退出，与此前正式基线相同，该组后续冒烟跳过。包内采用 Node 24，另行执行原生 Windows 安装包服务与更新验收。",
+  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
-    "tag": "v0.2.2",
-    "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f",
-    "archiveName": "Stronghold-Protocol-v0.2.2.zip",
-    "sha256": "7a4342af163cae9972a7bc73081f152702092d9e8aec4d3938cf1a9cc9cfc31e"
+    "tag": "v0.2.4",
+    "commit": "bc50cac01ff447eff3ab6c35f69d934bbc23b48f",
+    "archiveName": "Stronghold-Protocol-v0.2.4.zip",
+    "sha256": "0ec5781b8ac04e9134d07c82b03911eefbfc3f840dd090e92a115b5a89d39f72"
   },
   "sourceValidation": {
-    "version": "v0.2.2-rhine.3",
-    "sourceCommit": "523cca24df3f6ab5823ff36cccbdd8ae42dd5fc3",
-    "validatedGameplayCommit": "ff6c15aad6e7992eff0c6d1a7a5e68445ef2a61e",
-    "basedOn": {
-      "tag": "v0.2.2",
-      "commit": "62eb113419123d9a3a63606107bbf85230c5dd2f"
+    "upstream": {
+      "tag": "v0.2.4",
+      "commit": "bc50cac01ff447eff3ab6c35f69d934bbc23b48f"
     },
-    "tests": {
-      "localFullCi": {
-        "tests": 6424,
-        "pass": 6356,
-        "fail": 1,
-        "skipped": 67,
-        "failure": "Concurrent heavy boss performance: best 0.5601 ms/tick exceeds local 0.5 ms limit."
-      },
-      "bossPerformanceIsolated": {
-        "pass": 1,
+    "golden": {
+      "matched": 287,
+      "changedAfterCompatibilityFixes": 0,
+      "durationMs": 679732,
+      "note": "All 287 matched before the final CSS/docs/test/publisher-only follow-up; no simulation/data changes after that verification."
+    },
+    "static": {
+      "smoke": "passed",
+      "lintErrors": 0,
+      "lintWarnings": 143,
+      "imports": "passed",
+      "typecheck": "passed"
+    },
+    "i18n": {
+      "packs": 4,
+      "messagesPerPack": 1272,
+      "missing": 0,
+      "errors": 0
+    },
+    "rosterRemoval": {
+      "customAscalonRemoved": true,
+      "nativeDiyAscalonPreserved": true,
+      "kazdelMembers": 10,
+      "targetedDataUiTests": {
+        "tests": 71,
+        "pass": 69,
         "fail": 0,
-        "microsecondsPerTick": [
-          399.9,
-          275.2,
-          214.3
-        ],
-        "thresholdMs": 0.5,
-        "thresholdChanged": false
+        "skipped": 2
       },
-      "golden": {
-        "matched": 283,
-        "changed": 0
+      "matchAndOpeningBanTests": {
+        "tests": 21,
+        "pass": 21,
+        "fail": 0
       },
-      "browserNodeParity": {
+      "packageArtInputTest": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0
+      },
+      "actualBrowserRenderer": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "approvedArt": {
+      "files": 5,
+      "unchanged": true
+    },
+    "limitations": [
+      "No human multiplayer balance playtest or manual BAT clicking.",
+      "Linux local validation uses Node v24.19.0; packaged Windows validation uses the included v24.21.0.",
+      "Upstream raw-client cache-dependent tests are skipped when their optional source cache is absent."
+    ],
+    "browserNodeParity": {
+      "distinctTestsPassed": 3,
+      "failuresRemaining": 0,
+      "skipped": 0,
+      "note": "First test fixture changed from retired custom Ascalon to Hoederer; its now-absent passive production is asserted zero. Two other parity tests passed in the initial run; the first passed its targeted rerun."
+    },
+    "localFullSweep": {
+      "tests": 6711,
+      "pass": 6661,
+      "fail": 4,
+      "skipped": 46,
+      "duration": "24m10s",
+      "note": "This running sweep loaded four old count assertions before their fixes. All four exact tests pass on final source; complete final-source OS/Node matrix is recorded separately.",
+      "fixedAssertionRetest": {
+        "tests": 4,
         "pass": 4,
         "fail": 0,
         "skipped": 0
       },
-      "fullArtBrowser": {
-        "distinctTestsPassed": 13,
-        "skipped": 0,
-        "initialRun": {
-          "pass": 10,
-          "fail": 3
+      "performance": {
+        "heavyBossThresholdMs": 0.5,
+        "passed": true,
+        "thresholdChanged": false
+      }
+    },
+    "priorFunctionalSourceCi": {
+      "sourceCommit": "9d27558b08e6257a6a2f76b5d8c0c106086d5594",
+      "runId": 38117920347,
+      "jobs": [
+        {
+          "id": 114406476338,
+          "name": "test (windows-latest, node 22)",
+          "status": "completed",
+          "conclusion": "failure",
+          "completedAt": "2026-10-11T06:45:58Z"
         },
-        "repairedRetestsPassed": 3,
-        "repairs": [
-          "Assert 21 full cells and field clipping separately.",
-          "Capture the actual short impact renderer call instead of racing its 480ms expiry.",
-          "Advance the real continuous-field FX lifetime directly instead of depending on headless frame rate."
-        ],
-        "note": "All 13 passed across the initial run and targeted reruns; the packaged Windows run repeats the complete suite."
-      },
-      "soulNativeTargeted": {
-        "pass": 116,
-        "fail": 0
-      },
-      "rhineAiEstimates": {
-        "pass": 26,
-        "fail": 0
-      },
-      "releasePreflight": {
-        "tests": 119,
-        "pass": 107,
-        "fail": 0,
-        "skipped": 12,
-        "skipReason": "Native Windows PowerShell, ZIP and launcher checks unavailable on Linux."
-      },
-      "docsAndCannonRenderer": {
-        "pass": 37,
-        "fail": 0
+        {
+          "id": 114406476451,
+          "name": "test (windows-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:42:42Z"
+        },
+        {
+          "id": 114406476452,
+          "name": "test (ubuntu-latest, node 22)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:33:22Z"
+        },
+        {
+          "id": 114406476500,
+          "name": "tooling (lint, imports, typecheck)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:24:18Z"
+        },
+        {
+          "id": 114406476515,
+          "name": "test (ubuntu-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:41:10Z"
+        }
+      ],
+      "counts": {
+        "ubuntu22": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "ubuntu24": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "windows24": {
+          "tests": 6700,
+          "pass": 6639,
+          "fail": 0,
+          "skipped": 61
+        },
+        "windows22": {
+          "tests": 6678,
+          "pass": 6616,
+          "fail": 1,
+          "skipped": 61,
+          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
+        }
       }
     },
-    "checks": {
-      "lintErrors": 0,
-      "lintWarnings": 143,
-      "typecheck": "passed",
-      "importBoundaries": "passed; existing nodeData.js diagnostics unchanged",
-      "strictI18n": "4 packs each 1243/1243",
-      "approvedArtHashes": "checked against approved v2 delivery and original Kazdel badge"
+    "sixSeatBrowser": {
+      "distinctTestsPassed": 3,
+      "failuresRemaining": 0,
+      "skipped": 0,
+      "profiles": [
+        "rhine",
+        "vanilla"
+      ],
+      "layoutViewports": [
+        "1920x1080",
+        "1280x720",
+        "640x360"
+      ],
+      "checks": [
+        "actual six-human rooms and unchanged opening BAN",
+        "R14 beacon reward, refresh without duplication, actual drag and immediate teammate gift",
+        "doubled boss shared pool and three authoritative field replay digests",
+        "six-seat narrow room AI controls and prep teammate visibility"
+      ],
+      "note": "Initial failures: obsolete BAN test count, narrow room overflow, and accelerated combat inspected live state after settlement or before refreshed simulator boot. Layout repaired; tests await real simulator boot and capture actual field pool maxima. Exact behavior assertions retained."
     },
-    "ci": {
-      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38073772108",
-      "status": "completed",
-      "conclusion": "failure",
-      "tooling": "success",
-      "ubuntuNode22": {
-        "conclusion": "success",
-        "pass": 6353,
-        "fail": 0,
-        "skipped": 71
-      },
-      "ubuntuNode24": {
-        "conclusion": "success",
-        "pass": 6353,
-        "fail": 0,
-        "skipped": 71
-      },
-      "windowsNode24": {
-        "conclusion": "success",
-        "pass": 6364,
-        "fail": 0,
-        "skipped": 60
-      },
-      "windowsNode22": {
-        "conclusion": "failure",
-        "pass": 6341,
-        "fail": 1,
-        "skipped": 60,
-        "failure": "rhine-online-update.test.js process exits 3221226505; same signature on earlier formal baseline CI"
-      },
-      "smoke": "passed on Ubuntu Node22/24 and Windows Node24; skipped after test failure on Windows Node22"
+    "finalDeltaChecks": {
+      "docsAndBanTests": 40,
+      "textScaleTests": 10,
+      "releaseSmokeTests": 12,
+      "fail": 0,
+      "skipped": 0,
+      "targetedEslint": "passed"
     },
-    "knownIssues": [
-      {
-        "name": "Windows Node22 updater test process exception",
-        "fixed": false,
-        "exitCode": 3221226505,
-        "packagedRuntime": "Node24; actual package update checks are recorded independently"
-      },
-      {
-        "name": "Mlynar / Echo recursive reflection",
-        "fixed": true,
-        "commit": "57d1aebd",
-        "goldenChange": "hidden-boss_10-solo records the first legitimate thorns counterattack; subsequent 283 goldens unchanged"
+    "finalSourceCi": {
+      "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
+      "runId": 38119267287,
+      "jobs": [
+        {
+          "id": 114410431566,
+          "name": "test (ubuntu-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T07:04:34Z"
+        },
+        {
+          "id": 114410431597,
+          "name": "test (windows-latest, node 24)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T07:02:42Z"
+        },
+        {
+          "id": 114410431629,
+          "name": "test (ubuntu-latest, node 22)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:58:09Z"
+        },
+        {
+          "id": 114410431651,
+          "name": "tooling (lint, imports, typecheck)",
+          "status": "completed",
+          "conclusion": "success",
+          "completedAt": "2026-10-11T06:49:13Z"
+        },
+        {
+          "id": 114410431704,
+          "name": "test (windows-latest, node 22)",
+          "status": "completed",
+          "conclusion": "failure",
+          "completedAt": "2026-10-11T07:11:00Z"
+        }
+      ],
+      "counts": {
+        "ubuntu22": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "ubuntu24": {
+          "tests": 6700,
+          "pass": 6628,
+          "fail": 0,
+          "skipped": 72
+        },
+        "windows24": {
+          "tests": 6700,
+          "pass": 6639,
+          "fail": 0,
+          "skipped": 61
+        },
+        "windows22": {
+          "tests": 6678,
+          "pass": 6616,
+          "fail": 1,
+          "skipped": 61,
+          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
+        }
       }
-    ],
-    "localLimitations": [
-      "No manual multiplayer balance trial or manual BAT launch.",
-      "Full local parallel CI had one performance failure; original-threshold isolated retest passed.",
-      "Automated browser checks are not a manual visual or multiplayer playtest."
-    ]
+    }
   },
-  "releaseName": "v0.2.2-rhine.3 · 原生魂灵、卡兹戴尔装备与莱茵三阶",
+  "releaseName": "v0.2.4-rhine.1 · 上游0.2.4兼容更新",
   "approvedArt": {
     "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
     "public/art/kazdel/sigil-v2.png": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
