@@ -1,0 +1,16 @@
+name: Cancel stale automatic release request
+on:
+  push:
+    branches: [codex/rhine-release-diagnostics-024]
+    paths: [.github/workflows/cancel-stale.yml]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop old candidate request retriggered by publisher source edit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/${{ github.repository }}/actions/runs/38128839454/cancel
