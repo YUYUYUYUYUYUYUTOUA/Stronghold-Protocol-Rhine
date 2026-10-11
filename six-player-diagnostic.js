@@ -30,6 +30,14 @@ async function lowQuality(client) {
   assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).quality), 'low');
 }
 
+async function warmClient(client, enabled) {
+  console.log(client.label, 'warm start', new Date().toISOString());
+  await client.page.waitForFunction(enabled => globalThis.__SP__.store.get().ui.dataReady
+    && globalThis.__SP__.data.profileId === (enabled ? 'rhine' : 'vanilla'), { timeout: 30000 }, enabled);
+  await client.page.evaluate(enabled => globalThis.__SP_RUNNER__.ensureSim(enabled).then(() => true), enabled);
+  console.log(client.label, 'warm end', new Date().toISOString());
+}
+
 async function createSixHumanRoom(clients, rhineEnabled) {
   const host = clients[0];
   await host.open();
@@ -44,11 +52,13 @@ async function createSixHumanRoom(clients, rhineEnabled) {
     await host.page.waitForFunction(() => globalThis.__SP__.store.get().room?.rhineEnabled === false
       && globalThis.__SP__.data.profileId === 'vanilla' && globalThis.__SP__.store.get().ui.dataReady);
   }
+  await warmClient(host, rhineEnabled);
   for (const [i, client] of clients.slice(1).entries()) {
     await client.open(`?room=${room.code}`);
     await client.enter(`六人验收${i + 2}`);
     await lowQuality(client);
     await client.waitFor(s => s.room?.code === room.code, 'join six-human room');
+    await warmClient(client, rhineEnabled);
   }
   for (const client of clients.slice(1)) await client.click('.room-bar__right button', '准备就绪');
   await host.click('.room-bar__right button', '开始模拟');
