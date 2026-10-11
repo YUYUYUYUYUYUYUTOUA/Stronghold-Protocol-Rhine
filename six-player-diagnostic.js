@@ -193,6 +193,17 @@ for (const rhineEnabled of [true, false]) {
   test(`${profile}: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool`,
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
       const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
+      let healthBusy = false;
+      const health = setInterval(async () => {
+        if (healthBusy) return;
+        healthBusy = true;
+        const at = Date.now();
+        try { const r = await fetch(`${srv.base}/healthz`, { signal: AbortSignal.timeout(3000) });
+          console.log('HEALTH', new Date().toISOString(), r.status, Date.now() - at);
+        } catch (e) { console.log('HEALTH', new Date().toISOString(), e.name, Date.now() - at); }
+        finally { healthBusy = false; }
+      }, 10000);
+      health.unref();
       const nativePuppeteer = (await import('puppeteer-core')).default;
       let firstLaunch = true;
       const puppeteer = { launch: async options => {
@@ -308,7 +319,7 @@ for (const rhineEnabled of [true, false]) {
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
         await Promise.all(clients.map(client => client.close()));
-        await srv.stop();
+        clearInterval(health); await srv.stop();
       }
     });
 }

@@ -43,4 +43,23 @@ jobs:
           $env:SP_E2E = '1'
           $env:CHROME_PATH = "${env:ProgramFiles(x86)}/Microsoft/Edge/Application/msedge.exe"
           Set-Location source
-          ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec "--test-name-pattern=^${{ matrix.profile }}:" test/ui/six-player-balance.e2e.test.js
+          $monitor = Start-Job -ScriptBlock {
+            $last = @{}
+            for ($sample = 0; $sample -lt 60; $sample++) {
+              $rows = Get-Process | Where-Object { $_.ProcessName -in @('node','msedge','MsMpEng','System') } | ForEach-Object {
+                $before = $last[$_.Id]; $last[$_.Id] = $_.CPU
+                [pscustomobject]@{pid=$_.Id; name=$_.ProcessName; cpu=$_.CPU; delta=if ($null -ne $before) {[math]::Round($_.CPU-$before,2)} else {0}; threads=$_.Threads.Count; mb=[math]::Round($_.WorkingSet64/1MB)}
+              }
+              Write-Output ('PERF ' + [DateTime]::UtcNow.ToString('o') + ' ' + ($rows | Sort-Object delta -Descending | Select-Object -First 15 | ConvertTo-Json -Compress))
+              Start-Sleep -Seconds 10
+            }
+          }
+          try {
+            ../previous/Stronghold-Protocol-Rhine/runtime/node/node.exe --test --test-reporter=spec "--test-name-pattern=^${{ matrix.profile }}:" test/ui/six-player-balance.e2e.test.js
+            $testExit = $LASTEXITCODE
+          } finally {
+            Stop-Job $monitor
+            Receive-Job $monitor
+            Remove-Job $monitor
+          }
+          exit $testExit
