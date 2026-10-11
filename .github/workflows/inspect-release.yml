@@ -4,7 +4,8 @@ on:
     branches: [codex/rhine-release-diagnostics-024]
   workflow_dispatch:
 permissions:
-  contents: read
+  # GitHub gates draft-asset reads behind push access; the job only performs GET.
+  contents: write
 jobs:
   inspect:
     runs-on: ubuntu-latest
