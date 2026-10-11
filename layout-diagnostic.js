@@ -20,15 +20,11 @@ test('six actual room cards fit narrow screens and six prep teammates stay above
       await host.click('.diff-card', '标准模拟');
       await host.click('.create-box button', '创建同盟');
       await host.waitFor(s => !!s.room?.code, 'room created');
-      await host.hookRequests();
       for (let n = 1; n <= 5; n++) {
-        console.log('AI add begin', n, new Date().toISOString());
-        await host.click('.seat--empty button', '添加 AI 队友');
-        await host.page.waitForFunction(n => document.querySelectorAll('.seat.is-bot').length === n, {}, n).catch(async error => {
-          console.log('AI add failure', n, await host.page.evaluate(() => ({room:globalThis.__SP__.store.get().room, html:document.querySelector('.seats')?.outerHTML, requests:globalThis.__reqLog})));
-          throw error;
-        });
-        console.log('AI add done', n, new Date().toISOString());
+        // Wait for the real target's stable bounds and enabled state before clicking:
+        // seat entry/replacement can move it between a point query and mouse dispatch.
+        await host.page.locator('.seat--empty button').setTimeout(15000).click();
+        await host.page.waitForFunction(n => document.querySelectorAll('.seat.is-bot').length === n, {}, n);
       }
       for (const { width, height } of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }, { width: 640, height: 360 }]) {
         await host.page.setViewport({ width, height });
@@ -71,7 +67,7 @@ test('six actual room cards fit narrow screens and six prep teammates stay above
       // Exercise the sixth seat's actual removal / replacement controls on the narrow layout.
       await host.click('.seat.is-bot button', null, { nth: 4 });
       await host.page.waitForFunction(() => document.querySelectorAll('.seat.is-bot').length === 4);
-      await host.click('.seat--empty button', '添加 AI 队友');
+      await host.page.locator('.seat--empty button').setTimeout(15000).click();
       await host.page.waitForFunction(() => document.querySelectorAll('.seat.is-bot').length === 5);
       await host.page.setViewport({ width: 1920, height: 1080 });
       await host.click('.room-bar__right button', '开始模拟');
