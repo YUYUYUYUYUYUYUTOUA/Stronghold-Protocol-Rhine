@@ -186,7 +186,9 @@ for (const rhineEnabled of [true, false]) {
           assert.equal(awarded[0].giftTiming, 'immediate');
         }
         const last = clients.at(-1), lastId = (await last.st()).me, lastBeacon = rewards[5].find(p => p.id === BEACON).uid;
-        await last.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
+        // Finish the simulation module/data boot before navigating away. Unrelated
+        // asset/media traffic need not become globally idle for a valid refresh.
+        await last.page.evaluate(() => globalThis.__SP_RUNNER__.ensureSim().then(() => true));
         await last.page.reload({ waitUntil: 'domcontentloaded' });
         await last.page.waitForFunction(() => !!globalThis.__SP__ && !!document.querySelector('.gm'));
         await last.waitFor(s => s.phase === 'PREP' && s.round === 14, 'resume R14 prep');
