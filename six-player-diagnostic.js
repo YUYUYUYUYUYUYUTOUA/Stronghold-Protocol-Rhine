@@ -26,7 +26,7 @@ const inventory = c => c.page.evaluate(() => {
 async function lowQuality(client) {
   await client.click('[data-testid="settings-btn"]');
   await client.click('.set-seg button', '低');
-  await client.click('.modal__foot button', '完成');
+  await client.click('.modal__actions button', '完成');
   assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).quality), 'low');
 }
 
