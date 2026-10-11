@@ -144,6 +144,8 @@ The shared DIY detail preview (stats, range, trait, talents, potential, cultivat
 
 ### Rhine 0.2.4 extension compatibility
 
+The narrow six-seat waiting room uses three columns and two rows that fit the remaining viewport height; AI removal controls must remain above the bottom action bar, including at 640×360.
+
 The six-seat R10/R12/R14 ordinary beacon is a guaranteed system supply, separate from shared shop item stock. Its server-created `sixPlayerBeaconRound` marker is set before recomputation; holding, consuming or eliminating this supply neither reserves nor releases shop copies. Ordinary purchases and effect grants remain stock-limited. See [MULTIPLAYER.md](../MULTIPLAYER.md).
 
 The extension's tier-III Ascalon was retired by owner request on 2026-10-11. Both custom forms, covenant membership and the additional live-body slow/layer generator are absent; upstream self-selected Ascalon remains. See [KAZDEL.md](../KAZDEL.md).

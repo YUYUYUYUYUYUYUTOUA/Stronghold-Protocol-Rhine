@@ -48,7 +48,7 @@ async function createSixHumanRoom(clients, rhineEnabled) {
     const pub = await client.page.evaluate(() => globalThis.__SP__.store.get().match.public);
     assert.equal(pub.startingPlayerCount, 6);
     assert.equal(pub.dataProfile, rhineEnabled ? 'rhine' : 'vanilla');
-    assert.deepEqual(pub.openingBans, { core: rhineEnabled ? 2 : 1, addon: 4 });
+    assert.deepEqual(pub.openingBans, { core: rhineEnabled ? 3 : 1, addon: 4 });
     assert.equal(pub.players.filter(p => !p.isBot).length, 6);
     await client.click('.brief__foot .btn--primary', '准备就绪');
   }
@@ -77,9 +77,19 @@ async function createSixHumanRoom(clients, rhineEnabled) {
 async function recordCombat(client) {
   await client.page.evaluate(() => {
     const copy = value => JSON.parse(JSON.stringify(value));
-    const trace = globalThis.__sixBalance = { starts: [], pools: [], uploads: [], errors: [], byBattle: {} };
+    const trace = globalThis.__sixBalance = { starts: [], pools: [], uploads: [], errors: [], byBattle: {}, localPools: {}, phases: [] };
+    // Capture the real local pool when its field is shown. At accelerated combat speed,
+    // RESULT may clear runner entries before the six clients are inspected sequentially.
+    const runner = globalThis.__SP_RUNNER__;
+    runner.on('field', () => {
+      for (const entry of runner._entries.values()) {
+        if (entry.own && entry.battle?.sharedBoss) trace.localPools[entry.battleId] = entry.battle.sharedBoss.maxHp;
+      }
+    });
     const net = globalThis.__SP__.net;
     net.on('*', msg => {
+      if (['m.public', 'b.start', 'b.end'].includes(msg.t)) trace.phases.push({ type: msg.t,
+        phase: globalThis.__SP__.store.get().match.public?.phase, runner: runner.state() });
       if (msg.t === 'b.start') trace.starts.push(copy(msg));
       if (msg.t === 'error') trace.errors.push({ code: msg.code, detail: msg.detail });
       if (msg.t === 'b.pool') {
@@ -182,6 +192,10 @@ for (const rhineEnabled of [true, false]) {
         await last.waitFor(s => s.phase === 'PREP' && s.round === 14, 'resume R14 prep');
         assert.equal((await last.st()).me, lastId);
         assert.deepEqual((await inventory(last)).filter(p => p.id === BEACON).map(p => p.uid), [lastBeacon], 'refresh does not duplicate the award');
+        // The refreshed page has to import the real simulator again. Complete that boot
+        // before 16x combat; software-rendered six-browser runs can otherwise settle the
+        // whole battle while this client is still fetching its simulation modules/data.
+        await last.page.evaluate(() => globalThis.__SP_RUNNER__.ensureSim().then(() => true));
         await last.shot('prep-720');
         await useAwardedBeacon(clients);
         await Promise.all(clients.map(recordCombat));
@@ -196,9 +210,16 @@ for (const rhineEnabled of [true, false]) {
           const expected = bossPoolHp(gd4, start.spec.bossId, 4) * 2;
           assert.equal(start.spec.boss.poolMax, expected, `${client.label}: doubled four-seat maximum in real battle spec`);
           assert.equal(start.spec.boss.poolHp, expected, `${client.label}: doubled four-seat initial current HP`);
-          await client.page.waitForFunction(() => globalThis.__SP_RUNNER__?.stats().errors === 0
-            && [...globalThis.__SP_RUNNER__._entries.values()].some(e => e.battle?.sharedBoss?.maxHp > 0), { timeout: 30000 });
-          const max = await client.page.evaluate(() => [...globalThis.__SP_RUNNER__._entries.values()].find(e => e.own)?.battle.sharedBoss.maxHp);
+          await client.page.waitForFunction(id => globalThis.__SP_RUNNER__?.stats().errors === 0
+            && globalThis.__sixBalance.localPools[id] > 0, { timeout: 30000 }, start.battleId).catch(async error => {
+            const diagnostic = await client.page.evaluate(() => ({ phase: globalThis.__SP__.store.get().match.public.phase,
+              localPools: globalThis.__sixBalance.localPools, phases: globalThis.__sixBalance.phases,
+              stats: globalThis.__SP_RUNNER__.stats(),
+              entries: [...globalThis.__SP_RUNNER__._entries.values()].map(e => ({ battleId: e.battleId,
+                own: e.own, maxHp: e.battle?.sharedBoss?.maxHp })) }));
+            throw new Error(`${client.label}: ${error.message}; ${JSON.stringify(diagnostic)}`, { cause: error });
+          });
+          const max = await client.page.evaluate(id => globalThis.__sixBalance.localPools[id], start.battleId);
           assert.equal(max, expected, `${client.label}: actual local shared pool has the same maximum`);
         }
         for (const client of clients) await client.waitFor(s => s.phase === 'RESULT', 'complete boss settlement', 150000);

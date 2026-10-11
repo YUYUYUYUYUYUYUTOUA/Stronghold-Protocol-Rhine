@@ -336,7 +336,7 @@
   .rhine-setting__desc { font-size: calc(.12 * var(--t)); }
   .seats:not(.seats--solo) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(2.8rem, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     align-content: start;
     gap: .14rem;
     padding: .18rem .3rem;
@@ -360,4 +360,8 @@
   .dpick__opt { gap: .04rem; padding: 0 .1rem; font-size: calc(.15 * var(--t)); }
   .room-bar .btn--xl { min-width: 2rem; }
   .room-bar__bans { font-size: max(calc(.12 * var(--t)), 8px); }
+}
+
+@media (max-width: 767px) and (max-height: 400px) {
+  .seats:not(.seats--solo) .seat__art .avatar { --av: .7rem; }
 }
