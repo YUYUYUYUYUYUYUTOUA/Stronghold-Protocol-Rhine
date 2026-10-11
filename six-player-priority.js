@@ -233,7 +233,7 @@ for (const rhineEnabled of [true, false]) {
         return browser;
       } };
       const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
-        { w: 1280, h: 720, prefix: `six-balance-${profile}-p${i + 1}` }));
+        { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}` }));
       try {
         console.log(profile, 'start room', new Date().toISOString());
         for (const client of clients) {
