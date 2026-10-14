@@ -1,12 +1,13 @@
 {
-  "tag": "v0.2.4-rhine.3",
-  "sourceCommit": "1e48ce66b6e8b575b2738cdbda876de66255a80a",
-  "previousTag": "v0.2.2-rhine.3",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.2-rhine.3-Windows-x64.zip",
-  "previousArchiveSha256": "d252aa867c433915fc7ab3fe9671441e7832919326409994a02ae205b404ef63",
+  "tag": "v0.2.4-rhine.4",
+  "sourceCommit": "19af32342edaf50c7c434700b9d3142f3be0eb24",
+  "previousTag": "v0.2.4-rhine.3",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.3-Windows-x64.zip",
+  "previousArchiveSha256": "ffea11496c280148ada2b4bf1a738b977bb4bba776124766a4204f73c15a58df",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseNotes": "同步上游正式版0.2.4（含0.2.3）。\n\n- 新增上游克莱门莎、自选模组、共享卡池与装备库存、一键重刷、同浏览器对局恢复及PWA入口；吸收突袭、治疗、伤害重定向、蕾缪安通缉与渲染修复。\n- 保留已批准的莱茵科研与卡兹戴尔玩法：完整原生魂灵、21格战争巨炮仅伤自身活体且自身100%伤害、三/六档、误伤及衍生死亡不产资源、装备和v2美术。\n- 移除自定义三阶阿斯卡纶及其减速／产层特质，卡兹戴尔现有10名成员；上游自选阿斯卡纶保留。\n- 六人R10/R12/R14信标仍为固定系统补给，与商店有限共享库存独立。\n- 扩展干员与装备适配新的多人库存；余音使用上游FIFO队列并保留反击来源，首轮合法反击有效，衍生脉冲不会再次开启反击链。\n\n首次安装下载完整Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务后，在原安装目录运行「联网更新.bat」；私人配置保留，本地源码冲突会停止更新。未部署服务器。\n\n包内采用Node24.21.0。原生Windows测试、浏览器仿真与渲染、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚及上传后附件核验的实际结果见RELEASE-VALIDATION.json。没有进行真人多人平衡试玩或人工BAT点击验收。\n\n非官方、非商业莱茵／卡兹戴尔扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n前两份0.2.4候选保留为未公开验收草稿。本次修正六客户端验收的真实加载同步与Windows软件GPU调度，并限制自动发布为新请求触发；玩法、BAN数量、测试断言和性能阈值均不改变。",
+  "releaseName": "v0.2.4-rhine.4 · 雷姆必拓援军与莱茵调整",
+  "releaseNotes": "新增雷姆必拓援军玩法，并整合本批莱茵／卡兹戴尔调整。\n\n- 雷姆必拓 11 名固定成员、3／6／9 档援军、所属玩家独立集结点与特质；援军和车辆可穿过友军，落点仍互斥，敌军照常阻挡。新增原生技能、模型和战斗表现。\n- 九档卡兹戴尔自身原始干员可产魂；炮击只影响所属玩家活体，队友与魂灵免疫，误伤及衍生死亡不产资源。保留当前已批准的自身100%伤害规则。\n- 莱茵科研调整梅尔共享预算、白面鸮按不同莱茵档位计算，固定四阶麦哲伦及其无人机；防止重复产层反馈。\n- 雷姆图标使用已验收的原始透明 PNG，固定提交下载来源，空目录实网校验字节数与 SHA256。完整安装包包含图标及本批模型。\n\n首次安装下载新的 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务，在原安装目录运行「联网更新.bat」；私人配置保留，源码冲突会停止更新。保留旧发行版，未部署服务器。\n\n包内运行时为官方 Node24.21.0。只有原生 Windows 包内回归、浏览器、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚和上传后附件校验通过才公开；实际结果见 RELEASE-VALIDATION.json。普通 CI 的 Windows Node22 仍有基线更新测试进程崩溃（3221226505），不声称所有 CI 全绿，未扩大范围修复该问题。没有真人多人平衡试玩或人工 BAT 点击验收。\n\n非官方、非商业扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.4",
@@ -14,488 +15,70 @@
     "archiveName": "Stronghold-Protocol-v0.2.4.zip",
     "sha256": "0ec5781b8ac04e9134d07c82b03911eefbfc3f840dd090e92a115b5a89d39f72"
   },
-  "sourceValidation": {
-    "upstream": {
-      "tag": "v0.2.4",
-      "commit": "bc50cac01ff447eff3ab6c35f69d934bbc23b48f"
-    },
-    "golden": {
-      "matched": 287,
-      "changedAfterCompatibilityFixes": 0,
-      "durationMs": 679732,
-      "note": "All 287 matched before the final CSS/docs/test/publisher-only follow-up; no simulation/data changes after that verification."
-    },
-    "static": {
-      "smoke": "passed",
-      "lintErrors": 0,
-      "lintWarnings": 143,
-      "imports": "passed",
-      "typecheck": "passed"
-    },
-    "i18n": {
-      "packs": 4,
-      "messagesPerPack": 1272,
-      "missing": 0,
-      "errors": 0
-    },
-    "rosterRemoval": {
-      "customAscalonRemoved": true,
-      "nativeDiyAscalonPreserved": true,
-      "kazdelMembers": 10,
-      "targetedDataUiTests": {
-        "tests": 71,
-        "pass": 69,
-        "fail": 0,
-        "skipped": 2
-      },
-      "matchAndOpeningBanTests": {
-        "tests": 21,
-        "pass": 21,
-        "fail": 0
-      },
-      "packageArtInputTest": {
-        "tests": 1,
-        "pass": 1,
-        "fail": 0
-      },
-      "actualBrowserRenderer": {
-        "tests": 2,
-        "pass": 2,
-        "fail": 0,
-        "skipped": 0
-      }
-    },
-    "approvedArt": {
-      "files": 5,
-      "unchanged": true
-    },
-    "limitations": [
-      "No human multiplayer balance playtest or manual BAT clicking.",
-      "Linux local validation uses Node v24.19.0; packaged Windows validation uses the included v24.21.0.",
-      "Upstream raw-client cache-dependent tests are skipped when their optional source cache is absent.",
-      "Windows Node22 full CI retains the pre-existing rhine-online-update.test.js process crash3221226505. The distributed runtime is Node24 and has separate native package/update checks."
-    ],
-    "browserNodeParity": {
-      "distinctTestsPassed": 3,
-      "failuresRemaining": 0,
-      "skipped": 0,
-      "note": "First test fixture changed from retired custom Ascalon to Hoederer; its now-absent passive production is asserted zero. Two other parity tests passed in the initial run; the first passed its targeted rerun."
-    },
-    "localFullSweep": {
-      "tests": 6711,
-      "pass": 6661,
-      "fail": 4,
-      "skipped": 46,
-      "duration": "24m10s",
-      "note": "This running sweep loaded four old count assertions before their fixes. All four exact tests pass on final source; complete final-source OS/Node matrix is recorded separately.",
-      "fixedAssertionRetest": {
-        "tests": 4,
-        "pass": 4,
-        "fail": 0,
-        "skipped": 0
-      },
-      "performance": {
-        "heavyBossThresholdMs": 0.5,
-        "passed": true,
-        "thresholdChanged": false
-      }
-    },
-    "priorFunctionalSourceCi": {
-      "sourceCommit": "9d27558b08e6257a6a2f76b5d8c0c106086d5594",
-      "runId": 38117920347,
-      "jobs": [
-        {
-          "id": 114406476338,
-          "name": "test (windows-latest, node 22)",
-          "status": "completed",
-          "conclusion": "failure",
-          "completedAt": "2026-10-11T06:45:58Z"
-        },
-        {
-          "id": 114406476451,
-          "name": "test (windows-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:42:42Z"
-        },
-        {
-          "id": 114406476452,
-          "name": "test (ubuntu-latest, node 22)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:33:22Z"
-        },
-        {
-          "id": 114406476500,
-          "name": "tooling (lint, imports, typecheck)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:24:18Z"
-        },
-        {
-          "id": 114406476515,
-          "name": "test (ubuntu-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:41:10Z"
-        }
-      ],
-      "counts": {
-        "ubuntu22": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "ubuntu24": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "windows24": {
-          "tests": 6700,
-          "pass": 6639,
-          "fail": 0,
-          "skipped": 61
-        },
-        "windows22": {
-          "tests": 6678,
-          "pass": 6616,
-          "fail": 1,
-          "skipped": 61,
-          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
-        }
-      }
-    },
-    "sixSeatBrowser": {
-      "distinctTestsPassed": 3,
-      "failuresRemaining": 0,
-      "skipped": 0,
-      "profiles": [
-        "rhine",
-        "vanilla"
-      ],
-      "layoutViewports": [
-        "1920x1080",
-        "1280x720",
-        "640x360"
-      ],
-      "checks": [
-        "actual six-human rooms and unchanged opening BAN",
-        "R14 beacon reward, refresh without duplication, actual drag and immediate teammate gift",
-        "doubled boss shared pool and three authoritative field replay digests",
-        "six-seat narrow room AI controls and prep teammate visibility"
-      ],
-      "note": "Initial failures: obsolete BAN test count, narrow room overflow, and accelerated combat inspected live state after settlement or before refreshed simulator boot. Layout repaired; tests await real simulator boot and capture actual field pool maxima. Exact behavior assertions retained."
-    },
-    "finalDeltaChecks": {
-      "docsAndBanTests": 40,
-      "textScaleTests": 10,
-      "releaseSmokeTests": 12,
-      "fail": 0,
-      "skipped": 0,
-      "targetedEslint": "passed"
-    },
-    "runtimeBaselineCi": {
-      "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
-      "runId": 38119267287,
-      "jobs": [
-        {
-          "id": 114410431566,
-          "name": "test (ubuntu-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T07:04:34Z"
-        },
-        {
-          "id": 114410431597,
-          "name": "test (windows-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T07:02:42Z"
-        },
-        {
-          "id": 114410431629,
-          "name": "test (ubuntu-latest, node 22)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:58:09Z"
-        },
-        {
-          "id": 114410431651,
-          "name": "tooling (lint, imports, typecheck)",
-          "status": "completed",
-          "conclusion": "success",
-          "completedAt": "2026-10-11T06:49:13Z"
-        },
-        {
-          "id": 114410431704,
-          "name": "test (windows-latest, node 22)",
-          "status": "completed",
-          "conclusion": "failure",
-          "completedAt": "2026-10-11T07:11:00Z"
-        }
-      ],
-      "counts": {
-        "ubuntu22": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "ubuntu24": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "windows24": {
-          "tests": 6700,
-          "pass": 6639,
-          "fail": 0,
-          "skipped": 61
-        },
-        "windows22": {
-          "tests": 6678,
-          "pass": 6616,
-          "fail": 1,
-          "skipped": 61,
-          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
-        }
-      }
-    },
-    "candidate1NativeValidation": {
-      "tag": "v0.2.4-rhine.1",
-      "published": false,
-      "sourceCommit": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
-      "run": 38120550762,
-      "unitTests": {
-        "tests": 579,
-        "pass": 577,
-        "fail": 0,
-        "skipped": 2
-      },
-      "browserTests": {
-        "pass": 34,
-        "fail": 2,
-        "notRun": 1
-      },
-      "failure": "Both six-human profile cases timed out at the 15-second global network-idle fixture wait, before battle assertions. Narrow layout and 33 preceding browser tests passed.",
-      "httpAndUpdateChecks": "not run after browser-group failure"
-    },
-    "candidate2Delta": {
-      "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
-      "runtimeCodeIdenticalTo": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
-      "changed": "Only test synchronization and version/audit documentation; the test now awaits actual simulator module/data readiness before refreshing.",
-      "behaviorAndPerformanceAssertionsUnchanged": true,
-      "docsTests": {
-        "tests": 31,
-        "pass": 31,
-        "fail": 0,
-        "skipped": 0
-      },
-      "targetedEslint": "passed",
-      "browserRetest": {
-        "tests": 2,
-        "pass": 2,
-        "fail": 0,
-        "skipped": 0,
-        "durationMs": 425577.464801
-      }
-    },
-    "candidate1ReleaseRequestCi": {
-      "sourceCommit": "2c2fdfacfd79686f6ab390c6728d1a2da504309b",
-      "runId": 38120550735,
-      "jobs": [
-        {
-          "id": 114414201780,
-          "name": "test (ubuntu-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 114414201892,
-          "name": "test (windows-latest, node 24)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 114414201935,
-          "name": "tooling (lint, imports, typecheck)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 114414201961,
-          "name": "test (windows-latest, node 22)",
-          "status": "completed",
-          "conclusion": "failure"
-        },
-        {
-          "id": 114414201986,
-          "name": "test (ubuntu-latest, node 22)",
-          "status": "completed",
-          "conclusion": "success"
-        }
-      ],
-      "counts": {
-        "ubuntu22": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "ubuntu24": {
-          "tests": 6700,
-          "pass": 6628,
-          "fail": 0,
-          "skipped": 72
-        },
-        "windows24": {
-          "tests": 6700,
-          "pass": 6639,
-          "fail": 0,
-          "skipped": 61
-        },
-        "windows22": {
-          "tests": 6678,
-          "pass": 6616,
-          "fail": 1,
-          "skipped": 61,
-          "error": "test/rhine-online-update.test.js exitCode 3221226505; same as pre-0.2.4 baseline"
-        }
-      }
-    },
-    "candidate1TagPerformanceFailure": {
-      "run": 38120550714,
-      "job": 114414201974,
-      "platform": "Windows Node24",
-      "bestMsPerTick": 1.0055710555555561,
-      "thresholdMsPerTick": 1,
-      "thresholdChanged": false,
-      "rerunWorkflow": 38120550714,
-      "note": "Same-source branch CI and release-request CI passed. The one failed job was rerun with its original threshold; final run state is available on GitHub.",
-      "rerunResult": {
-        "job": 114417569807,
-        "tests": 6700,
-        "pass": 6639,
-        "fail": 0,
-        "skipped": 61,
-        "thresholdChanged": false
-      }
-    },
-    "candidate2NativeValidation": {
-      "tag": "v0.2.4-rhine.2",
-      "published": false,
-      "sourceCommit": "ffc6a923c0342530f429fb6289bf748c0bfe7062",
-      "run": 38122061981,
-      "unitTests": {
-        "tests": 579,
-        "pass": 577,
-        "fail": 0,
-        "skipped": 2
-      },
-      "browserTests": {
-        "pass": 34,
-        "fail": 2,
-        "notRun": 1
-      },
-      "failure": "Both six-human profile cases failed with CDP/runtime timeouts; narrow layout and preceding33 browser tests passed.",
-      "httpAndUpdateChecks": "not run after browser-group failure"
-    },
-    "candidate3Delta": {
-      "runtimeCodeIdenticalTo": "387d35feea6a8990cad063f8b9cf0f46956b3d35",
-      "changed": "Browser-only software WebGL, real sequential simulator readiness, real low-quality controls,720p host and five640x360 teammates; owned Windows GPU processes matched to inherited fixture priority. Automatic release now triggers only for request-file changes.",
-      "gameplayAssertionsRemoved": 0,
-      "singleCaseTimeoutMs": 300000,
-      "combatSpeed": 16,
-      "performanceThresholdsChanged": false,
-      "targetedEslint": "passed",
-      "docsAndReleaseTools": {
-        "tests": 43,
-        "pass": 43,
-        "fail": 0,
-        "skipped": 0
-      },
-      "typecheck": "passed",
-      "imports": "passed non-strict existing check; three existing sim-node imports reported",
-      "nativeDiagnostic": {
-        "run": 38128405047,
-        "pass": 2,
-        "fail": 0,
-        "skipped": 0,
-        "rhineDurationMs": 201281.7716,
-        "vanillaDurationMs": 222145.0305,
-        "assertions": "All six real UI clients, R14 gifts and refresh deduplication, beacon use, doubled boss pool, complete settlement, three authoritative uploads and exact replay hashes."
-      },
-      "exactNativeFollowup": {
-        "run": 38128770486,
-        "tests": 3,
-        "pass": 2,
-        "fail": 1,
-        "skipped": 0,
-        "rhineDurationMs": 189228.1786,
-        "vanillaDurationMs": 176231.8495,
-        "failure": "Independent layout test timed out waiting for AI seat count during room setup, before combat. Both exact-source six-human combat profiles fully passed."
-      },
-      "sourceCi": {
-        "precedingCandidateRun": 38128920462,
-        "immutableTag": "v0.2.4-rhine.3",
-        "note": "Final immutable-tag and release-request CI run on push; their completed results are linked from GitHub Actions. No pending CI is represented as passed here."
-      },
-      "rootCauseEvidence": {
-        "processRoleRun": 38127542224,
-        "finding": "Busy GPU processes AboveNormal versus inherited BelowNormal Node/server/browser/network; independent healthz timeouts and CPU samples.",
-        "source": "https://chromium.googlesource.com/chromium/src/+/main/content/gpu/gpu_main.cc",
-        "normalGpuOnlyRun": 38127642730,
-        "normalGpuOnlyResult": "both fail; still higher than fixture priority",
-        "matchedPriority720Run": 38127923583,
-        "matchedPriority720Result": "vanilla pass200042ms;Rhine300000ms global timeout after beacon with healthy server",
-        "matchedPriorityCompactRun": 38128405047,
-        "matchedPriorityCompactResult": "both pass; no assertions or deadlines relaxed"
-      },
-      "staleAutomaticRequest": {
-        "run": 38128839454,
-        "conclusion": "cancelled",
-        "publicLatestUnchanged": true,
-        "candidate2FailureAssetUnchanged": 630144772
-      },
-      "layoutTimingFollowup": {
-        "diagnosticRun": 38129355030,
-        "diagnosticResult": "unchanged layout with per-add logs passed28300.891ms; intermittent timing, exact root not established",
-        "change": "Use real Puppeteer locator click with stable bounds/enabled state and same15000ms click deadline for two AI-add call sites. All layout assertions/viewports unchanged.",
-        "local": {
-          "pass": 1,
-          "fail": 0,
-          "skipped": 0,
-          "durationMs": 30702.297786
-        },
-        "nativeRun": 38129542061,
-        "native": {
-          "tests": 1,
-          "pass": 1,
-          "fail": 0,
-          "skipped": 0,
-          "durationMs": 27720.8085
-        }
-      }
-    },
-    "candidate2SourceCi": {
-      "run": 38122061907,
-      "conclusion": "tooling,Ubuntu22/24,Windows24 passed;Windows22 inherited updater exit3221226505 only"
-    },
-    "candidate2RequestCi": {
-      "run": 38122061975,
-      "conclusion": "tooling,Ubuntu22/24,Windows24 passed;Windows22 inherited updater exit3221226505 only"
-    }
-  },
-  "releaseName": "v0.2.4-rhine.3 · 上游0.2.4兼容更新",
   "approvedArt": {
     "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
     "public/art/kazdel/sigil-v2.png": "b2963e1ac0686fb34fb35d127f785fbcac2c49d5e3b62ddbd4875afaed4be8aa",
     "public/art/kazdel/blade-v2.png": "efb4a69c233e80b8a80cc9b6dd3c186a1267a066a58454669b96ebe13b6a8901",
     "public/art/rhine/laser-v2.png": "c0e347854abbe73057185fe6c4c8d356141b34617d308462dcd2d6559962a265",
     "public/art/rhine/laser-unit-v2.png": "ce32bbb5567d268cb1eed127c9b3bdd45a9e48416314947ac080f7de3495db8e"
+  },
+  "remOriginal": {
+    "path": "public/assets/bond/rem.png",
+    "bytes": 21152,
+    "sha256": "3089f0cb87a7c85b1d12eb1bf6aff6e1dd8ed1d2ae6caaf2cda359b2658c546e",
+    "sourceCommit": "13df9cfd5f607a07ce4b1fa766439c3b012657cb"
+  },
+  "sourceValidation": {
+    "gameplayCommit": "40d6543f3b3bc2e52ea043fe9df9aaad41840d84",
+    "logoSourceCommit": "7c78680115d9949eb45417606dc92f0eda627b5c",
+    "localFullSerialCi": {
+      "tests": 6869,
+      "pass": 6818,
+      "fail": 0,
+      "skipped": 51,
+      "fileConcurrency": 1,
+      "allStaticStages": "passed"
+    },
+    "priorParallelCi": {
+      "fail": 1,
+      "reason": "heavy boss performance 521.3us exceeded500us; unchanged full serial run passed267.4us"
+    },
+    "golden": {
+      "matched": 287,
+      "changed": 0,
+      "regenerated": true
+    },
+    "logoCleanNetwork": {
+      "http": 200,
+      "bytes": 21152,
+      "cacheHits": 0,
+      "digestMatched": true,
+      "resourceAndDocsTests": 69,
+      "packageAndDownloadTests": 133,
+      "fail": 0
+    },
+    "i18n": {
+      "packs": 4,
+      "messagesPerPack": 1277,
+      "missing": 0,
+      "errors": 0
+    },
+    "sourceCi": {
+      "run": 38525225483,
+      "conclusion": "four jobs passed; Windows Node22 updater process exit3221226505 matches baseline",
+      "logoCorrectionRun": 38528337760,
+      "logoCorrectionStatusAtRequest": "in progress; not represented as passed"
+    },
+    "releaseToolTests": {
+      "tests": 87,
+      "pass": 75,
+      "fail": 0,
+      "skipped": 12,
+      "note": "Windows-only cases skipped locally; native package run executes them"
+    },
+    "limitations": [
+      "Windows Node22 full CI retains the baseline rhine-online-update.test.js process crash3221226505; no root cause claim. Distributed runtime Node24.21.0 requires separate native package/update checks.",
+      "No human multiplayer balance playtest or manual BAT clicking."
+    ]
   }
 }
