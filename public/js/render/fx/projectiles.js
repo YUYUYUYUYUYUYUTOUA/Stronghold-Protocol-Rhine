@@ -415,21 +415,21 @@ export class FxProjectiles {
    * brightening plus the blast radius throbbing until the impact. The shell takes the shooter's lock on that spot: the
    * lock ends with this shell's 'bombard' (_landed).
    */
-  mortar(src, x, y, r, flight) {
+  mortar(src, x, y, r, flight, { exactRadius = false, drop = false } = {}) {
     const pr = this._takeProj();
     const gz = this._groundZ(x, y);
     pr.kind = 'bombardShell'; pr.spec = BOMBARD_SHELL; pr.src = src; pr.tgt = null;
     pr.x0 = src ? src.x : x; pr.y0 = src ? src.y : y; pr.z0 = src ? bodyZ(this.ctx.cam(), src, SHOT_HEIGHT.launch) : gz + 0.5;
     pr.tx = x; pr.ty = y; pr.tz = gz;
     pr.t = 0; pr.dur = clamp(flight, 0.1, 4); pr.fade = 0; pr.hit = false; pr.emit = 0; pr.arc = 0; pr.ang = Math.PI / 2;
-    pr.rise = pr.dur >= 0.45 ? SHELL_RISE : 0;
+    pr.rise = !drop && pr.dur >= 0.45 ? SHELL_RISE : 0;
     pr.glow = BOMBARD_SHELL.glow; pr.trailTint = BOMBARD_SHELL.trail;
     const L = this._nearestLock(src ? src.id : null, x, y, 3, true);
     if (L) { L.shell = true; L.sx = x; L.sy = y; }
     this._dressProj(pr);
     pr.shadow.visible = false;
     this.projs.push(pr);
-    const rr = Math.max(0.5, r);
+    const rr = Math.max(exactRadius ? 0.01 : 0.5, r);
     this.ring(x, y, gz, rr, rr * 0.22, 0xff5a3a, pr.dur, 'shock', 'in');
     this.ring(x, y, gz, rr * 0.96, rr, 0xff7a4a, pr.dur, 'ring', 'pulse');
     if (src && this.rich) {

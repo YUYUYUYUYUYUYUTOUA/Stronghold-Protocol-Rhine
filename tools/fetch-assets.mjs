@@ -69,6 +69,7 @@ import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan } from './assets/plan.mjs';
 import { rhineArtInput, addRhineArt } from './assets/rhine-plan.mjs';
+import { addRemArtPlan, REM_ENEMY_ART, remArtInput } from './assets/rem-plan.mjs';
 import { kazdelArtInput, addKazdelArt } from './assets/kazdel-plan.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
@@ -405,10 +406,10 @@ async function main() {
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const plan = buildPlan({
-    ...kazdelArtInput(rhineArtInput(assets07, ops03)), enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
+    ...remArtInput(kazdelArtInput(rhineArtInput(assets07, ops03))), enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
-    extraEnemyIds: Object.keys(dataEnemies || {}),
+    extraEnemyIds: [...Object.keys(dataEnemies || {}), ...Object.values(REM_ENEMY_ART)],
     extraTokenIds: [...Object.keys(dataTokens || {}), ...extras.tokenIds],
     extraHandbook,
     localEnemySpines,
@@ -416,6 +417,7 @@ async function main() {
     extraOperators: extras.extraOperators,
     moduleTypes: extras.moduleTypes,
   });
+  addRemArtPlan(plan.template);
   const leaves = collectLeaves(plan.template);
   log(`[plan] ${leaves.length} files + ${plan.models.size} Spine models ` +
     `(${Object.keys(plan.template.chars).length} chars, ${Object.keys(plan.template.enemies).length} enemies, ` +

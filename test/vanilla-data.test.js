@@ -64,11 +64,11 @@ test('the generator writes the captured pre-overlay vanilla data after Rhine exp
   const files = Object.fromEntries(await Promise.all(manifest.files.map(async (entry) => [entry.path.slice(0, -5), JSON.parse(await fs.readFile(path.join(VANILLA, entry.path), 'utf8'))])));
   const vanillaFiles = structuredClone(files);
   const original = JSON.stringify(vanillaFiles);
-  assert.equal(vanillaFiles.chess.chess_rhine_dorothy_a, undefined);
+  assert.equal(vanillaFiles.chess.chess_rhine_magallan_a, undefined);
   assert.equal(vanillaFiles.bonds.rhineShip, undefined);
   assert.equal(vanillaFiles.items.chess_item_rhine_terminal_a, undefined);
   await applyRhineData(files);
-  assert.equal(files.chess.chess_rhine_dorothy_a.tier, 4);
+  assert.equal(files.chess.chess_rhine_magallan_a.tier, 4);
   assert.ok(files.bonds.rhineShip);
   assert.ok(files.items.chess_item_rhine_terminal_a);
   assert.equal(JSON.stringify(vanillaFiles), original, 'Rhine overlay does not mutate the captured upstream snapshot');

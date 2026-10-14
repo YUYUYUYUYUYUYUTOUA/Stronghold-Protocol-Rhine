@@ -29,13 +29,13 @@ export class PlayerResearch {
         if (p.kind === 'token' && d) this.board.delete(key);
         continue;
       }
-      if (!d || seen.has(d.key)) { this.board.delete(key); continue; }
+      if (!d || !this.gd.token(d.tokenId) || seen.has(d.key)) { this.board.delete(key); continue; }
       p.researchKey = d.key;
       seen.add(d.key);
     }
     for (const p of reserve) {
       const d = rhineDevice(p.id);
-      if (!p.research || !d || seen.has(d.key)) continue;
+      if (!p.research || !d || !this.gd.token(d.tokenId) || seen.has(d.key)) continue;
       p.researchKey = d.key;
       seen.add(d.key);
       this._returnResearch(p);
@@ -60,7 +60,8 @@ export class PlayerResearch {
         this.research.points[d.key] = 0;
         this.research.stages[d.key] = 0;
       }
-      if (!this.alive || !rhineDeviceUnlocked(d, bond) || seen.has(d.key)) continue;
+      // Degraded data can retain the covenant/cards while omitting its token definitions.
+      if (!this.alive || !this.gd.token(d.tokenId) || !rhineDeviceUnlocked(d, bond) || seen.has(d.key)) continue;
       this.research.points[d.key] ??= 0;
       this.research.stages[d.key] ??= 0;
       this.research.hand[idx] = this.newPiece('token', d.tokenId, { research: true, researchKey: d.key, ownerUid: null });
@@ -77,7 +78,7 @@ export class PlayerResearch {
       hand: this.research.hand.map((p) => p ? this.pieceView(p) : null),
       devices: RHINE_DEVICES.map((d) => {
         const p = all.find((x) => x.research && x.id === d.tokenId);
-        const locked = !this.alive || !rhineDeviceUnlocked(d, this.bonds[RHINE_BOND]);
+        const locked = !this.alive || !this.gd.token(d.tokenId) || !rhineDeviceUnlocked(d, this.bonds[RHINE_BOND]);
         const points = d.maxStage === 0 ? 0 : this.research.points[d.key] || 0;
         return { key: d.key, tokenId: d.tokenId, uid: p?.uid ?? null, points, stage: rhineDeviceStage(d, this.research.stages[d.key]),
           onBoard: !locked && !!p && deployed.has(p.uid), locked, minCount: d.minCount, maxStage: d.maxStage };

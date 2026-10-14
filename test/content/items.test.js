@@ -1008,19 +1008,36 @@ test('拟态物质 grants the third copy even when stock is empty; the gain stil
 });
 
 test('拟态物质 with fewer than 2 copies samples eligible identities independently of remaining stock', () => {
-  // Exhaust all eligible native and extension identities; the reward ignores remaining stock.
   const cid = 'chess_char_6_11_a';
-  const { m, ps, equip } = setup({ seed: 9 });
-  const t = give(m, ps, cid, 'hand');
-  m.pool.take(cid, m.pool.left(cid));
-  for (const [id, c] of Object.entries(DATA.chess)) {
-    if (!c.golden && c.bonds.some(b => DATA.chess[cid].bonds.includes(b))) m.pool.take(id, m.pool.left(id));
+  for (const seed of [9,17,29,41]) {
+    const results = [];
+    for (const stock of ['full','skewed','empty']) {
+      const { m, ps, equip } = setup({ seed });
+      try {
+        const t = give(m, ps, cid, 'hand');
+        const bonds = new Set(DATA.chess[cid].bonds);
+        const eligible = [...m.pool.entries.keys()].filter(id => {
+          const c = DATA.chess[id];
+          return c && c.visible && !c.isGolden && c.tier <= 6 && c.bonds.some(b => bonds.has(b));
+        });
+        assert.ok(eligible.length > 1, 'native and expansion identities provide a real sampling choice');
+        for (const [index,id] of eligible.entries()) {
+          if (stock === 'empty') m.pool.take(id,m.pool.left(id));
+          if (stock === 'skewed' && index > 0) m.pool.take(id,Math.max(0,m.pool.left(id)-1));
+        }
+        if (stock === 'empty') assert.ok(eligible.every(id => m.pool.left(id) === 0));
+        const got = spyGrants(ps), warns = spyWarns(m);
+        assert.deepEqual(equip(giveItem(m, ps, A('5_05')), t), OK);
+        assert.equal(got.length,1, `${stock}: exactly one reward`);
+        assert.ok(eligible.includes(got[0]), `${stock}: the reward shares a bond and respects the eligible roster`);
+        assert.deepEqual(warns, []);
+        if (stock === 'empty') assert.equal(m.pool.entries.get(got[0]).left,-1,'grant borrows an exhausted identity rather than suppressing the reward');
+        results.push(got[0]);
+      } finally { m.dispose(); }
+    }
+    assert.equal(results[1],results[0],`seed ${seed}: changing relative stock does not weight identity selection`);
+    assert.equal(results[2],results[0],`seed ${seed}: exhausted identities remain in the same sampling distribution`);
   }
-  const got = spyGrants(ps);
-  const warns = spyWarns(m);
-  assert.deepEqual(equip(giveItem(m, ps, A('5_05')), t), OK);
-  assert.deepEqual(got, [cid], 'the only eligible identity remains available even with no stock');
-  assert.deepEqual(warns, []);
 });
 
 test('博士投影: golden promotes at once; normal stays equipped and promotes at the next round start', () => {

@@ -77,7 +77,7 @@ export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/KAZDEL.md
 /** Research tables read at run time: server/sim/nodeData.js (the Node sim's fallback) and tools/fetch-assets.mjs. */
 export const RUNTIME_RESEARCH = ['docs/research/03-operators.json', 'docs/research/05-enemies.json', 'docs/research/05-maps.json', 'docs/research/07-assets.json'];
 /** Fixed expansion tables loaded by the shipped asset plans during setup, including a lite package's first boot. */
-export const PLAYER_ASSET_INPUTS = ['tools/rhine-data-source.json', 'tools/kazdel-data-source.json'];
+export const PLAYER_ASSET_INPUTS = ['tools/rhine-data-source.json', 'tools/kazdel-data-source.json', 'tools/rem-data-source.json'];
 /** The start scripts (scripts/make-windows-bundle.mjs is the maintainer's Windows pack, docs/WINDOWS.md). */
 export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/launch.mjs', 'scripts/open-browser.mjs',
   'scripts/run-server.cmd', 'scripts/start-windows.bat', 'scripts/start-windows.ps1', 'scripts/start.sh'];

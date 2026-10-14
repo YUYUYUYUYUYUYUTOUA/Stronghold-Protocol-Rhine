@@ -303,7 +303,7 @@ test('merged fields keep death resources/cannon states per player; Tin aura and 
   const hp=e.hp;h.b.dealDamage(m,e,{amount:100,type:'true'});assert.equal(hp-e.hp,120);
   for(const u of h.b.allyUnits)u.profile.noAttack=true;
   h.run(15);const owners=new Set(shots(h).map(e=>e[4].ownerId));assert.deepEqual(owners,new Set(['p1','p2']));
-  const snap=h.b.snapshot().kazdel;assert.equal(snap[0].stage,2);assert.equal(snap[1].stage,2);
+  const snap=h.b.snapshot().kazdel;assert.equal(snap[0].stage,2);assert.equal(snap[1].stage,3);
   assert.equal(snap[0].layers,12);assert.equal(snap[1].layers,40);
   assert.ok(checkInvariants(h.b));
 });
@@ -431,7 +431,7 @@ test('21-cell cannon hits every included cell, excludes all four corners and cli
     tickCannon(h.b, state, 0, 0, () => {});
     for (const { e, hp, included } of enemies) assert.equal(hp - e.hp, included ? 800 : 0, `${e.x},${e.y}`);
     assert.equal(cannonKeys(5, 10, rect).size, clipped ? 8 : 21);
-    assert.equal(h.b.snapshot().kazdel[0].stage, 2);
+    assert.equal(h.b.snapshot().kazdel[0].stage, 3);
     assert.deepEqual(h.b.errors, []);
     // The clipped case deliberately contains outside-field targets to verify exclusion.
     if (!clipped) assert.ok(checkInvariants(h.b));
@@ -525,5 +525,63 @@ test('direct-kill death records retain owner at six and nine members when reused
     const hp = a.hp;
     h.b.loseHp(a, 100, { from: saved });
     assert.equal(hp - a.hp, 100);
+  }
+});
+
+
+test('nine members expand souls only to the owner original operators, without membership stats or resources', () => {
+  for (const count of [3, 6, 9]) {
+    const outsider = chessRec({ id: 'kaz_outsider', bonds: ['steadShip'], skill: null,
+      stats: { maxHp: 2000, atk: 500, respawnTime: 1000 } });
+    const h = makeBattle({ defs: { chess: { kaz_outsider: outsider } }, kits: { kaz_outsider: () => ({}) },
+      players: [
+        { playerId: 'p1', seat: 0, coords: 'field', units: [
+          { chessId: 'kaz_outsider', row: 10, col: 5 },
+          { chessId: 'chess_kazdel_hoederer_a', row: 10, col: 4 },
+        ], bonds: { [K]: bond(count, 10) } },
+        { playerId: 'p2', seat: 1, coords: 'field', units: [
+          { chessId: 'kaz_outsider', row: 11, col: 5 },
+        ], bonds: {} },
+      ], kind: 'unite', autoFinish: false });
+    h.step();
+    const owner = h.b.getPlayer('p1').units.find(u => u.chessId === 'kaz_outsider' || u.def.id === 'kaz_outsider');
+    const teammate = h.b.getPlayer('p2').units[0];
+    const charge = h.b.snapshot().kazdel[0].charge;
+    assert.equal(owner.s.maxHp, 2000, 'nine-member eligibility does not grant member HP');
+    assert.equal(owner.findBuff('kazdel:body'), null);
+    die(h, owner); die(h, teammate);
+    assert.equal(!!soul(owner), count === 9);
+    assert.equal(soul(teammate), undefined, 'another player cannot borrow nine-member eligibility');
+    assert.equal(layers(h), 10, 'Hoederer does not count non-member deaths');
+    assert.equal(h.b.snapshot().kazdel[0].charge, charge);
+    if (count === 9) {
+      assert.equal(soul(owner).s.maxHp, 1300);
+      assert.equal(soul(owner).s.atk, 430);
+      assert.deepEqual(soul(owner).def.raw.garrisonIds, []);
+      const token = h.b.spawnToken(h.b.getPlayer('p1').units[1], 'kaz_test_reinforcement', 11, 6,
+        { def: { stats: { maxHp: 100, atk: 1 } } });
+      assert.ok(token);
+      die(h, token);
+      assert.equal(soul(token), undefined, 'summons/reinforcements are not original operator bodies');
+      die(h, soul(owner));
+      assert.equal(h.b.allyUnits.filter(u => u.kazdelSoul).length, 1, 'souls cannot produce souls');
+    }
+    assert.ok(checkInvariants(h.b));
+  }
+});
+
+test('cannon hits moving Rim bosses at their world position, never their reserved off-road home', () => {
+  for (const worldInside of [false, true]) {
+    const h = fixture(['plain'], { count: 9 }), owner = h.unit('kaz_plain');
+    const boss = h.b.spawnToken(owner, 'token_rem_boss', worldInside ? 12 : 10, worldInside ? 9 : 5,
+      { def: { stats: { maxHp: 10000, atk: 0 } } });
+    boss.remType = 'boss'; boss.motion = 'FLY';
+    boss.x = worldInside ? 5 : 9; boss.y = worldInside ? 10 : 12;
+    const hp = boss.hp, ps = h.b.getPlayer('p1');
+    tickCannon(h.b, { ps, stage: 3, cannon: cannonSource(ps), charge: 15, lastFireAt: -Infinity,
+      warning: { x: 5, y: 10, startedAt: -3, until: 0 } }, 0, 0, () => {});
+    assert.equal(hp - boss.hp, worldInside ? 800 : 0);
+    assert.equal(boss.kazdelSoulUnit, undefined);
+    assert.deepEqual(h.b.errors, []);
   }
 });

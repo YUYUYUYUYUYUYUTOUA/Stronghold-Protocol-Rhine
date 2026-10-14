@@ -78,7 +78,7 @@ test('Kazdel equipment: acquiring two copies merges once and normal upgrade effe
   }
 });
 
-test('Sigil/isomorph all four qualities grant exactly one membership, preserve old bonds and reach only 3/6 tiers', () => {
+test('Sigil/isomorph all four qualities grant exactly one membership, preserve old bonds and reach the 3/6/9 tiers', () => {
   const outsider = Object.values(data.chess).find(c => c.visible && !c.isGolden && !c.bonds.includes('kazdelShip') && !c.bonds.includes('maniShip'));
   const natives = data.bonds.kazdelShip.visibleMembers;
   for (const gold of [false, true]) for (const iso of ['chess_item_6_09_e_a', 'chess_item_6_09_e_b']) {
@@ -93,9 +93,11 @@ test('Sigil/isomorph all four qualities grant exactly one membership, preserve o
       board.set('duplicate', { ...piece, id: outsider.goldenId });
       const ps = { board, hand: [], layers: {} };
       const state = computeBonds(gd, ps).kazdelShip;
-      assert.equal(state.count, count); assert.equal(state.tier, count >= 6 ? 2 : 1);
+      assert.equal(state.count, count); assert.equal(state.tier, count / 3);
       piece.items = [{ id: iso }]; board.delete('duplicate');
-      assert.equal(computeBonds(gd, ps).kazdelShip.count, count - 1);
+      const afterRemoval = computeBonds(gd, ps).kazdelShip;
+      assert.equal(afterRemoval.count, count - 1);
+      assert.equal(afterRemoval.tier, count / 3 - 1, 'removing the sole new member drops exactly one threshold');
       assert.deepEqual(pieceBonds(gd, piece), outsider.bonds);
       piece.items = [{ id: item('sigil', gold) }, { id: iso }];
     }

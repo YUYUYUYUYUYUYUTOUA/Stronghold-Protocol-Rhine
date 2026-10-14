@@ -937,3 +937,11 @@ Operator capacities use measured single-player exceptions and twice those counts
 `take(..., { overdraw: true })` records full occupation of a granted/promoted elite or a Mimic copy beyond capacity;
 normal takes remain bounded. Negative internal balance is a deficit, never negative available stock. Existing
 item selection probabilities and explicit grant weights remain unchanged.
+
+### 雷姆必拓集合点（莱茵扩展）
+
+`g.remRally { row, col }` 在可操作的准备阶段设置本玩家集合点，沿用普通准备操作的存活、阶段及准备锁定检查。
+目标使用己方棋盘坐标，必须是本轮部署地图的近战低地格；标记本身不占格，战斗中不可修改。
+`PlayerState.remRally` 跨轮保留选择；`m.private.remRally` 和 `battleInput().remRally` 返回独立副本。
+若换图或地形改变导致原点不再合法，本轮输出 `null`，由援军系统采用蓝门附近默认点。
+最终攻势仍发送棋盘坐标，由模拟的玩家坐标映射转换到对应半场；不发送客户端自报的战场坐标。

@@ -11,7 +11,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PHASE } from '../../shared/constants.js';
-import { makeMatch, DATA } from './harness.js';
+import { makeMatch, DATA, give } from './harness.js';
+import { arrange } from '../../server/match/bot.js';
 import { aggregateMods } from '../../server/sim/buffs.js';
 import { bondBb } from '../../server/sim/content/bonds/addon/battle.js';
 import { DataSource } from '../../server/sim/simdata.js';
@@ -123,17 +124,22 @@ test('终极 Final Assault vs 假想敌：胄: both players\' 奥术 never multi
   // DESIGN §20.10: one 奥术 instance per target (the strongest — PRTS 作战机制 同名buff, 巴哈姆特 12316 "共享型buff會跟對面搶");
   // 死亡集群's "最大生命值2%" = the leader's shown max HP, the pool (DRONE_LINK_BASE 'pool' [ASSUMED]): 288 000 at 终极
   // with 4 alive (14 400 000)
-  // the bots' boards follow every draw of the match (the elite-to-board merge, DESIGN §20.11, moved seed 7 to 12; the
-  // 战术决策 drawn with replacement moved 12 on): the first of these seeds whose bots pair two 奥术 players
-  const pairOf = (m) => m.fields.filter((f) => f.battle).find((f) => f.players.length === 2 && f.players.every((pid) => f.battle.getPlayer(pid).bonds.arcaneShip?.active));
-  let h = null;
-  for (const seed of [13, 7, 11, 21, 23]) {
-    h = toFinalAssault({ difficulty: 'ABYSS', seed, bossId: 'boss_1' });
-    if (pairOf(h.m)) break;
-    h.m.dispose();
-    h = null;
-  }
-  assert.ok(h, 'precondition: a pair field where both players run 奥术 (bot lineups of one of the seeds)');
+  // Fix the final lineup explicitly: searching random bot seeds for two Arcane players made this
+  // damage regression depend on unrelated shop-pool additions. Earlier tests still cover full bot progression.
+  const h = toFinalAssault({ difficulty: 'ABYSS', seed: 13, bossId: 'boss_1', finalPrepare(m) {
+    for (const ps of m.alivePlayers()) {
+      for (const piece of [...ps.board.values(), ...ps.hand.filter(Boolean), ...ps.temp.filter(Boolean)]) {
+        if (piece.kind === 'chess') ps.returnCopies(piece);
+      }
+      ps.board.clear(); ps.hand.fill(null); ps.temp.fill(null); ps.recompute();
+      for (const id of ['chess_char_4_02_b', 'chess_char_4_10_b', 'chess_char_5_12_b', 'chess_char_6_16_b']) give(m, ps, id);
+      arrange(m, ps);
+      assert.ok(ps.bonds.arcaneShip?.active, 'explicit final lineup activates Arcane from real operators');
+      ps.layers.arcaneShip = 40 + ps.seat * 20; ps.recompute();
+      if (ps.personalChoice) m.autoPickPersonalChoice(ps, 'random');
+      ps.resolveTemp(); ps.setReady(true);
+    }
+  } });
   const m = h.m;
   const fields = m.fields.filter((f) => f.battle);
   const bb = bondBb('arcaneShip');
@@ -153,7 +159,16 @@ test('终极 Final Assault vs 假想敌：胄: both players\' 奥术 never multi
   }
   let withArcane = 0;
   for (let i = 0; i < 1200; i++) { // 40 game s
-    for (const f of fields) if (!f.battle.finished) f.battle.step();
+    for (const f of fields) if (!f.battle.finished) {
+      f.battle.step();
+      // Exercise death through the real damage pipeline on an actually spawned drone. Its link
+      // must not depend on whether this fixed caster lineup prioritises aerial targets in time.
+      if (!links.length) {
+        const source = f.battle.allyUnits.find(u => u.kind === 'op' && u.alive);
+        const drone = f.battle.enemies.find(e => e.alive && /^enemy_1005_yokai/.test(e.defId));
+        if (source && drone) f.battle.dealDamage(source, drone, { type: 'true', amount: drone.hp, canDodge: false });
+      }
+    }
     for (const e of both.battle.enemies) {
       if (!e.alive || !e.isBoss) continue;
       const arc = e.buffs.filter((x) => String(x.key).startsWith('bond:arcaneShip'));

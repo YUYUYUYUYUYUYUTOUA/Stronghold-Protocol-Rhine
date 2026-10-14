@@ -301,10 +301,13 @@ test('特性 follows the chosen module also when the skill or the module differs
   assert.match(shown('chess_char_4_01_b', { chess_char_4_01_a: { skill: get('chess_char_4_01_b').skill.index, module: 'none' } }), /能够阻挡三个敌人/);
 });
 
-test('all six added operators keep every skill and permitted module in 0.2.1 stats, full traits and card ranges', () => {
-  const keys = ['mayer', 'wuhoo', 'eunectes', 'ifrit', 'astgenne', 'dorothy'];
-  for (const key of keys) {
-    const id = `chess_rhine_${key}_a`;
+test('Rhine and all Rem members keep every skill and permitted module in stats, full traits and card ranges', () => {
+  const ids = ['mayer', 'wuhoo', 'eunectes', 'ifrit', 'astgenne', 'magallan'].map(key => `chess_rhine_${key}_a`);
+  const rem = ['jcinta', 'glider', 'aprl', 'warmy', 'tmslot', 'savage', 'asbest', 'thumpy', 'ray'];
+  ids.push(...rem.map(key => `chess_rem_${key}_a`), 'chess_char_3_02_a', 'chess_char_4_14_a');
+  assert.equal(ids.length, 17, 'six Rhine additions plus all eleven Rem members');
+  for (const id of ids) {
+    const key = id;
     const { base, golden } = slot(id);
     assert.ok(base && golden, key);
     const before = JSON.stringify([base, golden]);

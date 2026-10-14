@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { applyKazdelData, validateKazdelData, KAZDEL_ADDITIONS, KAZDEL_EXISTING, WISDEL_TOKEN, kazdelGarrison } from '../tools/kazdel-data.mjs';
+import { applyRemData } from '../tools/rem-data.mjs';
 import { applyRhineData } from '../tools/rhine-data.mjs';
 import { composeStats, loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
 import { stripPotential } from '../shared/potential.js';
@@ -15,10 +16,10 @@ const files = Object.fromEntries(await Promise.all(names.map(async n => [n, awai
 const source = await read('tools/kazdel-data-source');
 const vanilla = { chess: await read('data/vanilla/chess'), garrisons: await read('data/vanilla/garrisons'), config: await read('data/vanilla/config') };
 
-test('Kazdel data: 10 distinct members, approved tiers and 3/6 main-faction thresholds', () => {
+test('Kazdel data: 10 distinct members, approved tiers and 3/6/9 main-faction thresholds', () => {
   const bond = files.bonds[KAZDEL_BOND];
   assert.deepEqual(validateKazdelData(files), []);
-  assert.deepEqual(bond.thresholds, [3, 6]);
+  assert.deepEqual(bond.thresholds, [3, 6, 9]);
   assert.equal(bond.isCore, true);
   assert.equal(bond.visibleMembers.length, 10);
   assert.deepEqual(new Set(bond.visibleMembers.map(id => files.chess[id].charId)), new Set(Object.values(KAZDEL_CHARACTERS)));
@@ -32,18 +33,18 @@ test('Kazdel data: 10 distinct members, approved tiers and 3/6 main-faction thre
     assert.equal(c.tier, spec.tier); assert.deepEqual(c.bonds, spec.bonds);
     assert.equal(c.visible, true); assert.equal(c.isHidden, false);
   }
-  for (const [count, stage] of [[2, 0], [3, 1], [5, 1], [6, 2], [8, 2], [9, 2], [11, 2]]) assert.equal(kazdelStage({ active: count >= 3, count }), stage);
+  for (const [count, stage] of [[2, 0], [3, 1], [5, 1], [6, 2], [8, 2], [9, 3], [11, 3]]) assert.equal(kazdelStage({ active: count >= 3, count }), stage);
 });
 
 test('Kazdel data: soul and cannon formulas are shared with no hidden expiry or dummy population token', () => {
-  assert.deepEqual(KAZDEL_BALANCE, { thresholds: [3, 6], bodyHpPerLayer: 10, soulHpRatio: .6, soulHpPerLayer: 10,
+  assert.deepEqual(KAZDEL_BALANCE, { thresholds: [3, 6, 9], bodyHpPerLayer: 10, soulHpRatio: .6, soulHpPerLayer: 10,
     soulAttackRatio: .8, soulAttackPerLayer: 3, soulsPerPiecePerBattle: null });
   assert.deepEqual(KAZDEL_CANNON, { capacity: 15, chargePerSec: 1, chargePerLayer: .005, deathCharge: 3,
     minInterval: 3, warningDuration: 2, damageBase: 800, damagePerLayer: 15, radius: 2, friendlyFireStage: 2, friendlyFireRatio: 1 });
   assert.match(files.bonds[KAZDEL_BOND].desc, /无时间限制/);
-  assert.match(files.bonds[KAZDEL_BOND].desc, /预警计入间隔/);
-  assert.match(files.bonds[KAZDEL_BOND].desc, /亡魂始终免疫/);
-  assert.match(files.bonds[KAZDEL_BOND].desc, /不获得死亡产层与充能/);
+  assert.match(files.bonds[KAZDEL_BOND].desc, /预警2秒且计入间隔/);
+  assert.match(files.bonds[KAZDEL_BOND].desc, /其他玩家友军与亡魂免疫/);
+  assert.match(files.bonds[KAZDEL_BOND].desc, /不产层或充能/);
   assert.equal(files.tokens.token_kazdel_cannon, undefined);
 });
 
@@ -163,6 +164,7 @@ test('Kazdel data: offline overlay and the full Rhine→Kazdel chain are byte-fo
 test('Kazdel data: the preserved official snapshot rebuilds the complete expansion tables offline', async () => {
   const rebuilt = Object.fromEntries(await Promise.all(names.map(async n => [n, await read(`data/vanilla/${n}`)])));
   await applyRhineData(rebuilt); await applyKazdelData(rebuilt, source);
+  await applyRemData(rebuilt);
   for (const n of names) assert.deepEqual(rebuilt[n], files[n], `${n} from the untouched official snapshot`);
 });
 

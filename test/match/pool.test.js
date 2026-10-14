@@ -13,7 +13,7 @@ test('co-op pool doubles the measured single-player capacities; only visible, un
   const pool = new SharedPool(gd, { banned: [] });
   const caps = { 1: 12, 2: 14, 3: 18, 4: 16, 5: 8, 6: 5 };
   assert.equal(pool.entries.size, gd.visibleChess.length);
-  assert.equal(pool.entries.size, 125);
+  assert.equal(pool.entries.size, 134);
   for (const [id, e] of pool.entries) {
     const expect = 2 * (DATA.config.economy.poolCopiesOverrides[id] ?? caps[e.tier]);
     assert.equal(e.cap, expect, id);
@@ -22,7 +22,7 @@ test('co-op pool doubles the measured single-player capacities; only visible, un
   }
   const banned = [gd.visibleChess[0], gd.visibleChess[5]];
   const p2 = new SharedPool(gd, { banned });
-  assert.equal(p2.entries.size, 123);
+  assert.equal(p2.entries.size, 132);
   assert.ok(!p2.has(banned[0]) && p2.left(banned[0]) === 0 && p2.take(banned[0]) === 0);
 });
 
@@ -166,7 +166,7 @@ test('the match pool excludes banned chess; m.public lists disabled bonds and ba
   assert.equal(pub.drawnDisabledBonds.length, 9);
   assert.ok(pub.bannedChess.length > 0);
   for (const id of pub.bannedChess) assert.ok(!h.m.pool.has(id), `${id} should not be in the pool`);
-  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 125);
+  assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 134);
   checkInvariants(h.m);
   h.m.dispose();
 });

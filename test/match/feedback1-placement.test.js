@@ -134,10 +134,49 @@ test('#3 bots never put a piece into the water (layout planner and full bot prep
 // ---------------------------------------------------------------------------------------------------------------------
 // #9 tactical points
 
-test('#9 data: 狼群 and 流形 are owner-range summons (token text "只能部署在召唤者攻击范围内"), no other hand summon is', () => {
-  assert.equal(DATA.tokens[WOLF].ownerRange, true);
-  assert.equal(DATA.tokens[MANIFOLD].ownerRange, true);
-  for (const t of Object.values(DATA.tokens)) if (t.placeable && t.tokenId !== WOLF && t.tokenId !== MANIFOLD) assert.ok(!t.ownerRange, t.name);
+test('#9 data: wolves, manifold and native sandbeast retain owner-range; Magallan drones remain unrestricted', () => {
+  const restricted = [WOLF, MANIFOLD, 'token_10034_ray_sndbst'];
+  assert.deepEqual(Object.values(DATA.tokens).filter(t => t.placeable && t.ownerRange).map(t => t.tokenId).sort(), restricted.sort());
+  for (const suffix of [1,2,3]) assert.equal(DATA.tokens[`token_10005_mgllan_drone${suffix}`].ownerRange, false);
+});
+
+test('#9 fixed Ray sandbeast: server rejects outside owner range, client highlights match, rotation returns it', () => {
+  const { m, ps } = prep();
+  try {
+    const ray = give(m, ps, 'chess_rem_ray_a');
+    assert.deepEqual(move(m, ray.uid, board(10,4), 'RIGHT'), {ok:true});
+    const tok = stackOf(ps, 'token_10034_ray_sndbst'); assert.ok(tok);
+    const range = ownerRangeKeys(DATA.chess[ray.id].rangeGrid,10,4,'RIGHT');
+    const map = buildDeployMap(m.stage), pos = positionClass(DATA.tokens[tok.id]);
+    const free = legalTiles(map,pos).filter(([r,c])=>!ps.board.has(tileKey(r,c)));
+    const want = free.filter(([r,c])=>range.has(tileKey(r,c))).map(([r,c])=>tileKey(r,c)).sort();
+    const ctx = clientCtx(m,ps);
+    assert.deepEqual(boardTargets(ctx,tok.uid).legal.map(([r,c])=>tileKey(r,c)).sort(),want);
+    const outside = free.find(([r,c])=>!range.has(tileKey(r,c))); assert.ok(outside);
+    assert.equal(clientCanPlace(ctx,tok.uid,board(...outside)).ok,false);
+    assert.equal(move(m,tok.uid,board(...outside)).error,ERR.BAD_TILE);
+    const inside = free.find(([r,c])=>range.has(tileKey(r,c))&&c>4); assert.ok(inside);
+    assert.deepEqual(move(m,tok.uid,board(...inside)),{ok:true});
+    assert.deepEqual(move(m,ray.uid,board(10,4),'LEFT'),{ok:true});
+    assert.equal(ps.board.get(tileKey(...inside)),undefined);
+    assert.ok(stackOf(ps,'token_10034_ray_sndbst'));
+    checkInvariants(m);
+  } finally {m.dispose();}
+});
+
+test('#9 fixed Magallan drone: native global placement permits a legal tile outside her attack range', () => {
+  const { m, ps } = prep();
+  try {
+    const owner = give(m,ps,'chess_rhine_magallan_a');
+    assert.deepEqual(move(m,owner.uid,board(10,4),'RIGHT'),{ok:true});
+    const tok = stackOf(ps,'token_10005_mgllan_drone3'); assert.ok(tok);
+    const range = ownerRangeKeys(DATA.chess[owner.id].rangeGrid,10,4,'RIGHT');
+    const ctx = clientCtx(m,ps);
+    const outside = boardTargets(ctx,tok.uid).legal.find(([r,c])=>!range.has(tileKey(r,c)));
+    assert.ok(outside,'global drone has a legal tile outside owner range');
+    assert.deepEqual(move(m,tok.uid,board(...outside)),{ok:true});
+    checkInvariants(m);
+  } finally {m.dispose();}
 });
 
 test('#9 g.move: 伺夜\'s 狼群 only on a tile of her attack range (rotated grid of her tile + facing); outside → BAD_TILE', () => {

@@ -513,3 +513,18 @@ operator's runtime ability graph. Mixed-letter banks are skipped. Preserve `mixO
 an older PR's full JSON, preserving JP voices and current operators. See DESIGN §28.17.
 
 The 40th local token model is the original champagne bomb (`token_10031_swire2_gdtrap`, §29.5), extracted from the official `btl_pfb_tokens_0.ab` through `TOKEN_SPINES`. Its web fallback is retained. Failed board-pack/image requests can retry after connectivity/visibility recovers; a failed three.js module gets at most two fresh-URL retries per page because browser module failures are cached. Successful resources remain cached.
+
+### 雷姆必拓原图
+
+雷姆必拓盟约使用用户指定的 [PRTS 原图](https://media.prts.wiki/e/ee/Logo_%E9%9B%B7%E5%A7%86%E5%BF%85%E6%8B%93.png)，不重绘。
+`tools/assets/rem-plan.mjs` 为常规资源下载流程增加该叶节点；也可运行 `node tools/fetch-rem-assets.mjs` 单独下载。
+下载目标 `public/assets/bond/rem.png` 遵循美术不入 Git 的规则，生成映射为 `assets.bonds.remShip`。
+已具备原图时可用 `--manifest-only` 离线更新映射；原图缺失时明确失败，不生成失效映射。
+
+新增七名原生干员和八种援军可运行 `node tools/fetch-rem-assets.mjs --units` 增量下载：
+复用主下载器、Spine 规范化和模型解析，合并清单时保留已有其他资源；此模式不请求阵营 Logo。
+常规 `fetch-assets.mjs` 同样包含这些干员和援军，援军通过真实敌人模型 ID 由现有渲染器读取。
+`RENDER_E2E=1 CHROME_PATH=... node --test test/render/rem-art.browser.test.js` 验证11名成员与八种援军的
+真实 SpineActor、图标解码及可见图鉴，截图输出 `test/e2e/out/rem-original-models.png`。
+用户另行上传原 PNG 时保留其实际字节，不套用旧附件的哈希或透明背景假设；浏览器验收可设置
+`REM_LOGO_REFERENCE=/path/to/original.png`，比较 HTTP 返回内容与该原件的字节数、SHA256，并检查解码和可见图鉴。

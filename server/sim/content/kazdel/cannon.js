@@ -40,8 +40,8 @@ function fire(battle, state, layers, onFire) {
   battle.fx('kazdelCannonImpact', { ownerId: state.ps.playerId, x: at.x, y: at.y, radius: C.radius });
   onFire(state);
   const targets = battle.enemies.filter(e => present(e) && bodyInKeys(e, keys));
-  if (state.stage === C.friendlyFireStage) for (const a of battle.allyUnits) {
-    if (a.ownerId === state.ps.playerId && present(a) && !a.kazdelSoul && a.kind !== 'device' && keys.has(a.tileR * COLS + a.tileC)) targets.push(a);
+  if (state.stage >= C.friendlyFireStage) for (const a of battle.allyUnits) {
+    if (a.ownerId === state.ps.playerId && present(a) && !a.kazdelSoul && a.kind !== 'device' && (a.remType === 'boss' ? bodyInKeys(a, keys) : keys.has(a.tileR * COLS + a.tileC))) targets.push(a);
   }
   for (const target of targets) battle.dealDamage(state.cannon, target, {
     amount: amount * (target.side === 'ally' ? C.friendlyFireRatio : 1), type: 'true', canDodge: false, noSp: true,

@@ -38,6 +38,7 @@ import { frontOf } from '../sim/dir.js';
 import { RHINE_BOND, RHINE_CHARACTERS, rhineCapacity, rhineDevice } from '../../shared/rhineResearch.js';
 import { KAZDEL_BOND, KAZDEL_GARRISON_KEYS } from '../../shared/kazdel.js';
 import { diyTokenOwner, diyRecordOf } from '../../shared/diy.js';
+import { pieceBonds } from './bondsMeta.js';
 
 export const MAX_TICKS_PER_INTERVAL = 8;
 export const INTERVAL_MS = 1000 / 30;
@@ -726,6 +727,7 @@ export function specBounds(spec, gd = null) {
     const chess = new Map();
     const all = new Map();
     const names = new Map();
+    const soulBodies = new Set();
     // unit types this player can field: its board's chess / tokens, their summons, and the ownerless summons of
     // bonds / bands (炎佑, 预备干员) — the only names a statistic of a unit created in battle (no board uid) may carry
     const defIds = new Set(gd ? ownerlessSummons(gd) : []);
@@ -737,6 +739,12 @@ export function specBounds(spec, gd = null) {
         const base = gd.chess?.(defId) || gd.token?.(defId);
         const rec = u.standIn === true ? gd.standIn?.(defId) : u.diy && base?.isDiy ? diyRecordOf(base, u.diy, gd.raw) : base;
         if (typeof rec?.name === 'string') names.set(u.uid, rec.name);
+        if (u.kind !== 'token' && p.bonds?.[KAZDEL_BOND]?.active && p.bonds[KAZDEL_BOND].count >= 3) {
+          const bonds = new Set([...(rec?.bonds ?? []), ...pieceBonds(gd, { id: defId, items: u.items })]);
+          // Nine-member souls include all own operators; lower stages use canonical membership/Harmony.
+          if (p.bonds[KAZDEL_BOND].count >= 9 || bonds.has(KAZDEL_BOND)
+            || (bonds.has('maniShip') && p.bonds.maniShip?.active)) soulBodies.add(u.uid);
+        }
       }
       if (typeof defId === 'string') defIds.add(defId);
       if (u.kind !== 'token') {
@@ -751,7 +759,7 @@ export function specBounds(spec, gd = null) {
       const v = Number(b && b.layers);
       if (Number.isFinite(v) && v > 0) startLayers.set(id, v);
     }
-    players.set(p.playerId, { chess, all, names, defIds, bonds: gd ? layerBondsOf(p, gd) : null, startLayers, layerAllow: gd ? layerAllowanceOf(p, gd, spec) : new Map() });
+    players.set(p.playerId, { chess, all, names, defIds, soulBodies, bonds: gd ? layerBondsOf(p, gd) : null, startLayers, layerAllow: gd ? layerAllowanceOf(p, gd, spec) : new Map() });
   }
   const round = Number(spec && spec.round) || 0;
   return {
@@ -914,7 +922,10 @@ export function validateClientResult(spec, raw, { gd = null } = {}) {
         if (!u || !Number.isInteger(u.uid) || !own.all.has(u.uid) || seen.has(u.uid)) continue;
         seen.add(u.uid);
         if (!finiteIn(u.hpPct, 0, 1) || !finiteIn(u.sp, 0, 1e5)) return bad('unit state');
-        unitsEnd.push({ uid: u.uid, defId: own.all.get(u.uid), hpPct: u.hpPct, sp: u.sp, skillActive: !!u.skillActive, alive: !!u.alive && u.hpPct > 0 });
+        if (u.kazdelSoul != null && (!own.soulBodies.has(u.uid) || u.alive || u.hpPct !== 0
+          || !finiteIn(u.kazdelSoul.hpPct, 0, 1) || u.kazdelSoul.hpPct <= 0 || !finiteIn(u.kazdelSoul.sp, 0, 1e5))) return bad('soul state');
+        unitsEnd.push({ uid: u.uid, defId: own.all.get(u.uid), hpPct: u.hpPct, sp: u.sp, skillActive: !!u.skillActive, alive: !!u.alive && u.hpPct > 0,
+          ...(u.kazdelSoul ? { kazdelSoul: { hpPct: u.kazdelSoul.hpPct, sp: u.kazdelSoul.sp } } : {}) });
       }
       const unitStats = [];
       for (const u of Array.isArray(p.unitStats) ? p.unitStats : []) {

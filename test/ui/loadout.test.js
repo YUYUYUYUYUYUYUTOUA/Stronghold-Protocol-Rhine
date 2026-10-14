@@ -130,7 +130,7 @@ test('options: skill records at Lv4 (normal) and Lv7 (elite); modules + 不装�
 
 test('Rhine defaults appear in the loadout UI and stale RA choices preserve a valid skill while falling back to HES-X', () => {
   for (const [key, skill, module] of [['mayer',0,'uniequip_002_otter'], ['wuhoo',1,'uniequip_002_turdus'],
-    ['eunectes',2,'uniequip_002_zumama'], ['ifrit',1,'uniequip_002_ifrit'], ['astgenne',0,'uniequip_002_halo'], ['dorothy',2,'uniequip_002_doroth']]) {
+    ['eunectes',2,'uniequip_002_zumama'], ['ifrit',1,'uniequip_002_ifrit'], ['astgenne',0,'uniequip_002_halo'], ['magallan',2,'uniequip_002_mgllan']]) {
     const { base, golden } = recordsOf(`chess_rhine_${key}_a`, get), opt = chessOptions(base, golden);
     assert.deepEqual(effectiveChoice({}, base, golden), { skill, module, changed: false });
     assert.equal(opt.skillOptions.find(s => s.isDefault).index, skill);
@@ -183,7 +183,7 @@ test('sanitizeEntries: drops unknown chess / illegal parts one by one, and the r
     all[c.chessId] = { skill: o.skills.find((i) => i !== o.defaultSkill), module: o.modules[o.modules.length - 1] };
   }
   const s = sanitizeEntries(all, get);
-  assert.equal(Object.keys(s).length, 125);
+  assert.equal(Object.keys(s).length, 134);
   assert.ok(checkLoadout(s, get).ok);
 });
 
@@ -197,11 +197,16 @@ test('selectedSkill / selectedModule for the in-match UI (shop cards, detail pan
   assert.equal(selectedSkill(null, SB, get).index, SB.skill.index);
 });
 
-test('roster and filters: 125 visible chess in shop order; tier / class / bond / search / changed-only', () => {
+test('roster and filters: 134 visible chess in shop order; tier / class / bond / search / changed-only', () => {
   const roster = rosterOf(Object.values(CHESS));
-  assert.equal(roster.length, 125);
+  assert.equal(roster.length, 134);
   assert.ok(roster.every((c) => !c.isGolden && c.visible));
   for (let i = 1; i < roster.length; i++) assert.ok(roster[i - 1].tier <= roster[i].tier);
+  assert.equal(get('chess_rhine_dorothy_a'), null, 'the retired fixed Dorothy is not selectable');
+  assert.ok(roster.some(c => c.chessId === 'chess_rhine_magallan_a'));
+  const rem = filterRoster(roster, { bond: 'remShip' }, {}, get, getBond);
+  assert.deepEqual(rem.map(c => c.name).sort(), ['嘉辛塔', '蜜莓', '四月', '温米', '时隙', '断崖', '暴行', '莱恩哈特', '石棉', '珊比', '莱伊'].sort());
+  assert.deepEqual([1,2,3,4,5,6].map(tier => rem.filter(c => c.tier === tier).length), [2,2,2,2,2,1]);
   const t3 = filterRoster(roster, { tier: 3 }, {}, get, getBond);
   assert.ok(t3.length > 0 && t3.every((c) => c.tier === 3));
   const snipers = filterRoster(roster, { prof: 'SNIPER' }, {}, get, getBond);
@@ -517,4 +522,39 @@ test('entry badge (review fix): counts like the screen once chess.json is loaded
   assert.equal(badgeCount(entries, get), 1, 'with the data: only chess the screen shows as 已调整');
   assert.equal(badgeCount(entries, get), changedCount(entries, get));
   assert.equal(badgeCount({}, get), 0);
+});
+
+test('all nine new Rem fixed cards expose every native skill and allowed module, with unchanged default choices', () => {
+  const expected = [
+    ['jcinta', ['skcom_assist_cost[3]', 'skchr_jcinta_2'], ['uniequip_002_jcinta']],
+    ['glider', ['skchr_glider_1', 'skchr_glider_2'], ['uniequip_002_glider']],
+    ['aprl', ['skchr_aprl_1', 'skchr_aprl_2'], ['uniequip_002_aprl']],
+    ['warmy', ['skchr_warmy_1', 'skchr_warmy_2'], ['uniequip_002_warmy']],
+    ['tmslot', ['skcom_atk_up[3]', 'skchr_tmslot_2'], ['uniequip_002_tmslot']],
+    ['savage', ['skchr_savage_1', 'skchr_savage_2'], ['uniequip_002_savage']],
+    ['asbest', ['skchr_asbest_1', 'skchr_asbest_2'], ['uniequip_002_asbest']],
+    ['thumpy', ['skchr_thumpy_1', 'skchr_thumpy_2', 'skchr_thumpy_3'], ['uniequip_002_thumpy']],
+    ['ray', ['skchr_ray_1', 'skchr_ray_2', 'skchr_ray_3'], ['uniequip_002_ray', 'uniequip_003_ray']],
+  ];
+  for (const [name, skills, modules] of expected) {
+    const id = `chess_rem_${name}_a`, { base, golden } = recordsOf(id, get);
+    assert.ok(base && golden, name);
+    assert.deepEqual(base.skills.map(s => s.skillId), skills, `${name}: all ordinary skills`);
+    assert.deepEqual(golden.skills.map(s => s.skillId), skills, `${name}: all elite skills`);
+    assert.deepEqual(golden.modules.map(m => m.uniEquipId), modules, `${name}: all permitted modules`);
+    assert.deepEqual(effectiveChoice({}, base, golden), { skill: skills.length - 1, module: 'none', changed: false });
+    const options = chessOptions(base, golden);
+    assert.deepEqual(options.skills, skills.map((_, i) => i));
+    assert.deepEqual(options.modules, [...modules, 'none']);
+    for (const skill of options.skills) for (const module of options.modules) {
+      const selected = setChoice({}, base, golden, { skill, module });
+      assert.ok(checkLoadout(selected, get).ok, `${name}: S${skill + 1}/${module}`);
+      assert.deepEqual(sanitizeEntries(selected, get), selected);
+      assert.equal(effectiveChoice(selected, base, golden).skill, skill);
+      assert.equal(effectiveChoice(selected, base, golden).module, module);
+    }
+  }
+  const { base, golden } = recordsOf('chess_rhine_magallan_a', get);
+  assert.deepEqual(base.skills.map(s => s.skillId), ['skchr_mgllan_1', 'skchr_mgllan_2', 'skchr_mgllan_3']);
+  assert.deepEqual(golden.modules.map(m => m.uniEquipId), ['uniequip_002_mgllan', 'uniequip_003_mgllan']);
 });

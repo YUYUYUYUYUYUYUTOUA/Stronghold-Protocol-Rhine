@@ -8,6 +8,7 @@ import { RHINE_BOND, RHINE_CHARACTERS, RHINE_BALANCE, RHINE_DEVICES, RHINE_EQUIP
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
 import { applyOpeningBans } from '../shared/openingBans.js';
 import { KAZDEL_BOND, applyKazdelOpeningBans } from '../shared/kazdel.js';
+import { compileBackupPreset } from './preset-data.mjs';
 import { applyPotentialOverlay } from './extension-potential.mjs';
 
 export const RHINE_ADDITIONS = Object.freeze([
@@ -16,7 +17,7 @@ export const RHINE_ADDITIONS = Object.freeze([
   { key: 'eunectes', charId: 'char_416_zumama', tier: 5, bonds: ['soloShip', 'sargonShip'], skillId: 'skchr_zumama_3', defaultModuleId: 'uniequip_002_zumama', excludedModuleIds: ['uniequip_004_zumama'], subName: '决战者', trait: 'copy_end' },
   { key: 'ifrit', charId: 'char_134_ifrit', tier: 5, bonds: ['arcaneShip', RHINE_BOND], skillId: 'skchr_ifrit_2', defaultModuleId: 'uniequip_002_ifrit', subName: '轰击术师', trait: 'ifrit' },
   { key: 'astgenne', charId: 'char_135_halo', tier: 2, bonds: [RHINE_BOND, 'preciShip'], skillId: 'skchr_halo_1', defaultModuleId: 'uniequip_002_halo', subName: '链术师', trait: 'astgenne' },
-  { key: 'dorothy', charId: 'char_4048_doroth', tier: 4, bonds: [RHINE_BOND], skillId: 'skchr_doroth_3', defaultModuleId: 'uniequip_002_doroth', excludedModuleIds: ['uniequip_003_doroth'], subName: '陷阱师', trait: 'dorothy' },
+  { key: 'magallan', charId: 'char_248_mgllan', tier: 4, bonds: [RHINE_BOND], skillId: 'skchr_mgllan_3', defaultModuleId: 'uniequip_002_mgllan', subName: '召唤师', trait: 'magallan' },
 ]);
 const TOKEN = 'token_10004_otter_motter';
 export const DOROTHY_TOKEN = 'token_10025_doroth_recttp';
@@ -68,12 +69,12 @@ function makeGarrison(key, gold) {
   const grade = gold ? 1 : 0, r = RHINE_BALANCE;
   if (key === 'copy_start') return garrison(id, '身前一格干员若为“进入休整期时”特质，本干员的特质与其相同', 'SERVER_PREP_START', 'SERVER_FRONT_SAME_EFFECT_PREP_START');
   if (key === 'copy_end') return garrison(id, '身前一格干员若为“休整期结束时”特质，本干员的特质与其相同', 'SERVER_PREP_FIN', 'SERVER_FRONT_SAME_EFFECT_PREP_FIN');
-  if (key === 'mayer') return garrison(id, `战斗中，身前一格科研装置每完成一次有效工作，使已激活的【莱茵生命】增加${r.mayerDeviceLayers[grade]}层。能量装置每次实际发射脉冲计一次；生态维持仪有实际治疗、护盾净增加或累计${r.ecologyResearchInterval}秒有效减速时计一次，同一装置${r.medicalInterval}秒内最多计一次，多个目标和治疗来源不重复计数；激光钻机累计${r.laserResearchInterval}秒有效输出计一次，逐次伤害不重复产层。无目标时暂停累计。同一装置只取最强的一名梅尔；每场普通主战同玩家全部梅尔共享${r.mayerBattleLayerCap[grade]}层预算，普通与精锐共存取48层，退场或换装置不重置`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { device_layers: r.mayerDeviceLayers[grade], max_layer: r.mayerBattleLayerCap[grade] });
+  if (key === 'mayer') return garrison(id, `战斗中，身前一格科研装置每完成一次有效工作，使已激活的【莱茵生命】增加${r.mayerDeviceLayers[grade]}层。能量装置每次实际发射脉冲计一次；生态维持仪有实际治疗、护盾净增加或累计${r.ecologyResearchInterval}秒有效减速时计一次，同一装置${r.medicalInterval}秒内最多计一次，多个目标和治疗来源不重复计数；激光钻机累计${r.laserResearchInterval}秒有效输出计一次，逐次伤害不重复产层。无目标时暂停累计。同一装置只取最强的一名梅尔；每场普通主战同玩家全部梅尔共享${r.mayerBattleLayerCap[grade]}层预算，普通与精锐共存取24层，退场或换装置不重置`, 'IN_BATTLE', 'RHINE_MAYER_RESEARCH', { device_layers: r.mayerDeviceLayers[grade], max_layer: r.mayerBattleLayerCap[grade] });
   if (key === 'saria') return garrison(id, `战斗中，每${r.sariaLayerStep}层科研使自身治疗量提高${r.sariaHealBonus[grade] * 100}%`, 'IN_BATTLE', 'RHINE_SARIA_HEALING', { layer_step: r.sariaLayerStep, heal: r.sariaHealBonus[grade] });
   if (key === 'ifrit') return garrison(id, `战斗中，自身获得己方已部署且有效的单台科研装置中最高基础攻击力的${r.ifritInheritance[grade] * 100}%作为额外攻击力，多台不相加，无独立继承上限`, 'IN_BATTLE', 'RHINE_IFRIT_INHERITANCE', { atk_scale: r.ifritInheritance[grade] });
   if (key === 'astgenne') return garrison(id, `战斗中，首次开启技能时，使已激活的【莱茵生命】与【精准】各增加${r.astgenneFirstSkillLayers[grade]}层`, 'IN_BATTLE', 'RHINE_ASTGENNE_FIRST_SKILL', { layer: r.astgenneFirstSkillLayers[grade] }, { bond_ids: `${RHINE_BOND},preciShip` });
-  if (key === 'dorothy') return garrison(id, `已激活的【莱茵生命】每层科研为自身提供${r.dorothyAttackPerLayer[grade]}点固定攻击力，不消耗科研；与六人盟约共享攻击以固定值相加。陷阱不再提供科研，原生技能与梦想家保持不变`, 'IN_BATTLE', 'RHINE_DOROTHY_ATTACK', { atk_per_layer: r.dorothyAttackPerLayer[grade] });
-  return garrison(id, `休整期结束时，每名实际在场的莱茵生命干员使莱茵生命增加${r.ptilopsisLayersPerMember[grade]}层科研；同名干员分别计数，调和的虚拟人数不计入`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
+  if (key === 'magallan') return garrison(id, `已激活的【莱茵生命】每层科研为本体与原生无人机各增加${r.magallanAttackPerLayer[grade]}点攻击力，并为本玩家科研装置额外增加${r.magallanDeviceAttackPerLayer[grade]}点攻击力。同名取最高，各单位只加一次；六档共享不回流放大，百分比真伤不受影响`, 'IN_BATTLE', 'RHINE_MAGALLAN_ATTACK', { atk_per_layer: r.magallanAttackPerLayer[grade], device_atk_per_layer: r.magallanDeviceAttackPerLayer[grade] });
+  return garrison(id, `休整期结束时，已激活的【莱茵生命】按本玩家在场莱茵干员的不同阶位种类，每种增加${r.ptilopsisLayersPerMember[grade]}层科研，最多${r.ptilopsisLayersPerMember[grade] * 6}层；相同阶位和调和虚拟人数不重复计数`, 'SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER', { layer: r.ptilopsisLayersPerMember[grade] }, { conditionkey: 'character_target_inboard' });
 }
 
 function adaptMayerTalent(talent, count) {
@@ -88,39 +89,8 @@ function adaptDorothyTalent(talent, count) {
   for (const field of ['desc', 'descRaw']) talent[field] = String(talent[field]).replace(/可以使用.*?个共振装置（最多拥有\d+个）/, `可以使用${count}个共振装置（最多拥有${count}个，同时最多部署${count}个）`);
 }
 
-function compileDorothyToken(ctx, chess) {
-  const t = ctx.charTable[DOROTHY_TOKEN], variants = {}, owners = ['chess_rhine_dorothy_a', 'chess_rhine_dorothy_b'];
-  for (const id of owners) {
-    const c = chess[id], opts = { ...c.status, potRank: (ctx.potRank ?? OPERATOR_POTENTIAL), skillIndex: c.skill.index, label: id };
-    if (c.module?.active) {
-      opts.modulePhase = ordinaryModulePhase(ctx, c.module.id, c.module.level);
-      opts.moduleTokenParts = splitModuleParts(opts.modulePhase).token;
-    }
-    const count = RHINE_BALANCE.dorothyTrapLimit[c.isGolden ? 1 : 0];
-    const variant = (extra = {}) => {
-      const v = tokenVariant({ ...ctx, ac: {} }, DOROTHY_TOKEN, t, { ...opts, ...extra });
-      v.stats.deployLimit = count; v.stats.deckStack = count;
-      // Only the trap kit may activate the zero-SP token skill after a ground enemy steps on it.
-      if (v.skill) v.skill.trigger = { rule: 'DOROTHY_TRAP', rawRule: 'DEFAULT', customRangeGrid: null };
-      return v;
-    };
-    const v = variants[id] = { ...variant(), count, sources: ['talent', 'display'], bySkill: {} };
-    for (const s of c.skills.filter(s => !s.isDefault)) v.bySkill[s.index] = { skill: variant({ skillIndex: s.index }).skill, count, sources: ['talent', 'display'] };
-    if (c.isGolden) {
-      const mv = variant({ modulePhase: null, moduleTokenParts: [] });
-      v.byModule = { none: { stats: mv.stats, immunities: mv.immunities, trait: mv.trait, talents: mv.talents } };
-    }
-  }
-  const initial = variants[owners[0]], desc = `${t.description}；库存与同时部署上限为普通4个、精锐5个，开场自动部署也占上限。撤回、搬动或未触发销毁不会获得科研层数`;
-  return { tokenId: DOROTHY_TOKEN, kind: 'summon', name: t.name, appellation: t.appellation, desc, descRaw: desc,
-    profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
-    owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'none', attackKind: 'melee', projectile: 'none', canHitFly: false,
-    skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: ['isolated'], variants,
-    assets: { avatar: DOROTHY_TOKEN, spine: DOROTHY_TOKEN } };
-}
-
-function compileChess(ctx, config, spec, gold, index) {
-  const c = ctx.charTable[spec.charId], baseId = `chess_rhine_${spec.key}_a`, goldenId = `chess_rhine_${spec.key}_b`;
+export function compileChess(ctx, config, spec, gold, index) {
+  const c = ctx.charTable[spec.charId], baseId = `chess_${spec.prefix || 'rhine'}_${spec.key}_a`, goldenId = `chess_${spec.prefix || 'rhine'}_${spec.key}_b`;
   const chessId = gold ? goldenId : baseId;
   const st = config.economy.chessStatus[spec.tier][gold ? 'golden' : 'normal'];
   const status = { phase: st.phase, level: st.level, skillLevel: st.skillLevel, equipLevel: st.equipLevel };
@@ -135,7 +105,7 @@ function compileChess(ctx, config, spec, gold, index) {
     return [{ ...skill, isDefault: s.skillId === spec.skillId }];
   });
   const skill = clone(skills.find(s => s.isDefault)); delete skill.isDefault;
-  const g = makeGarrison(spec.trait, gold);
+  const g = spec.garrison || makeGarrison(spec.trait, gold);
   const statsBase = statsFrom(attrs), talentsBase = baseTalentList(ctx, c, status.phase, status.level, chessId, (ctx.potRank ?? OPERATOR_POTENTIAL));
   if (spec.key === 'mayer') for (const t of talentsBase) adaptMayerTalent(t, RHINE_BALANCE.mayerSummons[gold ? 1 : 0]);
   if (spec.key === 'dorothy') for (const t of talentsBase) adaptDorothyTalent(t, RHINE_BALANCE.dorothyTrapLimit[gold ? 1 : 0]);
@@ -209,9 +179,10 @@ export async function applyRhineData(files, source = null) {
   const ctx = source || JSON.parse(await readFile(new URL('./rhine-data-source.json', import.meta.url), 'utf8'));
   if (!Number.isInteger(ctx.potRank)) return applyPotentialOverlay(files, applyRhineData, ctx);
   const { chess, bonds, garrisons, tokens, effects, config } = files;
+  for (const suffix of ['a', 'b']) { delete chess[`chess_rhine_dorothy_${suffix}`]; delete garrisons[`garrison_rhine_dorothy_${suffix}`]; }
   applyOpeningBans(config);
   for (const [index, spec] of RHINE_ADDITIONS.entries()) for (const gold of [false, true]) {
-    const c = compileChess(ctx, config, spec, gold, index);
+    const c = spec.key === 'magallan' ? compileBackupPreset(files, spec, gold, index, makeGarrison(spec.trait, gold), ctx.potRank) : compileChess(ctx, config, spec, gold, index);
     chess[c.chessId] = c;
     const g = makeGarrison(spec.trait, gold); garrisons[g.garrisonId] = g;
   }
@@ -290,7 +261,7 @@ export async function applyRhineData(files, source = null) {
     profession: 'TOKEN', subProfessionId: t.subProfessionId, position: 'MELEE', displayType: 'DEFAULT', placeable: true, ownerRange: false,
     owners, stats: initial.stats, rangeGrid: initial.rangeGrid, dmgType: 'phys', attackKind: 'melee', projectile: 'none', canHitFly: false,
     skill: null, deployLimit: initial.stats.deployLimit, count: initial.count, abnormal: [], variants, assets: { avatar: TOKEN, spine: TOKEN } };
-  tokens[DOROTHY_TOKEN] = compileDorothyToken(ctx, chess);
+  delete tokens[DOROTHY_TOKEN];
   delete tokens.token_rhine_ecology;
   for (const d of RHINE_DEVICES) tokens[d.tokenId] = { tokenId: d.tokenId, kind: 'summon', name: d.name, appellation: d.name,
     desc: d.description, descRaw: d.description, profession: 'TOKEN', subProfessionId: 'notchar1', position: 'ALL', displayType: 'DEFAULT',
@@ -327,7 +298,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   if (args.length && (args.length !== 2 || args[0] !== '--out')) throw new Error('usage: node tools/rhine-data.mjs [--out data]');
   const out = resolve(args[1] || fileURLToPath(new URL('../data', import.meta.url)));
-  const names = ['chess','bonds','garrisons','tokens','effects','config','items'];
+  const names = ['chess','bonds','garrisons','tokens','effects','config','items','backups'];
   const files = Object.fromEntries(await Promise.all(names.map(async n => [n, JSON.parse(await readFile(join(out, `${n}.json`), 'utf8'))])));
   await applyRhineData(files);
   const errors = validateRhineData(files);

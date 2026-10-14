@@ -72,7 +72,7 @@ test('a 自选 kit file op-<codename>.js registers the kit of that owned-6★ pi
 
 test('a kit file <chessId>-<codename>.js registers the kit of <chessId>_a (codename: its charId without char_<n>_)', async () => {
   for (const file of KIT_FILES.flat()) {
-    const m = /^(chess_char_\w+?)-([a-z0-9]+)\.js$/.exec(file);
+    const m = /^(chess_(?:char|rem)_\w+?)-([a-z0-9]+)\.js$/.exec(file);
     assert.ok(m, `${file}: name`);
     const key = `${m[1]}_a`;
     const rec = CHESS[key];

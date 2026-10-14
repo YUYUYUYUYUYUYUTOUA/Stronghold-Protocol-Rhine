@@ -18,13 +18,14 @@ const noisy = (h, name) => h.hooksOf(name);
 const dmgBy = (h, u, pred = () => true) => noisy(h, 'damaged').filter((c) => c.source === u && pred(c));
 const T4 = [];
 for (let i = 1; i <= 26; i++) T4.push(`chess_char_4_${String(i).padStart(2, '0')}_a`);
+T4.push('chess_rem_savage_a');
 
 test('tier4: every tier-4 chess has a hand-authored kit', () => {
   for (const id of T4) assert.equal(typeof kits[id], 'function', id);
-  assert.equal(Object.keys(kits).length, 26);
+  assert.equal(Object.keys(kits).length, 27);
 });
 
-test('tier4: all 52 kits (normal + elite) fight a mixed wave without content errors', () => {
+test('tier4: all 54 kits (normal + elite) fight a mixed wave without content errors', () => {
   for (const id of T4.flatMap((a) => [a, a.replace(/_a$/, '_b')])) {
     const h = makeBattle({
       defs: { enemies: {

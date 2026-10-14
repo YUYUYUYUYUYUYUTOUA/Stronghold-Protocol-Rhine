@@ -4108,6 +4108,8 @@ async function main() {
   const { applyKazdelData, validateKazdelData } = await import('./kazdel-data.mjs');
   await applyKazdelData(files);
   errors.push(...validateKazdelData(files));
+  const { applyRemData } = await import('./rem-data.mjs');
+  await applyRemData(files);
   let total = 0;
   const sizes = {};
   const texts = {};

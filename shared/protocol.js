@@ -38,7 +38,8 @@ const isLeak = (l) => isPlain(l) && isId(l.enemyKey)
   && optional((v) => isNum(v, 0, 1000))(l.lpr) && nullable(isId)(l.sourcePlayerId) && nullable((v) => isStr(v, 16))(l.tag)
   && optional(isBool)(l.counted) && optional(isBool)(l.boss) && optional(isBool)(l.spawned);
 const isUnitEnd = (u) => isPlain(u) && nullable(isUid)(u.uid) && isNum(u.hpPct, 0, 1) && isNum(u.sp, 0, 1e5) && isBool(u.alive)
-  && optional(isBool)(u.skillActive) && nullable(isId)(u.defId);
+  && optional(isBool)(u.skillActive) && nullable(isId)(u.defId)
+  && optional((s) => isPlain(s) && !u.alive && u.hpPct === 0 && isNum(s.hpPct, 0, 1) && s.hpPct > 0 && isNum(s.sp, 0, 1e5))(u.kazdelSoul);
 const isUnitStat = (u) => isPlain(u) && nullable(isUid)(u.uid) && nullable(isId)(u.defId) && optional((v) => isStr(v, 16))(u.kind)
   && isStat(u.dmg) && isStat(u.kills) && isStat(u.heal) && isStat(u.taken) && isStat(u.attacks);
 const isPerPlayer = (p) => isPlain(p) && isInt(p.killed, 0, 1e5) && isInt(p.total, 0, 1e5)
@@ -433,6 +434,7 @@ export const C2S = {
   'g.levelUp': {},
   'g.sell': { uid: isUid },
   // dir: the facing chosen on the deploy wheel for a board target (absent ⇒ RIGHT; the piece's own tile ⇒ re-orient)
+  'g.remRally': { row: (v) => isInt(v, 9, 12), col: (v) => isInt(v, 2, 10) },
   'g.move': { uid: isUid, to: target, dir: isDir, $optional: ['dir'] },
   // replaceUid: with both of the target's slots used, the equipped item the replace dialog picked (research 09 §1.2
   // UseEquipUp.unloadInstId; absent ⇒ the oldest; not one of the target's items ⇒ BAD_TARGET)

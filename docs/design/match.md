@@ -149,3 +149,11 @@ The narrow six-seat waiting room uses three columns and two rows that fit the re
 The six-seat R10/R12/R14 ordinary beacon is a guaranteed system supply, separate from shared shop item stock. Its server-created `sixPlayerBeaconRound` marker is set before recomputation; holding, consuming or eliminating this supply neither reserves nor releases shop copies. Ordinary purchases and effect grants remain stock-limited. See [MULTIPLAYER.md](../MULTIPLAYER.md).
 
 The extension's tier-III Ascalon was retired by owner request on 2026-10-11. Both custom forms, covenant membership and the additional live-body slow/layer generator are absent; upstream self-selected Ascalon remains. See [KAZDEL.md](../KAZDEL.md).
+
+### Rhine extension: Kazdel souls entering Unite
+
+A surviving Kazdel soul is reported under its down board body as `unitsEnd[].kazdelSoul: { hpPct, sp }` before battlefield cleanup. The same owner/body UID carries it into Unite. Restore after initial forced exits, using the resolved body loadout and the new field coordinates; do not emit a body death or resource gain. Dead souls are not restored. Active skills and temporary effects restart under the existing Unite initialization contract. A real body redeployment removes its soul; final battlefield cleanup remains mandatory.
+
+### Rhine extension: Rem allied transit
+
+By maintainer approval, Rem ground reinforcements and vehicles may march through living allies of any teammate while retaining exclusive final occupancy. Obstacles and downed bodies still stop movement; contact combat uses the actual position, without pursuit or dragging enemies. A reserved-tile fallback is not a vehicle arrival. See [REM.md](../REM.md) for movement and ownership rules.

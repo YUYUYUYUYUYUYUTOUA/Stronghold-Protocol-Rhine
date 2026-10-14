@@ -542,6 +542,8 @@ export const SUB = Object.freeze({
   summoner: P({}),
   // --- TANK
   protector: P({}),
+  // Arts protectors attack physically at rest; their native skills explicitly switch damage to arts.
+  artsprotector: P({ attack: 'melee', dmgType: 'phys', projectile: 'none', canHitFly: false }),
   guardian: P({}),
   shotprotector: P({ attack: 'ranged', canHitFly: true, projectile: 'arrow' }),
   primprotector: P({}),

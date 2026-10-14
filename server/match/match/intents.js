@@ -30,6 +30,7 @@ export class MatchIntents {
       case 'g.levelUp': return ps.levelUp();
       case 'g.sell': return ps.sell(msg.uid);
       // dir: the deploy wheel's facing (DESIGN §3; absent ⇒ PlayerState reads to.dir, then RIGHT)
+      case 'g.remRally': return ps.setRemRally(msg.row, msg.col);
       case 'g.move': return ps.move(msg.uid, msg.to, msg.dir);
       case 'g.equip': return ps.equip(msg.itemUid, msg.targetUid, msg.replaceUid ?? null);
       case 'g.art': return ps.useArt(msg.itemUid, msg.row, msg.col, msg.dir);

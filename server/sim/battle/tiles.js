@@ -19,8 +19,10 @@ export class BattleTiles {
     const k = r * COLS + c;
     if (this._occ[k] && this._occ[k] !== unit && this._occ[k].alive) return false;
     if (this.downOn(r, c)) return false;
-    const ok = unit.tileR * COLS + unit.tileC;
+    const anchor = unit.remTransitAnchor;
+    const ok = anchor ? anchor[0] * COLS + anchor[1] : unit.tileR * COLS + unit.tileC;
     if (this._occ[ok] === unit) this._occ[ok] = null;
+    if (anchor) { delete unit.remTransitAnchor; this.remTransit?.delete(unit); }
     this.releaseBlocked(unit);
     if (unit.obstacle) this.grid.setObstacle(unit.tileR, unit.tileC, false, unit.obstacleKind);
     unit.tileR = r; unit.tileC = c; unit.x = c; unit.y = r;

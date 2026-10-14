@@ -17,9 +17,9 @@ const fxOf = (h, kind) => h.eventsOf('fx').filter((e) => e[1] === kind);
 const absKeysHas = (grid, u, r, c) => grid.some(([dr, dc]) => u.tileR + dr === r && u.tileC + dc * u.facing === c);
 const clean = (h) => { assert.deepEqual(h.b.errors.map((e) => `${e.label}: ${e.message}`), []); checkInvariants(h.b); };
 
-test('tier-5 registry: all 23 non-DIY tier-5 chess have a hand-authored kit', () => {
+test('tier-5 registry: all 25 non-DIY tier-5 chess have a hand-authored kit', () => {
   const ids = Object.keys(KITS).sort();
-  assert.equal(ids.length, 23);
+  assert.equal(ids.length, 25);
   for (let i = 1; i <= 23; i++) assert.ok(KITS[`chess_char_5_${String(i).padStart(2, '0')}_a`], `kit for 5_${i}`);
   for (const id of ids) {
     const h = makeBattle({ units: [{ chessId: id, row: 10, col: 5 }], autoFinish: false, timeLimit: 3 });

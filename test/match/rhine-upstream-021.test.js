@@ -40,8 +40,8 @@ for (const [profile, data] of profiles) {
       const tokens = ps.gd.placeableTokens(SLOT, loadout);
       assert.equal(tokens.find(x => x.tokenId === TRAP)?.count, 9, 'the upstream ten traps use its existing per-stack cap of nine');
       if (profile === 'Rhine') {
-        assert.equal(ps.gd.placeableTokens('chess_rhine_dorothy_a').find(x => x.tokenId === TRAP)?.count, 4);
-        assert.equal(ps.gd.placeableTokens('chess_rhine_dorothy_b').find(x => x.tokenId === TRAP)?.count, 5);
+        assert.equal(ps.gd.placeableTokens('chess_rhine_magallan_a').find(x => x.tokenId === 'token_10005_mgllan_drone3')?.count, 3);
+        assert.equal(ps.gd.placeableTokens('chess_rhine_magallan_b').find(x => x.tokenId === 'token_10005_mgllan_drone3')?.count, 3);
       }
       const piece = ps.acquireChess(SLOT, { source: 'buy' });
       assert.ok(piece);

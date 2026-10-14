@@ -257,7 +257,7 @@ test('the shipped seven-member roster reaches Rhine nine through Muelsyse harmon
     const tile = [...ps.deployMap()].find(([k]) => !ps.board.has(k) && canPlace(ps.deployMap(), position, ...parseKey(k)));
     return give(h.m, ps, id, 'board', parseKey(tile[0]));
   };
-  for (const id of DATA.bonds[RHINE_BOND].visibleMembers.filter(id => !['char_135_halo', 'char_4048_doroth'].includes(DATA.chess[id].charId))) place(id);
+  for (const id of DATA.bonds[RHINE_BOND].visibleMembers.filter(id => !['char_135_halo', 'char_248_mgllan'].includes(DATA.chess[id].charId))) place(id);
   assert.equal(ps.bonds[RHINE_BOND].count, 8, 'seven real Rhine operators plus Muelsyse harmony');
   const recruitId = Object.values(DATA.chess).find(c => c.visible && !c.isGolden && !c.bonds.includes(RHINE_BOND)).chessId;
   const recruit = place(recruitId);
@@ -549,7 +549,7 @@ for (const hidden of [false, true]) for (const mixed of [false, true]) {
   });
 }
 
-test('Ptilopsis research trait counts duplicate real pieces but excludes the harmony virtual member', () => {
+test('Ptilopsis research counts distinct tiers, excluding duplicate grades and virtual members', () => {
   const data = fixture(), registry = new MetaRegistry(); registerMeta(registry);
   data.garrisons.garrison_rhine_test = { garrisonId: 'garrison_rhine_test', eventType: 'SERVER_PREP_FIN', effectKey: 'RHINE_RESEARCH_BY_MEMBER', bb: { layer: 2 }, bbStr: { conditionkey: 'character_target_inboard' } };
   data.chess[IDS[2]].garrisonIds = ['garrison_rhine_test'];
@@ -560,13 +560,55 @@ test('Ptilopsis research trait counts duplicate real pieces but excludes the har
   member(h, ps, 0); member(h, ps, 1); member(h, ps, 2);
   h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
   assert.equal(ps.layers[RHINE_BOND], 6);
-  // Bond thresholds still use distinct names, but the research trait counts every real copy.
+  // Bond thresholds use distinct names; the research trait counts distinct represented tiers.
   give(h.m, ps, data.chess[IDS[0]].goldenId, 'board', freeTile(ps));
   assert.equal(ps.bonds[RHINE_BOND].count, 4, 'three real members plus the one harmony bonus');
   const elite = setup({ data: eliteData, registry }), elitePs = elite.ps('p_0');
   member(elite, elitePs, 0); member(elite, elitePs, 1); member(elite, elitePs, 2);
   give(elite.m, elitePs, eliteData.chess[IDS[0]].goldenId, 'board', freeTile(elitePs));
   elite.m.dispatch(elitePs, 'onPrepEnd', { round: 1 });
-  assert.equal(elitePs.layers[RHINE_BOND], 16, 'four actual copies each give the elite four layers');
+  assert.equal(elitePs.layers[RHINE_BOND], 12, 'three represented tiers each give four layers; elite duplicate adds no tier');
   assert.equal(h.m.gd.raw.garrisons.garrison_rhine_test.bb.layer, 2, 'another match cannot change the normal profile');
+});
+
+test('Ptilopsis research reaches 12/24 only with all six represented Rhine tiers', () => {
+  for (const layer of [2, 4]) {
+    const data = fixture(), registry = new MetaRegistry(); registerMeta(registry);
+    data.garrisons.garrison_rhine_tiers = { garrisonId: 'garrison_rhine_tiers', eventType: 'SERVER_PREP_FIN',
+      effectKey: 'RHINE_RESEARCH_BY_MEMBER', bb: { layer }, bbStr: { conditionkey: 'character_target_inboard' } };
+    data.chess[IDS[0]].garrisonIds = ['garrison_rhine_tiers'];
+    const h = setup({ data, registry }), ps = h.ps('p_0');
+    for (let i = 0; i < IDS.length; i++) member(h, ps, i);
+    give(h.m, ps, data.chess[IDS[0]].goldenId, 'board', freeTile(ps));
+    h.m.dispatch(ps, 'onPrepEnd', { round: 1 });
+    assert.equal(ps.layers[RHINE_BOND], 6 * layer);
+    h.m.dispose();
+  }
+});
+
+test('degraded token data never creates or retains undefined research devices', () => {
+  for (const missing of [['medical'], ['medical', 'energy', 'laser']]) {
+    const data = fixture();
+    for (const key of missing) delete data.tokens[`token_rhine_${key}`];
+    const h = setup({ data }), ps = h.ps('p_0');
+    for (let i = 0; i < 3; i++) member(h, ps, i);
+    for (const key of missing) {
+      assert.equal(device(ps, key).uid, null);
+      assert.equal(device(ps, key).locked, true);
+    }
+    const missingId = `token_rhine_${missing[0]}`;
+    const stale = ps.newPiece('token', missingId, { research: true, researchKey: missing[0], ownerUid: null });
+    const [row, col] = freeTile(ps); ps.board.set(`${row},${col}`, stale);
+    ps.research.hand[0] = ps.newPiece('token', missingId, { research: true, researchKey: missing[0], ownerUid: null });
+    ps._syncResearch();
+    assert.ok([...ps.board.values(), ...ps.research.hand.filter(Boolean)].every(p => p.id !== missingId));
+    if (missing.length === 1) {
+      assert.ok(device(ps, 'energy').uid, 'available token definitions remain usable');
+      const energy = ps.research.hand[1]; ps.research.hand[1] = null;
+      assert.ok(collectViolations(h.m).some(message => message.includes('missing unlocked research device')),
+        'defined and unlocked devices are still required by the invariant');
+      ps.research.hand[1] = energy;
+    }
+    checkInvariants(h.m); h.m.dispose();
+  }
 });

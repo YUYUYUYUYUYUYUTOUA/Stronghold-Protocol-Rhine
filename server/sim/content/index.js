@@ -44,7 +44,7 @@ async function safeImport(path) {
 const KIT_REGISTRY = await safeImport('./kits/index.js');
 const RHINE_KITS = await safeImport('./kits/rhine.js');
 const KAZDEL_KITS = await safeImport('./kits/kazdel.js');
-const DOMAIN_NAMES = ['tokens', 'devices', 'enemies', 'bosses', 'bonds', 'garrisons', 'items', 'bands', 'choices', 'rhine', 'rhineMeta', 'kazdel'];
+const DOMAIN_NAMES = ['tokens', 'devices', 'enemies', 'bosses', 'bonds', 'garrisons', 'items', 'bands', 'choices', 'rhine', 'rhineMeta', 'kazdel', 'rem', 'rem_traits'];
 const DOMAINS = await Promise.all(DOMAIN_NAMES.map((n) => safeImport(`./${n}.js`)));
 const tokens = DOMAINS[0];
 const rhine = DOMAINS[DOMAIN_NAMES.indexOf('rhine')];

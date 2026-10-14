@@ -75,12 +75,12 @@ test('numbers: every stats/bb/enemyScale object holds only finite numbers (no nu
   assert.deepEqual(bad.slice(0, 10), [], `${bad.length} bad numeric fields`);
 });
 
-test('chess: base roster plus Rhine and Kazdel expansions, including restored Vigna', () => {
-  assert.equal(Object.keys(chess).length, 290);
-  assert.equal(visible.length, 125);
+test('chess: base roster plus Rhine, Kazdel and Rim expansions, including restored Vigna', () => {
+  assert.equal(Object.keys(chess).length, 308);
+  assert.equal(visible.length, 134);
   const perTier = {};
   for (const c of visible) perTier[c.tier] = (perTier[c.tier] || 0) + 1;
-  assert.deepEqual(perTier, { 1: 18, 2: 20, 3: 22, 4: 24, 5: 21, 6: 20 });
+  assert.deepEqual(perTier, { 1: 20, 2: 22, 3: 23, 4: 25, 5: 23, 6: 21 });
   assert.equal(normalChess.filter((c) => c.isDiy).length, 4);
   assert.equal(normalChess.filter((c) => c.isHidden).length, 16);
 });
@@ -129,9 +129,9 @@ test('chess: every non-DIY chess has stats, range, classification and a resolvab
   assert.equal(chess.chess_char_1_01_a.targetPriority, 'fly');
 });
 
-test('bonds: 25 bonds including Rhine and Kazdel, with valid members, thresholds and effects', () => {
-  assert.equal(Object.keys(bonds).length, 25);
-  assert.equal(Object.values(bonds).filter((b) => b.isCore).length, 10);
+test('bonds: 26 bonds including Rhine, Kazdel and Rim, with valid members, thresholds and effects', () => {
+  assert.equal(Object.keys(bonds).length, 26);
+  assert.equal(Object.values(bonds).filter((b) => b.isCore).length, 11);
   const modes = new Set(['BOARD', 'BOARD_AND_DECK', 'BOARD_ALL_CHESS']);
   for (const b of Object.values(bonds)) {
     assert.ok(modes.has(b.countMode), `${b.bondId}: countMode ${b.countMode}`);
@@ -154,9 +154,9 @@ test('bonds: 25 bonds including Rhine and Kazdel, with valid members, thresholds
   for (const c of normalChess) for (const b of c.bonds) assert.ok(bonds[b].members.includes(c.chessId), `${c.chessId} not in ${b}.members`);
 });
 
-test('garrisons: all referenced exist; 58 distinct effect keys including nine Kazdel traits', () => {
+test('garrisons: all referenced exist; 67 distinct effect keys including Rim traits', () => {
   const keys = new Set(Object.values(garrisons).map((g) => g.effectKey));
-  assert.equal(keys.size, 58);
+  assert.equal(keys.size, 67);
   for (const g of Object.values(garrisons)) {
     assert.ok(typeof g.eventType === 'string' && typeof g.desc === 'string', g.garrisonId);
     for (const o of g.owners) assert.ok(chess[o], `${g.garrisonId}: owner ${o}`);
@@ -430,7 +430,7 @@ test('chess/tokens: talent tokens resolve and every token variant says where it 
     assert.equal(t.placeable, t.displayType !== 'HIDDEN' && made, `${t.tokenId} (${t.name}): placeable`);
   }
   assert.deepEqual(Object.values(tokens).filter((t) => t.placeable).map((t) => t.name).sort(),
-    ['医疗探机', '机械水獭', '诅咒娃娃', '斯卡蒂的海嗣', '流形', '狼群', '爬行号·防护单元', '共振装置'].sort());
+    ['医疗探机', '机械水獭', '诅咒娃娃', '斯卡蒂的海嗣', '流形', '狼群', '爬行号·防护单元', '沙地兽', '龙腾.A', '龙腾.F', '龙腾.L'].sort());
   assert.equal(tokens.enemy_9012_acloon.stats.deployLimit, tokens.enemy_9012_acloon.deployLimit);
 });
 
@@ -513,8 +513,8 @@ test('chess: skills[] = every skill unlocked at the status, at the chess skill l
     assert.ok(wider(s.trigger.customRangeGrid, c.rangeGrid), `${c.chessId} ${s.skillId}: its running range strictly contains ${c.rangeId}`);
     if (s.rangeGrid) assert.deepEqual(s.trigger.customRangeGrid, s.rangeGrid, `${c.chessId} ${s.skillId}: the skill's own grid`);
   }
-  assert.equal(active.length, 82, '41 skills including Hoederer/Logos S3, normal + elite');
-  assert.equal(new Set(active.map(([c, s]) => `${c.baseId} ${s.skillId}`)).size, 41);
+  assert.equal(active.length, 84, '42 skills including Hoederer/Logos S3, normal + elite');
+  assert.equal(new Set(active.map(([c, s]) => `${c.baseId} ${s.skillId}`)).size, 42);
   // from the SEARCH row (解放者 / 阵法术师 / 安洁莉娜) and 深巡 S2's deviation: the owner's decisions of 2026-10-05
   const fromSearch = active.filter(([, s]) => s.trigger.rawRule === 'SEARCH').map(([c, s]) => `${c.baseId} ${s.skillId}`);
   assert.deepEqual([...new Set(fromSearch)].sort(), ['chess_char_3_08_a skchr_mint_1', 'chess_char_4_05_a skchr_beewax_1', 'chess_char_4_24_a skchr_billro_3', 'chess_char_5_19_a skchr_mlynar_2', 'chess_char_5_20_a skchr_aglina_3']);
@@ -529,8 +529,8 @@ test('chess: skills[] = every skill unlocked at the status, at the chess skill l
   assert.equal(grown('chess_char_3_08_a', 'skchr_mint_1').rawRule, 'SEARCH', '薄绿 S1: its official 阵法术师 row stays the rawRule');
   assert.equal(grown('chess_char_5_15_a', 'skchr_thorn2_3').rule, 'DEFAULT', '引星棘刺 S3: 被动效果：攻击范围扩大 is her own range');
   const deviated = Object.values(chess).flatMap((c) => (c.skills || []).filter((s) => s.trigger.rawRule === 'TAKE_DAMAGE' && s.trigger.rule !== 'TAKE_DAMAGE').map((s) => `${c.baseId} ${s.skillId}`));
-  assert.equal(deviated.length, 14, 'exactly the six skills of §21.29 and 余 S2, normal + elite');
-  assert.deepEqual([...new Set(deviated)].sort(), ['chess_char_1_04_a skchr_udflow_2', 'chess_char_1_20_a skchr_liskam_2', 'chess_char_2_18_a skchr_ashlok_2', 'chess_char_2_18_a skcom_atk_up[3]', 'chess_char_5_08_a skchr_horn_2', 'chess_char_5_08_a skchr_horn_3', 'chess_char_6_03_a skchr_yu_2']);
+  assert.equal(deviated.length, 20, 'approved native trigger deviations, including fixed Thumby, normal + elite');
+  assert.deepEqual([...new Set(deviated)].sort(), ['chess_char_1_04_a skchr_udflow_2', 'chess_char_1_20_a skchr_liskam_2', 'chess_char_2_18_a skchr_ashlok_2', 'chess_char_2_18_a skcom_atk_up[3]', 'chess_char_5_08_a skchr_horn_2', 'chess_char_5_08_a skchr_horn_3', 'chess_char_6_03_a skchr_yu_2', 'chess_rem_thumpy_a skchr_thumpy_1', 'chess_rem_thumpy_a skchr_thumpy_2', 'chess_rem_thumpy_a skchr_thumpy_3']);
   for (const c of Object.values(chess)) {
     for (const s of c.skills || []) {
       if (s.skillType !== 'MANUAL') assert.ok(!['TAKE_DAMAGE', 'SEARCH', 'SKILL_RANGE'].includes(s.trigger.rule), `${c.chessId} ${s.skillId}: an AUTO / PASSIVE skill takes no strategy row`);

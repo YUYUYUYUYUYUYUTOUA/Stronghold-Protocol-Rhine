@@ -115,7 +115,7 @@ test('Kazdel equipment generated data, inheritance and owner-only combo agree in
         const { spec: S, ds } = await loadBrowserSim();
         return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
       }, { spec, body: exerciseEquipment.toString() });
-      assert.deepEqual(node.hit, [135, 120]); assert.deepEqual(node.stages, [2, 2]);
+      assert.deepEqual(node.hit, [135, 120]); assert.deepEqual(node.stages, [3, 3]);
       assert.deepEqual(node.before, node.after); assert.deepEqual(node.errors, []);
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${q}`);
     }
@@ -188,5 +188,52 @@ test('Soul native skills, talents, summons, metadata and cleanup match Chromium/
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), kind);
     }
     assert.deepEqual(errors, []);
+  } finally { await browser?.close(); await srv.close(); }
+});
+
+function exerciseUniteSoul(b) {
+  b.start();
+  const bodies = b.allyUnits.filter(u => u.kind === 'op');
+  const restored = bodies.map(u => ({ owner: u.ownerId, down: !u.alive, soulOwner: u.kazdelSoulUnit?.ownerId,
+    hpPct: u.kazdelSoulUnit?.hp / u.kazdelSoulUnit?.s.maxHp, sp: u.kazdelSoulUnit?.skill.spTotal,
+    tile: [u.kazdelSoulUnit?.tileR, u.kazdelSoulUnit?.tileC] }));
+  const meta = b.fieldMeta(), snapshot = b.snapshot();
+  b.redeploy(bodies[0]);
+  const afterReturn = bodies.map(u => !!u.kazdelSoulUnit?.alive);
+  b.forceEnd();
+  return { restored, meta, snapshot, afterReturn, soulsAfterEnd: b.allyUnits.filter(u => u.kazdelSoul && u.alive).length,
+    result: b.result(), errors: b.errors };
+}
+
+test('unite carried souls, owner links and render metadata agree in Node and Chromium', {
+  skip: enabled ? false : 'set SIM_E2E=1 and CHROME_PATH (no art required)', timeout: 90000,
+}, async () => {
+  const { startServer } = await import('../../server/index.js');
+  const puppeteer = (await import('puppeteer-core')).default;
+  const srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true });
+  let browser;
+  try {
+    browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-first-run', '--no-sandbox'] });
+    const page = await browser.newPage();
+    await page.goto(`http://127.0.0.1:${srv.port}/sim/spec.js`);
+    const ds = new DataSource(getData({ log: { warn() {}, error() {}, info() {} } }));
+    for (const count of [3, 6, 9]) {
+      const spec = buildBattleSpec({ fieldId: 'u', kind: 'unite', seed: 417, stageId: 'act2autochess_m01',
+        timeLimit: 120, flags: { layerGainsEnabled: false }, players: ['p1', 'p2'].map((playerId, seat) => ({ playerId, seat,
+          colOffset: seat === 0 ? 8 : 0, bonds: { kazdelShip: { active: true, count, layers: 10 } },
+          units: [{ uid: 1, kind: 'chess', chessId: count === 9 ? 'chess_char_3_02_a' : 'chess_kazdel_meteorite_a', row: 10, col: 4,
+            carryState: { down: true, kazdelSoul: { hpPct: 0.4, sp: 7 } } }] })) });
+      const node = exerciseUniteSoul(createBattleFromSpec(spec, ds));
+      const web = await page.evaluate(async ({ spec, body }) => {
+        const { loadBrowserSim } = await import('/js/battle/runner.js');
+        const { spec: S, ds } = await loadBrowserSim();
+        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
+      }, { spec, body: exerciseUniteSoul.toString() });
+      assert.deepEqual(node.restored.map(u => [u.owner, u.soulOwner, u.down, u.sp]), [['p1', 'p1', true, 7], ['p2', 'p2', true, 7]]);
+      assert.deepEqual(node.afterReturn, [false, true]);
+      assert.equal(node.soulsAfterEnd, 0);
+      assert.deepEqual(node.errors, []);
+      assert.deepEqual(web, JSON.parse(JSON.stringify(node)));
+    }
   } finally { await browser?.close(); await srv.close(); }
 });

@@ -732,10 +732,10 @@ test('Rhine Astgenne: first activation grants each active bond once, including a
   }
 });
 
-test('Rhine Dorothy: retired trap events never award research; attack trait is dispatched by Rhine content', () => {
+test('Rhine Magallan: summons never award research; attack trait is dispatched by Rhine content', () => {
   for (const suffix of ['a', 'b']) {
-    const gid = `garrison_rhine_dorothy_${suffix}`;
-    assert.equal(GR(gid).effectKey, 'RHINE_DOROTHY_ATTACK');
+    const gid = `garrison_rhine_magallan_${suffix}`;
+    assert.equal(GR(gid).effectKey, 'RHINE_MAGALLAN_ATTACK');
     assert.equal(GR(gid).bb.atk_per_layer, suffix === 'b' ? 2 : 1);
     const h = battle({ units: [{ id: 'doro', g: [gid], row: 10, col: 4 }], bonds: { rhineShip: B() } });
     const owner = h.unit('doro'), token = { ownerUnit: owner, mem: {} };
@@ -755,7 +755,10 @@ test('coverage: every IN_BATTLE garrison id of a visible chess (and every id the
   // Kazdel's actual normal/elite records, literal bonuses, death caps and soul rules are exercised by
   // kazdel.test.js. They belong to content/kazdel.js rather than this legacy dispatcher.
   const kazdel = new Set(Object.values(KAZDEL_GARRISON_KEYS));
-  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g) && !rhine.test(g) && !kazdel.has(GR(g).effectKey)).sort();
+  // Rem traits are dispatched by rem_traits.js; actual normal/elite records and behavior
+  // are exercised in rem-traits.test.js, outside this legacy dispatcher.
+  const rem = /^garrison_rem_/;
+  const missing = [...VISIBLE_IDS].filter((g) => !COVER.has(g) && !rhine.test(g) && !rem.test(g) && !kazdel.has(GR(g).effectKey)).sort();
   assert.deepEqual(missing, []);
   assert.ok(VISIBLE_IDS.size >= 100, `${VISIBLE_IDS.size} ids`);
 });

@@ -70,6 +70,11 @@ export class FxSim {
     const r = clamp(num(ex.r ?? ex.radius, spec.r ?? 1), 0.3, 30);
     const ts = this.ctx.timeScale ? Math.max(0.25, this.ctx.timeScale()) : 2;
     const dur = num(ex.dur ?? ex.duration, spec.dur ?? 0) / ts;
+    if (spec.a === 'remPizza') {
+      // A fixed ground footprint: a moving boss never drags an already thrown pizza's landing point.
+      this.mortar(this._viewOf(ex.src), at.x, at.y, r, num(ex.t, 1) / ts, { exactRadius: true, drop: true });
+      return;
+    }
     if (spec.a.startsWith('kazdel')) { this.kazdelFx(kind, at, ex, dur); return; }
     if (kind === 'dorothyTrap' && ex.skill === 'sktok_doroth_3') {
       const row = Math.round(at.y), column = Math.round(at.x);
@@ -152,7 +157,7 @@ export class FxSim {
     switch (spec.a) {
       case 'blast': {
         if (r >= 12) { this.flashScreen(col, 0.5); break; }
-        if (kind === 'bombard') { this._touchLocks(ex.id ?? ex.src ?? null); this._landed(ex.id ?? ex.src ?? null, at.x, at.y, r); }
+        if (kind === 'bombard' || kind === 'remPizzaImpact') { this._touchLocks(ex.id ?? ex.src ?? null); this._landed(ex.id ?? ex.src ?? null, at.x, at.y, r); }
         this.explosion(at.x, at.y, at.z, r, col, { smoke: spec.smoke, heavy: !!spec.heavy, tiles: ex.tiles ? tilesAround(at.x, at.y, r, ex.tiles) : null });
         break;
       }

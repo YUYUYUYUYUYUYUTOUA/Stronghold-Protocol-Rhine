@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { TestClient } from '../test/helpers/wsClient.js';
 import { APP_VERSION } from '../shared/constants.js';
 import { pngSize } from './assets/formats.mjs';
+import { DataSource } from '../server/sim/simdata.js';
+import { GameData } from '../server/match/gamedata.js';
 
 // Pass one or more base URLs as CLI arguments to also verify an external deployment.
 // Example: node tools/verify-rhine-release.mjs http://127.0.0.1:3000 https://your-host.example
@@ -49,7 +51,10 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
   assert.ok(bond, 'served Kazdel covenant missing');
   assert.equal(bond.name, '卡兹戴尔', 'Kazdel main covenant name mismatch');
   assert.equal(bond.isCore, true, 'Kazdel must be a main covenant');
-  assert.deepEqual(bond.thresholds, [3, 6], 'Kazdel threshold mismatch');
+  assert.deepEqual(bond.thresholds, [3, 6, 9], 'Kazdel threshold mismatch');
+  for (const [key, value] of Object.entries({ damageBase: 800, damagePerLayer: 15, radius: 2, friendlyFireStage: 2, friendlyFireRatio: 1 })) {
+    assert.equal(bond.spec?.cannon?.[key], value, `Kazdel cannon ${key} mismatch`);
+  }
   const expectedMembers = KAZDEL_ROSTER.map(([id]) => `${id}_a`).sort();
   assert.deepEqual([...bond.visibleMembers].sort(), expectedMembers, 'Kazdel visible roster mismatch');
   assert.deepEqual([...bond.members].sort(), expectedMembers, 'Kazdel covenant roster mismatch');
@@ -63,7 +68,7 @@ export async function verifyKazdelRelease({ fetched, get, artifacts = {}, packag
     '/sim/content/kits/kazdel.js', '/sim/content/index.js', '/sim/kazdelOrigin.js',
     '/sim/damage.js', '/sim/units.js', '/sim/buffs.js', '/sim/snapshot.js', '/sim/ai.js', '/sim/projectiles.js',
     '/sim/battle/combat.js', '/sim/battle/events.js', '/sim/battle/hooks.js',
-    '/sim/battle/deploy.js', '/sim/battle/tiles.js', '/sim/battle/status.js',
+    '/sim/battle/deploy.js', '/sim/battle/tiles.js', '/sim/battle/status.js', '/sim/battle/lifecycle.js', '/sim/spec.js', '/shared/protocol.js',
     '/sim/content/kits/ops/chess_char_1_16-tinman.js', '/sim/content/kits/ops/chess_char_2_19-tinman.js',
     '/js/kazdelState.js', '/js/ui/kazdelHud.js', '/js/ui/combatHud.js', '/js/ui/detailPanel.js',
     '/js/ui/fallbackField.js', '/js/ui/gameLogic/format.js', '/js/render/fx/kazdel.js',
@@ -160,6 +165,69 @@ export async function verifyRhineDeviceRelease({ fetched, get, artifacts = {}, p
   return { laser: true, minCount: definition.minCount, maxStage: definition.maxStage, httpArtifacts: 6 };
 }
 
+/** Fixed Rhine cards must resolve their native skills and usable owner-specific summon variants. */
+export async function verifyRhineOperatorsRelease({ fetched, get, artifacts = {}, packageRoot = root }) {
+  const operators = [], urls = new Set(['/sim/content/kits/rhine.js', '/sim/content/kits/ops/op-mgllan.js',
+    '/sim/content/kits/shared/summoner.js', '/sim/content/rhine.js', '/sim/content/rhineMeta.js', '/shared/rhineResearch.js']);
+  assert.equal(fetched.chess.chess_rhine_dorothy_a, undefined, 'retired fixed Dorothy must not remain in the roster');
+  for (const [key, charId, tier, skillCount, defaultSkill, moduleIds] of [
+    ['astgenne', 'char_135_halo', 2, 2, 0, ['uniequip_002_halo']],
+    ['magallan', 'char_248_mgllan', 4, 3, 2, ['uniequip_002_mgllan', 'uniequip_003_mgllan']],
+  ]) {
+    const normal = fetched.chess[`chess_rhine_${key}_a`], elite = fetched.chess[`chess_rhine_${key}_b`];
+    assert.ok(normal && elite, `${key} fixed forms missing`);
+    for (const form of [normal, elite]) {
+      assert.equal(form.charId, charId, `${key} native identity mismatch`);
+      assert.equal(form.tier, tier);
+      assert.equal(form.skills.length, skillCount);
+      assert.equal(form.skill.index, defaultSkill);
+      assert.ok(form.bonds.includes('rhineShip'));
+      for (const sk of form.skills) { assert.ok(fetched.assets.skills[sk.iconId], `${key} native skill art missing`); urls.add(fetched.assets.skills[sk.iconId]); }
+    }
+    assert.equal(elite.module.id, moduleIds[0]);
+    assert.deepEqual(elite.modules.map(m => m.uniEquipId), moduleIds);
+    for (const mod of elite.modules) { assert.ok(fetched.assets.modules[mod.typeIcon], `${key} module art missing`); urls.add(fetched.assets.modules[mod.typeIcon]); }
+    assert.ok(fetched.assets.chars[charId]?.avatar, `${key} avatar missing`); urls.add(fetched.assets.chars[charId].avatar);
+    if (key === 'astgenne') assert.ok(normal.bonds.includes('preciShip'));
+    operators.push({ name: normal.name, tier, skills: skillCount, defaultSkill: defaultSkill + 1, eliteModule: elite.module.type });
+  }
+  const ds = new DataSource(fetched), gd = new GameData(fetched, 'mode_multi_normal');
+  for (const suffix of ['a', 'b']) {
+    const id = `chess_rhine_magallan_${suffix}`, g = fetched.garrisons[`garrison_rhine_magallan_${suffix}`];
+    assert.equal(g?.effectKey, 'RHINE_MAGALLAN_ATTACK', 'Magallan protocol trait missing');
+    assert.deepEqual(g.bb, { atk_per_layer: suffix === 'b' ? 2 : 1, device_atk_per_layer: suffix === 'b' ? 1 : .5 });
+    assert.equal(fetched.garrisons[`garrison_rhine_mayer_${suffix}`]?.bb.max_layer, suffix === 'b' ? 24 : 12, 'Mayer shared budget mismatch');
+    for (let skillIndex = 0; skillIndex < 3; skillIndex++) for (const moduleId of suffix === 'b' ? ['none', 'uniequip_002_mgllan', 'uniequip_003_mgllan'] : ['none']) {
+      const loadout = { skillIndex, moduleId }, owner = ds.getChess(id, loadout);
+      assert.equal(owner.skill.id, `skchr_mgllan_${skillIndex + 1}`, 'Magallan native selected skill mismatch');
+      for (let n = 0; n < 3; n++) {
+        const token = ds.getToken(`token_10005_mgllan_drone${n + 1}`, id, loadout);
+        assert.ok(token, 'Magallan native drone missing');
+        assert.equal(token.sources.includes('skill'), n === skillIndex, 'Magallan selected drone production mismatch');
+        if (n === skillIndex) assert.equal(gd.placeableTokens(id, loadout).find(t => t.tokenId === token.id)?.count, 3, 'Magallan drone deployment limit mismatch');
+      }
+    }
+  }
+  for (const url of urls) {
+    const bytes = await get(url);
+    assert.equal(hash(bytes), hash(fs.readFileSync(new URL(localArtifact(url), packageRoot))), `${url} served Rhine operator artifact mismatch`);
+    artifacts[url] = hash(bytes);
+  }
+  return operators;
+}
+
+/** No replacement logo or HTTP fallback can satisfy the user's supplied Rem PNG requirement. */
+export async function verifyRemIconRelease({ fetched, get, artifacts = {}, packageRoot = root }) {
+  if (!fetched.bonds.remShip) return { enabled: false };
+  const url = '/assets/bond/rem.png';
+  assert.equal(fetched.assets.bonds.remShip, url, 'Rem original PNG asset mapping missing or mismatched');
+  const bytes = await get(url), local = fs.readFileSync(new URL(localArtifact(url), packageRoot));
+  assert.ok(pngSize(local) && pngSize(bytes), 'Rem original icon must be a PNG');
+  assert.equal(hash(bytes), hash(local), 'served Rem original icon mismatch');
+  artifacts[url] = hash(bytes);
+  return { enabled: true, icon: url, sha256: hash(bytes) };
+}
+
 async function main() {
   const bases = process.argv.slice(2);
   if (!bases.length) bases.push('http://127.0.0.1:3000');
@@ -187,33 +255,9 @@ async function main() {
     assert.equal(fetched.chess.chess_rhine_mayer_b.skill.index, 0);
     assert.equal(fetched.chess.chess_rhine_mayer_b.module.id, 'uniequip_002_otter');
     assert.deepEqual(fetched.bonds.rhineShip.thresholds, [3, 6, 9]);
-    const operators = [];
-    for (const [key, charId, tier, skillCount, defaultSkill, moduleId] of [
-      ['astgenne', 'char_135_halo', 2, 2, 0, 'uniequip_002_halo'],
-      ['dorothy', 'char_4048_doroth', 4, 3, 2, 'uniequip_002_doroth'],
-    ]) {
-      const normal = fetched.chess[`chess_rhine_${key}_a`], elite = fetched.chess[`chess_rhine_${key}_b`];
-      assert.equal(normal.charId, charId);
-      assert.equal(normal.tier, tier);
-      assert.equal(normal.skills.length, skillCount);
-      assert.equal(normal.skill.index, defaultSkill);
-      assert.equal(elite.skill.index, defaultSkill);
-      assert.equal(elite.module.id, moduleId);
-      assert.ok(normal.bonds.includes('rhineShip'));
-      if (key === 'astgenne') assert.ok(normal.bonds.includes('preciShip'));
-      else assert.deepEqual(elite.modules.map(m => m.uniEquipId), [moduleId]);
-      const avatar = fetched.assets.chars[charId].avatar;
-      const bytes = await get(avatar);
-      assert.equal(hash(bytes), hash(fs.readFileSync(new URL(`public${avatar}`, root))));
-      operators.push({ name: normal.name, tier, skills: skillCount, defaultSkill: defaultSkill + 1, eliteModule: elite.module.type });
-    }
+    const operators = await verifyRhineOperatorsRelease({ fetched, get, artifacts });
+    const remIcon = await verifyRemIconRelease({ fetched, get, artifacts });
     const openingBans = verifyOpeningBanRelease({ fetched });
-    for (const [id, count] of [['chess_rhine_dorothy_a', 4], ['chess_rhine_dorothy_b', 5]]) {
-      const variant = fetched.tokens.token_10025_doroth_recttp.variants[id];
-      assert.equal(variant.count, count);
-      assert.equal(variant.stats.deployLimit, count);
-      assert.equal(fetched.chess[id].talents.find(t => t.tokenKey === 'token_10025_doroth_recttp').bb.cnt, count);
-    }
     for (const [id, count] of [['chess_rhine_mayer_a', 1], ['chess_rhine_mayer_b', 2]]) {
       const variant = fetched.tokens.token_10004_otter_motter.variants[id];
       assert.equal(variant.count, count);
@@ -260,7 +304,7 @@ async function main() {
       assert.equal((await client.request({ t: 'ping', c: Date.now() }, 10000)).t, 'pong');
     } finally { await client.close(); }
     checks.push({ base, health, operators, characters: [...operators, ...kazdel.characters], maincovenants,
-      equipment, researchDevices, openingBans, kazdel, artifacts, http: 'passed', webSocket: 'welcome + pong' });
+      equipment, researchDevices, openingBans, kazdel, remIcon, artifacts, http: 'passed', webSocket: 'welcome + pong' });
   }
   const report = { timestamp: new Date().toISOString(), checks };
   fs.writeFileSync(new URL('rhine-equipment-verification.json', root), JSON.stringify(report, null, 2));

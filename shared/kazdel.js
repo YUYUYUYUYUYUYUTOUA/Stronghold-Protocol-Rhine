@@ -13,7 +13,7 @@ export const KAZDEL_CHARACTERS = Object.freeze({
   ines: 'char_4087_ines', mudrock: 'char_311_mudrok', logos: 'char_4133_logos', wisdel: 'char_1035_wisdel',
 });
 export const KAZDEL_BALANCE = Object.freeze({
-  thresholds: Object.freeze([3, 6]), bodyHpPerLayer: 10,
+  thresholds: Object.freeze([3, 6, 9]), bodyHpPerLayer: 10,
   soulHpRatio: 0.6, soulHpPerLayer: 10, soulAttackRatio: 0.8, soulAttackPerLayer: 3,
   soulsPerPiecePerBattle: null, // Unlimited: each real body death can create another soul.
 });
@@ -39,7 +39,7 @@ export const KAZDEL_GARRISON_KEYS = Object.freeze({
   paprika: 'KAZDEL_PAPRIKA_SOUL_HEAL', hoederer: 'KAZDEL_HOEDERER_DEATH',
   mudrock: 'KAZDEL_MUDROCK_SOUL_HP', logos: 'KAZDEL_LOGOS_SOUL_ATTACK', wisdel: 'KAZDEL_WISDEL_SOUL_DAMAGE',
 });
-/** Stage 0 is inactive; stages 1–2 correspond to the 3/6-member thresholds. */
+/** Stage 0 is inactive; stages 1–3 correspond to the 3/6/9-member thresholds. */
 export function kazdelStage(bond) {
   return bond?.active ? KAZDEL_BALANCE.thresholds.filter(n => Number(bond.count) >= n).length : 0;
 }

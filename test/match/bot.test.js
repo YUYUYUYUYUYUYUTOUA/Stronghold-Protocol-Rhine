@@ -39,9 +39,9 @@ test('user: Given a saturated layout, When placing a self-range defender, Then p
 });
 
 test('self-range blockers (range 0-1, only their own tile) fill the free enemy-road tiles before any other tile, on every stage and seed', () => {
-  // official range_table "0-1": the one grid (0,0) — 角峰 古米 泡泡 折桠 菲莱 蛇屠箱 塞雷娅 余
+  // official range_table "0-1": the one grid (0,0) — 角峰 古米 泡泡 折桠 菲莱 蛇屠箱 塞雷娅 余 石棉 珊比
   const guards = Object.values(DATA.chess).filter((c) => c && !c.isGolden && c.rangeGrid && c.rangeGrid.length === 1 && c.rangeGrid[0].every((v) => v === 0));
-  assert.equal(guards.length, 8);
+  assert.equal(guards.length, 10);
   const stages = new Set();
   for (let seed = 1; seed <= 40; seed++) {
     const h = makeMatch({ mode: 'solo', seed }).start().toPrep();

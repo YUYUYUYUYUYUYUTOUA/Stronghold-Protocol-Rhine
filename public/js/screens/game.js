@@ -80,6 +80,7 @@ import { EnemyDrawer } from '../ui/enemyDrawer.js';
 import { Ticker } from '../ui/ticker.js';
 import { EmoteWheel } from '../ui/emotes.js';
 import { EffectsList } from '../ui/effectsList.js';
+import { RemRally } from '../ui/remRally.js';
 import { RhineDock } from '../ui/rhineDock.js';
 import { researchRange } from '../../../shared/rhineRange.js';
 import { CombatHud } from '../ui/combatHud.js';
@@ -1472,6 +1473,9 @@ function MatchScreen() {
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />
 
+      ${!watchingOther && !pen && !sp ? html`<${RemRally} point=${priv?.remRally} editable=${editable && showPrep}
+        view=${view} placeCtx=${placeCtx} enabled=${(priv?.bonds || []).some(b => b.bondId === 'remShip' && b.count > 0)}
+        onSet=${(row, col) => actions.remRally(row, col)} />` : null}
       <div class="gm__effects"><${EffectsList} effects=${watchingOther && field ? (field.effects ?? null) : priv?.effects} /></div>
       ${!watchingOther && !pen && !sp ? html`<${RhineDock} research=${priv?.research} editable=${editable && showPrep}
         view=${view} placeCtx=${placeCtx}

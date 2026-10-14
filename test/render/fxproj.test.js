@@ -476,3 +476,22 @@ describe('fx placement, quality, melee, skill', () => {
     fx.destroy();
   });
 });
+
+test('Rem pizza drops onto its fixed .45 radius point after one game second and has an explicit impact', () => {
+  const boss = { id:91, x:6, y:10, z:1, hover:.5 };
+  const {fx} = makeFx({ts:2,views:[boss]});
+  const calls=[]; const ring=fx.ring.bind(fx);
+  fx.ring=(...args)=>{calls.push(args); return ring(...args);};
+  fx.simFx('remPizza',6,10,{src:91,r:.45,t:1});
+  assert.equal(fx.projs.length,1);
+  assert.equal(fx.projs[0].dur,.5,'one game second at 2x');
+  assert.equal(fx.projs[0].rise,0,'drop rather than artillery climb');
+  assert.ok(calls.some(a=>a[3]===.45&&a[6]===.5),'exact ground warning radius and lifetime');
+  boss.x=9;
+  assert.equal(fx.projs[0].tx,6,'boss movement does not drag the target');
+  let impact=null;
+  fx.explosion=(...args)=>{impact=args;};
+  fx.simFx('remPizzaImpact',6,10,{src:91,r:.45});
+  assert.deepEqual(impact.slice(0,4),[6,10,0,.45]);
+  assert.equal(fx.projs[0].t,fx.projs[0].dur,'authoritative impact lands the matching flight');
+});

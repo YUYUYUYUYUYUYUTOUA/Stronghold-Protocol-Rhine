@@ -11,21 +11,20 @@ import { RHINE_BALANCE, RHINE_DEVICES } from '../shared/rhineResearch.js';
 import { DataSource } from '../server/sim/simdata.js';
 import { loadoutRecord, resolveRecordLoadout } from '../shared/loadoutRecord.js';
 import { stripPotential } from '../shared/potential.js';
-const names=['chess','bonds','garrisons','tokens','effects','config','items'];
+const names=['chess','bonds','garrisons','tokens','effects','config','items','backups'];
 const files=Object.fromEntries(await Promise.all(names.map(async n=>[n,JSON.parse(await readFile(new URL(`../data/${n}.json`,import.meta.url),'utf8'))])));
 const source=JSON.parse(await readFile(new URL('../tools/rhine-data-source.json',import.meta.url),'utf8'));
 
 test('Rhine data: full-potential operator stats match the same official DIY forms without changing research limits', async () => {
   const backups=JSON.parse(await readFile(new URL('../data/backups.json',import.meta.url),'utf8'));
-  for(const name of ['ifrit','eunectes','dorothy'])for(const suffix of ['a','b']){
+  for(const name of ['ifrit','eunectes','magallan'])for(const suffix of ['a','b']){
     const c=files.chess[`chess_rhine_${name}_${suffix}`];
     const key=['phase','level','skillLevel','equipLevel'].map(k=>c.status[k]).join('/');
     const official=backups.units[c.charId].forms[key];
     assert.ok(official,`${name} ${key} exists in the pinned upstream forms`);
     assert.deepEqual(c.statsBase||c.stats,official.stats,`${name} ${suffix}: no missing potential attribute bonuses`);
   }
-  assert.equal(files.chess.chess_rhine_dorothy_b.talents[1].bb.max_stack_cnt,12);
-  assert.equal(files.chess.chess_rhine_dorothy_b.talents[0].bb.cnt,5,'research roster trap limit remains explicitly overridden');
+  assert.equal(files.chess.chess_rhine_magallan_b.talents[0].bb.cnt,5);
   assert.equal(files.chess.chess_rhine_mayer_b.talents[0].bb.cnt,2);
 });
 
@@ -60,7 +59,7 @@ test('Rhine data: device production, single-device inheritance and four attack p
   assert.match(files.bonds.rhineShip.desc, /每层科研增加4点/);
   for (const [suffix, layers, scale] of [['a', 1, 1], ['b', 2, 1.5]]) {
     const mayer = files.garrisons[`garrison_rhine_mayer_${suffix}`];
-    assert.deepEqual(mayer.bb, { device_layers: layers, max_layer: layers * 24 });
+    assert.deepEqual(mayer.bb, { device_layers: layers, max_layer: layers * 12 });
     assert.match(mayer.desc, /身前一格.*有效工作/);
     assert.match(mayer.desc, /护盾净增加/);
     assert.match(mayer.desc, /累计3秒/);
@@ -120,7 +119,7 @@ test('Rhine data: Astgenne alter receives only the extra bond on normal and elit
   assert.ok(input.bonds.arcaneShip.visibleMembers.includes(ids[0]));
   assert.ok(input.bonds.skillfulShip.visibleMembers.includes(ids[0]));
 });
-test('Rhine data: a real tier VI member unlocks research and each duplicate adds Ptilopsis layers',()=>{
+test('Rhine data: a real tier VI member unlocks research and duplicates do not add a new Ptilopsis tier',()=>{
   const registry=new MetaRegistry();registerMeta(registry);
   const h=makeMatch({mode:'solo',fake:true,registry}).start();h.toPrep(1);
   const ps=h.ps('p_0');
@@ -136,12 +135,12 @@ test('Rhine data: a real tier VI member unlocks research and each duplicate adds
   give(h.m,ps,'chess_char_6_16_b','board',[14,4]);
   assert.equal(ps.bonds.rhineShip.count,3,'ordinary and elite are one member');
   h.m.dispatch(ps,'onPrepEnd',{round:1});
-  assert.equal(ps.layers.rhineShip,7*RHINE_BALANCE.ptilopsisLayersPerMember[0],'duplicate member contributes a fourth real piece');
+  assert.equal(ps.layers.rhineShip,6*RHINE_BALANCE.ptilopsisLayersPerMember[0],'duplicate tier does not contribute another kind');
 });
 test('Rhine data: every official skill, requested defaults and real owner-specific otter stats',()=>{
   for(const spec of RHINE_ADDITIONS)for(const suffix of ['a','b']){
     const c=files.chess[`chess_rhine_${spec.key}_${suffix}`];assert.equal(c.charId,spec.charId);
-    assert.deepEqual(c.skills.map(s=>s.skillId),source.charTable[spec.charId].skills.map(s=>s.skillId));
+    assert.deepEqual(c.skills.map(s=>s.skillId),(source.charTable[spec.charId]?.skills || files.backups.units[spec.charId].forms['2/1/4/0'].skills).map(s=>s.skillId));
     assert.equal(c.skill.skillId,spec.skillId);assert.equal(c.skills.filter(s=>s.isDefault).length,1);
     assert.equal(c.skill.level,c.isGolden?7:4);assert.ok(c.stats.atk>0);assert.ok(c.rangeGrid.length>0);
   }
@@ -150,8 +149,8 @@ test('Rhine data: every official skill, requested defaults and real owner-specif
   assert.equal(t.variants.chess_rhine_mayer_a.count,1);assert.equal(t.variants.chess_rhine_mayer_b.count,2);
 });
 test('Rhine data: default modules compose real stats and none restores base traits and talents',()=>{
-  const expected={mayer:['uniequip_002_otter'],wuhoo:['uniequip_002_turdus'],eunectes:['uniequip_002_zumama','uniequip_003_zumama'],ifrit:['uniequip_002_ifrit','uniequip_003_ifrit'],astgenne:['uniequip_002_halo'],dorothy:['uniequip_002_doroth']};
-  const defaults={mayer:[0,'uniequip_002_otter'],wuhoo:[1,'uniequip_002_turdus'],eunectes:[2,'uniequip_002_zumama'],ifrit:[1,'uniequip_002_ifrit'],astgenne:[0,'uniequip_002_halo'],dorothy:[2,'uniequip_002_doroth']};
+  const expected={mayer:['uniequip_002_otter'],wuhoo:['uniequip_002_turdus'],eunectes:['uniequip_002_zumama','uniequip_003_zumama'],ifrit:['uniequip_002_ifrit','uniequip_003_ifrit'],astgenne:['uniequip_002_halo'],magallan:['uniequip_002_mgllan','uniequip_003_mgllan']};
+  const defaults={mayer:[0,'uniequip_002_otter'],wuhoo:[1,'uniequip_002_turdus'],eunectes:[2,'uniequip_002_zumama'],ifrit:[1,'uniequip_002_ifrit'],astgenne:[0,'uniequip_002_halo'],magallan:[2,'uniequip_002_mgllan']};
   const ds=new DataSource(files,null);
   for(const [key,ids] of Object.entries(expected)){
     const c=files.chess[`chess_rhine_${key}_b`], base=ds.getChess(c.chessId,{moduleId:'none'}), selected=ds.getChess(c.chessId);
@@ -264,31 +263,19 @@ test('Rhine data: Astgenne keeps the requested tier, dual bonds and first-cast t
   assert.equal(ds.getChess('chess_rhine_astgenne_b',{moduleId:'none'}).traitBb['attack@chain.atk_scale'],undefined);
 });
 
-test('Rhine data: Dorothy has three skills, only TRP-Y and a consistent four/five trap limit in every loadout',async()=>{
-  const ds=new DataSource(files,null),token='token_10025_doroth_recttp';
-  for(const [suffix,count,atkPerLayer] of [['a',4,1],['b',5,2]]){
-    const id=`chess_rhine_dorothy_${suffix}`,c=files.chess[id],g=files.garrisons[c.garrisonIds[0]];
-    assert.equal(c.tier,4);assert.deepEqual(c.bonds,['rhineShip']);assert.deepEqual(c.tokens,[token]);
-    assert.equal(c.talents[0].bb.cnt,count);assert.equal(c.talents[0].bb['attack@max_cnt'],2);
-    assert.ok(c.talents[0].desc.includes(`同时最多部署${count}个`));
-    assert.equal(g.effectKey,'RHINE_DOROTHY_ATTACK');assert.deepEqual(g.bb,{atk_per_layer:atkPerLayer});
-    for(const skillIndex of [0,1,2])for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_doroth']){
-      const owner=ds.getChess(id,{skillIndex,moduleId}),v=ds.getToken(token,id,{skillIndex,moduleId});
-      assert.equal(owner.skill.id,`skchr_doroth_${skillIndex+1}`);assert.equal(owner.skill.trigger.rule,'SP_FULL');
-      assert.equal(owner.raw.talents[0].bb.cnt,count);assert.equal(v.skill.id,`sktok_doroth_${skillIndex+1}`);
-      assert.equal(v.skill.trigger.rule,'DOROTHY_TRAP');assert.equal(v.count,count);
-      const raw=files.tokens[token].variants[id];assert.equal(raw.stats.deployLimit,count);assert.equal(raw.stats.deckStack,count);
-      assert.equal((raw.bySkill[skillIndex]||raw).count,count);
+test('Rhine data: Magallan replaces Dorothy with native selectable drone variants',()=>{
+  const ds=new DataSource(files,null);
+  assert.equal(files.chess.chess_rhine_dorothy_a,undefined);
+  for(const [suffix,atkPerLayer] of [['a',1],['b',2]]){
+    const id=`chess_rhine_magallan_${suffix}`,c=files.chess[id],g=files.garrisons[c.garrisonIds[0]];
+    assert.equal(c.tier,4);assert.deepEqual(c.bonds,['rhineShip']);assert.equal(c.tokens.length,3);
+    assert.equal(c.talents[0].bb.cnt,5);
+    assert.equal(g.effectKey,'RHINE_MAGALLAN_ATTACK');assert.deepEqual(g.bb,{atk_per_layer:atkPerLayer,device_atk_per_layer:atkPerLayer/2});
+    for(const skillIndex of [0,1,2])for(const moduleId of suffix==='a'?['none']:['none','uniequip_002_mgllan','uniequip_003_mgllan']){
+      const owner=ds.getChess(id,{skillIndex,moduleId});
+      assert.equal(owner.skill.id,`skchr_mgllan_${skillIndex+1}`);
+      const token=`token_10005_mgllan_drone${skillIndex+1}`,v=ds.getToken(token,id,{skillIndex,moduleId});
+      assert.ok(v); assert.equal(v.stats.blockCnt,0); assert.ok(v.raw.stats.deployLimit>=3);
     }
   }
-  const elite=ds.getChess('chess_rhine_dorothy_b');
-  assert.deepEqual(elite.raw.modules.map(m=>m.uniEquipId),['uniequip_002_doroth']);
-  assert.equal(elite.traitBb.prob,.2);assert.equal(elite.traitBb.atk_scale,2);
-  assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'none'}).traitBb.prob,undefined);
-  assert.equal(ds.getChess('chess_rhine_dorothy_b',{moduleId:'uniequip_003_doroth'}),elite,'excluded first module never loads');
-  const upgraded=structuredClone(files);upgraded.config.economy.chessStatus[4].golden.equipLevel=3;
-  await applyRhineData(upgraded);
-  const upper=new DataSource(upgraded,null).getChess('chess_rhine_dorothy_b');
-  assert.equal(upper.raw.talents[0].bb.cnt,5);assert.equal(upper.raw.talents[1].bb.atk,.04);
-  assert.equal(upgraded.tokens[token].variants.chess_rhine_dorothy_b.stats.deployLimit,5);
 });

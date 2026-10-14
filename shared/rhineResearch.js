@@ -1,13 +1,13 @@
 import { N_ } from './i18n.js';
 // Rhine Lab fan expansion. Keep balance values here for both browser and server.
 export const RHINE_BOND = 'rhineShip';
-export const RHINE_CHARACTERS = Object.freeze({ mayer: 'char_242_otter', silence: 'char_108_silent', ptilopsis: 'char_128_plosis', saria: 'char_202_demkni', ifrit: 'char_134_ifrit', muelsyse: 'char_249_mlyss', halo2: 'char_1047_halo2', astgenne: 'char_135_halo', dorothy: 'char_4048_doroth' });
+export const RHINE_CHARACTERS = Object.freeze({ mayer: 'char_242_otter', silence: 'char_108_silent', ptilopsis: 'char_128_plosis', saria: 'char_202_demkni', ifrit: 'char_134_ifrit', muelsyse: 'char_249_mlyss', halo2: 'char_1047_halo2', astgenne: 'char_135_halo', dorothy: 'char_4048_doroth', magallan: 'char_248_mgllan' });
 export const RHINE_BALANCE = Object.freeze({
   thresholds: [3, 6, 9], baseAttack: 300, attackPerLayer: 4,
-  mayerDeviceLayers: [1, 2], mayerBattleLayerCap: [24, 48], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
+  mayerDeviceLayers: [1, 2], mayerBattleLayerCap: [12, 24], mayerSummons: [1, 2], ptilopsisLayersPerMember: [2, 4],
   sariaLayerStep: 3, sariaHealBonus: [0.01, 0.02], ifritInheritance: [1, 1.5],
   sharingCount: 6, researchSharing: [0.15, 0.25],
-  astgenneFirstSkillLayers: [3, 6], dorothyAttackPerLayer: [1, 2], dorothyTrapLimit: [4, 5],
+  astgenneFirstSkillLayers: [3, 6], magallanAttackPerLayer: [1, 2], magallanDeviceAttackPerLayer: [0.5, 1], dorothyAttackPerLayer: [1, 2], dorothyTrapLimit: [4, 5],
   successPoints: 2, failurePoints: 1, breakthroughPoints: [5, 5],
   medicalInterval: 3, medicalHealScale: Object.freeze([0.75, 0.75, 1]), medicalTargetCount: Object.freeze([1, 2, 3]),
   medicalShieldHealRatio: 0.25, medicalShieldRatio: 0.5, medicalShieldCap: 0.4, medicalShieldDuration: 6,

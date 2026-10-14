@@ -13,6 +13,8 @@ export const FX_KINDS = Object.freeze({
   kazdelSoulHeal: { a: 'kazdelSoul', c: 0xa1e6b6, pt: true },
   kazdelCannonWarning: { a: 'kazdelCannon', c: 0xff6e62, pt: true, dur: 2 },
   kazdelCannonImpact: { a: 'kazdelCannon', c: 0xffc69d, pt: true },
+  remPizza: { a: 'remPizza', c: 0xffce6c, r: .45, pt: true },
+  remPizzaImpact: { a: 'blast', c: 0xffce6c, r: .45, pt: true },
   burn: { a: 'flame', c: 0xff713b, r: 0.6 },
   rhineHeal: { a: 'researchHeal', c: 0x6fe8c1, pt: true },
   rhinePulse: { a: 'researchPulse', c: 0xffbc70, r: RHINE_BALANCE.energySpreadRadius, pt: true },

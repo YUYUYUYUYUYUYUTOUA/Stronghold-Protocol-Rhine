@@ -25,6 +25,7 @@ import { absoluteRangeKeys } from '../../server/sim/targeting.js';
 
 const CHESS = JSON.parse(fs.readFileSync(new URL('../../data/chess.json', import.meta.url), 'utf8'));
 const ds = getDefaultSource();
+const BACKUPS = JSON.parse(fs.readFileSync(new URL('../../data/backups.json', import.meta.url), 'utf8'));
 
 /** [normal chess id, skill id] — both records (normal + elite) of each chess. */
 const DEVIATED = [
@@ -112,6 +113,20 @@ test('data: the six deviated 重装 skills are DEFAULT (深巡 S2: ACTIVE_RANGE 
         assert.deepEqual(s.trigger, { rule: 'DEFAULT', rawRule: 'DEFAULT', customRangeGrid: null }, `${c.chessId} ${s.skillId} Rhine casting`);
         continue;
       }
+      // Fixed Thumby reuses her existing native DIY trigger contract, including its explicit DEFAULT override.
+      if (c.baseId === 'chess_rem_thumpy_a') {
+        const key = ['phase','level','skillLevel','equipLevel'].map(k => c.status[k]).join('/');
+        const native = BACKUPS.units[c.charId].forms[key].skills.find(x => x.skillId === s.skillId);
+        assert.deepEqual(s.trigger, native.trigger, `${c.chessId} ${s.skillId}: fixed and native DIY triggers agree`);
+        continue;
+      }
+      // Asbestos is a new extension card, absent from the official auto-chess strategy table;
+      // its generated basic attack-ready trigger is the same extension rule used by Rhine's duelist above.
+      if (c.baseId === 'chess_rem_asbest_a') {
+        assert.deepEqual(s.trigger, { rule: 'DEFAULT', rawRule: 'DEFAULT', customRangeGrid: null }, `${c.chessId} ${s.skillId}: extension casting`);
+        assert.equal(ds.getChess(c.chessId, { skillIndex: s.index }).skill.trigger.rule, 'DEFAULT');
+        continue;
+      }
       if (s.trigger.rawRule === 'TAKE_DAMAGE') assert.equal(s.trigger.rule, 'TAKE_DAMAGE', `${c.chessId} ${s.skillId}`);
       if (c.profession === 'TANK' && s.skillType === 'MANUAL' && s.trigger.rawRule !== 'CUSTOM_RANGE_SEARCH_ENEMY') assert.equal(s.trigger.rule, 'TAKE_DAMAGE', `${c.chessId} ${s.skillId}`);
     }
@@ -190,4 +205,13 @@ test('real battle: 深巡 S1 and every other MANUAL 重装 skill still wait for 
   assert.ok(n >= 40, `${n} TAKE_DAMAGE records checked`);
   const udflowS1 = firstCast('chess_char_1_04_a', 'skchr_udflow_1');
   assert.ok(udflowS1.cast > 10, `深巡 S1 waits for the enemy to reach and hit her: ${JSON.stringify(udflowS1)}`);
+});
+
+test('Rim fixed Asbestos uses its generated attack-ready trigger for both native skills and qualities', () => {
+  for (const id of both('chess_rem_asbest_a')) for (const skillId of ['skchr_asbest_1','skchr_asbest_2']) {
+    const result = firstCast(id,skillId);
+    assert.equal(result.rule,'DEFAULT');
+    assert.notEqual(result.cast,null,`${id} ${skillId} really casts`);
+    assert.ok(result.enemyInRange || result.blocking,`${id} ${skillId}: casts with an actual reachable enemy`);
+  }
 });

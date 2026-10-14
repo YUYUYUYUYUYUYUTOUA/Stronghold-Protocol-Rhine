@@ -18,7 +18,7 @@ function battle(players, extra = {}) {
   for (const p of players) for (const u of p.units) if (u.kind !== 'token') {
     chess[u.chessId] = chessRec({ id: u.chessId, charId: u.charId, golden: u.elite, bonds: u.bonds,
       profession: u.profession, dmgType: u.dmgType, stats: { atk: 100, maxHp: 2000, blockCnt: 0 }, skill: u.cast ? {} : null });
-    const trait = Object.entries(C).find(([key, id]) => ['mayer', 'saria', 'ifrit', 'dorothy'].includes(key) && id === u.charId)?.[0];
+    const trait = Object.entries(C).find(([key, id]) => ['mayer', 'saria', 'ifrit', 'magallan'].includes(key) && id === u.charId)?.[0];
     chess[u.chessId].garrisonIds = trait ? [`garrison_rhine_${trait}_${u.elite ? 'b' : 'a'}`] : [];
     kits[u.chessId] = () => ({ trait: { noAttack: true }, skill: u.cast ? { kind: u.passive ? 'passive' : 'instant', trigger: { rule: u.auto ? 'SP_FULL' : 'NEVER' }, spCost: u.auto ? 1 : 10 } : null });
   }
@@ -613,25 +613,41 @@ for (const elite of [false, true]) test(`Mayer research budget is shared across 
   const h = battle([player('p1', [op('m1', C.mayer, 10, 4, { elite }),
     op('m2', C.mayer, 11, 4, { elite }), device('medical'), device('laser', 11, 5)], { count: 9 })], { timeLimit: 200 });
   h.spawn('dummy', { pos: [10, 7] }); h.run(90);
-  close(researchLayers(h), elite ? 48 : 24);
+  close(researchLayers(h), elite ? 24 : 12);
   h.b.retreat(h.unit('m1')); h.b.redeploy(h.unit('m1'), { free: true });
-  h.run(15); close(researchLayers(h), elite ? 48 : 24); valid(h);
+  h.run(15); close(researchLayers(h), elite ? 24 : 12); valid(h);
 });
 
-test('Mayer mixed-quality roster has one 48-layer budget, not 24+48', () => {
+test('Mayer mixed-quality roster has one 24-layer budget, not 12+24', () => {
   const h = battle([player('p1', [op('m1', C.mayer, 10, 4),
     op('m2', C.mayer, 11, 4, { elite: true }), device('medical'), device('laser', 11, 5)], { count: 9 })], { timeLimit: 200 });
   h.spawn('dummy', { pos: [10, 7] }); h.run(110);
-  close(researchLayers(h), 48); valid(h);
+  close(researchLayers(h), 24); valid(h);
 });
 
-test('Dorothy fixed research attack adds to six-member shared attack without a new multiplier', () => {
-  const h = battle([player('p1', [op('d', C.dorothy, 10, 4, { bonds: ['rhineShip'] }),
-    op('gold', C.dorothy, 11, 4, { bonds: ['rhineShip'], elite: true }), device('medical')], { count: 6, layers: 100 })]);
-  close(h.unit('d').s.atk, 100 + 100 + 700 * .15);
-  close(h.unit('gold').s.atk, 100 + 200 + 700 * .25);
-  h.run(3); close(h.unit('gold').s.atk, 475);
+test('Magallan fixed research attack and strongest device boost add without sharing feedback', () => {
+  const h = battle([player('p1', [op('d', C.magallan, 10, 4, { bonds: ['rhineShip'] }),
+    op('gold', C.magallan, 11, 4, { bonds: ['rhineShip'], elite: true }), device('medical')], { count: 6, layers: 100 })]);
+  close(h.unit('d').s.atk, 100 + 100 + 800 * .15);
+  close(h.unit('gold').s.atk, 100 + 200 + 800 * .25);
+  h.run(3); close(h.unit('gold').s.atk, 500);
   h.b.getPlayer('p1').bonds.rhineShip.layers = 200; h.step();
-  close(h.unit('d').s.atk, 100 + 200 + 1100 * .15);
-  close(h.unit('gold').s.atk, 100 + 400 + 1100 * .25); valid(h);
+  close(h.unit('d').s.atk, 100 + 200 + 1300 * .15);
+  close(h.unit('gold').s.atk, 100 + 400 + 1300 * .25); valid(h);
+});
+
+test('Magallan device ATK increases laser arts but never its percentage true damage', () => {
+  const outputs = [];
+  for (const enabled of [false, true]) {
+    const h = battle([player('p1', [op('m', enabled ? C.magallan : 'test', 11, 4),
+      device('laser', 10, 5)], { count: 9, layers: 100 })], { captureNoisy: true });
+    h.spawn('dummy', { pos: [10, 7] }); h.run(22.2);
+    const hits = h.hooksOf('damaged').filter(c => c.dmg.tags?.includes('rhineLaser'));
+    outputs.push({ arts: hits.filter(c => c.type === 'arts').map(c => c.amount),
+      truth: hits.filter(c => c.type === 'true').map(c => c.amount) });
+    valid(h);
+  }
+  assert.ok(outputs[0].truth.length > 0);
+  assert.deepEqual(outputs[1].truth, outputs[0].truth);
+  assert.ok(outputs[1].arts[0] > outputs[0].arts[0]);
 });

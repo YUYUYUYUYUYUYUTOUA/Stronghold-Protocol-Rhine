@@ -67,7 +67,7 @@ describe('Kazdel native-battle visual integration in Chrome',{skip:enabled?false
       assert.deepEqual(await page.evaluate(()=>window.__kazdelDemo.impactTiles[0]),expectedTiles);
       await page.screenshot({path:path.join(OUT,'kazdel-cannon-impact.png')});
       await page.click('[data-count="9"]');assert.match(await page.$eval('#hud',e=>e.textContent),/自身干员承受100%炮伤/);
-      const nine=await page.evaluate(()=>{window.__kazdelDemo.seek(6.3);return window.__kazdelDemo.battle.snapshot().kazdel[0];});assert.equal(nine.stage,2);
+      const nine=await page.evaluate(()=>{window.__kazdelDemo.seek(6.3);return window.__kazdelDemo.battle.snapshot().kazdel[0];});assert.equal(nine.stage,3);
       await page.waitForFunction('window.__kazdelDemo.view.debug.fx.kazdelWarnings.length===1');
       await page.screenshot({path:path.join(OUT,'kazdel-nine-warning.png')});
       await page.click('#heal');await page.waitForFunction('window.__kazdelDemo.events.some(e=>e[0]==="fx"&&e[1]==="kazdelSoulHeal")');

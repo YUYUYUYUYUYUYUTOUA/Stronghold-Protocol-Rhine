@@ -880,7 +880,7 @@ for (const targetId of ['chess_char_4_12_a', 'chess_char_6_03_a']) {
     });
   }
 }
-test('白面鸮: active Rhine research grants +2/+4 per actual deployed member, counting normal/elite duplicates', () => {
+test('白面鸮: active Rhine research grants +2/+4 per distinct deployed tier', () => {
   const mayer = 'chess_rhine_mayer_a';
   const silence = Object.values(DATA.chess).find((c) => c.visible && !c.isGolden && c.charId === 'char_108_silent').chessId;
   for (const { gid, g, owners } of idsOf('SERVER_PREP_FIN', 'RHINE_RESEARCH_BY_MEMBER')) {
@@ -895,10 +895,10 @@ test('白面鸮: active Rhine research grants +2/+4 per actual deployed member, 
       give(s.m, s.ps, CH(mayer).goldenId, 'board', [10, 6]);      // normal/elite Mayer share tier I
       assert.ok(s.active('rhineShip'));
       s.prepEnd();
-      assert.equal(s.L('rhineShip'), 5 * g.bb.layer, `${owner}: five actual Rhine pieces, including Mayer duplicates`);
+      assert.equal(s.L('rhineShip'), 3 * g.bb.layer, `${owner}: tiers I, II, III; duplicate names and tiers do not add layers`);
       assert.deepEqual(s.ps.move(source.uid, { area: 'hand', idx: 0 }), { ok: true });
       s.prepEnd();
-      assert.equal(s.L('rhineShip'), 5 * g.bb.layer, `${owner}: reserve source does not run`);
+      assert.equal(s.L('rhineShip'), 3 * g.bb.layer, `${owner}: reserve source does not run`);
     }
     cover(gid);
   }

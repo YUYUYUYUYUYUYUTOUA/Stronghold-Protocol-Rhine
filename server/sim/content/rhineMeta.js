@@ -5,15 +5,15 @@ export function registerMeta(registry) {
   registry.garrison('RHINE_RESEARCH_BY_MEMBER', {
     run(ctx) {
       if (!ctx.bondActive(RHINE_BOND)) return;
-      let members = 0;
+      const tiers = new Set();
       for (const piece of ctx.board()) {
         if (piece.kind !== 'chess' || !ctx.pieceBonds(piece.uid).includes(RHINE_BOND)) continue;
-        // Count actual deployed pieces, including same-name normal/elite copies. Harmony's
-        // virtual bond count and reserve/token pieces never enter this roster.
-        members++;
+        // Each represented tier counts once; copies, names and quality do not add tiers.
+        const tier = ctx.chessRecord(piece.id)?.tier;
+        if (Number.isInteger(tier) && tier >= 1 && tier <= 6) tiers.add(tier);
       }
       const layer = Number(ctx.source.bb?.layer) || 0;
-      if (layer > 0) ctx.addLayers(RHINE_BOND, members * layer, { requireActive: true, reason: 'garrison:rhine-research-by-member' });
+      if (layer > 0) ctx.addLayers(RHINE_BOND, tiers.size * layer, { requireActive: true, reason: 'garrison:rhine-research-by-member' });
     },
   });
 }

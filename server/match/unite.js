@@ -136,7 +136,10 @@ export function uniteBattleOpts(m, plan, timeLimit) {
       // a summon: its SP only ("召唤物仅修改技力"); one off the field at the end enters fresh [ASSUMED]
       if (summonUids.has(u.uid)) { if (u.alive) carry.set(u.uid, { sp }); continue; }
       // knocked out at the end of its own combat: 强制退场 right after the deployment (see header)
-      if (!u.alive) { carry.set(u.uid, { down: true }); continue; }
+      if (!u.alive) {
+        carry.set(u.uid, { down: true, ...(u.kazdelSoul ? { kazdelSoul: { ...u.kazdelSoul } } : {}) });
+        continue;
+      }
       // HP ratio and SP only: a skill still running at the end is not carried (unitsEnd `skillActive` stays unused —
       // community report #34, GitHub #82)
       carry.set(u.uid, { hpPct: Number.isFinite(u.hpPct) ? Math.max(0.01, Math.min(1, u.hpPct)) : 1, sp });

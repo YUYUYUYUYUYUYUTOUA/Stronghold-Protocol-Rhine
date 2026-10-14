@@ -231,6 +231,11 @@ export class BattleLifecycle {
         sp: u.skill && !u.skill.noSkill ? Math.round(u.skill.spTotal * 100) / 100 : 0,
         skillActive: !!(u.skill && u.skill.active && u.skill.kind !== 'passive'),
         alive: !!u.alive,
+        // Capture before battleEnd cleans runtime summons. A soul is keyed by its own
+        // player's board body, never by a runtime id from the previous battlefield.
+        ...(!u.alive && u.kazdelSoulUnit?.alive && u.kazdelSoulUnit.deployed && !u.kazdelSoulUnit.removed
+          ? { kazdelSoul: { hpPct: Math.max(0, Math.min(1, u.kazdelSoulUnit.hp / u.kazdelSoulUnit.s.maxHp)),
+            sp: Math.round(u.kazdelSoulUnit.skill.spTotal * 100) / 100 } } : {}),
       }));
       pp.unitStats = ps.units.map((u) => ({
         id: u.id, uid: u.uid, defId: u.defId, name: u.name, kind: u.kind,

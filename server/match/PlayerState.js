@@ -197,6 +197,7 @@ export class PlayerState {
     /** @type {Map<string, any>} 'r,c' → piece */
     this.board = new Map();
     // Player-owned research devices have fixed reserve slots, independent of the ordinary hand and a summoner.
+    this.remRally = null; // Persistent own-board rally choice; combat specs freeze a copy.
     this.research = { unlocked: false, hand: RHINE_DEVICES.map(() => null), points: {}, stages: {}, battleRound: null, participants: [], settled: new Set() };
     /** persistent bond layers */
     this.layers = {};

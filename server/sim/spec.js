@@ -82,6 +82,12 @@ export function buildBattleSpec(o = {}) {
     boss: bossLike && o.boss ? { poolHp: Number(o.boss.poolHp) || 0, poolMax: Number(o.boss.poolMax) || 1 } : null,
   };
   const out = JSON.parse(JSON.stringify(spec, specReplacer));
+  for (const p of out.players) {
+    if (!p || !Object.hasOwn(p, 'remRally')) continue;
+    const r = p.remRally;
+    p.remRally = r && Number.isInteger(r.row) && r.row >= 9 && r.row <= 12 && Number.isInteger(r.col) && r.col >= 2 && r.col <= 10
+      ? { row: r.row, col: r.col } : null;
+  }
   for (const p of out.players) for (const u of (p && Array.isArray(p.units) ? p.units : [])) if (u && typeof u === 'object') sanitizeUnitLoadout(u);
   return out;
 }
@@ -339,7 +345,8 @@ export function resultDigest(result) {
       // mods included: a leak re-enters the 联防 with them (round multipliers, bounty id)
       (Array.isArray(p.leaked) ? p.leaked : []).map((l) => `${l && l.enemyKey}|${l && l.counted === false ? 0 : 1}|${(l && l.sourcePlayerId) || ''}|${modsKey(l && l.mods)}`).sort(),
       Math.round(Number(p.damageDealt) || 0), Math.round(Number(p.bossDamage) || 0),
-      (Array.isArray(p.unitsEnd) ? p.unitsEnd : []).map((u) => [u && u.uid, r4(u && u.hpPct), r4(u && u.sp), !!(u && u.alive)]),
+      (Array.isArray(p.unitsEnd) ? p.unitsEnd : []).map((u) => [u && u.uid, r4(u && u.hpPct), r4(u && u.sp), !!(u && u.alive),
+        ...(u?.kazdelSoul ? [[r4(u.kazdelSoul.hpPct), r4(u.kazdelSoul.sp)]] : [])]),
     ];
   });
   const json = JSON.stringify([res.reason ?? null, r4(res.time), res.killed | 0, res.total | 0, players]);
@@ -403,6 +410,7 @@ export function compactResult(res) {
       unitsEnd: cap(p.unitsEnd, 64).filter(Boolean).map((u) => ({
         uid: uidOr(u.uid), defId: keyOr(u.defId), hpPct: Math.max(0, Math.min(1, fnum(u.hpPct))), sp: Math.max(0, Math.min(1e5, fnum(u.sp))),
         skillActive: !!u.skillActive, alive: !!u.alive,
+        ...(u.kazdelSoul ? { kazdelSoul: { hpPct: u.kazdelSoul.hpPct, sp: u.kazdelSoul.sp } } : {}),
       })),
       unitStats: cap(p.unitStats, 160).filter(Boolean).map((u) => ({
         uid: uidOr(u.uid), defId: keyOr(u.defId), kind: typeof u.kind === 'string' && u.kind.length <= 16 ? u.kind : 'op',

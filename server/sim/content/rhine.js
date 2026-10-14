@@ -58,11 +58,13 @@ function selectedDevices(ps) {
   return out;
 }
 
-/** Only layer-derived research and mainframe bonuses enter base ATK; no buffs or inherited ATK. */
+/** Pure layer-derived device ATK: never feed shared operator ATK back into this calculation. */
 export function deviceBaseAttack(battle, unit) {
   const ps = battle.getPlayer(unit.ownerId);
   const layers = layersOf(ps);
-  return rhineAttack(layers) + rhineEquipmentAttack(battle, unit.ownerId, layers);
+  const magallan = Math.max(0, ...(ps?.units ?? []).filter(u => u.kind === 'op' && alive(u))
+    .map(u => Number(researchTrait(u, 'RHINE_MAGALLAN_ATTACK')?.device_atk_per_layer) || 0));
+  return rhineAttack(layers) + rhineEquipmentAttack(battle, unit.ownerId, layers) + layers * magallan;
 }
 
 function setPassive(battle, unit, key, mods) {
@@ -128,6 +130,15 @@ export function install(battle) {
       const highest = Math.max(0, ...deviceAttacks);
       const sharing = ps.bonds?.[RHINE_BOND]?.active && ps.bonds[RHINE_BOND].count >= B.sharingCount;
       for (const u of ps.units) {
+        // Native Magallan drones have their own token stats, not inherited owner ATK. Give only
+        // their summoner's flat research bonus once; do not copy six-member sharing or device ATK.
+        const summoner = u.kind === 'token' && u.ownerUnit?.ownerId === u.ownerId
+          && ['token_10005_mgllan_drone1', 'token_10005_mgllan_drone2', 'token_10005_mgllan_drone3'].includes(u.defId)
+          ? u.ownerUnit : null;
+        const magallan = researchTrait(summoner ?? u, 'RHINE_MAGALLAN_ATTACK');
+        if ((u.kind === 'op' || summoner) && magallan) setPassive(battle, u, 'rhine:magallan', {
+          atkFlat: layers * (Number(magallan.atk_per_layer) || 0),
+        });
         if (u.kind !== 'op') continue;
         const dorothy = researchTrait(u, 'RHINE_DOROTHY_ATTACK');
         if (dorothy) setPassive(battle, u, 'rhine:dorothy', { atkFlat: layers * (Number(dorothy.atk_per_layer) || 0) });

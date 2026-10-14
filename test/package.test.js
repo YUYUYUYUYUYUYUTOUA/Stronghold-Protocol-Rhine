@@ -59,7 +59,7 @@ test('selection: runtime files in; tests, maintainer tools, other docs, dev page
     'docs/research/07-assets.json', 'docs/KAZDEL.md', ...PLAYER_ASSET_INPUTS, 'CHANGELOG.md']) {
     assert.ok(keep.includes(f), `keeps ${f}`);
   }
-  assert.equal(keep.length, 38, keep.join(' '));
+  assert.equal(keep.length, 39, keep.join(' '));
   assert.equal(drop.length, 40, drop.join(' '));
   assert.ok(!keep.some((f) => drop.includes(f)));
 });
@@ -253,7 +253,7 @@ test('full and lite builds retain expansion asset inputs: shipped plans load and
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-package-expansion-out-'));
   try {
     // Keep the production plan modules and their data unchanged: static import checks alone miss readFileSync URLs.
-    const inputs = [...PLAYER_ASSET_INPUTS, 'tools/assets/kazdel-plan.mjs', 'tools/assets/rhine-plan.mjs',
+    const inputs = [...PLAYER_ASSET_INPUTS, 'tools/assets/kazdel-plan.mjs', 'tools/assets/rhine-plan.mjs', 'tools/assets/rem-plan.mjs',
       'tools/assets/sources.mjs', 'shared/kazdel.js', 'shared/rhineResearch.js', 'shared/i18n.js', 'shared/i18nPacks.js'];
     for (const rel of inputs) put(rel, fs.readFileSync(path.join(ROOT, rel)));
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
@@ -264,6 +264,7 @@ test('full and lite builds retain expansion asset inputs: shipped plans load and
       import assert from 'node:assert/strict';
       import { kazdelArtInput } from './tools/assets/kazdel-plan.mjs';
       import { rhineArtInput } from './tools/assets/rhine-plan.mjs';
+      import { remArtInput, REM_ENEMY_ART } from './tools/assets/rem-plan.mjs';
       const kazdel = kazdelArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
       assert.equal(Object.keys(kazdel.assets07.operators).length, 10);
       assert.equal(kazdel.assets07.operators.char_4131_odda.name, '奥达');
@@ -271,6 +272,10 @@ test('full and lite builds retain expansion asset inputs: shipped plans load and
       const rhine = rhineArtInput({ operators: {} }, { chess: [] });
       assert.equal(rhine.assets07.operators.char_242_otter.name, '梅尔');
       assert.equal(rhine.assets07.operators.char_242_otter.skills.length, 2);
+      const rem = remArtInput({ assets07: { operators: {} }, ops03: { chess: [] } });
+      assert.equal(Object.keys(rem.assets07.operators).length, 7);
+      assert.equal(rem.assets07.operators.char_4237_jcinta.name, '嘉辛塔');
+      assert.equal(Object.keys(REM_ENEMY_ART).length, 8);
     `;
     for (const lite of [false, true]) {
       const p = plan(dir, { lite, allowDirty: true, env: ENV });

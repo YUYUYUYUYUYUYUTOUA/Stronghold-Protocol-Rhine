@@ -35,19 +35,19 @@ export function refreshSoul(battle, soul, layers, trait) {
   void soul.s; // preserve the HP ratio immediately when persistent layers change.
 }
 
-export function createSoul(battle, owner, layers, trait) {
+export function createSoul(battle, owner, layers, trait, carry = null) {
   // Birth starts a new combatant, not a deferred cannon hit: native timers created here
   // must not carry the killing shell's provenance into later independent skills.
   const depth = battle._kazdelCannonDamageDepth, origin = battle._kazdelCannonOwnerId;
   battle._kazdelCannonDamageDepth = 0;
   battle._kazdelCannonOwnerId = null;
-  try { return spawnSoul(battle, owner, layers, trait); } finally {
+  try { return spawnSoul(battle, owner, layers, trait, carry); } finally {
     battle._kazdelCannonDamageDepth = depth;
     battle._kazdelCannonOwnerId = origin;
   }
 }
 
-function spawnSoul(battle, owner, layers, trait) {
+function spawnSoul(battle, owner, layers, trait, carry) {
   const [r, c] = battle.restTile(owner), ps = battle.getPlayer(owner.ownerId), d = owner.def;
   // Keep the original resolved loadout/variant identity for native summon lookups, but no
   // garrison/item installation and no shared mutable kit closures, SP, buffs or talent memory.
@@ -60,7 +60,8 @@ function spawnSoul(battle, owner, layers, trait) {
   installOwnerSummons(battle, soul);
   soul.mem.kazdelBaseTargets = soul.profile.maxTargets;
   refreshSoul(battle, soul, layers, trait);
-  if (!battle._deploy(soul)) { soul.removed = true; battle.offOwner(soul); return null; }
+  if (!battle._deploy(soul, { initial: !!carry, carry })) { soul.removed = true; battle.offOwner(soul); return null; }
+  if (carry && soul.alive) soul.hp = Math.max(1, soul.s.maxHp * carry.hpPct);
   owner.kazdelSoulUnit = soul;
   battle.fx('kazdelSoulSpawn', { x: soul.x, y: soul.y, id: soul.id, soulOf: owner.id });
   return soul;

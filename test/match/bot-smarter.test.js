@@ -207,7 +207,14 @@ test('items: 信标 on a bench single; both 博士投影 on a normal operator ev
   assert.ok(![pairA.uid, pairB.uid].includes(cell.uid), '…never one of a merge pair');
   // 拟态物质 (a third copy when two are owned): the pair
   const mimic = itemTarget(m, ps, giveItem(m, ps, 'chess_item_5_05_e_a'));
-  assert.ok(mimic && [pairA.uid, pairB.uid].includes(mimic.uid), '拟态物质 on the pair');
+  assert.ok(mimic && !m.gd.isGolden(mimic.id), '拟态物质 chooses a normal merge candidate');
+  // The enlarged roster changes the bot's R1–6 buys: it can already own another pair on the board.
+  // Any live merge-completing pair is correct; among equal tiers the older pair wins the UID tie-break.
+  const mimicBase = m.gd.baseIdOf(mimic.id);
+  const mimicCopies = ps.allChess().filter(p => !m.gd.isGolden(p.id) && m.gd.baseIdOf(p.id) === mimicBase).length;
+  assert.ok(mimicCopies + 1 >= m.gd.mergeCount(mimicBase), 'one mimic reward actually completes a merge');
+  assert.ok(m.pool.left(mimicBase) > 0, 'a physical copy remains to complete the selected pair');
+  assert.ok(tierOf(mimic) >= tierOf(pairA), 'the existing board pair cannot displace a higher-tier bench pair');
   // …but not once the pool has no third copy: the item would give nothing (GitHub #207)
   m.pool.take(pairId, m.pool.left(pairId));
   const mimic2 = itemTarget(m, ps, giveItem(m, ps, 'chess_item_5_05_e_a'));

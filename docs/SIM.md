@@ -1363,6 +1363,7 @@ header of professions.js).
 | slower | sluggish 0.8 s on hit (bb sluggish) |
 | bard | no attack; allies in range get 生命回复速度 +10 % ATK (bb atk_to_hp_recovery_ratio) — an hpRegen buff refreshed every 0.25 s (`bardRegen`), no heal |
 | craftsman | melee phys (support devices via kit) |
+| artsprotector | 驭法铁卫（石棉）：idle attacks are melee physical and ground-only. Native S1 switches to melee arts, still ground-only; S2 switches to ranged arts projectiles, radius-1 splash and anti-air, with +40% base attack interval. Skill overrides are applied by the native kit, not a permanent arts conversion of the class. |
 | shotprotector | ranged phys, can hit FLY, blocks 3 |
 | fortress | melee single target while blocking, ranged 1.0 splash otherwise, ground only (never hits FLY) |
 | unyield / musha / reaper | cannot be healed by others. musha: one heal of 50 (bb value) per damage instance it deals to an enemy (PRTS 分支特性信息 武者 "特性治疗于干员每次输出伤害时触发（不局限于攻击）"; the official `utage_trait` / `helage_trait` / `zuole_trait` ON_OUTPUT_DAMAGE): every hit of a normal attack — a double strike heals twice, a dodged hit not at all — and every skill / item / bond damage instance; not a 流失, an element 损伤 or a talent / DoT damage. reaper: 50 × min(enemies hit, block) per normal attack and 50 per other damage instance it outputs that no buff produced (the official trait's ON_OUTPUT_DAMAGE, which is why 隐德来希's S2 血镰 cuts heal her while she is disarmed), capped at the block count per instant. Both trait heals ignore 禁疗 (PRTS 分支特性信息 武者 / 收割者 "通过自身特性/天赋/技能产生的作用于自身的治疗效果会无视自身的禁疗") |
@@ -1599,3 +1600,19 @@ general hook guard. The queue is emptied in `finally`; it introduces no timer or
 
 
 0.2.4 莱茵适配：余音FIFO条目同时保存攻击值与counter/reflect来源，保留本扩展既有反击边界；不会因套用上游队列而恢复递归反击。扩展平衡规则见[RHINE-CHANGES.md](RHINE-CHANGES.md)。
+
+### Kazdel extension: Unite soul carry
+
+A down operator may carry `carryState: { down: true, kazdelSoul: { hpPct, sp } }`. Kazdel content restores that living soul after initial forced exits, with the new owner reference and position. The result captures this state before battle-end cleanup. Active skill state is not carried. Restoration does not trigger death resources; actual body redeployment and final battle-end cleanup still remove the soul.
+
+### Rim Billiton reinforcement runtime
+
+`rem` installs before `rem_traits`. `battle.remSummon(playerId, count, { source, poolStage, capMode })` queues deterministic owner-local summons; `capMode: 'regular'` checks the 6/12/16 capacity, while other sources bypass admission checks. Only `source: 'jacinta'` excludes its ordinary units from that count. `remSpawned { unit, type, ownerId, source }` means an actual successful deployment, not a queued request. Units retain `remType`, `remSource`, and `remCounted`; they are temporary tokens, never operator bodies or covenant members. Pending chefs reserve the owner's shared kind limit.
+
+Ground movement uses cardinal terrain paths and checks the next landing tile. A blocked endpoint does not prevent advancement through the free part of a route; the unit waits before the occupied tile. Full formations can still block vehicles under the current collision rule. Flying bosses retain an off-road occupancy anchor while their actual world position follows the route, as with the existing moving Yan summon. Bombs, passage auras and Kazdel cannon checks use that flying world position. End-of-battle cleanup removes reinforcements and pending requests; nothing carries to the next field. Detailed approved balance and ownership rules: [REM.md](REM.md).
+
+Kazdel stage 3 (nine members) also accepts non-Kazdel original operator bodies in soul carry validation. It does not confer membership passives or death-resource production. Six and nine members both retain full same-owner living-unit cannon damage.
+
+### Rem ground transit
+
+Rem ground reinforcements alone may cross living allies, including teammates. While crossing, `remTransitAnchor` reserves their last free `_occ` tile; actual `tileR/tileC`, `x/y` and range keys follow the transit position. `remTransit` supplies actual-position blocking candidates and reserved tiles do not ghost-block. Successful ordinary `relocate` commits an exclusive free landing and releases the reservation; it still rejects occupied or downed tiles. Death and battle cleanup release only the unit’s own reservation. Full or unreachable destinations cause transit units to try returning to their reservation without triggering vehicle arrival effects.
