@@ -19,7 +19,7 @@
 
 四月普通／精锐购买基础价均为 1，仍是 II 阶；折扣后最低 0，不产生负价格。出售、共享卡池和返还沿用既有经济规则，不通过降低购买价产生回售套利，其他卡的价格不随之变化。
 
-图标使用维护者指定的[雷姆必拓原图](https://media.prts.wiki/e/ee/Logo_%E9%9B%B7%E5%A7%86%E5%BF%85%E6%8B%93.png)，保留透明背景并适配现有盟约与战斗图标，不重新绘制。下载的游戏素材不进入源码版本控制。
+图标使用维护者指定的[雷姆必拓原图](https://raw.githubusercontent.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/13df9cfd5f607a07ce4b1fa766439c3b012657cb/public/assets/bond/rem.png)，保留透明背景并适配现有盟约与战斗图标，不重新绘制。下载的游戏素材不进入源码版本控制。标准 `npm run assets`、`setup` 补图与增量图标下载共用固定交接提交来源；原文件为 21,152 字节，SHA256 `3089f0cb87a7c85b1d12eb1bf6aff6e1dd8ed1d2ae6caaf2cda359b2658c546e`。源码更新后需运行资源获取流程；完整安装包由打包流程收录清单所列图标。
 
 ## 盟约生成与数量
 

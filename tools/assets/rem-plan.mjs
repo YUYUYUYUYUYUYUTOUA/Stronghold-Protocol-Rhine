@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { RAW } from './sources.mjs';
-// User-selected original PRTS faction artwork. Downloaded art stays in ignored public/assets.
-export const REM_LOGO_URL = 'https://media.prts.wiki/e/ee/Logo_%E9%9B%B7%E5%A7%86%E5%BF%85%E6%8B%93.png';
+// Maintainer-supplied original, pinned to the verified handoff commit. Art stays in ignored public/assets.
+export const REM_LOGO_URL = 'https://raw.githubusercontent.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/13df9cfd5f607a07ce4b1fa766439c3b012657cb/public/assets/bond/rem.png';
 export function addRemArtPlan(template) {
   template.bonds ||= {};
   template.bonds.remShip = { alts: [{ rel: 'bond/rem.png', urls: [REM_LOGO_URL], kind: 'png' }] };
