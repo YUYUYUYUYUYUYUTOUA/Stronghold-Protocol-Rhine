@@ -19,6 +19,8 @@ export class BattleTiles {
     const k = r * COLS + c;
     if (this._occ[k] && this._occ[k] !== unit && this._occ[k].alive) return false;
     if (this.downOn(r, c)) return false;
+    delete unit.mem?.remLeg;
+    delete unit.mem?.remPlanAt;
     const anchor = unit.remTransitAnchor;
     const ok = anchor ? anchor[0] * COLS + anchor[1] : unit.tileR * COLS + unit.tileC;
     if (this._occ[ok] === unit) this._occ[ok] = null;

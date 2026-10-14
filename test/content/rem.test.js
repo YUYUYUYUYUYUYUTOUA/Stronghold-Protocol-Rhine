@@ -396,7 +396,7 @@ test('ground reinforcements cross allied occupants but land exclusively and pres
   assert.ok(checkInvariants(h.b));
   h.run(2.05);
   assert.equal(marcher.tileC,6);
-  assert.equal(marcher.remTransitAnchor,undefined);
+  assert.deepEqual(marcher.remTransitAnchor,[10,6],'the next continuous segment reserves the newly freed tile');
   assert.equal(h.b._occ[10*21+3],null);
   assert.equal(h.b._occ[10*21+6],marcher);
   assert.equal(h.b._occ[10*21+5],allies[1]);
@@ -433,10 +433,10 @@ test('a marching reinforcement attacks from its real transit position without ch
   const {h,marcher,allies}=crossingFixture(); h.run(1.05);
   marcher.profile.noAttack=false;
   const enemy=h.b.spawnEnemy('rem_enemy',{pos:[10,4]});
-  const hp=enemy.hp;
+  const hp=enemy.hp, position=[marcher.tileR,marcher.tileC,marcher.x,marcher.y];
   h.run(3.1);
   assert.ok(enemy.hp<hp,'normal attacks hit the contacted enemy during transit');
-  assert.deepEqual([marcher.tileR,marcher.tileC,marcher.x,marcher.y],[10,4,4,10]);
+  assert.deepEqual([marcher.tileR,marcher.tileC,marcher.x,marcher.y],position);
   assert.equal(h.b._occ[10*21+4],allies[0]);
   assert.equal(enemy.blockedBy,marcher);
   assert.ok(checkInvariants(h.b));
@@ -496,11 +496,48 @@ test('a bus returning to its reserved tile when the rally fills does not unload 
   const {h,s,marcher} = crossingFixture('bus'); h.run(1.05);
   s.rally=[10,9];
   for(const c of [7,8,9,10])h.b.grid.setObstacle(10,c,true);
-  h.run(2.1);
+  h.run(3.1); // Finish the already-started fractional segment, then walk back (no teleport).
   assert.equal(marcher.alive,true);
   assert.equal(marcher.remTransitAnchor,undefined);
   assert.deepEqual([marcher.tileR,marcher.tileC],[10,3]);
   assert.equal(s.queue.some(q=>q.source==='bus'),false);
   assert.equal(s.units.some(u=>u.remSource==='bus'),false);
+  assert.ok(checkInvariants(h.b));
+});
+
+test('ground march and vehicles advance every tick at the existing speed, including between allied tiles', async () => {
+  const { animOf, unitTuple } = await import('../../server/sim/snapshot.js');
+  const { ANIM } = await import('../../shared/constants.js');
+  const { SnapshotBuffer } = await import('../../public/js/render/interp.js');
+  for (const type of ['miner','food','bus']) {
+    const {h,marcher:u,allies}=crossingFixture(type,true);
+    u.deployedAt=-10;
+    for(let i=0;i<24;i++) {
+      const before={x:u.x,y:u.y}, a=unitTuple(u,h.b.time), t=h.b.time;
+      h.step();
+      const distance=Math.hypot(u.x-before.x,u.y-before.y);
+      assert.ok(Math.abs(distance-1/30)<1e-8,`${type} tick ${i}: ${distance}`);
+      assert.equal(animOf(u,h.b.time),ANIM.MOVE);
+      const buffer=new SnapshotBuffer();
+      buffer.push({t,units:[a]},t);buffer.push({t:h.b.time,units:[unitTuple(u,h.b.time)]},h.b.time);
+      const shown=buffer.sample((t+h.b.time)/2).get(u.id);
+      assert.ok(Math.abs(shown.x-(before.x+u.x)/2)<.011,'normal snapshot interpolation follows authoritative position');
+      assert.ok(checkInvariants(h.b));
+    }
+    assert.ok(u.x>3&&u.x<4);
+    assert.equal(h.b._occ[10*21+4],allies[0]);
+    h.b.applyStatus(u,'stun',{duration:1});const stopped=[u.x,u.y];h.run(.3);
+    assert.deepEqual([u.x,u.y],stopped);assert.equal(u.moving,false);
+  }
+});
+
+test('a fractional marcher blocks at its world position and freezes there until the enemy dies', () => {
+  const {h,marcher:u}=crossingFixture(); h.run(.4);
+  assert.ok(u.x>3&&u.x<3.5);
+  const enemy=h.b.spawnEnemy('rem_enemy',{pos:[10,u.x+.65]});
+  h.b._checkBlock(enemy); assert.equal(enemy.blockedBy,u,'contact succeeds before the destination tile is reached');
+  const positions=[u.x,u.y,enemy.x,enemy.y];h.run(.5);
+  assert.deepEqual([u.x,u.y,enemy.x,enemy.y],positions);assert.equal(u.moving,false);
+  h.b.kill(enemy);h.step();assert.ok(u.x>positions[0]&&u.x-positions[0]<=1/30+1e-8);
   assert.ok(checkInvariants(h.b));
 });

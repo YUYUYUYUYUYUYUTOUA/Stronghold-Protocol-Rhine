@@ -25,7 +25,7 @@ export function install(battle) {
   const strongest = (pid, key) => owned(pid, key).sort((a, b) => rank(b.unit) - rank(a.unit))[0]?.unit;
   const reinforcements = new Set();
   const rayProfiles = new WeakMap();
-  const regen = new Map(), appeared = new Map(), savage = new Map(), asbestos = new Map();
+  const regen = new Map(), appeared = new Set(), savage = new Map(), asbestos = new Map();
   const sandTimers = new Map(entries.filter(e => e.key === 'REM_SANDRECKONER').map(e => [e.unit, 0]));
   const touch = unit => {
     if (!up(unit)) return;
@@ -45,20 +45,19 @@ export function install(battle) {
       buff(battle, unit, 'rem:asbestos', { defFlat: 20 * power, resFlat: 3 * power });
     }
   };
-  battle.on('remSpawned', ({ unit, type, ownerId }) => {
+  battle.on('remSpawned', ({ unit, ownerId }) => {
     if (!unit || ownerId !== unit.ownerId) return;
     reinforcements.add(unit);
     const berry = strongest(ownerId, 'REM_MULBERRY');
     if (berry) regen.set(unit, { next: battle.time + 5, ratio: .05 * rank(berry), source: berry });
+    // Count each successfully created owned reinforcement once, even if its event is replayed.
+    const firstSpawn = up(unit) && unit.kind === 'token' && unit.remType &&
+      battle.unitById(unit.id) === unit && !appeared.has(unit.id);
+    if (firstSpawn) appeared.add(unit.id);
     const warmy = strongest(ownerId, 'REM_WARMY');
-    if (warmy) {
-      let seen = appeared.get(ownerId);
-      if (!seen) { seen = new Set(); appeared.set(ownerId, seen); }
-      if (!seen.has(type)) {
-        seen.add(type);
-        gainLayers(battle, { playerId: ownerId, bonds: BOND, n: rank(warmy), source: warmy,
-          reason: 'garrison', cap: 8 * rank(warmy), capKey: `rem:warmy:${ownerId}` });
-      }
+    if (warmy && firstSpawn) {
+      gainLayers(battle, { playerId: ownerId, bonds: BOND, n: rank(warmy), source: warmy,
+        reason: 'garrison', cap: 16 * rank(warmy), capKey: `rem:warmy:${ownerId}` });
     }
     touch(unit);
   });

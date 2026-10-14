@@ -26,6 +26,18 @@ export async function refreshRhineTranslations(out) {
         changed = true;
       }
     }
+    // Keep Warmy's maintained extension text in every shipped language after data regeneration.
+    const ui = JSON.parse(await fs.readFile(new URL(`../public/i18n/${name}`, import.meta.url), 'utf8'));
+    const garrisons = JSON.parse(await fs.readFile(path.join(out, 'garrisons.json'), 'utf8'));
+    for (const id of ['garrison_rem_warmy_a', 'garrison_rem_warmy_b']) {
+      const source = garrisons[id];
+      if (!source || !ui[source.desc]) continue;
+      const next = buildRecordOverlay(['desc', 'descRaw'].map(p => ({ path: [p], zh: source[p], en: ui[source.desc] })));
+      overlay.files.garrisons ??= {};
+      if (JSON.stringify(overlay.files.garrisons[id]) !== JSON.stringify(next)) {
+        overlay.files.garrisons[id] = next; changed = true;
+      }
+    }
     if (changed) await fs.writeFile(file, JSON.stringify(overlay));
   }
 }

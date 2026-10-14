@@ -67,7 +67,7 @@ function spawn(b, s, type, source, point = s.gate) {
   const u = b.spawnToken(s.ps.playerId, `token_rem_${type}`, ...point, { def: record(type, layers(s)), kit: { trait: { noAttack: special(type) }, install(_battle, unit) { if (type === 'boss') unit.motion = 'FLY'; } } });
   if (!u) return null;
   u.remType = type; u.remCounted = !special(type) && source !== 'jacinta'; u.remSource = source;
-  u.mem.remMove = 0; u.mem.remBomb = 0; u.mem.remStun = 0; u.mem.remHit = new Set();
+  u.mem.remBomb = 0; u.mem.remStun = 0; u.mem.remHit = new Set();
   if (type === 'boss') { u.x = s.gate[1]; u.y = s.gate[0]; u.mem.remAirIndex = 0; u.mem.remAirDirection = 1; u.ground = false; b.addBuff(u, { key: 'rem:flight', persist: true, flags: { liftoff: true, noBlock: true } }); }
   if (type === 'food' || type === 'bus') b.addBuff(u, { key: 'rem:vehicle', persist: true, flags: { noBlock: true } });
   s.units.push(u);
@@ -107,20 +107,33 @@ function drain(b, s) {
     if (spawn(b, s, q.type, q.source, point)) { s.queue.splice(i, 1); i--; }
   }
 }
-/** Ground reinforcements may traverse allies, but retain a unique last-free reservation until landing. */
-function transitStep(b, u, r, c) {
-  if (!b.grid.groundPassable(r,c) || b.downOn(r,c)) return false;
-  const occupant = b._occ[key(r,c)];
-  if (!occupant || occupant === u || !present(occupant)) return b.relocate(u,r,c);
-  if (occupant.side !== 'ally') return false;
-  u.remTransitAnchor ??= [u.tileR,u.tileC];
+/** Advance real world coordinates each simulation tick; reservations never act as phantom blockers. */
+function advanceMarch(b, u, dt) {
+  const leg = u.mem.remLeg;
+  if (!leg) return;
+  // An obstacle/body can appear while crossing. Return along the same segment rather than clipping it.
+  if (!b.grid.groundPassable(...leg.to) || b.downOn(...leg.to)) leg.to = leg.from;
+  u.remTransitAnchor ??= leg.from;
   b.remTransit.add(u);
-  u.tileR = r; u.tileC = c; u.x = c; u.y = r;
-  u.ground = b.grid.isLow(r,c) && !b._elevated?.has(key(r,c));
+  const [r,c] = leg.to, dx = c-u.x, dy = r-u.y, d = hypot(dx,dy);
+  const step = dt; // Preserve the approved one tile per game second; only the motion cadence changes.
+  if (step <= 0) return;
+  const arrived = d <= step + 1e-9;
+  if (arrived) { u.x=c; u.y=r; }
+  else { u.x += dx/d*step; u.y += dy/d*step; }
+  u.moving = d > 1e-9;
+  u.tileR=Math.round(u.y); u.tileC=Math.round(u.x);
+  u.ground=b.grid.isLow(u.tileR,u.tileC) && !b._elevated?.has(key(u.tileR,u.tileC));
   b._refreshRange(u);
-  return true;
+  if (arrived) {
+    delete u.mem.remLeg;
+    if (free(b,r,c,u)) b.relocate(u,r,c);
+  }
+  for (const e of b.enemies) if (present(e)) b._checkBlock(e);
+  if (u.blocking.length) u.moving=false;
 }
 function move(b, s, u, dt) {
+  u.moving = false;
   if (!u.canAct || u.s.flags.noMove || u.blocking.length) return;
   const type = u.remType, vehicle = special(type), fly = type === 'boss';
   // A flyer retains a reserved off-road home tile, like Yan's moving summon. Its world
@@ -133,11 +146,13 @@ function move(b, s, u, dt) {
     const target = route[i], dx = target[1] - u.x, dy = target[0] - u.y, d = hypot(dx, dy), step = dt;
     if (d <= step) { u.x = target[1]; u.y = target[0]; u.mem.remAirIndex = i; }
     else { u.x += dx / d * step; u.y += dy / d * step; }
+    u.moving = d > 1e-9;
     return;
   }
-  u.mem.remMove += dt;
-  if (u.mem.remMove < 1 - 1e-9) return;
-  u.mem.remMove = 0;
+  // Blocking uses fractional world coordinates; range keys follow the current tile as in the engine.
+  if (!vehicle && b.enemiesInKeys(u.rangeKeys, u, u.profile).length) return;
+  if (u.mem.remLeg) { advanceMarch(b,u,dt); return; }
+  if ((u.mem.remPlanAt || 0) > b.time + 1e-9) return;
   let goals;
   if (type === 'food' || fly) {
     const end = u.mem.remReturn ? s.gate : s.exit;
@@ -161,6 +176,7 @@ function move(b, s, u, dt) {
   if (goals.some(p => p[0] === at[0] && p[1] === at[1])) {
     // An ally can leave during transit: commit the now-free landing tile before settling/unloading.
     if (u.remTransitAnchor && !b.relocate(u,...at)) return;
+    u.mem.remPlanAt = b.time + 1;
     if (returningToAnchor) return;
     if (fly) u.mem.remReturn = !u.mem.remReturn;
     else if (type === 'food') b.retreat(u, { reason: 'remRouteEnd', permanent: true });
@@ -170,14 +186,12 @@ function move(b, s, u, dt) {
     } else u.mem.remSettled = true;
     return;
   }
-  // Common troops stop to fight without any rear-line coverage requirement; no target pursuit.
-  if (!vehicle && b.enemiesInKeys(u.rangeKeys, u, u.profile).length) return;
   const path = remPath(b, at, goals, u, fly, false, true);
   // Only transit may share an ally's tile. Destinations and retained reservations remain exclusive.
-  if (path?.length > 1 && transitStep(b, u, ...path[1])) {
-    if (fly) u.ground = false;
-    for (const e of b.enemies) if (present(e)) b._checkBlock(e);
-  }
+  if (path?.length > 1) {
+    u.mem.remLeg = { from: at, to: path[1] };
+    advanceMarch(b,u,dt);
+  } else u.mem.remPlanAt = b.time + 1;
 }
 function specials(b, s, u, dt) {
   const type = u.remType;
@@ -217,6 +231,8 @@ export function install(b) {
     const k = key(...unit.remTransitAnchor);
     if (b._occ[k] === unit) b._occ[k] = null;
     delete unit.remTransitAnchor;
+    delete unit.mem.remLeg;
+    unit.moving = false;
     b.remTransit.delete(unit);
   });
   const states = b.players.map(ps => {

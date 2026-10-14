@@ -157,3 +157,5 @@ A surviving Kazdel soul is reported under its down board body as `unitsEnd[].kaz
 ### Rhine extension: Rem allied transit
 
 By maintainer approval, Rem ground reinforcements and vehicles may march through living allies of any teammate while retaining exclusive final occupancy. Obstacles and downed bodies still stop movement; contact combat uses the actual position, without pursuit or dragging enemies. A reserved-tile fallback is not a vehicle arrival. See [REM.md](../REM.md) for movement and ownership rules.
+
+Rem troops and vehicles move continuously in the simulation at their existing one tile per game second. Their normal snapshots and enemy-art walk clips reflect the same position used by contact combat. The rally control may be dragged and collapsed independently of the locked combat rally point; viewport constraints keep an expand handle reachable.

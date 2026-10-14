@@ -916,3 +916,20 @@ describe('death timing (PR #380): a dying flyer drops inside the fade, a long Di
     assert.ok(!v.remove && v.alpha > 0.5, 'still on screen 5 s in');
   });
 });
+
+test('Rem enemy-art allies turn with travel like enemies without changing allegiance; deployed operators keep direction', () => {
+  const marcher=view({kind:'token',defId:'token_rem_miner',spine:'enemy_10222_agtski',dir:'RIGHT'});
+  const enemy=view({kind:'enemy',side:'enemy',defId:'enemy_10222_agtski'});
+  const operator=view({kind:'chess',dir:'RIGHT'});
+  for(const vx of [-1,1]) {
+    const sample={x:5.3,y:12,hp:100,maxHp:100,sp:0,spMax:0,flags:0,anim:1,vx,vy:0};
+    for(const v of [marcher,enemy,operator])v.sync(sample,1);
+    assert.equal(marcher.visFacing,enemy.visFacing);
+    assert.equal(marcher._baseFromAnim(),'move');
+    assert.equal(marcher.x,sample.x);
+    assert.equal(marcher.isEnemy,false);
+    assert.equal(operator.visFacing,1);
+  }
+  marcher.sync({x:5.3,y:12,hp:100,maxHp:100,sp:0,spMax:0,flags:0,anim:0,vx:0,vy:0},2);
+  assert.equal(marcher._baseFromAnim(),'idle');
+});

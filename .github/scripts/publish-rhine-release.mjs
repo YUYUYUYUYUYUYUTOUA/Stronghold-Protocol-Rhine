@@ -292,7 +292,7 @@ async function main() {
     browserTests = {
       remSimulation: runTests(node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
         path.join(root, 'browser-rem-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      remRenderer: runTests(node, built.destination, ['test/render/rem-art.browser.test.js'],
+      remRenderer: runTests(node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
         path.join(root, 'browser-rem-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
       remRally: runTests(node, built.destination, ['test/ui/rem-rally.browser.test.js'],
         path.join(root, 'browser-rem-rally.log'), { concurrency: 1, env: { SP_E2E: '1', CHROME_PATH: edge } }),

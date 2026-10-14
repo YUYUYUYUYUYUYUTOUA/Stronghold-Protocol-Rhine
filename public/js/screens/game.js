@@ -1473,7 +1473,7 @@ function MatchScreen() {
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null} />
 
-      ${!watchingOther && !pen && !sp ? html`<${RemRally} point=${priv?.remRally} editable=${editable && showPrep}
+      ${!watchingOther && !pen && !sp ? html`<${RemRally} point=${priv?.remRally} editable=${editable && showPrep} contextKey=${`${myId}:${pub?.stageId}:${deployField}`}
         view=${view} placeCtx=${placeCtx} enabled=${(priv?.bonds || []).some(b => b.bondId === 'remShip' && b.count > 0)}
         onSet=${(row, col) => actions.remRally(row, col)} />` : null}
       <div class="gm__effects"><${EffectsList} effects=${watchingOther && field ? (field.effects ?? null) : priv?.effects} /></div>

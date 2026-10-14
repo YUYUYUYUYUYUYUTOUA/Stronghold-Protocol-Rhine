@@ -1329,5 +1329,10 @@
   "点击高亮地面设置集合点 · Esc取消": "Choose a highlighted ground tile · Esc to cancel",
   "集合点：{row}行 {col}列": "Rally point: row {row}, column {col}",
   "未设置：援军在蓝门附近集结": "Unset: reinforcements rally near the blue gate",
-  "准备阶段可改 · 战斗锁定 · 集合点周围2格作战": "Edit during preparation · Locked in combat · Fight within 2 tiles"
+  "准备阶段可改 · 战斗锁定 · 集合点周围2格作战": "Edit during preparation · Locked in combat · Fight within 2 tiles",
+  "移动集合点窗口": "Move rally panel",
+  "收起集合点": "Collapse rally panel",
+  "展开集合点": "Expand rally panel",
+  "每回合本玩家每实际成功生成一个援军，使已激活的【雷姆必拓】增加1层，同玩家共享上限16层。": "Each round, each successfully generated reinforcement owned by this player adds 1 stack(s) to the active Rim Billiton bond, up to a shared limit of 16 stacks per player.",
+  "每回合本玩家每实际成功生成一个援军，使已激活的【雷姆必拓】增加2层，同玩家共享上限32层。": "Each round, each successfully generated reinforcement owned by this player adds 2 stack(s) to the active Rim Billiton bond, up to a shared limit of 32 stacks per player."
 }

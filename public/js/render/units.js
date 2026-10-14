@@ -452,6 +452,7 @@ export class UnitView {
     this._offDt = 0;              // animation time skipped while culled
     this._far = false;            // small on screen (adaptive LOD, with hysteresis)
     this.isEnemy = info.side === 'enemy';
+    this.isRemMarcher = info.kind === 'token' && /^token_rem_/.test(info.defId || '');
     this.isBoss = !!info.boss;
     // enemies: the official prefab's size factor (1 for operators, summons and enemies at the standard size)
     const def = this.isEnemy && ctx.lookupDef ? ctx.lookupDef(info) : null;
@@ -843,10 +844,10 @@ export class UnitView {
     // high-ground / forbidden block rose and dropped like stairs). Its shadow still lies on the tile top under it.
     // While sliding, the floor is read under the view's own (mid-flight) position, not the destination's.
     const floor = this.slide ? groundZ(this.ctx, this.x, this.y) : groundZ(this.ctx, s.x, s.y);
-    const gz = this.isEnemy ? 0 : floor;
+    const gz = this.isEnemy || this.isRemMarcher ? 0 : floor;
     if (this.zTarget == null) this.z = gz;
     this.zTarget = gz;
-    this.shadowZTarget = this.isEnemy && this.flying ? floor : null;
+    this.shadowZTarget = (this.isEnemy || this.isRemMarcher) && this.flying ? floor : null;
     if (this.shadowZTarget == null) this.shadowZ = null;
     else if (this.shadowZ == null) this.shadowZ = this.z;
     if (s.maxHp > 0) this.maxHp = s.maxHp;
@@ -870,7 +871,7 @@ export class UnitView {
         if (this.imp) this.imp.dirty = true;
       }
     }
-    if (this.isEnemy && !this.slide?.keepFacing && Math.abs(s.vx) > 0.08) this.visFacing = s.vx < 0 ? -1 : 1;
+    if ((this.isEnemy || this.isRemMarcher) && !this.slide?.keepFacing && Math.abs(s.vx) > 0.08) this.visFacing = s.vx < 0 ? -1 : 1;
     if ((prevFlags ^ this.flags) & UF.SKILL) this.setSkill(!!(this.flags & UF.SKILL));
     if (this.anim === ANIM.DIE && this.alive) this.die();
     if (this.actor && this.alive) this.actor.setBase(this._baseFromAnim());
@@ -1004,9 +1005,9 @@ export class UnitView {
       }
       this.lastAtk = now;
     }
-    if (target && !this.isEnemy && this.info.kind !== 'device') {
+    if (target && !this.isEnemy && !this.isRemMarcher && this.info.kind !== 'device') {
       // operators keep their deploy direction (research 09 §1.2); enemies may turn towards their target
-    } else if (target && this.isEnemy) {
+    } else if (target && (this.isEnemy || this.isRemMarcher)) {
       const dx = target.x - this.x;
       if (Math.abs(dx) > 0.1) this.visFacing = dx < 0 ? -1 : 1;
     }
@@ -1225,7 +1226,7 @@ export class UnitView {
     this.researchActor?.advance(dt);
     // off-screen: nothing to animate or draw (bounds / hit-testing still follow `screen`)
     if (this._cull(bx, by, s, dt)) return;
-    const flip = (this.isEnemy ? (ENEMY_MODEL_FACES_LEFT ? -this.visFacing : this.visFacing) : this.visFacing) * (this.mirrorX ? -1 : 1);
+    const flip = ((this.isEnemy || this.isRemMarcher) ? (ENEMY_MODEL_FACES_LEFT ? -this.visFacing : this.visFacing) : this.visFacing) * (this.mirrorX ? -1 : 1);
 
     // shadow (on a raised top it is drawn with that block row, else in the shadow layer under everything); an enemy
     // flyer's lies on the tile under it while its body hovers from the road (shadowZ, GitHub #277)
