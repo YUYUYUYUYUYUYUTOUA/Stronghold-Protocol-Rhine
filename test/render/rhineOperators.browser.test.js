@@ -31,7 +31,7 @@ describe('Rhine added operators actual art, loadout stats and traps in Chromium'
     ['mayer',2,['uniequip_002_otter']], ['wuhoo',2,['uniequip_002_turdus']],
     ['eunectes',3,['uniequip_002_zumama','uniequip_003_zumama']],
     ['ifrit',3,['uniequip_002_ifrit','uniequip_003_ifrit']],
-    ['astgenne',2,['uniequip_002_halo']], ['dorothy',3,['uniequip_002_doroth']],
+    ['astgenne',2,['uniequip_002_halo']], ['magallan',3,['uniequip_002_mgllan','uniequip_003_mgllan']],
    ];
    for (const [key,count,modules] of cases) {
     const sel=`[data-chess="chess_rhine_${key}_a"]`;
@@ -69,7 +69,7 @@ describe('Rhine added operators actual art, loadout stats and traps in Chromium'
    assert.deepEqual(errors,[]);
   } finally {await page.close();}
  });
- test('new operator and trap models load; critical colour survives initial snapshot; chain and explosion draw in low quality', async () => {
+ test('current operator models and retained trap effects load; critical colour survives initial snapshot; chain and explosion draw in low quality', async () => {
   const page=await browser.newPage(), errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try {
@@ -79,7 +79,7 @@ describe('Rhine added operators actual art, loadout stats and traps in Chromium'
    await page.evaluate(()=>{
     const v=window.__demo.view;v.setCamera('normal',{instant:true});
     const ops=[{id:801,kind:'op',side:'ally',defId:'chess_rhine_astgenne_a',spine:'char_135_halo',avatar:'char_135_halo',x:4,y:10,maxHp:1000,skillIndex:0},
-      {id:802,kind:'op',side:'ally',defId:'chess_rhine_dorothy_b',spine:'char_4048_doroth',avatar:'char_4048_doroth',x:7,y:11,maxHp:1000,skillIndex:2},
+      {id:802,kind:'op',side:'ally',defId:'chess_rhine_magallan_b',spine:'char_248_mgllan',avatar:'char_248_mgllan',x:7,y:11,maxHp:1000,skillIndex:2},
       {id:803,kind:'token',side:'ally',defId:'token_10025_doroth_recttp',x:6,y:10,maxHp:1000,form:'dorothyCritical'},
       {id:804,kind:'token',side:'ally',defId:'token_10025_doroth_recttp',x:8,y:10,maxHp:1000}];
     v.enterBattle({fieldId:'rhine-new-visual',kind:'normal',stageId:'act2autochess_m01',units:ops});
