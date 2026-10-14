@@ -1,13 +1,13 @@
 {
-  "tag": "v0.2.4-rhine.5",
-  "sourceCommit": "b159e574969e826e8b69a63b12ce68ab52d289af",
-  "previousTag": "v0.2.4-rhine.3",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.3-Windows-x64.zip",
-  "previousArchiveSha256": "ffea11496c280148ada2b4bf1a738b977bb4bba776124766a4204f73c15a58df",
+  "tag": "v0.2.4-rhine.6",
+  "sourceCommit": "f146f38f38937ff8cba6e036aed30621c0f85a50",
+  "previousTag": "v0.2.4-rhine.5",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.5-Windows-x64.zip",
+  "previousArchiveSha256": "a06eae3e7b8fb8793b67c3c4ae54b23a147c14a408991caa5324b2e2e6191938",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.2.4-rhine.5 · 雷姆必拓援军与莱茵调整",
-  "releaseNotes": "新增雷姆必拓援军玩法，并整合本批莱茵／卡兹戴尔调整。\n\n- 雷姆必拓 11 名固定成员、3／6／9 档援军、所属玩家独立集结点与特质；援军和车辆可穿过友军，落点仍互斥，敌军照常阻挡。新增原生技能、模型和战斗表现。\n- 九档卡兹戴尔自身原始干员可产魂；炮击只影响所属玩家活体，队友与魂灵免疫，误伤及衍生死亡不产资源。保留当前已批准的自身100%伤害规则。\n- 莱茵科研调整梅尔共享预算、白面鸮按不同莱茵档位计算，固定四阶麦哲伦及其无人机；防止重复产层反馈。\n- 雷姆图标使用已验收的原始透明 PNG，固定提交下载来源，空目录实网校验字节数与 SHA256。完整安装包包含图标及本批模型。\n\n首次安装下载新的 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。旧版请结束对局并关闭服务，在原安装目录运行「联网更新.bat」；私人配置保留，源码冲突会停止更新。保留旧发行版，未部署服务器。\n\n包内运行时为官方 Node24.21.0。只有原生 Windows 包内回归、浏览器、HTTP/WebSocket、上一正式包升级、私人配置、重复更新、回滚和上传后附件校验通过才公开；实际结果见 RELEASE-VALIDATION.json。普通 CI 的 Windows Node22 仍有基线更新测试进程崩溃（3221226505），不声称所有 CI 全绿，未扩大范围修复该问题。没有真人多人平衡试玩或人工 BAT 点击验收。\n\n非官方、非商业扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。\n\n前一未公开候选的原生包内与雷姆验收通过，随后发现莱茵浏览器验收仍使用旧固定多萝西名单。本候选将其同步为麦哲伦，保留全部断言并完整重跑发行门槛；失败候选继续保留为草稿。",
+  "releaseName": "v0.2.4-rhine.6 · 温米叠层与援军行军修复",
+  "releaseNotes": "本次补丁保留此前已发布功能，集中修复温米叠层、援军移动与集合点窗口。\n\n- 温米：本玩家每实际成功生成一个援军，普通／精锐增加1／2层；同种重复生成也计数，每回合共享上限16／32。失败尝试、待落地请求、同一援军重复事件和队友援军不计数，下回合重置。\n- 援军：模拟端逐tick连续移动，保持每游戏秒一格速度，正常播放行走动画并转向。保留蓝门入场、集合点附近两格、穿越友军、独占落点、敌军阻挡及不主动追击规则。\n- 集合点窗口：支持拖动、收起／展开、键盘移动、缩放边界恢复；修复取消选点、地图／玩家切换及棋盘事件穿透。\n\n首次安装下载 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。已有安装请结束对局并关闭服务，在原目录运行「联网更新.bat」。保留私人配置；源码冲突会停止更新。未部署用户服务器，未加入尚未回填的描述改写。\n\n包内使用官方 Node24.21.0。发行门槛包含原生 Windows 包内回归、Edge 浏览器、HTTP/WebSocket、从上一正式版v0.2.4-rhine.5升级、私人配置保留、重复更新、回滚及上传附件校验；结果见 RELEASE-VALIDATION.json。此前 Windows Node22 全量CI存在更新测试进程错误3221226505，不能以Linux检查替代Windows验收；本轮CI具体结果以对应运行记录为准。未进行真人完整多人对局平衡试玩或人工BAT点击验收。\n\n非官方、非商业扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.2.4",
@@ -29,97 +29,47 @@
     "sourceCommit": "13df9cfd5f607a07ce4b1fa766439c3b012657cb"
   },
   "sourceValidation": {
-    "gameplayCommit": "40d6543f3b3bc2e52ea043fe9df9aaad41840d84",
-    "logoSourceCommit": "7c78680115d9949eb45417606dc92f0eda627b5c",
-    "localFullSerialCi": {
-      "tests": 6869,
-      "pass": 6818,
+    "targeted": {
+      "pass": 86,
       "fail": 0,
-      "skipped": 51,
-      "fileConcurrency": 1,
-      "allStaticStages": "passed"
+      "skipped": 0
     },
-    "priorParallelCi": {
-      "fail": 1,
-      "reason": "heavy boss performance 521.3us exceeded500us; unchanged full serial run passed267.4us"
+    "nodeChromiumParity": {
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
     },
     "golden": {
       "matched": 287,
       "changed": 0,
       "regenerated": true
     },
-    "logoCleanNetwork": {
-      "http": 200,
-      "bytes": 21152,
-      "cacheHits": 0,
-      "digestMatched": true,
-      "resourceAndDocsTests": 69,
-      "packageAndDownloadTests": 133,
-      "fail": 0
-    },
     "i18n": {
       "packs": 4,
-      "messagesPerPack": 1277,
+      "messagesPerPack": 1280,
       "missing": 0,
       "errors": 0
     },
-    "sourceCi": {
-      "run": 38525225483,
-      "conclusion": "four jobs passed; Windows Node22 updater process exit3221226505 matches baseline",
-      "logoCorrectionRun": 38528337760,
-      "logoCorrectionStatusAtRequest": "Cancelled by release request push; tooling passed; four incomplete test jobs not counted as passed",
-      "candidate4RequestRun": 38529332609,
-      "candidate4StatusAtRequest": "Tooling, Windows24 and Ubuntu22 passed; other jobs still running when next candidate prepared"
+    "limitations": [
+      "No human full-match playtest or manual BAT clicking.",
+      "Full offline official data build unavailable due to missing cache; maintained Rem generator used and scope checked.",
+      "Prior Windows Node22 CI updater process crash3221226505 is tracked separately; native packaged Node24 validation required."
+    ],
+    "localFullCi": {
+      "tests": 6877,
+      "pass": 6824,
+      "fail": 0,
+      "skipped": 53,
+      "allStaticStages": "passed",
+      "platform": "Linux Node24",
+      "testDurationSeconds": 1013
     },
     "releaseToolTests": {
-      "tests": 87,
-      "pass": 75,
+      "tests": 72,
+      "pass": 68,
       "fail": 0,
-      "skipped": 12,
-      "note": "Windows-only cases skipped locally; native package run executes them"
-    },
-    "limitations": [
-      "Windows Node22 full CI retains the baseline rhine-online-update.test.js process crash3221226505; no root cause claim. Distributed runtime Node24.21.0 requires separate native package/update checks.",
-      "No human multiplayer balance playtest or manual BAT clicking."
-    ],
-    "candidate4": {
-      "tag": "v0.2.4-rhine.4",
-      "run": 38529332624,
-      "published": false,
-      "sourceCommit": "19af32342edaf50c7c434700b9d3142f3be0eb24",
-      "packagedWindows": {
-        "tests": 747,
-        "pass": 744,
-        "fail": 0,
-        "skipped": 3
-      },
-      "remBrowser": {
-        "pass": 4,
-        "fail": 0
-      },
-      "kazdelBrowserSimulation": {
-        "pass": 5,
-        "fail": 0
-      },
-      "renderer": {
-        "pass": 13,
-        "fail": 0
-      },
-      "blocker": "Stale fixed Dorothy selector in Rhine operator browser test; corrected to current Magallan skills/modules/model",
-      "notRun": [
-        "remaining browser groups",
-        "HTTP/WebSocket",
-        "actual previous-package update and rollback",
-        "archive and uploaded attachment verification"
-      ]
-    },
-    "magallanBrowserCorrection": {
-      "tests": 2,
-      "pass": 2,
-      "fail": 0,
-      "skipped": 0,
-      "platform": "Linux Chromium",
-      "gameplayChanged": false
+      "skipped": 4,
+      "note": "Windows-only checks skipped on Linux; native package pipeline must run them."
     }
   }
 }
