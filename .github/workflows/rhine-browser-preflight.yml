@@ -1,0 +1,32 @@
+name: Rhine Windows Browser Preflight
+
+on:
+  push:
+    branches: [codex/rhine-030-browser-preflight]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rhine-native-browser-preflight
+  cancel-in-progress: false
+
+jobs:
+  browser-preflight:
+    if: github.ref == 'refs/heads/codex/rhine-030-browser-preflight'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Preserve checkout line endings
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+      - name: Validate diagnostic-only inputs
+        run: node .github/scripts/rhine-browser-preflight.mjs --validate-only
+      - name: Verify complete resources and run the two original plugin browser cases
+        run: node .github/scripts/rhine-browser-preflight.mjs
