@@ -1,13 +1,13 @@
 {
-  "tag": "v0.3.0-rhine.7",
-  "sourceCommit": "a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4",
+  "tag": "v0.3.0-rhine.8",
+  "sourceCommit": "a3a98d798a21d2913631ea13eb4f9eab77e7afb0",
   "previousTag": "v0.2.4-rhine.6",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.3.0-rhine.7 · 阵营拓展与雷姆平衡",
-  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆必拓及原版切换，继续完整拓展版分发。\n\n- 雷姆 6／9 档：每实际成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣出现数，普通战斗到同轮联防延续。\n- 暴行：自身与周围八格的本玩家雷姆干员及援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重，混品质共用预算。替换原经过加攻，保留原生技能；沿用原版普通主战 IN_BATTLE 产层范围。\n- 普通援军抵达集合点后，在周围八格可通行地块持续徘徊；接敌停下，脱战继续。车辆和老板保留原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用装备五份库存；抽取干员仍遵守共享池及本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展险境及以上为 6+6、标准模拟为 3+3，引导训练仍为 0；每阶至少保留 8 种共享可刷干员，有界抽取避免无限重抽。.3 固定数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库按上游 .3 翻倍，旧概率估计已重算。\n- 适配 .3 插件／Studio、官方特效、攻击提交、格子判定及已展示装备透支，保持原版／扩展内容集和 Worker 一致。Windows 包采用 Node 24.21.0，包含锁定依赖 SES、Acorn 与 local-fx。\n- 房间内容校验完成后预加载一个真实隔离 Worker，保留到首次战斗以减轻首战加载；跨首回合不重复加载，用过的 realm 不回池，脚本同意与原加载／执行时限保留。修正图标、配置切换及多客户端机制测试的实际就绪观测，所有生产断言与期限保持。\n- 对外展示名称改为“阵营拓展”，README 补充雷姆援军和集合点介绍，保留莱茵、卡兹戴尔介绍。仓库地址、安装目录、启动文件及联网升级渠道保持一致。\n\n首次安装：下载 Windows x64 ZIP，完整解压，运行「启动莱茵科研版.bat」。已有 v0.2.4-rhine.6：结束对局并关闭服务后，在原目录运行「联网更新.bat」。随附更新工具用于旧安装尚无更新入口的情况。\n\n发行使用真实 Windows x64 和包内 node.exe 验收：源码机制回归、完整素材 Edge 浏览器、HTTP／WebSocket、从实际 .6 安装包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚、全量文件和五个附件重新下载 SHA256。任一发行门槛失败时只保留草稿，完整结果见 RELEASE-VALIDATION.json 和源码 docs/RHINE-030-VALIDATION.md；此前 v0.3.0-rhine.1–.6 均为未公开候选，旧标签不变。\n\n已知验证边界：未进行真人完整多人平衡试玩或人工 BAT 点击；官方原始表全量生成缓存缺失，固定 .3 原版快照和三个扩展逐表重建已验证。先前 Windows Node 22 的更新测试发生原生崩溃；针对已知中文目录 fs.cpSync 路径只调整测试夹具，之后四个真实 Windows 矩阵的更新文件均为 28/28 实跑通过，不宣称修复 Node 底层缺陷。先前 .6 两轮源码 CI 均失败，包含房间配置请求超时与真实 SES 对局无心跳；源码验收文档完整保留各环境通过／失败／跳过，不能称整个矩阵全绿。早期本地缺素材及容器僵尸进程导致的失败保留在源码验收记录，未抹作通过。\n\n整体游戏内阵营描述重写、变形同构体无限库存均未加入，未部署用户服务器。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n",
+  "releaseName": "v0.3.0-rhine.8 · 测试版 · 建议2D棋盘",
+  "releaseNotes": "**测试版 / prerelease，建议访问游戏地址 `/?board=2d` 使用 2D 棋盘。默认 3D 在软件渲染、多页面刷新时仍可能初始化超时，本版尚未修复。稳定版联网更新不会自动安装本测试版。**\n\n基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆必拓及原版切换，继续完整拓展版分发。\n\n- 雷姆 6／9 档：每实际成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣出现数，普通战斗到同轮联防延续。\n- 暴行：自身与周围八格的本玩家雷姆干员及援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重，混品质共用预算。替换原经过加攻，保留原生技能；沿用原版普通主战 IN_BATTLE 产层范围。\n- 普通援军抵达集合点后，在周围八格可通行地块持续徘徊；接敌停下，脱战继续。车辆和老板保留原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用装备五份库存；抽取干员仍遵守共享池及本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展险境及以上为 6+6、标准模拟为 3+3，引导训练仍为 0；每阶至少保留 8 种共享可刷干员，有界抽取避免无限重抽。.3 固定数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库按上游 .3 翻倍，旧概率估计已重算。\n- 适配 .3 插件／Studio、官方特效、攻击提交、格子判定及已展示装备透支，保持原版／扩展内容集和 Worker 一致。Windows 包采用 Node 24.21.0，包含锁定依赖 SES、Acorn 与 local-fx。\n- 房间内容校验完成后预加载一个真实隔离 Worker，保留到首次战斗以减轻首战加载；跨首回合不重复加载，用过的 realm 不回池，脚本同意与原加载／执行时限保留。修正图标、配置切换及多客户端机制测试的实际就绪观测，所有生产断言与期限保持。\n- 地砖纹理保留原内部绘图，将边缘自拷贝移至小画布；Linux Chrome 151／SwiftShader 对照中，真实素材与程序纹理共约 2517 万像素逐 RGBA 一致，atlas 工厂调用墙钟样本下降，原渲染就绪／取消与超时条件保持。这不等于完整初始化或其他平台性能结论。\n- 对外展示名称改为“阵营拓展”，README 补充雷姆援军和集合点介绍，保留莱茵、卡兹戴尔介绍。仓库地址、安装目录、启动文件及联网升级渠道保持一致。\n\n首次安装：下载 Windows x64 ZIP，完整解压，运行「启动莱茵科研版.bat」。已有 v0.2.4-rhine.6：结束对局并关闭服务，把本测试包解压到新临时目录，再从新包执行 `更新旧版.bat --offline --source \"新包目录\" --target \"旧安装目录\"`，按预检、备份流程保留配置升级。普通「联网更新.bat」继续只选择稳定版，不能用它直接获取本测试版。\n\n发行使用真实 Windows x64 和包内 node.exe 验收：源码机制回归、完整素材 Edge 浏览器、HTTP／WebSocket、从实际 .6 安装包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚、全量文件和五个附件重新下载 SHA256。任一发行门槛失败时只保留草稿，完整结果见 RELEASE-VALIDATION.json 和源码 docs/RHINE-030-VALIDATION.md；此前 v0.3.0-rhine.1–.7 均为未公开候选，旧标签不变。\n\n已知验证边界：未进行真人完整多人平衡试玩或人工 BAT 点击；官方原始表全量生成缓存缺失，固定 .3 原版快照和三个扩展逐表重建已验证。先前 Windows Node 22 的更新测试发生原生崩溃；针对已知中文目录 fs.cpSync 路径只调整测试夹具，之后四个真实 Windows 矩阵中的 rhine-online-update 均为 28/28 实跑通过；每个矩阵全部六个更新／发行校验文件合计 97 通过、1 条件跳过（SP_UPDATE_E2E 未启用），不宣称修复 Node 底层缺陷。先前 .6 和 .7 各自主线／标签源码 CI 均非全绿；.7 两次 CI 的八个矩阵中，四个 Node 24 环境通过，四个 Node 22 环境失败，包含房间配置请求超时、真实 SES 对局无心跳，主线 Windows Node 22 另测得最坏场景 0.505919 ms/tick，未满足原 <0.5 门槛。未修改性能门槛或断言，完整保留各环境通过／失败／跳过，不能称整个矩阵全绿。机制验收通过真实设置选择低画质、关闭官方特效；多客户端机制夹具用各自独立 BrowserContext 保持会话、存储、页面与 Worker 隔离，共用一个浏览器／GPU，专门渲染套件保留原设置。这不证明原三独立浏览器压力下的冷加载超时已修复，也不构成特效视觉或流畅帧率声明。早期本地缺素材及容器僵尸进程导致的失败保留在源码验收记录，未抹作通过。\n\n已知渲染验证限制：默认 3D 棋盘在当前软件渲染、多页面刷新专项仍触发原初始化超时，未声称修复。配置切换机制改用项目已有 `?board=2d` 入口，保留真实 Pixi／Spine／Worker、Canvas 与全部模拟上传／重放断言；专门 3D 渲染套件维持原设置。同源码的 Linux／Windows 配置专项各完整 1/1 通过，分别 113.666／125.964 秒；完整安装包门槛结果见验收报告。\n\n整体游戏内阵营描述重写、变形同构体无限库存均未加入，未部署用户服务器。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -47,9 +47,9 @@
       "Original official source-table cache absent; pinned v0.3.0 vanilla snapshot and complete extension-overlay rebuild verified.",
       "Repository About PATCH was refused by the API channel (Forbidden) and remains unchanged; README updated.",
       "Historical source/full CI and native/browser failures remain recorded below and in docs/RHINE-030-VALIDATION.md. Neither the complete matrix nor prior Windows acceptance is reclassified as all-green.",
-      "Mechanism fixtures use real UI low quality with official FX off. Two plugin cases and the six-player mechanism use separate real BrowserContexts within one browser/GPU, with storage and visibility/RAF isolation checks; the three-client profile case and dedicated renderer suites retain independent original browsers/settings. This is not a visual official-FX or smooth-FPS claim.",
+      "Mechanism fixtures use real UI low quality with official FX off. The two plugin cases, six-player mechanism and current three-client profile use separate real BrowserContexts within one browser/GPU, with storage/identity/reload and visibility/RAF checks as each case specifies; dedicated renderer suites retain their original browsers/settings. The original three-independent-browser profile failures remain historical. This does not prove that old topology pressure fault fixed and is not an official-FX visual or smooth-FPS claim. Current default3D profile normal runs still fail the original hostreloadCanvas gate on Linux and Windows software rendering. The current profile-only fixture uses the existing production2D board URL and actualLinux/Windows13selectedcases bothpassed, retaining realPixi engine and all applicable mechanism gates; this is not a fix of that default3D failure or fullnativeacceptance.",
       "The production preload prepares one unused isolated Worker from a checked room lobby or preparation without Battle/spec/progress, retaining its original load through the first actual round. Used realms never return; failed idle slots retry at most once per later preparation round without clearing old errors. Normal-to-UNITE can cold-load. Original15s load/2s install-start-step/10s match-host heartbeat/12s boss silence and all test deadlines remain unchanged. Explicitly consented trusted native idle realms have no continuous watchdog without pending RPC.",
-      "The current Windows vanilla six-player diagnostic passed1/1 with exact in-test Node replay of three captured R14 authoritative outbound uploads. The case does not separately assert serverAccepted/resultSource-client/SP_VERIFY.checked or an independent distinct-battle-ID Set. Successful raw packets were not separately dumped for a second post-run replay. Earlier local pass and failed Windows runs remain historical; this selected case does not replace complete native acceptance.",
+      "The historical source7 Windows vanilla six-player diagnostic passed1/1 with exact in-test Node replay of three captured R14 authoritative outbound uploads. The case does not separately assert serverAccepted/resultSource-client/SP_VERIFY.checked or an independent distinct-battle-ID Set. Successful raw packets were not separately dumped for a second post-run replay. Earlier local pass and failed Windows runs remain historical; this selected case does not replace complete native acceptance.",
       "Native Windows final-source package/browser/HTTP/update/private/repeat/rollback/upload/public-download results are separate mandatory gates; preparation records alone do not claim them passed."
     ],
     "localFullCi": {
@@ -2675,7 +2675,1618 @@
       "recordedAtUTC": "2026-10-16T12:21:33.751494+00:00",
       "sourceValidationAtFreeze": "Current full source CI and complete native package results will be observed separately; no all-matrix-green claim.",
       "releaseNotesSha256": "1e9b38aa1e31c45e72bae3046d034277bc71a9b08bb565162e142bd070fa90c3"
+    },
+    "candidate8Preparation": {
+      "status": "Finalimmutableprereleasesourcea3a98d79;13application/fixturefilesbyteequalpassedWindows13;Linux+Windows2DfullPASS/atlasRGBA25165824pixels0diff/31targets/32docs/12channeltests/37onlinecombinedPASS3Winconditionskips/fullstatic0errors151warnings. Fullnativepackage/upgrade/private/repeatrollback/upload/public/anonpending. Useracceptsdefault3Dlimit;stop3Dfix.",
+      "previousSource": "a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4",
+      "previousFormal": "923f8243301c9adc0d51b0ab95d2980d14521ac2",
+      "native7Run": 38899986209,
+      "native7Job": 116969557147,
+      "native7RawLogSha256": "44c0311fdeae19bc8f98afc272c752a82b31abc0834866dbc4cd173941a1faff",
+      "native7Totals": {
+        "package": {
+          "tests": 974,
+          "pass": 972,
+          "fail": 0,
+          "skip": 2
+        },
+        "authorStudio": {
+          "tests": 27,
+          "pass": 27,
+          "fail": 0
+        },
+        "isolatedHost": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0
+        },
+        "browser": {
+          "tests": 48,
+          "pass": 46,
+          "fail": 2,
+          "skip": 0,
+          "cancelled": 0
+        }
+      },
+      "failures": [
+        {
+          "file": "test/ui/rhine-profiles.e2e.test.js",
+          "line": 351,
+          "evidence": "Trusted click landed on DIV with target profile button visibility hidden; no room.setRhine request/reply. Exact residual class/transition not recorded."
+        },
+        {
+          "file": "test/ui/studio-gameplay.e2e.test.js",
+          "line": 47,
+          "evidence": "After save click, expected saved normal.atk900 not observed within original30s. Original log lacks input/button/API observations; disabled/draft race remains a hypothesis."
+        }
+      ],
+      "notRun": [
+        "native HTTP/WebSocket smoke",
+        "ZIP fulltree compression/re-extraction",
+        "actual old.6 upgrade/private config preservation/repeat/rollback",
+        "five release attachments upload/redownload",
+        "public publication/anonymous full downloads"
+      ],
+      "publicTagAfterFailure": "v0.2.4-rhine.6",
+      "noOldTagOrCodeRewrite": true,
+      "windowsPreflight": {
+        "commit": "5aef1d912a74115dad833a87b2bd01d4d61f0131",
+        "run": 38904452488,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38904452488",
+        "status": "failure",
+        "scope": "only two failed profile/first Studio cases; others46 not rerun in this diagnostic",
+        "sourceManifestSha256": "a0150b8fca2e4fe6bce01c6fa0d6e8934d4c905071b6ca9deafc44b7a94f599d",
+        "tests": 2,
+        "passCount": 0,
+        "fail": 2,
+        "skipped": 0,
+        "cancelled": 0,
+        "evidenceSha256": "f4bc058806451df7c3d1f143746bbc7d18de522366949ac977199db4482bfd56",
+        "rawLogSha256": "a3d5df24f0161dfa77e1d189b990edf7d6d112a8f71322d2bb2ba4e63d79d155",
+        "executionBoundary": {
+          "profile": "Strict real click and profile ACK passed. All3 actual normal uploads recorded; only first vanilla-host normal Node replay executed before runner.errors1. Host cold UNITE load19.5067s timed out at original15s; remaining client replays/reload/final gates not reached. GPU cause remains a controlled hypothesis.",
+          "studio": "Input900 and enabled ready button observed before ElementHandle implicit scrolling; actual click failed with button out of viewport. No authoringPOST, disk410; no trial/replay reached."
+        }
+      },
+      "studioLocal": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skip": 0,
+        "durationMs": 29020.03859,
+        "sourceSha256": "4107e4177841f0c3dbc78be0a38c7b363f587a7b9929f9a6c837caa9f41647c0",
+        "logSha256": "f4d14bb1f616346ee7ac446a7b10061b9f8a63d031607918bde85ab6f4975b3c",
+        "metaSha256": "6837076b208e9e832c482e0837153227e0e59b45764165f0c09add473bd45071",
+        "scope": "Linux real firstcase, one trusted save POST900/HTTP200/disk900+borrowedkit/trial/comparison/render/replay/pack/iframe originalassertions; oldWindows cause not uniquely proven"
+      },
+      "profileLocal": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 193034.605,
+        "durationMs": 193730.499,
+        "sourceSha256": "821f128cec1bb249972b0eb2348328e0be731f94449c60b5ef5037a86c4dbbb5",
+        "logSha256": "02f1d7ab6f7e896fe99c3ee77b713abb8677d68fed9f2cc56f5d31f4b3178fb3",
+        "assertions": 59,
+        "scope": "Linux complete real profile UI+3independent browsers+live Worker/upload/replay/Canvas/reconnect/idle/final errors passed; Windows revision separate"
+      },
+      "studioCoordinateLocalFailure": {
+        "sourceSha256": "288edf59a5fbe13b1302bc4e53453b8458f35538d8221f98ad6b5e1507763212",
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "durationMs": 33484,
+        "caseDurationMs": 33357,
+        "logSha256": "f89eb229f2224967cadbe1e0237f3aba5e0bcc438dd117e1f4f6838c7d007e15",
+        "scope": "Linux source288edf59 failed: explicit scroll then real cross-RAF stable target never ready within original30s; no mouse.move/save click/POST. Two asynchronous target responses completed after input900 and changed button layout. Subsequent loaded-list barrier was unvalidated at this failure; later source95ac02 Linux1/1 passed as recorded in studioLayoutLocal. Later95ac actualWindowsfirstcase passed in retiredWindowsPreflight8/run38906606052; old288failure retained."
+      },
+      "profileWindowsGpuControl": {
+        "sourceSha256": "cfb93416b746997c32911d23d5969648dcc2b3dc98600b0f72d50a1d4c3b3e19",
+        "evidenceSha256": "924d88273148e4adf2a94c54f88db518ffb7262ee38a41e336e08287627b491b",
+        "modelContract": {
+          "pass": 7,
+          "fail": 0,
+          "kind": "VM mocks, not actual Windows"
+        },
+        "scope": "ActualWindows6c74 job116991630012 confirms all3ownedGPU10,Node0 and liveotherownedunchanged; stillfullprofilefailure UNITEcoldload/rendererfallback. Earlier7VMcontracts remain mocks. Threeindependentbrowsers,20timer/waitexpressionsandoriginal59asserts retained; prioritycontrol insufficient and notprovenuniqueGPUcause."
+      },
+      "studioLayoutLocal": {
+        "sourceSha256": "95ac02afa8295265c8ac9052f91c824265efcfe77070e72e94e1d7b9bebb24e3",
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "durationMs": 29804.128648,
+        "caseDurationMs": 29715.070335,
+        "logSha256": "b4da075c6019d19d0f889cfb9c6b7c1fdc6af25c67112ad5e0c7ddaa013a5a55",
+        "metaSha256": "4b89f126f86dbeda5d2bc5d0b5187db94e0d41da9f4bbe35690ed7ee49f14dbd",
+        "scope": "Linux actual firstcase with both real targetlists60options/height300 ready before unique scroll/stable real point/single trusted mouse click. ActualPOST900/HTTP200/disk900+originalkit and all original trial/comparison/doublecanvas/replay/packdownload/iframe gates passed. DefaultStudioChrome/noSwiftShader; original180s and30s sharedwaiter unchanged. SecondDSLcase unchanged and not selected."
+      },
+      "independentColdLoadReadReview": {
+        "scope": "Read-only source/log review; no test/product changes or claim of provedGPUcause.",
+        "observation": "HostUNITEfirstload sent2.8msafterb.start onnewworker2 withnoprecedingstart/step; no duplicate/cancel observation. Guestsamecontentdifferentworker loaded1.7677s. No provedlifecycle/queuebug.",
+        "currentDesign": "Singleunusedwarmrealm consumedatfirstbattle; same-roundUNITE coldloads bydesign; COMBAT/UNITE doesnotproduce anotherwarm-slot.",
+        "plannedFixture": "ExistingBrowserContextPool permits3independentstorage/page/module/Workers whileoneGPU. Mustretain original59asserts andalltimers,add3context/identity/storage/visibility/RAF/reload checks. Passing topologywouldnotprove original3process coldloadstressfixed."
+      },
+      "profilePoolPreparation": {
+        "sourceSha256": "4b631614972f24cc162f8dcba0139a243548e5bbb7cc3e0dffdbe6c82f127a6a",
+        "scope": "Test-only reuse existingBrowserContextPool: onebrowser/GPU,3isolatedcontexts/cookies/local/sessionstorage/realidentities/pages/module/Workers. Alloriginal59 and prior68assertexpressions retained;current88asserts;33timer/waitcallsASTunchanged. Uniquecontext/identity/storage,reload-onlytargetdocument,visibility/RAFhistory hardchecksadded. Actualview/canvas/warnings passiveprintingdoesnotmake3enginehardclaim.",
+        "static": "syntax,targetESLint,diff0;twoindependentreadreviews no mustfix",
+        "linuxStatus": "failure",
+        "windowsStatus": "not_started",
+        "scopeLimitation": "Topologychange doesnotclaim original3independentprocess Windowscoldloadpressure/fallback fixed. ProductionWorkerpool/coldUNITEpath/RPCbudgets unchanged.",
+        "linux": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "durationMs": 255766.433807,
+          "caseDurationMs": 251501.795573,
+          "logSha256": "e7f253e50e0d01d2ab76730ea25ef36b3f53c7b5ec26b1ac124fe296c4a6c645",
+          "scope": "All3normal upload+Node exactreplays,R2runnererrors0,andbothreloadisolations passed. Failed original hostreload Canvas30s wait:hostfallback/noCanvas/createFieldViewtimedout,other2pagesengine1920x1080x2/contextLostfalse/warnings[]. Finalvisibility/console/resource gate not reached. Pendinghealthz observedage65.862s is not provedserverCPUcause.",
+          "cleanup": "LiveChromium+fastServer0 afterfinally;source4bunchanged;no identical rerun."
+        },
+        "plannedNewVariable": "Reviewing explicit1280x720 desktop viewport perClient (44.44% of1920x1080pixels), retaining3contexts/oneGPU/currentasserts/allwaits/coldUNITEandactualhostreloadCanvas. No currentWindowsrunof4b; no productchange."
+      },
+      "retiredWindowsPreflight8": {
+        "commit": "6c74d36f7bf18397102477f5b1a529b430b3bca2",
+        "run": 38906606052,
+        "job": 116991630012,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38906606052",
+        "status": "failure",
+        "scope": "Only original profile and firstStudio, original300s/180s cases; other46 not rerun here. No publisher/package/release/deploy.",
+        "sourceManifestSha256": "b6e3b387f39ddaf91e00736cbe43df57fe68140b3c40b7be8cbb5513d04df4e4",
+        "tests": 2,
+        "passCount": 1,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "rawLogSha256": "581d089e728cd5e37c83db43704757ca3abde350c3da08ab117ccc4bc0e789e8",
+        "profile": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "durationMs": 128866.5621,
+          "caseDurationMs": 127969.5806,
+          "failedAssertion": "runner.errors1 expected0 at rhine-profiles.e2e.test.js:557 vanilla-host",
+          "realPriorities": "All3 ownedGPU -7 to10; Node0; liveotherowned unchanged. Actualreadback, controlledprioritydidnotpass.",
+          "coldUnite": "Host worker2 load20.9945s TIMEOUT15000ms; guest load1.7677s/start25.3ms done.",
+          "replayBoundary": "All3 normaluploads errors0 logged. OnlyvanillaHost normalNode replay matched before failure; guest/Rhine replay and reload/final gates not reached.",
+          "renderBoundary": "Guest+Rhine fallback/noCanvas/createFieldViewtimedout; host actualengine1920x1080/warnings[]. Notall3enginepass.",
+          "rootCause": "No uniqueGPU/lifecycle cause proven."
+        },
+        "studio": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "durationMs": 33112.9719,
+          "caseDurationMs": 32991.0434,
+          "scope": "ActualWinNode24.21 fullfirstcase/source95ac. Two lists60each height300 before unique scroll/stablepoint andsingletrustedclick; actualPOST900/HTTP200/disk900+originalkit and alloriginaltrial/comparison/render/replay/pack/iframeasserts passed. SecondDSL notselected."
+        },
+        "evidenceSha256": "fa96b24574333cedd325e5d37a1001b1e011b3be2b8cd03f93cfe5995fac9db7"
+      },
+      "previousFixtureStatic": {
+        "lint": {
+          "exit": 0,
+          "errors": 0,
+          "warnings": 151,
+          "logSha256": "9f2f21a370dde4f5da4fcdcb6af31087d35c80f1cd5e404b7a49d5a37a7d72aa"
+        },
+        "typecheck": {
+          "exit": 0,
+          "logSha256": "631115372130fddde463579b9dc8488ccf5b153292148623f11fe9780b2dc2c4"
+        },
+        "imports": {
+          "exit": 0,
+          "allowedSimNodeImports": 3,
+          "allowedNotes": 3,
+          "logSha256": "0bb907d77187bcd5e84de8cc9a56aa46b8ff0b3ced63ca6380c9ea0069bc1c13"
+        },
+        "docs": {
+          "tests": 32,
+          "pass": 32,
+          "fail": 0,
+          "skipped": 0,
+          "durationMs": 1875.369982,
+          "logSha256": "8effca9dc66e4cfaa0f35a80137bab9ab415bf1d52e25411268a401770d8bff6"
+        },
+        "sourceFiles": {
+          "test/ui/rhine-profiles.e2e.test.js": "cfb93416b746997c32911d23d5969648dcc2b3dc98600b0f72d50a1d4c3b3e19",
+          "test/ui/studio-gameplay.e2e.test.js": "95ac02afa8295265c8ac9052f91c824265efcfe77070e72e94e1d7b9bebb24e3"
+        },
+        "scope": "Current test source. Documentation may append actual final diagnostic outcome before source freeze; docs check must follow any such change."
+      },
+      "profile720Preparation": {
+        "sourceSha256": "47d13dbebac50dc30036f95d32415d8a33288b639cb7e73c118fafb11ea65a89",
+        "scope": "Onlyexplicit1280x720desktop for3Client andactualwidth/height readback assertions; same16:9above767room/1200loadout/520heightbreakpoints. Pixelcount44.44%of1080; no originalpixelbaseline/layoutassert removed. Current91assertions retainoriginal59/previous88;33timer/waitASTcalls unchanged.",
+        "linux": "failure",
+        "windows": "failure;see retiredWindowsPreflight9/run38909342655",
+        "sourceProductChanges": false,
+        "linuxResult": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "skipped": 0,
+          "cancelled": 0,
+          "caseDurationMs": 177925.756431,
+          "durationMs": 180422.079118,
+          "logSha256": "4065c91f59073a850f0ff08918d6e198c39de81b1251e5785f06336f4dcc050f",
+          "scope": "Same47sourcefailed originalhostreload Canvas30swait at648. Beforefailure all3actualnormaluploads/exactNode replays/R2stats.errors0 andbothreloadisolationhardcheckspassed. Hostfallback/noCanvas/createFieldViewtimedout; other2actualengine2x1280x720Canvas/contextLostfalse/warnings[]. Finalvisibility/console/resourcegate notreached.",
+          "cleanup": "LiveChromium+fastServer0 afterfinally;noidenticalrerun;sourcefrozen.",
+          "evidenceSha256": "9cbf29c64e1720d45279904ab29c56e7afff1d0286686d2776d44dfb1b51226d"
+        }
+      },
+      "profile720Static": {
+        "scope": "Profile47source and docs through Linux720failure/Windows9pending paragraph; next docs paragraph came afterwards. Historicalstatics,no finalsource8claim.",
+        "lint": {
+          "exit": 0,
+          "errors": 0,
+          "warnings": 151,
+          "logSha256": "9f2f21a370dde4f5da4fcdcb6af31087d35c80f1cd5e404b7a49d5a37a7d72aa"
+        },
+        "types": {
+          "exit": 0,
+          "logSha256": "631115372130fddde463579b9dc8488ccf5b153292148623f11fe9780b2dc2c4"
+        },
+        "imports": {
+          "exit": 0,
+          "logSha256": "0bb907d77187bcd5e84de8cc9a56aa46b8ff0b3ced63ca6380c9ea0069bc1c13"
+        },
+        "docs": {
+          "tests": 32,
+          "pass": 32,
+          "fail": 0,
+          "durationMs": 1953.014902,
+          "logSha256": "531c3d5662a92a2c842bf5df79c8bc6f2e2fb1c14a2f2aaade462ce0d63ace1e"
+        }
+      },
+      "retiredWindowsPreflight9": {
+        "commit": "4293615aae3c2b8721e76ccdbc79dc6a82952254",
+        "run": 38909342655,
+        "job": 117000927566,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38909342655",
+        "status": "failure",
+        "sourceManifestSha256": "e53a4ff16778dc3e2b151640dc876765cfe9f90d9a9d5d9779d887182dd4dee5",
+        "scope": "Onlyremainingprofile1case/source47d13d/3contextsoneGPU/1280x720. Studio95ac retainedfromactualpassed6c74case,norerun. Productionunchanged,originalallasserts and300s/calls/budgets retained. No package/publisher/release/deploy.",
+        "tests": 1,
+        "passCount": 0,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "evidenceSha256": "48cbfdd881bb42ca05ce0fee3ea89ccb3067ebdc84eceea56f081de0e7d1e064",
+        "rawLogSha256": "7fa2e5deba03138bde79d1798379d32d1725bcba2b2322ffab62d802b3cfbf2a",
+        "result": {
+          "durationMs": 177081.3515,
+          "caseDurationMs": 173637.5349,
+          "failedAt": "Original30shostreload.gmcanvas wait:648;hostviewfallback/canvas[]/createFieldViewtimedout",
+          "passedExecution": "All3normalactualuploads/exactNode replays/R2runner.errors0/bothactualreload context+player+profile+local/session/cookie isolation;currentviewport1280x720 readbacks.",
+          "notReached": "FinalRAFhistory andoverallpage/servererror gates; do not callfullcasepassed.",
+          "resources": "Actual1browser/1GPU/3uniquecontexts,Node0/GPU10;other2pagesengine/fieldWarnings[];nogpuunique-causeclaim.",
+          "rpcScope": "HostoldRPCtrace lostonreload; donotfillpastUNITEloadtimefromzeroerrors. GuestUNITEload8.2011s/start2.0272s statusdone;cleanupSTOPPEDseparate."
+        }
+      },
+      "profileNormalGpuPreparation": {
+        "sourceSha256": "513c5c2ce414be94d5517b0b80620a942d7fbe64b16b69bb203f27217ab366c0",
+        "static": "syntax/targetedESLint/diff0;twoindependentreadreviews no mustfix;33timer/waitAST unchanged. Previous91asserts->90 onlyWindowsGPUtarget10to0 andremovingLinuxthread15assert alongwithallLinuxprioritywrites. Allgame/UI/identity/isolation/realupload/replay/Canvas/zeroerrorgates retained.",
+        "contractProbe": {
+          "pass": 9,
+          "fail": 0,
+          "kind": "NodeVM mocks,notactualWindowsperformance/priorityproof"
+        },
+        "linux": "failure",
+        "windows": "failure",
+        "limitation": "GPUpriorityisacontrolledhypothesis,nouniquecauseproof; prior1080/720deprioritizedfailuresretained.",
+        "linuxResult": {
+          "tests": 1,
+          "pass": 0,
+          "fail": 1,
+          "durationMs": 172463.017054,
+          "caseDurationMs": 168122.024627,
+          "logSha256": "b08fae3a4f41e6e8ec0978041d3a4b65761af7a2ff8b521cd80fbf7191de29bd",
+          "evidenceSha256": "afe4f7514b0797a0a3a82f0f281e09c2cb4aa73caf1f0f9dce2bf20c32288f3a",
+          "scope": "OriginalhostreloadCanvas30swait at660failed. All3normaluploads/Nodeexactreplay/R2errors0/bothreloadisolationbeforefailurepassed. Currenthostvisible/836frames/hidden0,RAFgap8.9997s;resource385/filtered88<=120,maxselected203.4ms,pending[]. Three.module resourcefinished5.0112s,staticdependencythree.corestarted14.0022s;this8.991sgapnotnetworkdurationnorprovenPixi/GL/compilecause. Hostfallback/Canvas[],other2engine/warnings[]. FinalCanvas/visibility/error gates notpassed/notreached.",
+          "cleanup": "Chromium+fastServer0 at13:56:11.875764UTC,source513unchanged,norerun."
+        }
+      },
+      "retiredWindowsPreflight10": {
+        "commit": "34067fa23a97c876a51b4bf203af203e43147792",
+        "run": 38911311460,
+        "job": 117007566461,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38911311460",
+        "status": "failure",
+        "scope": "Onlyprofile1case/source513c/oneGPU/3isolatedcontexts/1280x720/original33waits/2x/300s/allmechanismasserts. WindowsownedGPU NORMAL0,Node0/otherownedunchanged;Linux onlydefaultGPU0read/no prioritywrites. PassiveResourceTimingbuffer5000/catch<=120resourceentries andvisibilityhistory. Not full nativepackage.",
+        "sourceManifestSha256": "c95ebe14803c877038787d858d0cd5de81e43a80082c7cd8470a8ad899671fcf",
+        "tests": 1,
+        "passCount": 0,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 190481.4704,
+        "durationMs": 194232.332,
+        "evidenceSha256": "bed640f7e32b8848ef72f4dbc0fa27ae8010652697474af703c0bfafeb17fafe",
+        "rawLogSha256": "e47ed1e3d78a6904da9b8d35bb87b0a508dad1a20b707ad67c73dd11bdf1cf3c",
+        "resultBoundary": "ActualGPU-7to0/Node0/othersunchanged;stillhostreloadfallback/factory12s/Canvaswait30sfail660 after3normalreplays/R2errors0/bothreloadisolation. Other2engine/warnings[]. Newhostvisible1650frames/hidden0/maxRAFgap5.4997s;resources387total/88filtered<=120,maxselected74.6ms,lastselectedresponse4.424s,pending[]. Notallnetwork orinitCPUproof. FinalhardRAFhistory/overallpage/servererrors notrun."
+      },
+      "currentWindowsPreflight": {
+        "commit": "6c846fb9d6fd3e664add0645338408364808519d",
+        "run": 38918125810,
+        "job": 117030774632,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38918125810",
+        "status": "success",
+        "sourceManifestSha256": "6891637d18f0d5ab55ee91ff3e50352cfbc4d9a4b495295b44086c52208ee15d",
+        "scope": "13sourcefiles;profile1b3689/atlasA18;documentedproduction2DURLmergedwithroom/94asserts(original90unchanged+4newURL/engine/actual2Dchecks)/original33waits/300s/2x/3isolatedcontexts/1280x720/NodeGPU0;CPUoff. No package/release/deploy. Doesnotclaimdefault3Dcoldreloadfixed.",
+        "tests": 1,
+        "passCount": 1,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 125027.1049,
+        "durationMs": 125963.8652,
+        "rawLogBytes": 51037,
+        "rawLogSha256": "e9c76f78393c011266048bbcb4c5c24261dc3f8a4499c39a3366cd1ac11bd403",
+        "resultBoundary": "Fullactual1casepassedwith3actualnormaluploads/exactin-testNodeDigestReplays/R2runnererrors0/2reloadisolations/5documentvisibleRAFs/3actualPixiengineswithboard3dOnfalse/Canvas/selectedpage-servererrorhardgates. serverAccepted/resultSourceClient/checkednotseparatelyasserted,nopostrunreplay;notfull48native/notdefault3Dcoldreloadfix.",
+        "evidencePath": "/tmp/rhine-native-browser-preflight-r13-evidence.json",
+        "evidenceSha256": "fc01a479af04392a28724adac783c082f21767598c4e1eda247f4d6f1ea4ca21"
+      },
+      "cpuProfilerPreparation": {
+        "profileSourceSha256": "caf112adda9968ca2da0ca530d1fc00b142aa91eb71529d22d67b6b69fc62aa9",
+        "helper": "test/e2e/profileCpuDiagnostics.mjs",
+        "helperSha256": "c5e4a4020928ee1c64d07ff7051b3df714f96813aeb7a0b4e4b318b99f256f84",
+        "static": "syntax/targetESLint/diff0,rootreadreview no mustfix;all90previousasserts and33waitexpressionsASTidentical. Newdiagnostictransport5s bounds not application/testdeadline changes.",
+        "realReloadProbe": {
+          "process": "InitialstrictNavigationStart-inside-profileclockassertfailed andretained;actualProfilerworked andrawprofilewascomplete. No realprobe rerun.",
+          "sameRawOfflineAnalysis": "Newdocumentknownfunction264selfsamples;282actualsamplesinnewdocoverlap. Profile316ms/wallanchors325ms,profilebegan5795usafterNavStart;navigationinstantnotcovered. Correctcoverageisactualsamplednewdocintersection,notclaimwhole-navigationcapture. Raw/gzip/chunkSHAmatched,no rawfield/time manipulation.",
+          "evidenceSha256": "8abde0288cd2253a21bd07470b98006c5abf4637164251e8f30becaebc473c79"
+        },
+        "linux": "failure;singlefullcase179069.536689ms/175127.203098mscase at663",
+        "windows": "failure;singlefullcase236490.8733ms/233529.2896mscase at663",
+        "interpretation": "Selfsamplecounts notcalls/CPUtime;delta/wallintervalnotthreadCPU. ActualLinuxatlasdrawImage1740selfsamples/newdoc11.115–15.406s,source/destination2048canvasfourtinygutterrects. Pixicontext/shaderqueryandfirstframeprogramqueriesalsoobserved. loseContextafterabortcleanupnotinitcause. Windowsstackmappingpendingread-onlyanalysis; actualnewsmallcelloptimizationrequiresRGBAequivalence andrealprofilewithoutprofiler.",
+        "linuxEvidence": {
+          "path": "/tmp/rhine-profile-cpu-complete-evidence.json",
+          "sha256": "8ca5f1036a0a63ab4b269fc39f8eafa1822d97187021738c1a5e7ec1e8516a0a",
+          "rawLogSha256": "284c3e98311fb85ab15c26bb24acc8bc7ec1460faa97d13bf762d2ce9c612117",
+          "profileSha256": "85e92ec40c88dbc05b5720399e6306e051696d52c603938a427959a9b0186700",
+          "profileBytes": 418415,
+          "uncoveredNewDocumentStartUs": 1349340
+        },
+        "windowsEvidence": {
+          "path": "/tmp/rhine-native-browser-preflight-r11-evidence.json",
+          "sha256": "82f71a02b70972dc84096e8806bf46ab2febe1d359d2e8afe1175f992f9daa1e",
+          "rawLogSha256": "9718ca244a05a174dd642d133cfc9e39f41e551de7c3eba03ffc689e4fa55e2a",
+          "profileSha256": "2ec4099a4826693bdb5ef236e9072327741c57c3ecad60c78ddd09b391085951",
+          "profileBytes": 497708,
+          "gzipSha256": "d5bc046aafe88cc0c140b1cf97aed370cb34ac016cd925b0c44c61112fee3300",
+          "gzipBytes": 71614,
+          "profileStartAfterNavigationUs": 2326706,
+          "firstSampleAfterNavigationUs": 2575764,
+          "originalNegativeDeltasUs": [
+            -30,
+            -74
+          ]
+        }
+      },
+      "atlasCandidate": {
+        "status": "v2strictRGBApass;normaldefault3DLinux+Windows12failretained;2DselectedLinux+Windows13fullpass;fullnativepending",
+        "owner": "merge_sim",
+        "onlyProductionFile": "public/js/render/textures.js",
+        "scope": "v2:exactoriginal2048atlasglobalinteriordrawing;reusable256scratchcopiedcurrentcell/same4gutterextensions;only4nonoverlapintegergutterblitsback;allseed/UV/layers/cache/readiness/timeoutsretained",
+        "notYetClaimed": [
+          "full-default3D-profile-pass",
+          "new-package",
+          "public-release"
+        ],
+        "firstCandidateSha256": "6ca43b9bbf3c7ea78c72a103fc072464f9c659f2db4f28505c94b867d7c077d9",
+        "firstProbe": {
+          "path": "/tmp/rhine-atlas-cell-probe-v1.json",
+          "sha256": "d1ac0da3a1323e5c611d20bc484311ce5d87766024e421d12f4a840135f599bf",
+          "order": "ABonly;BA-notrun",
+          "pixelsPerAtlas": 4194304,
+          "procedural": {
+            "differentPixels": 1508,
+            "differentChannels": 2445,
+            "maxDelta": 4
+          },
+          "actualArt": {
+            "differentPixels": 1516,
+            "differentChannels": 2455,
+            "maxDelta": 3,
+            "artCount": [
+              40,
+              40
+            ]
+          },
+          "uvAndCache": "equal",
+          "observedDrawWallMs": {
+            "oldProcedural": 1079,
+            "oldArt": 1129,
+            "candidateProcedural": 71,
+            "candidateArt": 44
+          },
+          "limits": "Singleorderedobservationnotperformanceacceptance;strictpixelFAILretained;favicon404notzeroerrors;baselineinmemory/noartfiles/browserandserverclosed",
+          "next": "OriginalstrictFAILretained;differentv2onlygutterimplementationverifiedbelow",
+          "readReviewOfFirstVariant": {
+            "owner": "merge_meta",
+            "kind": "read-only-source-review",
+            "mustFix": 0,
+            "remainingRisk": "extra1:1transparentcanvascompositecouldaffectRGBArounding;actualstrictpixelcomparisonrequired",
+            "invariantsReviewed": [
+              "materialorder/seed",
+              "layers/tint/alpha/rotation/fallback",
+              "gutters/corners",
+              "UVhalftexel",
+              "PIXIoptions",
+              "cache/eviction",
+              "scratchnotpersistentreference"
+            ],
+            "verificationStatus": "notyetpixelverified"
+          }
+        },
+        "nextVariant": {
+          "status": "frozen-strict-RGBA-PASS",
+          "scope": "Original2048atlasglobalinteriorpathretained;256scratchforgutters;only4gutterintegerblitsbacknoinnerrecomposite",
+          "owner": "merge_sim",
+          "gpuExclusive": true,
+          "fullLinuxWindowsNotStarted": false,
+          "fullLinuxWindowsStatus": "LinuxandWindows12bothFAIL"
+        },
+        "adoptedSourceSha256": "a18cfc9555d2dd82f6ef55502c65931e79f5a68fec4d70aa6fabd8c08c2328bc",
+        "v2Probe": {
+          "path": "/tmp/rhine-atlas-cell-probe-v2.json",
+          "sha256": "8212cac24f0affc53182ac83acbe49a858dd17788ad9430a170ca5bba67714a6",
+          "orders": [
+            "AB",
+            "BA"
+          ],
+          "configurationsPerOrder": [
+            "procedural",
+            "realArt",
+            "artReplacement"
+          ],
+          "comparedPixels": 25165824,
+          "differentPixels": 0,
+          "differentRgbaChannels": 0,
+          "allRegionsDifferentPixels": 0,
+          "UVArtCountAlphaCacheEviction": "equal",
+          "platform": "LinuxChrome151/SwiftShader1280x720/NodeGPU0/default2D/noWillReadFrequently",
+          "artCount": [
+            0,
+            40
+          ],
+          "realArtFeatures": {
+            "alphaLayers": 2,
+            "rotationLayers": 10,
+            "tintLayers": 8
+          },
+          "observedWallMs": {
+            "oldProcedural": [
+              961.6,
+              1082.9
+            ],
+            "newProcedural": [
+              68.7,
+              74.6
+            ],
+            "oldRealArt": [
+              973.4,
+              1089.7
+            ],
+            "newRealArt": [
+              48.1,
+              83.5
+            ]
+          },
+          "limits": "Onlytheseactualfactorywallcalls/noGPUuploadorfullinitacceptance/platformgeneralperformanceclaim",
+          "errors": [],
+          "cleanup": "browser/GPU/HTTPclosed,baselineonlymemory,temporaryart0",
+          "targeted": {
+            "tests": 31,
+            "pass": 31,
+            "fail": 0,
+            "syntax": 0,
+            "diff": 0,
+            "lintErrors": 0,
+            "lintWarnings": 6,
+            "warningsExactA2BaselineEqual": true,
+            "capturedOutputEvidence": {
+              "provenance": "Originalcommandsnotredirected;theseareverbatimtoolstdoutcapturefilesstoredafterwards,notoriginalprocessstream;no checksrerun",
+              "testsLog": "/tmp/rhine-atlas-v2-targeted-tests-captured.log",
+              "testsLogSha256": "8b32769ab6bee9b4fa631582c9226f4347e888eeeec9c9d834e56a08a65d61a8",
+              "lintBaselineLog": "/tmp/rhine-atlas-v2-lint-baseline-captured.log",
+              "lintBaselineLogSha256": "4cdbf238fc86952d200e8c1ef9d94ec7a908fcb0137f444fc6e0b9f1e2b691f8",
+              "index": "/tmp/rhine-atlas-v2-checks-captured-evidence.json",
+              "indexSha256": "b8f53712b75ff0fae783cc9d651009356a1f9290211027d0b7a42f30655c3d47",
+              "reportedTestDurationsMs": [
+                514.911895,
+                71.15708
+              ],
+              "durationLimit": "Sum586.068975is2nodetestreportedtotals,notindependentendtoendwall;lintnotseparatelytimed"
+            }
+          },
+          "fullEvidence": {
+            "baselineCommit": "a2a29afe",
+            "baselineSha256": "c915d83bff4184818ace6fd46cb78141eb4b8356d10b86abbb5f2d33d37b168f",
+            "candidateSha256": "a18cfc9555d2dd82f6ef55502c65931e79f5a68fec4d70aa6fabd8c08c2328bc",
+            "viewport": {
+              "width": 1280,
+              "height": 720
+            },
+            "canvasContextRequest": "getContext('2d') with no options",
+            "changedGpuPriority": false,
+            "runs": [
+              {
+                "order": [
+                  "old",
+                  "new"
+                ],
+                "features": {
+                  "alpha": 2,
+                  "rotation": 10,
+                  "tint": 8,
+                  "imageSizes": {
+                    "D": [
+                      2048,
+                      2048
+                    ],
+                    "common": [
+                      1024,
+                      1024
+                    ],
+                    "BG": [
+                      1024,
+                      1024
+                    ]
+                  }
+                },
+                "timingsMs": {
+                  "old": {
+                    "procedural": 1082.8999999985099,
+                    "art": 1089.6999999955297,
+                    "replacement": 1043.8999999985099
+                  },
+                  "new": {
+                    "procedural": 74.60000000149012,
+                    "art": 48.100000001490116,
+                    "replacement": 42.29999999701977
+                  }
+                },
+                "cacheBehavior": {
+                  "old": {
+                    "proceduralCacheHit": true,
+                    "artCacheHit": true,
+                    "context": {
+                      "alpha": true,
+                      "colorSpace": "srgb",
+                      "colorType": "unorm8",
+                      "desynchronized": false,
+                      "toneMapping": {
+                        "mode": "standard"
+                      },
+                      "willReadFrequently": false
+                    },
+                    "oldArtEvicted": true,
+                    "proceduralRetained": true,
+                    "replacementCacheHit": true
+                  },
+                  "new": {
+                    "proceduralCacheHit": true,
+                    "artCacheHit": true,
+                    "context": {
+                      "alpha": true,
+                      "colorSpace": "srgb",
+                      "colorType": "unorm8",
+                      "desynchronized": false,
+                      "toneMapping": {
+                        "mode": "standard"
+                      },
+                      "willReadFrequently": false
+                    },
+                    "oldArtEvicted": true,
+                    "proceduralRetained": true,
+                    "replacementCacheHit": true
+                  }
+                },
+                "comparisons": [
+                  {
+                    "config": "procedural",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      0,
+                      0
+                    ]
+                  },
+                  {
+                    "config": "art",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      40,
+                      40
+                    ]
+                  },
+                  {
+                    "config": "replacement",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      40,
+                      40
+                    ]
+                  }
+                ],
+                "viewport": {
+                  "width": 1280,
+                  "height": 720
+                },
+                "errors": []
+              },
+              {
+                "order": [
+                  "new",
+                  "old"
+                ],
+                "features": {
+                  "alpha": 2,
+                  "rotation": 10,
+                  "tint": 8,
+                  "imageSizes": {
+                    "D": [
+                      2048,
+                      2048
+                    ],
+                    "common": [
+                      1024,
+                      1024
+                    ],
+                    "BG": [
+                      1024,
+                      1024
+                    ]
+                  }
+                },
+                "timingsMs": {
+                  "new": {
+                    "procedural": 68.69999999552965,
+                    "art": 83.5,
+                    "replacement": 37.20000000298023
+                  },
+                  "old": {
+                    "procedural": 961.6000000014901,
+                    "art": 973.3999999985099,
+                    "replacement": 964.2999999970198
+                  }
+                },
+                "cacheBehavior": {
+                  "new": {
+                    "proceduralCacheHit": true,
+                    "artCacheHit": true,
+                    "context": {
+                      "alpha": true,
+                      "colorSpace": "srgb",
+                      "colorType": "unorm8",
+                      "desynchronized": false,
+                      "toneMapping": {
+                        "mode": "standard"
+                      },
+                      "willReadFrequently": false
+                    },
+                    "oldArtEvicted": true,
+                    "proceduralRetained": true,
+                    "replacementCacheHit": true
+                  },
+                  "old": {
+                    "proceduralCacheHit": true,
+                    "artCacheHit": true,
+                    "context": {
+                      "alpha": true,
+                      "colorSpace": "srgb",
+                      "colorType": "unorm8",
+                      "desynchronized": false,
+                      "toneMapping": {
+                        "mode": "standard"
+                      },
+                      "willReadFrequently": false
+                    },
+                    "oldArtEvicted": true,
+                    "proceduralRetained": true,
+                    "replacementCacheHit": true
+                  }
+                },
+                "comparisons": [
+                  {
+                    "config": "procedural",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      0,
+                      0
+                    ]
+                  },
+                  {
+                    "config": "art",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      40,
+                      40
+                    ]
+                  },
+                  {
+                    "config": "replacement",
+                    "width": 2048,
+                    "height": 2048,
+                    "comparedPixels": 4194304,
+                    "differingChannels": 0,
+                    "differingPixels": 0,
+                    "maxChannelDifference": 0,
+                    "firstDifferences": [],
+                    "byMaterial": {},
+                    "byRegion": {
+                      "interior": 0,
+                      "top": 0,
+                      "bottom": 0,
+                      "left": 0,
+                      "right": 0,
+                      "corner": 0
+                    },
+                    "uvEqual": true,
+                    "artEqual": true,
+                    "artCount": [
+                      40,
+                      40
+                    ]
+                  }
+                ],
+                "viewport": {
+                  "width": 1280,
+                  "height": 720
+                },
+                "errors": []
+              }
+            ],
+            "browserVersion": "Chrome/151.0.7922.173",
+            "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+            "priorities": {
+              "node": 0,
+              "owned": [
+                {
+                  "type": "browser",
+                  "pid": 105083,
+                  "priority": 0
+                },
+                {
+                  "type": "renderer",
+                  "pid": 105169,
+                  "priority": 0
+                },
+                {
+                  "type": "renderer",
+                  "pid": 105170,
+                  "priority": 0
+                },
+                {
+                  "type": "GPU",
+                  "pid": 105122,
+                  "priority": 0
+                }
+              ]
+            },
+            "cleanup": {
+              "browserClosed": true,
+              "serverClosed": true,
+              "baselineRouteOnlyInMemory": true,
+              "temporaryArtFiles": 0
+            },
+            "requestedPaths": [
+              "/",
+              "/vendor/pixi.min.js",
+              "/favicon.ico",
+              "/js/render/textures-baseline.js",
+              "/js/render/style.js",
+              "/js/render/textures.js",
+              "/assets/local/map/autochess/tiles.json",
+              "/assets/local/map/autochess/TX_autochessi_D.png",
+              "/assets/local/map/autochess/TX_autochessi_common_D.png",
+              "/assets/local/map/autochess/TX_autochessi_BG.png"
+            ]
+          }
+        },
+        "v2IndependentReview": {
+          "owner": "merge_meta",
+          "kind": "actualv2read-onlyreview",
+          "sourceSha256": "a18cfc9555d2dd82f6ef55502c65931e79f5a68fec4d70aa6fabd8c08c2328bc",
+          "mustFix": 0,
+          "verified": "exactoldglobalinterior/4nonoverlapgutteronlycopy/UV/seed/art/tint/alpha/PIXI/cache/releaseunchanged;v2probeSHAverified",
+          "limits": "pixelproofspecificLinuxChrome151SwiftShader2D;nofullinitperformanceclaim"
+        }
+      },
+      "windows11AtlasStacks": {
+        "path": "/tmp/rhine-w11-atlas-pixi-self-samples.json",
+        "sha256": "398f71e577b90fe38e8dba1f9fe9a12cdd6e42d4a5d8760625aecbff2111800b",
+        "initialAtlasDrawImageSelfSamples": 582,
+        "lateArtAtlasDrawImageSelfSamples": 584,
+        "drawArtLayerSelfSamples": 20,
+        "samplePointIntervalsAfterNavigationSeconds": [
+          [
+            13.20765,
+            14.37085
+          ],
+          [
+            20.212297,
+            21.348685
+          ]
+        ],
+        "vendorBytesAndShaWindowsLinux": "all4equal",
+        "limits": "CountsnotCPU/calls;samplepointrangesnotfunctionduration;negativeDeltauntouched"
+      },
+      "webglProbeReadReview": {
+        "owner": "merge_meta",
+        "kind": "read-only-noimplementation",
+        "conclusion": "Noequivalentautofastpath;preservecurrentprobe",
+        "reason": "ActualWebGL2failIfMajorPerformanceCaveattrueismorestrictthanPixicontext;Pixiinternalcapability/precisioncachedalready;crossviewnegativecachewouldchangeGPUrecoveryretry;force3dcreationorderchangenoautobenefitproved",
+        "productFilesChanged": false
+      },
+      "retiredWindowsPreflight11": {
+        "commit": "c159c6be6b2b8404e7fe3d64607d38b717f4986e",
+        "run": 38913793523,
+        "job": 117015975583,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38913793523",
+        "status": "failure",
+        "scope": "Singleprofilecase,original90asserts/33waits/300s/2x/3contexts/1280x720/GPU_NODE_NORMAL0 unchanged. Onlyopt-in SP_PROFILE_CPU_DIAG=1 beforelastrealhostreload;rawCPUprofile saved/gzipped/SHA/chunks andclocks, no production/cache/renderer/Worker mutation. No package/release/deploy.",
+        "sourceManifestSha256": "4b2b92ffd0ea352ef1dd20038931f03f7efa6bcdffe942dae831b7f2f3432cb2",
+        "tests": 1,
+        "passCount": 0,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 233529.2896,
+        "durationMs": 236490.8733,
+        "evidenceSha256": "82f71a02b70972dc84096e8806bf46ab2febe1d359d2e8afe1175f992f9daa1e",
+        "rawLogSha256": "9718ca244a05a174dd642d133cfc9e39f41e551de7c3eba03ffc689e4fa55e2a",
+        "resultBoundary": "OriginalCanvaswait663failed afterall3actualnormalupload/Nodeexactreplays/R2errors0/bothreloadisolation. FinalCanvas/RAFhistory/overallerrorgates notpassed. CPUdiagnosticnotacceptance."
+      },
+      "atlasNormalProfileLinux": {
+        "owner": "merge_client",
+        "status": "failure",
+        "start": "2026-10-16T14:33:06.459903Z",
+        "log": "/tmp/rhine-profile-atlas-v2-normal-full.log",
+        "cpuProfiler": "unset",
+        "sourceSha256": "a18cfc9555d2dd82f6ef55502c65931e79f5a68fec4d70aa6fabd8c08c2328bc",
+        "originalCaseWaitAndMechanismAssertionsRetained": true,
+        "tests": 1,
+        "passCount": 0,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 162988.850104,
+        "durationMs": 167136.460848,
+        "rawLogSha256": "feb777eda44873579f6a311accef9e0515be93fecc28d1cd38316f24020a40e1",
+        "resultBoundary": "All3normalactualuploads/3exactNodereplays/R2runner.errors0/bothreloadisolationpassed;original30sreloadCanvas663failed/factory12sfallback. Hostvisible913RAFhidden0/maxgap5.2164s/pending[];other2actualengine2x1280x720/contextLostfalse/warnings[]. FinalCanvas/visibility/overallerrorsnotpassed.",
+        "cleanup": "Chromium+fastServer0at2026-10-16T14:36:15.272902Z;source4hashunchanged;noCPUprofile;norerun",
+        "evidenceSha256": "427cf85a6bb0e97efc602fa3e44027beab1f1dd817ec486b0886910cdb3a048b",
+        "evidencePath": "/tmp/rhine-profile-atlas-v2-normal-complete-evidence.json"
+      },
+      "atlasSourceStatic": {
+        "scope": "FrozenatlasA18/profilecaf/helperc5/Studio95ac;docs pendingfinaloutcomes and notcheckedhere",
+        "results": {
+          "lint": {
+            "exit": 0,
+            "bytes": 23793,
+            "logSha256": "c48d0d8c6b901318093512f8cf609eb80982fcf0ef80e72dfdd344313ba9f0ea",
+            "problems": 151,
+            "errors": 0,
+            "warnings": 151
+          },
+          "typecheck": {
+            "exit": 0,
+            "bytes": 296,
+            "logSha256": "631115372130fddde463579b9dc8488ccf5b153292148623f11fe9780b2dc2c4"
+          },
+          "imports": {
+            "exit": 0,
+            "bytes": 683,
+            "logSha256": "0bb907d77187bcd5e84de8cc9a56aa46b8ff0b3ced63ca6380c9ea0069bc1c13",
+            "allowedSimNodeImports": 3,
+            "allowedNotes": 3
+          }
+        }
+      },
+      "profile2dPreparation": {
+        "status": "frozen-Linux1/1PASS-Windows13actual1/1PASS",
+        "owner": "merge_client",
+        "onlyFile": "test/ui/rhine-profiles.e2e.test.js",
+        "entry": "existingproductiondocumented/?board=2d mergedwithroomquery",
+        "retain": "90oldassertexpressions/33timerwaits/300s/2x/topology/priority/realPixiCanvas/Spine/Worker/uploads/replays/reloadisolation/errors",
+        "newAssertions": "realURLboard2dbefore/afterreload,engine,stats.board3d.onfalse",
+        "reason": "CPUprofilesprovedexpensiveWebGLprobe/Threepaths;normalbothplatformspersistentfactorytimeout;profilemechanismgoalsnot3D-specific",
+        "limits": "Scopeadjustmentnotdefault3DmultiContextcoldreloadfix;dedicated3Dsuitesunchanged",
+        "linux": {
+          "status": "success",
+          "start": "2026-10-16T14:43:53.242189Z",
+          "log": "/tmp/rhine-profile-atlas-2d-normal-full.log",
+          "tests": 1,
+          "passCount": 1,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "caseDurationMs": 113035.304051,
+          "durationMs": 113665.843779,
+          "rawLogSha256": "811eef75d08760cd9729663f186330f1902c4a2c391327d6b8225eaac51f3a04",
+          "rawLogBytes": 12522,
+          "resultBoundary": "Completeapplicableplatformcasepassed:3actualnormaluploads/exactNodereplays/R2errors0/reloadisolation/cookie-local-session-identity/finaloriginalCanvaswait/visibleRAFhistory/overallpage-resource-servererrors. Threeactualengine/renderertrue/contextLostfalse/board3dOnfalse/oneconnected1280x720Canvas/warnings[]. Staticassertcallsite94doesnotclaimWindows-onlyorcatchbranchranonLinux.",
+          "cleanup": "ActualChromium+fastServer0at2026-10-16T14:46:04.084628Z;fourhashesunchanged;CPUenvunset/CPUlog0;norerun",
+          "evidencePath": "/tmp/rhine-profile-atlas-2d-normal-complete-evidence.json",
+          "evidenceSha256": "1eb0077e659a492f2ab05f8217947d9b05a7401edaa2aae4de5bc211d1d1a8b4"
+        },
+        "windows": "success;see currentWindowsPreflight",
+        "sourceSha256": "1b36891568bdd963eeb2a9e2e381924b229b022dc0b729893722f3866c68b7aa",
+        "staticEvidencePath": "/tmp/rhine-profile-atlas-2d-normal-static.json",
+        "previousAssertions": 90,
+        "currentAssertions": 94,
+        "originalAssertionsRetainedVerbatim": true,
+        "timerWaitExpressions": 33,
+        "allOriginalTimerWaitExpressionsRetainedVerbatim": true
+      },
+      "retiredWindowsPreflight12": {
+        "commit": "23712ca9893f733a4e7b671c17bae82c63421255",
+        "run": 38916658418,
+        "job": 117025743051,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38916658418",
+        "status": "failure",
+        "sourceManifestSha256": "bf4bce1bbcbafbb7bd960a12f6653f9945561d26dc5cf47a54bf10bd75483264",
+        "scope": "Exact13sourcefilesincludingtexturesa18c;original1case/90asserts/33waits/300s/2x/3contexts/1280x720/GPU0;CPUflagabsentandexplicitdisabledassert/plan;no package/release/deploy",
+        "tests": 1,
+        "passCount": 0,
+        "fail": 1,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseDurationMs": 245506.7078,
+        "durationMs": 248756.6787,
+        "rawLogSha256": "4f3c383e982207f10e23eba68b41af4b3bf7ab3c249d2f052da1aee3a1a77d28",
+        "resultBoundary": "All3normalactualuploads/exactNodereplays/R2errors0/bothreloadisolationspassed;original30shostreloadCanvas663failed/factory12sfallback;hostvisible1584RAFhidden0;finalCanvas/RAFhistory/overallerrorsnotpassed. NoCPUflag/logs;actualNodeGPU0.",
+        "evidenceSha256": "70a393a6231b447e7eeac91849a8e6359adedb8418de52aae3f4139cf769e83f",
+        "evidencePath": "/tmp/rhine-native-browser-preflight-r12-evidence.json"
+      },
+      "profile2dSourceStatic": {
+        "scope": "FinalfrozenproductionA18/profile1b/helperc5/Studio95ac full lint/type/import passed; docs32checks separate",
+        "results": {
+          "lint": {
+            "exit": 0,
+            "bytes": 23793,
+            "logSha256": "c48d0d8c6b901318093512f8cf609eb80982fcf0ef80e72dfdd344313ba9f0ea",
+            "problems": 151,
+            "errors": 0,
+            "warnings": 151
+          },
+          "typecheck": {
+            "exit": 0,
+            "bytes": 296,
+            "logSha256": "631115372130fddde463579b9dc8488ccf5b153292148623f11fe9780b2dc2c4"
+          },
+          "imports": {
+            "exit": 0,
+            "bytes": 683,
+            "logSha256": "0bb907d77187bcd5e84de8cc9a56aa46b8ff0b3ced63ca6380c9ea0069bc1c13",
+            "allowedSimNodeImports": 3,
+            "allowedNotes": 3
+          }
+        },
+        "docs": {
+          "exit": 0,
+          "tests": 32,
+          "pass": 32,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "durationMs": 1174.462815,
+          "logSha256": "a3e36bfa1fde8fa64ce68131ceabebd97b06bbc3c13521479c484122b099b97e",
+          "sourceCommit": "2078fb69b794ea11b706cc89e84dd5b5aa5622fa"
+        }
+      },
+      "source8Commit": "a3a98d798a21d2913631ea13eb4f9eab77e7afb0",
+      "source8Tree": "741db92d3aef5118ff7911e7a644c9ea8999a73a",
+      "sourceVsPassedPreflight13": {
+        "files": 13,
+        "allRawGitBytesMatch": true,
+        "manifestSha256": "6891637d18f0d5ab55ee91ff3e50352cfbc4d9a4b495295b44086c52208ee15d",
+        "onlyProductionChangeFromSource7": "public/js/render/textures.js;additionalreleasechannelautomationandREADME/docs/testsonly",
+        "serverDataSharedToolsPublisherUpdatersUnchangedFromSource7": false,
+        "unchangedFromSource7": "server/data/shared/tools/updaters remain byteequal;publisher changes only channel/report flag/mandatory puretests, no acceptance gate removed"
+      },
+      "source8Tag": "v0.3.0-rhine.8",
+      "formalMetadataStatus": "Finalprerelease-requestlocal;normalatomicmainandtagfirstpushpending;fullnativegatebeforepublic",
+      "publicationChannelChecks": {
+        "helperSha256": "c4e2e3a5b51a3c5e6a925783b42e27ec9c6b0016200be8dc2697d0cc1eb05c72",
+        "hiddenTestSha256": "e40f438abd5af96a6725ce54159231eebc56719d52575e29e577726746ee4e76",
+        "tests": 12,
+        "pass": 12,
+        "fail": 0,
+        "durationMs": 89.286669,
+        "rawLogSha256": "64105faa3a90ac43f13ce35e4fa80b44569265a6cf4dd7e049a27ccb67fe0dbc",
+        "combinedOnlineUpdater": {
+          "tests": 40,
+          "pass": 37,
+          "fail": 0,
+          "skipped": 3,
+          "cancelled": 0,
+          "durationMs": 507.465386,
+          "logSha256": "d8ebf261ffe41846b9dab76e9d4ff4db638b7c2542688b9cc69f87ee8a7b2df2",
+          "skipLimit": "WindowsZIPunsafe/safeextractionandrealBATexitcodetestsneedactualWindows;existingnativegateunchanged"
+        },
+        "workflowMandatoryBeforeDraft": true,
+        "requestPolicy": {
+          "prerelease": true,
+          "makeLatest": false
+        },
+        "stableUpdaterCodeUnchanged": true,
+        "actualPublicChannelNotYetRun": true,
+        "independentReadReview": {
+          "owner": "merge_meta",
+          "mustFix": 0,
+          "scope": "Bothrequest/publishchannelchecks/allgatesunchanged/mandatory12tests/README-notes2D-offlineinstructions"
+        }
+      },
+      "prereleaseSourceStatic": {
+        "results": {
+          "lint": {
+            "exit": 0,
+            "bytes": 23793,
+            "logSha256": "c48d0d8c6b901318093512f8cf609eb80982fcf0ef80e72dfdd344313ba9f0ea",
+            "errors": 0,
+            "warnings": 151
+          },
+          "typecheck": {
+            "exit": 0,
+            "bytes": 296,
+            "logSha256": "631115372130fddde463579b9dc8488ccf5b153292148623f11fe9780b2dc2c4"
+          },
+          "imports": {
+            "exit": 0,
+            "bytes": 683,
+            "logSha256": "0bb907d77187bcd5e84de8cc9a56aa46b8ff0b3ced63ca6380c9ea0069bc1c13"
+          }
+        },
+        "docs": {
+          "exit": 0,
+          "tests": 32,
+          "pass": 32,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "durationMs": 1316.828698,
+          "logSha256": "e9b6f00248161d9792180a8f3aaa58909ef35c9c70544290bcc4d707030987af",
+          "sourceCommit": "a3a98d798a21d2913631ea13eb4f9eab77e7afb0"
+        }
+      },
+      "preChannelLocalSourceCheckpoint": "2078fb69b794ea11b706cc89e84dd5b5aa5622fa;neverpushedortagpublished",
+      "retiredAnonymousVerifierPreparation2078": {
+        "path": "/tmp/rhine-public-verify.py",
+        "tag": "v0.3.0-rhine.8",
+        "sourceCommit": "2078fb69b794ea11b706cc89e84dd5b5aa5622fa",
+        "sha256": "8eb846eb1a87dbc172dce286ca5ae92fe16c6381e6f70f0786b3375a12eff24d",
+        "changeFromReviewedSource7": "onlyTAG/SOURCE/tempdirectoryprefix3literalreplacements;allchecksunchanged",
+        "syntax": "PythonASTparsePASS",
+        "execution": "notrun;onlyrelease_auditshallfull5anonymousdownloadafteractualpublicsuccess",
+        "sourceEolOfflineEvidence": {
+          "path": "/tmp/rhine-public-verify-r8-source-eol-evidence.json",
+          "sha256": "ee430e682dfa95dac2259b8e9794c4bb1c3061c56683f6d0ad268b7e60946f4a",
+          "gitTreeFiles": 2039,
+          "CRLFScripts": 15,
+          "actualSourceGitAttributesChecked": true
+        }
+      },
+      "anonymousVerifierPreparation": {
+        "sourceCommit": "a3a98d798a21d2913631ea13eb4f9eab77e7afb0",
+        "tag": "v0.3.0-rhine.8",
+        "status": "privateverifierenhancement-in-progress;notexecuted;mustverifytrueprerelease/stablelatest6and5fullattachmentsafterpublic",
+        "owner": "release_audit"
+      }
+    },
+    "retiredCandidate7": {
+      "candidate": {
+        "tag": "v0.3.0-rhine.7",
+        "sourceCommit": "a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4",
+        "automationCommit": "923f8243301c9adc0d51b0ab95d2980d14521ac2",
+        "workflowRunId": 38899986209,
+        "workflowRunUrl": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38899986209",
+        "status": "failure",
+        "published": false,
+        "publicLatestPerParentReadOnlyCheck": "v0.2.4-rhine.6",
+        "sourceCiMatrix": "separate evidence; not evaluated or conflated here"
+      },
+      "environment": {
+        "os": "Microsoft Windows Server 2025 Datacenter 10.0.26100",
+        "runnerImage": "windows-2025-vs2026",
+        "runnerImageVersion": "20261007.264.1",
+        "node": "v24.21.0",
+        "observedBrowser": "Edg/154.0.4258.62",
+        "scheduling": {
+          "line": 235,
+          "beforePriority": 10,
+          "targetPriority": 0,
+          "actualPriority": 0,
+          "availableParallelism": 4
+        },
+        "schedulingBoundary": "The summary records actual runner Node normalization; owned GPU/renderer priorities vary by browser fixture and are not all assumed identical."
+      },
+      "totals": {
+        "package": {
+          "tests": 974,
+          "pass": 972,
+          "fail": 0,
+          "skip": 2
+        },
+        "authorStudio": {
+          "tests": 27,
+          "pass": 27,
+          "fail": 0
+        },
+        "isolatedHost": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0
+        },
+        "browser": {
+          "tests": 48,
+          "pass": 46,
+          "fail": 2,
+          "skip": 0,
+          "cancelled": 0
+        }
+      },
+      "evidenceSha256": "6ccaad9c25615d82710e53a93e1b79c6a476d744822de04937f644a9a360cb10",
+      "rawLogSha256": "44c0311fdeae19bc8f98afc272c752a82b31abc0834866dbc4cd173941a1faff",
+      "failures": [
+        {
+          "file": "test/ui/rhine-profiles.e2e.test.js",
+          "line": 351,
+          "evidence": "Trusted click landed on DIV with target profile button visibility hidden; no room.setRhine request/reply. Exact residual class/transition not recorded."
+        },
+        {
+          "file": "test/ui/studio-gameplay.e2e.test.js",
+          "line": 47,
+          "evidence": "After save click, expected saved normal.atk900 not observed within original30s. Original log lacks input/button/API observations; disabled/draft race remains a hypothesis."
+        }
+      ],
+      "notRun": [
+        "native HTTP/WebSocket smoke",
+        "ZIP fulltree compression/re-extraction",
+        "actual old.6 upgrade/private config preservation/repeat/rollback",
+        "five release attachments upload/redownload",
+        "public publication/anonymous full downloads"
+      ],
+      "boundary": "All46 other browser cases, both6player engine cases and two plugin mechanisms passed; full native gate failed and no new public installer exists."
+    },
+    "retiredSourceCi7": {
+      "source": "a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4",
+      "metadata": "923f8243301c9adc0d51b0ab95d2980d14521ac2",
+      "formalDiff": [
+        ".github/rhine-release-request.json"
+      ],
+      "overall": "Both runs failure; all4 Node24 test jobs pass, all4 Node22 test jobs fail; no cancelled cases or job timeouts.",
+      "jobs": [
+        {
+          "kind": "main",
+          "id": 116969555879,
+          "name": "test (windows-latest, node 22)",
+          "conclusion": "failure",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8450,
+            "fail": 5,
+            "cancelled": 0,
+            "skipped": 85,
+            "todo": 0,
+            "duration_ms": 2548717.6326
+          },
+          "logSha256": "7398d8b913e3957884a9791f926a6b7e23d6511a099ab0e618102e995fdf8a91",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "started_at": "2026-10-16T13:04:58Z",
+            "completed_at": "2026-10-16T13:04:58Z"
+          },
+          "failures": [
+            {
+              "title": "the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told",
+              "classification": "consistent with prior room.setPlugins setup timeout; inferred from fixture, ~2-second duration and generic wsClient.js wait stack, not an explicit request name in the log",
+              "location": null,
+              "durationMs": 2410.678
+            },
+            {
+              "title": "a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "classification": "consistent with prior room.setPlugins setup timeout; inferred from fixture, ~2-second duration and generic wsClient.js wait stack, not an explicit request name in the log",
+              "location": null,
+              "durationMs": 2473.9543
+            },
+            {
+              "title": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "classification": "consistent with prior room.setPlugins setup timeout; inferred from fixture, ~2-second duration and generic wsClient.js wait stack, not an explicit request name in the log",
+              "location": null,
+              "durationMs": 2403.8728
+            },
+            {
+              "title": "SES child boots the real Match and finishes an all-bot game without engine errors",
+              "classification": "prior SES/plugin host no-heartbeat signature",
+              "location": null,
+              "durationMs": 58657.7367
+            },
+            {
+              "title": "benchmark: worst case — 70 enemies alive at once + 10 operators < 0.5 ms/tick",
+              "classification": "timing threshold miss: first observed in this monitored run; no causal attribution to production regression or cross-VM CPU sharing",
+              "location": null,
+              "durationMs": 988.9552
+            }
+          ]
+        },
+        {
+          "kind": "main",
+          "id": 116969556182,
+          "name": "test (ubuntu-latest, node 22)",
+          "conclusion": "failure",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8443,
+            "fail": 2,
+            "cancelled": 0,
+            "skipped": 95,
+            "todo": 0,
+            "duration_ms": 2086133.165057
+          },
+          "logSha256": "8b45e5c861a7071f8c261cbbd06816a45684b4968b2ab5b352e595467de43af5",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "started_at": "2026-10-16T12:56:55Z",
+            "completed_at": "2026-10-16T12:56:55Z"
+          },
+          "failures": [
+            {
+              "title": "a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "classification": "consistent with prior room.setPlugins setup timeout; inferred from fixture, ~2-second duration and generic wsClient.js wait stack, not an explicit request name in the log",
+              "location": null,
+              "durationMs": 2356.08332
+            },
+            {
+              "title": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "classification": "consistent with prior room.setPlugins setup timeout; inferred from fixture, ~2-second duration and generic wsClient.js wait stack, not an explicit request name in the log",
+              "location": null,
+              "durationMs": 2341.984748
+            }
+          ]
+        },
+        {
+          "kind": "main",
+          "id": 116969556251,
+          "name": "tooling (lint, imports, typecheck)",
+          "conclusion": "success",
+          "counts": null,
+          "logSha256": "d13295e1f8cacae7e81d2040c83c652e58bbd5f4eb69b7c3f5e108548063504f",
+          "smoke": null,
+          "failures": []
+        },
+        {
+          "kind": "main",
+          "id": 116969556310,
+          "name": "test (windows-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8455,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 85,
+            "todo": 0,
+            "duration_ms": 1547258.4389
+          },
+          "logSha256": "14e8372c083def210d1643084829ac973122c62a9f7bf7ba9d7629c444522281",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-16T12:48:31Z",
+            "completed_at": "2026-10-16T12:48:35Z"
+          },
+          "failures": []
+        },
+        {
+          "kind": "main",
+          "id": 116969556384,
+          "name": "test (ubuntu-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8445,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 95,
+            "todo": 0,
+            "duration_ms": 1077418.092551
+          },
+          "logSha256": "472e569eadcca9cdb38a49f0fc3ee4f9c350c789c5f486369a2e5195b3b107e6",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-16T12:40:06Z",
+            "completed_at": "2026-10-16T12:40:07Z"
+          },
+          "failures": []
+        },
+        {
+          "kind": "tag",
+          "id": 116969551720,
+          "name": "tooling (lint, imports, typecheck)",
+          "conclusion": "success",
+          "counts": {},
+          "logSha256": "803edb38359ff3d7c954f8cd959ecdabe11c09cb5470bb320e6dd180fe15ddb3",
+          "smoke": null,
+          "failures": []
+        },
+        {
+          "kind": "tag",
+          "id": 116969552096,
+          "name": "test (windows-latest, node 22)",
+          "conclusion": "failure",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8451,
+            "fail": 4,
+            "cancelled": 0,
+            "skipped": 85,
+            "todo": 0,
+            "duration_ms": 2474306.902
+          },
+          "logSha256": "08bb5bb082490cbad990b28062f806ee3a772ed48d8520485350911c3be47b96",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 7,
+            "started_at": "2026-10-16T13:03:47Z",
+            "completed_at": "2026-10-16T13:03:47Z"
+          },
+          "failures": [
+            {
+              "title": "    not ok 1 - the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told",
+              "classification": null,
+              "location": "location: 'D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:204:3'",
+              "durationMs": 2498.4169
+            },
+            {
+              "title": "    not ok 2 - a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "classification": null,
+              "location": "location: 'D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:242:3'",
+              "durationMs": 2382.4735
+            },
+            {
+              "title": "    not ok 3 - SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "classification": null,
+              "location": "location: 'D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:263:3'",
+              "durationMs": 2378.701
+            },
+            {
+              "title": "not ok 4464 - SES child boots the real Match and finishes an all-bot game without engine errors",
+              "classification": null,
+              "location": "location: 'D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\plugins\\\\sandbox-host.test.js:43:1'",
+              "durationMs": 55698.413
+            }
+          ]
+        },
+        {
+          "kind": "tag",
+          "id": 116969552185,
+          "name": "test (ubuntu-latest, node 22)",
+          "conclusion": "failure",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8444,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 95,
+            "todo": 0,
+            "duration_ms": 2054747.809255
+          },
+          "logSha256": "2beab86948bb7aef416f4df9e0e682539953d92d3003d7ea95a5f52264aeecad",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 7,
+            "started_at": "2026-10-16T12:56:27Z",
+            "completed_at": "2026-10-16T12:56:27Z"
+          },
+          "failures": [
+            {
+              "title": "    not ok 1 - the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told",
+              "classification": null,
+              "location": "location: '/home/runner/work/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/match/plugin-host.test.js:204:3'",
+              "durationMs": 2352.11526
+            }
+          ]
+        },
+        {
+          "kind": "tag",
+          "id": 116969552228,
+          "name": "test (windows-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8455,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 85,
+            "todo": 0,
+            "duration_ms": 2138402.3979
+          },
+          "logSha256": "64c4c3de96e937c9d24b8298fafaf064649eed95a73d97d9c2a994251e73345e",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-16T12:58:14Z",
+            "completed_at": "2026-10-16T12:58:19Z"
+          },
+          "failures": []
+        },
+        {
+          "kind": "tag",
+          "id": 116969552457,
+          "name": "test (ubuntu-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8540,
+            "suites": 574,
+            "pass": 8445,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 95,
+            "todo": 0,
+            "duration_ms": 1093268.53929
+          },
+          "logSha256": "45923b105755b71f52b8cccb1fb0fd75cdfceb3c06efe473e41e11d0e2949516",
+          "smoke": {
+            "name": "Server smoke test (boot, /healthz, index.html, doctor)",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-16T12:40:21Z",
+            "completed_at": "2026-10-16T12:40:22Z"
+          },
+          "failures": []
+        }
+      ],
+      "evidence": [
+        {
+          "kind": "main",
+          "sha256": "e39142311b6456b7671190327a9f5eacb96798007d17d890e361ae9d6b1a8f46",
+          "file": "/tmp/rhine-ci7-main-evidence.json",
+          "run": 38899986092
+        },
+        {
+          "kind": "tag",
+          "sha256": "da2059312f9b549c1700a5646665f8541fa6e68c2e29ad9c8989f94f47875cc1",
+          "file": "/tmp/rhine-ci7-tag-evidence.json",
+          "run": 38899984904
+        }
+      ],
+      "failureBoundary": "Generic wsClient106 timeout ~2s setup method is source/timing inference, not explicit log caller; direct SES plugin-hang no heartbeat10/11s differs from setup failures. Signatures overlap candidate6 but do not prove absence of regression. Separate hosted jobs do not share a VM.",
+      "newPerformanceFailure": {
+        "run": 38899986092,
+        "job": 116969555879,
+        "file": "test/sim/perf.test.js:43",
+        "assertionLine": 57,
+        "observedMsPerTick": 0.5059190833333336,
+        "limitMsPerTick": 0.5,
+        "classification": "New observed real Windows Node22 benchmark failure, not a proven historical failure or CPU cause; benchmark unchanged."
+      },
+      "updaterBoundary": "6files98unique actual cases/job. Ubuntu94pass4skip, Windows97pass1skip. bundle28=27pass1SP_UPDATE_E2Eskip on all platforms; online28=Ubuntu25pass3Windows-onlyskip/Windows28pass; rhineBoot5/updateBoot10/package11/verifier16 allpass. Source CI skipped real rollback case; nativepackage enables SP_UPDATE_E2E=1.",
+      "tooling": "Both tooling jobs success:0lint errors151warnings/imports/typecheck. Four Node24 jobs server smoke success; four Node22 server smoke skipped; smoke is not a clean exitcode assertion."
+    },
+    "publicationDecision": {
+      "channel": "prerelease",
+      "prerelease": true,
+      "makeLatest": false,
+      "recommendedBoard": "2d",
+      "userAcceptedKnownDefault3DLimit": true,
+      "stopFurtherDefault3DFixes": true,
+      "retainAllNativePackageUpdatePrivateRepeatRollbackHashSourceGates": true,
+      "stableOnlineUpdaterRemainsStableOnly": true
     }
   },
-  "rendererDiagnostics": false
+  "rendererDiagnostics": false,
+  "prerelease": true,
+  "makeLatest": false
 }
