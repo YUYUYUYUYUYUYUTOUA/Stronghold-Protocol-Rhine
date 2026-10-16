@@ -2,11 +2,44 @@
 // Dedicated renderer tests cover official effects at their original settings. Observations below never change a
 // Worker call, its timeout, result or failure callback, or any server/gameplay deadline.
 import assert from 'node:assert/strict';
+import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import { performance } from 'node:perf_hooks';
 
 const WORKER_EVENT = '[mechanism-worker] ';
 
+async function alignWindowsOwnedGpu(client) {
+  if (process.platform !== 'win32') return;
+  const nodePriority = getPriority(process.pid), normal = osConstants.priority.PRIORITY_NORMAL;
+  assert.equal(nodePriority, normal, 'the Windows acceptance test inherits the runner\'s NORMAL priority');
+  const browserPid = client.browser.process()?.pid;
+  assert.ok(Number.isInteger(browserPid), 'this fixture owns its launched browser process');
+  const cdp = await client.browser.target().createCDPSession();
+  try {
+    const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
+    const owned = processInfo.filter(info => /^(?:browser|renderer|gpu)$/i.test(info.type));
+    assert.ok(owned.some(info => /^browser$/i.test(info.type) && info.id === browserPid), 'CDP identifies this owned browser');
+    const gpu = owned.filter(info => /^gpu$/i.test(info.type));
+    assert.equal(gpu.length, 1, 'CDP identifies one GPU belonging to this browser');
+    assert.notEqual(gpu[0].id, process.pid);
+    assert.notEqual(gpu[0].id, browserPid);
+    const priorities = () => owned.map(info => ({ pid: info.id, type: info.type, priority: getPriority(info.id) }));
+    const before = priorities();
+    console.log('Mechanism Windows process priorities before:', JSON.stringify({ client: client.label,
+      node: { pid: process.pid, priority: nodePriority }, browserPid, owned: before }));
+    if (getPriority(gpu[0].id) !== normal) setPriority(gpu[0].id, normal);
+    const after = priorities();
+    console.log('Mechanism Windows process priorities after:', JSON.stringify({ client: client.label,
+      node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: after }));
+    assert.equal(getPriority(process.pid), nodePriority, 'the test Node priority is unchanged');
+    for (const [index, info] of after.entries()) {
+      assert.equal(info.priority, info.pid === gpu[0].id ? normal : before[index].priority,
+        `only this owned GPU may change priority (${info.type} ${info.pid})`);
+    }
+  } finally { await cdp.detach(); }
+}
+
 export async function configureMechanismGraphics(client) {
+  if (process.platform === 'win32') await alignWindowsOwnedGpu(client);
   await client.click('[data-testid="settings-btn"]');
   await client.page.waitForSelector('.modal .set-list');
   await client.page.$eval('.modal .set-list', list => {

@@ -2,6 +2,7 @@
 // This helper never imports the publisher, creates a release, builds a distributable or deploys a service.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -56,6 +57,18 @@ function validateInputs() {
     flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
     noPublisherImport: true, noReleaseMutation: true, noDistributable: true, noDeployment: true };
+}
+
+function normalizeOwnedPriority() {
+  const before = os.getPriority(process.pid), requested = os.constants.priority.PRIORITY_NORMAL;
+  assert.equal(requested, 0, 'Windows NORMAL must map to Node priority 0.');
+  os.setPriority(process.pid, requested);
+  const after = os.getPriority(process.pid);
+  assert.equal(after, 0, 'The diagnostic helper must actually run at Windows NORMAL priority.');
+  const cpus = os.cpus();
+  return { pid: process.pid, before, requested, after, scope: 'owned diagnostic helper; inherited runtime priority checked separately',
+    system: { type: os.type(), release: os.release(), version: os.version(), cpuCount: cpus.length,
+      availableParallelism: os.availableParallelism(), cpuModels: [...new Set(cpus.map(cpu => cpu.model))] } };
 }
 
 function extract(archive, destination) {
@@ -142,10 +155,14 @@ async function officialRuntime(downloads) {
   extract(archive, path.join(root, 'official-runtime'));
   const runtime = path.join(root, 'official-runtime', `node-${runtimeVersion}-win-x64`);
   const node = path.join(runtime, 'node.exe');
-  assert.deepEqual(JSON.parse(command(node, ['-p', 'JSON.stringify({platform:process.platform,arch:process.arch,version:process.version})'])),
+  const identity = JSON.parse(command(node, ['-p',
+    "JSON.stringify({platform:process.platform,arch:process.arch,version:process.version,pid:process.pid,priority:require('node:os').getPriority(process.pid)})"]));
+  assert.deepEqual({ platform: identity.platform, arch: identity.arch, version: identity.version },
     { platform: 'win32', arch: 'x64', version: runtimeVersion });
+  assert.equal(identity.priority, 0, 'The actual official Windows runtime child must inherit NORMAL priority.');
   progress(`Verified exact official Windows runtime ${runtimeVersion}; archive SHA256 ${digest}.`);
-  return { node, npm: path.join(runtime, 'node_modules/npm/bin/npm-cli.js') };
+  progress(`Actual official runtime identity and inherited priority: ${JSON.stringify(identity)}`);
+  return { node, npm: path.join(runtime, 'node_modules/npm/bin/npm-cli.js'), identity };
 }
 
 async function prepareResources() {
@@ -202,10 +219,11 @@ async function main() {
   if (process.argv.includes('--validate-only')) { console.log(JSON.stringify(plan, null, 2)); return; }
   assert.equal(process.platform, 'win32'); assert.equal(process.arch, 'x64'); assert.equal(process.version, runtimeVersion);
   assert.equal(process.env.GITHUB_REPOSITORY, repository); assert.equal(process.env.GITHUB_REF, branch);
+  const scheduling = normalizeOwnedPriority();
   const commit = command('git', ['rev-parse', 'HEAD']).trim();
   const tracked = command('git', ['status', '--porcelain', '--untracked-files=no']);
   assert.equal(tracked, '', 'Diagnostic checkout must start clean.');
-  console.log(JSON.stringify({ ...plan, commit, platform: process.platform, arch: process.arch, node: process.version,
+  console.log(JSON.stringify({ ...plan, commit, platform: process.platform, arch: process.arch, node: process.version, scheduling,
     archiveHelperSha256: await sha(archiveHelper),
     files: await Promise.all(files.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))),
     supportFiles: await Promise.all(supportFiles.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))) }));
@@ -216,6 +234,7 @@ async function main() {
   assert.ok(edge, 'Microsoft Edge is required, using the same lookup as the publisher.');
   const outcomes = [], failures = [];
   for (const group of plan.groups) {
+    assert.equal(os.getPriority(process.pid), 0, 'Each diagnostic group must start from the NORMAL-priority helper.');
     progress(`Running diagnostic group ${group.name}; original case deadlines/assertions remain unchanged.`);
     const args = group.testNamePattern ? [`--test-name-pattern=${group.testNamePattern}`] : [];
     const result = spawnSync(runtime.node, ['--test', '--test-reporter=spec', '--test-concurrency=1', ...args, ...group.files], {
@@ -243,7 +262,7 @@ async function main() {
       failures.push({ name: group.name, error: outcome.error });
     }
   }
-  const summary = { diagnosticOnly: true, commit, outcomes, failures };
+  const summary = { diagnosticOnly: true, commit, scheduling, runtimeIdentity: runtime.identity, outcomes, failures };
   fs.writeFileSync(path.join(root, 'native-browser-preflight-results.json'), JSON.stringify(summary, null, 2) + '\n');
   console.log(JSON.stringify(summary));
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');
