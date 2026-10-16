@@ -1,0 +1,59 @@
+name: Rhine Windows Native Host Diagnostic
+
+on:
+  push:
+    branches: [codex/rhine-030-native-diagnostic]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rhine-native-host-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/codex/rhine-030-native-diagnostic'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ''
+      GITHUB_TOKEN: ''
+      NO_COLOR: '1'
+    steps:
+      - name: Preserve immutable source line endings
+        run: git config --global core.autocrlf false
+      - name: Check out diagnostic automation
+        uses: actions/checkout@v7
+        with:
+          path: automation
+          persist-credentials: false
+      - name: Check out exact failed release source
+        uses: actions/checkout@v7
+        with:
+          ref: bec8e325d72f40ac0d1301b11f2431611b9eee4b
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+          architecture: x64
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Install the exact source dependencies without install scripts
+        working-directory: source
+        run: npm ci --include=dev --ignore-scripts --no-audit --no-fund
+      - name: Build the normal vendor dependencies explicitly
+        working-directory: source
+        run: node tools/vendor.mjs
+      - name: Run the unchanged all-bot case with passive host diagnostics
+        run: node automation/.github/scripts/rhine-native-host-diagnostic.mjs --source source --output "${{ runner.temp }}/rhine-native-host-diagnostic"
+      - name: Retain complete diagnostic logs even on failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rhine-r9-native-host-diagnostic
+          path: ${{ runner.temp }}/rhine-native-host-diagnostic
+          if-no-files-found: warn
+          retention-days: 14
