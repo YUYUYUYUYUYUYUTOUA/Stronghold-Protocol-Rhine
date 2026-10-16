@@ -360,7 +360,7 @@ async function main() {
   });
   // The normal release author-resource test needs a Git checkout to select its stage inputs.
   // Exercise it with the same verified Windows runtime in the clean tagged source checkout.
-  const sourceAuthorTests = runTests(node, source, ['test/plugin-package.test.js'],
+  const sourceAuthorTests = runTests(node, source, ['test/plugin-package.test.js', 'test/studio/review.test.js'],
     path.join(root, 'source-author-tests.log'), { concurrency: 1, timeout: 300000 });
   const hostTests = runTests(node, built.destination, ['test/match/plugin-host.test.js', 'test/plugins/sandbox-host.test.js'],
     path.join(root, 'packaged-plugin-host-tests.log'), { concurrency: 1, timeout: 300000 });

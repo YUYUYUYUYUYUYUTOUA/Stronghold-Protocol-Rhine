@@ -24,13 +24,13 @@ test('eleven Rem operators, eight original reinforcement models and the exact or
     await page.setViewport({width:1800,height:1040});
     const base=`http://127.0.0.1:${srv.port}`;
     await page.goto(`${base}/healthz`);
-    await page.addScriptTag({url:`${base}/vendor/pixi.min.js`});
-    await page.addScriptTag({url:`${base}/vendor/pixi-spine.js`});
     const data = getData({log:{warn(){},error(){},info(){}}});
     const operators=Object.values(data.chess).filter(c=>!c.isGolden&&c.bonds.includes('remShip')).map(c=>({id:c.charId,name:c.name}));
     assert.equal(operators.length,11);
     const entries=[...operators,...Object.entries(REM_ENEMY_ART).map(([name,id])=>({name,id}))];
     const result=await page.evaluate(async entries=>{
+      const {ensurePixi}=await import('/js/render/app/pixi.js');
+      const PIXI=await ensurePixi();
       const {assets}=await import('/js/assets.js');
       const {SpineActor}=await import('/js/render/spine.js');
       await assets.ready();

@@ -16,6 +16,7 @@ import { createStudio } from '../../server/studio/index.js';
 import { writeTrialDraftFile } from '../../server/studio/trialDraft.js';
 import { numericFields, readStudioData } from '../../server/studio/gameData.js';
 import { checkPluginFolder, packPlugin } from '../../server/plugins/pack.js';
+import { SCRIPT_PROBE_TIMEOUT_MS } from '../../server/plugins/scriptPreflight.js';
 import { buildContentSet } from '../../server/plugins/contentSet.js';
 import { appendOfficialBounds } from '../../shared/plugins/officialBounds.js';
 import { applyPatches } from '../../shared/plugins/patch.js';
@@ -127,7 +128,7 @@ for (const ending of ['close', 'timeout', 'probe-timeout']) test(`a real pinned 
     p.on('SIGTERM', () => {}); while (true) {} }`);
   let leader;
   const bench = createTrialBench({ registry: f.registry, files: createPluginFiles(f.pluginsDir),
-    spawn: (entry, args, opts) => (leader = fork(entry, args, { ...opts, env: { ...process.env, SP_SCRIPT_PROBE_MS: ending === 'probe-timeout' ? '1000' : '60000' } })),
+    spawn: (entry, args, opts) => (leader = fork(entry, args, { ...opts, env: { ...process.env, SP_SCRIPT_PROBE_MS: ending === 'probe-timeout' ? String(SCRIPT_PROBE_TIMEOUT_MS) : '60000' } })),
     limits: { ...TRIAL_LIMITS, timeoutMs: ending === 'timeout' ? 6000 : 15000 } });
   t.after(() => bench.close());
   const pending = bench.run({ id: 'loop', seconds: 1 });
@@ -138,7 +139,7 @@ for (const ending of ['close', 'timeout', 'probe-timeout']) test(`a real pinned 
   t.after(() => { try { process.kill(pid, 'SIGKILL'); } catch { /* absent */ } });
   if (ending === 'close') bench.close();
   const result = await checked;
-  if (ending === 'probe-timeout') { assert.equal(result.ok, false); assert.equal(result.issues[0].code, 'PLUGIN_SCRIPT_CHECK'); assert.match(result.issues[0].text, /1000 ms.*SIGKILL/); }
+  if (ending === 'probe-timeout') { assert.equal(result.ok, false); assert.equal(result.issues[0].code, 'PLUGIN_SCRIPT_CHECK'); assert.match(result.issues[0].text, new RegExp(`${SCRIPT_PROBE_TIMEOUT_MS} ms.*SIGKILL`)); }
   for (let n = 0; n < 100; n++) { try { process.kill(pid, 0); await delay(20); } catch { break; } }
   assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });
   assert.throws(() => process.kill(leader.pid, 0), { code: 'ESRCH' });
