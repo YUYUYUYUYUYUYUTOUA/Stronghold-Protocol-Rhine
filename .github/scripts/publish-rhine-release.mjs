@@ -20,6 +20,7 @@ assert.match(request.sourceCommit, /^[0-9a-f]{40}$/);
 assert.match(request.previousArchiveSha256, /^[0-9a-f]{64}$/);
 assert.match(request.runtimeVersion, /^v24\.\d+\.\d+$/);
 if (request.draftReleaseId != null) assert.ok(Number.isSafeInteger(request.draftReleaseId) && request.draftReleaseId > 0);
+if (request.rendererDiagnostics === true) assert.equal(request.prepareOnly, true, 'Renderer diagnostics must remain draft-only.');
 assert.equal(request.previousArchiveName, `Stronghold-Protocol-Rhine-${request.previousTag}-Windows-x64.zip`);
 if (request.upstreamResources) {
   const resources = request.upstreamResources;
@@ -60,6 +61,8 @@ async function verifyRemOriginal(directory) {
   assert.equal(await sha(file), request.remOriginal.sha256);
 }
 const progress = message => console.log(`${new Date().toISOString()} ${message}`);
+const rendererDiagnosticNames = ['renderer-diagnostics.json', 'renderer-diagnostics.jsonl',
+  'renderer-diagnostics-stderr.log', 'renderer-diagnostics-netlog.json', 'renderer-diagnostics-stdout.log'];
 function extract(archive, destination) {
   assert.equal(fs.existsSync(destination), false, destination);
   command('python', [path.join(automation, '.github/scripts/rhine-release-archive.py'), 'extract', archive, destination]);
@@ -137,7 +140,8 @@ function runTests(node, directory, files, log, options = {}) {
   });
   const text = (result.stdout || '') + (result.stderr || '');
   fs.writeFileSync(log, text);
-  console.log(result.error || result.status !== 0 ? text : text.split('\n').slice(-12).join('\n'));
+  // Preserve per-case evidence for the approved balance rules as well as the final totals.
+  console.log(text);
   if (result.error) throw result.error;
   assert.equal(result.status, 0, 'Packaged regression failed; release remains a draft.');
   const totals = {};
@@ -284,6 +288,36 @@ async function main() {
   await verifyRemOriginal(built.destination);
   progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
+  if (request.rendererDiagnostics === true && request.prepareOnly === true) {
+    const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
+      .map(dir => path.join(dir, 'Microsoft/Edge/Application/msedge.exe')).find(file => fs.existsSync(file));
+    assert.ok(edge, 'Microsoft Edge is required for the native Windows navigation diagnostics.');
+    const result = spawnSync(node, [path.join(automation, '.github/scripts/rhine-renderer-diagnostics.mjs'),
+      '--payload', built.destination, '--output', root, '--browser', edge], {
+      ...quiet, cwd: built.destination, timeout: 240000,
+      env: { ...process.env, NO_COLOR: '1', SP_ASSET_INDEX: '0', SP_STUDIO: 'off' },
+    });
+    const stdout = (result.stdout || '') + (result.stderr || '');
+    fs.writeFileSync(path.join(root, 'renderer-diagnostics-stdout.log'), stdout);
+    console.log(stdout);
+    const diagnosticFile = path.join(root, 'renderer-diagnostics.json');
+    const diagnostic = fs.existsSync(diagnosticFile) ? JSON.parse(fs.readFileSync(diagnosticFile, 'utf8')) : null;
+    const report = { status: 'diagnostics-only', sourceCommit: request.sourceCommit, createdAt: new Date().toISOString(),
+      process: { status: result.status, signal: result.signal, error: result.error && String(result.error.stack || result.error) },
+      diagnostic, payloadVerified: (await verifyTree(built.destination)).fileCount,
+      visualAssertionsRun: false, published: false,
+      executionContext: 'Fresh payload after build; native regression/source-author/host/simulation prerequisites are not rerun here. Navigation success does not exclude ordering or resource effects.',
+      notRun: ['regression acceptance in this diagnostic run', 'visual assertions', 'upgrade acceptance', 'publication'],
+      automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` } };
+    const reportFile = path.join(root, 'RELEASE-VALIDATION.json');
+    fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
+    const attachments = [...rendererDiagnosticNames.map(name => path.join(root, name)).filter(file => fs.existsSync(file)), reportFile];
+    assert.equal(api(`releases/${request.draftReleaseId}`).draft, true);
+    command('gh', ['release', 'upload', request.tag, '--repo', repo, '--clobber', ...attachments]);
+    assert.equal(api(`releases/${request.draftReleaseId}`).draft, true);
+    progress('Renderer diagnostics uploaded to the existing draft; no acceptance or publication was performed.');
+    return;
+  }
   const tests = runTests(node, built.destination, [
     'test/content/rem.test.js', 'test/content/rem-traits.test.js', 'test/content/rem-balance.test.js', 'test/content/rem_native_kits.test.js',
     'test/content/rem-pizza-fx.test.js', 'test/rem_data.test.js', 'test/match/rem-rally.test.js',
@@ -466,6 +500,12 @@ async function main() {
     ] };
   fs.writeFileSync(path.join(assets, 'RELEASE-VALIDATION.json'), JSON.stringify(report, null, 2) + '\n');
   const assetNames = fs.readdirSync(assets).sort();
+  // Remove only this automation's draft diagnostic attachments once complete normal acceptance has passed.
+  const preparedDraft = api(`releases/${request.draftReleaseId}`);
+  assert.equal(preparedDraft.draft, true);
+  for (const asset of preparedDraft.assets.filter(asset => rendererDiagnosticNames.includes(asset.name))) {
+    command('gh', ['api', '--method', 'DELETE', `repos/${repo}/releases/assets/${asset.id}`]);
+  }
   progress(`Uploading ${assetNames.length} validated release assets.`);
   command('gh', ['release', 'upload', request.tag, '--repo', repo, '--clobber', ...assetNames.map(name => path.join(assets, name))]);
   const uploaded = api(`releases/${request.draftReleaseId}`);

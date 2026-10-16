@@ -5,7 +5,7 @@
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
-  "prepareOnly": false,
+  "prepareOnly": true,
   "releaseName": "v0.3.0-rhine.3 · 阵营拓展与雷姆平衡",
   "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆与原版开关。继续完整拓展版分发，未迁移为插件。\n\n- 雷姆 6／9 档：每成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣已出现数，普通战斗到同轮联防延续。\n- 暴行：自身与周围八格的本玩家雷姆干员和援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重；混品质使用共享预算。替换旧经过加攻，保留原生技能。\n- 普通援军抵达后在集合点周围八格可通行地块持续徘徊，接敌停下、脱战继续；车辆和老板原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用或拖欠装备库存；抽取干员仍遵共享池／本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展普通以上为 6+6；每阶至少保留 8 种共享可刷干员，有界抽取防止卡死。最终数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库容量按上游 .3 翻倍，旧概率估计作废。\n- 适配 .3 的插件／Studio、官方特效、攻击提交、格子判定和已展示装备透支。原版切换与独立内容集／Worker 保持一致。Windows 包安装 .3 锁定依赖，包含 SES、Acorn 和 local-fx。\n- 项目对外展示名称改为“阵营拓展”，README 重点补充雷姆必拓的援军、集合点与平衡机制，保留莱茵和卡兹戴尔介绍。仓库地址、安装目录、启动文件与升级渠道不变。整体游戏内阵营描述重写、变形同构体无限库存均未加入；未部署用户服务器。\n\n首次安装下载 Windows x64 ZIP，完整解压后运行「启动莱茵科研版.bat」。已有 .6 玩家结束对局并关闭服务后，在原目录运行「联网更新.bat」。原生 Windows 验收包含实际 .6 包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚和附件重新下载哈希校验；仅全部发行门槛通过后公开，实际结果见 RELEASE-VALIDATION.json。\n\n未做真人完整多人平衡试玩或人工 BAT 点击验收。Linux 无完整美术环境下的浏览器流程核心机制通过，但资源检查报 404，不将其标作整套通过；包内 Windows／Edge 使用完整素材另行验收。官方原始数据全量生成缓存未齐，固定 .3 原版快照与三个扩展叠加的逐表重建已验证。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n\n.1、.2 均为未公开验收候选，旧标签保持原指向。.3 修复上游 Windows 插件作者 CLI 的 ESM 文件 URL，并完善真实浏览器模拟夹具、实际进程退出、精锐 DIY、CRLF 和 Forge 测试诱饵的跨平台验收；保留原生产沙箱期限与批准玩法。新候选重新执行全部 Windows 发行门槛。Windows Node 22 更新测试在 .6 已有原生崩溃，底层原因未查明；本包采用 Node 24.21.0 实验收，详见验证报告。",
   "upstreamResources": {
@@ -205,6 +205,47 @@
         "skipped": 95
       },
       "note": "Retired candidate results, not final source results. Confirmed CLI/fixture causes corrected; two Ubuntu22 host timing failures did not repeat in .2 Ubuntu22 or isolated host files. Existing Windows22 native update crash remains disclosed."
+    },
+    "initialWindowsAttempt": {
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38860274070",
+      "sourceCommit": "5fc855ae01435a7bd8cef307baad176a7f0ae875",
+      "published": false,
+      "packagedTests": {
+        "tests": 915,
+        "pass": 913,
+        "fail": 0,
+        "skipped": 2
+      },
+      "sourceAuthorTests": {
+        "tests": 4,
+        "pass": 4,
+        "fail": 0
+      },
+      "packagedPluginHostTests": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0
+      },
+      "browserSimulation": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0
+      },
+      "renderer": {
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "reason": "Both page.goto calls timed out at their original 30000ms navigation deadlines: healthz JSON before any Pixi/model load, and render-demo HTML. No visual assertion had run."
+      },
+      "notRun": [
+        "remaining browser groups",
+        "HTTP/WebSocket smoke",
+        "actual .6 update/private configurations/repeat/rollback",
+        "attachment creation/download validation"
+      ],
+      "diagnosis": "Run read-only HTTP/browser lifecycle diagnostics on the exact bundled Windows payload before selecting a repair; do not infer a GPU/model fault or relax original visual assertions."
     }
-  }
+  },
+  "rendererDiagnostics": true,
+  "draftReleaseId": 414616397
 }
