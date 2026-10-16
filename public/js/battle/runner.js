@@ -252,8 +252,9 @@ export function createBattleRunner(deps) {
     recordError('runner', error, 'simulation worker warmup stopped');
   } });
   const warmPhases = new Set(['INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK', 'ROUND_START', 'SP_DRAFT', 'PREP']);
-  let warmEpoch = 0, warmContext = null, warmAttempt = null, disposed = false;
-  const dropWarm = () => { warmEpoch++; warmContext = null; warmAttempt = null; warmHosts.clear(); };
+  let warmEpoch = 0, warmContext = null, warmAttempt = null, warmRound = null, disposed = false;
+  let warmInMatch = initial?.room?.inMatch === true;
+  const dropWarm = () => { warmEpoch++; warmContext = null; warmAttempt = null; warmRound = null; warmHosts.clear(); };
   const warmKey = (cs, enabled) => `${warmEpoch}:${enabled}:${cs}`;
   /** Hidden-tab backlog tuple → the game time it was drained at (emitFrame batches the backlog by it). */
   const heldAt = new WeakMap();
@@ -312,33 +313,40 @@ export function createBattleRunner(deps) {
   };
   const consentFailure = () => Object.assign(new Error('simulation script consent is no longer available'), { code: 'PLUGIN_WORKER_FAILED' });
 
-  // A gameplay ensureSim() prepares checked content, not its Worker. Load/install one actual isolated realm while
-  // the player reviews or prepares the round. No Battle, spec, progress or result exists until a b.start claims it.
+  const mayWarm = s => !!s?.room && (!s.match?.public?.phase || s.match.public.phase === 'LOBBY'
+    || warmPhases.has(s.match.public.phase));
+  // A gameplay ensureSim() prepares checked content, not its Worker. Load/install one actual isolated realm as
+  // soon as the room is checked. Keep the unused realm through setup/round changes without resetting its watchdog.
+  // No Battle, spec, progress or result exists until a b.start claims it.
   function warmForState(s, pub, resetMatch) {
     const room = s?.room, phase = pub?.phase;
     const cs = room?.content?.vanilla === false ? room.content.cs : null;
     const available = cs && checkedWarmContent(cs);
-    // Setup can name round 0; it prepares the first round's unused realm. Every later round gets a new generation,
-    // including a single retry of a previous round's failed warmup, never retries on ordinary same-round updates.
-    const round = Math.max(1, Number(pub?.round) || 0);
-    const context = room && room.inMatch !== false && pub && phase && !['LOBBY', 'RESULT'].includes(phase)
-      && pub.combatMode !== 'server' && cs && available ? `${room.code}:${activeProfile}:${cs}:${round}` : null;
-    if (resetMatch || context !== warmContext) {
+    const endedMatch = warmInMatch && room?.inMatch !== true;
+    warmInMatch = room?.inMatch === true;
+    const context = room && phase !== 'RESULT' && pub?.combatMode !== 'server' && cs && available
+      ? `${room.code}:${activeProfile}:${cs}` : null;
+    if (resetMatch || endedMatch || context !== warmContext) {
       dropWarm();
       warmContext = context;
     }
     for (const entry of [...entries.values(), ...pending.values()]) {
       if (entry.host?.remote && entry.scriptContent && !scriptsAllowed(entry.scriptContent)) failWorker(entry, consentFailure());
     }
-    if (!context || !warmPhases.has(phase)) return;
-    const key = warmKey(cs, activeProfile), attempt = `${key}:${Number(pub.round) || 0}`;
+    if (!context || !mayWarm(s)) return;
+    const round = Number(pub?.round) || 0;
+    const key = warmKey(cs, activeProfile), attempt = `${key}:${round}`;
     if (warmAttempt === attempt) return;
+    // Only a subsequent round permits replacing a failed idle realm. Healthy unused realms (including a pending
+    // lobby load) remain valid even when the first actual round is not 1, e.g. a resumed match or a round-14 fixture.
+    const retryFailed = warmRound !== null && warmRound !== round;
     warmAttempt = attempt;
+    warmRound = round;
     const epoch = warmEpoch;
     ensureSim(cs).then(sim => {
       if (disposed || epoch !== warmEpoch || warmContext !== context || !sim.remote
-        || !warmPhases.has(store?.get?.()?.match?.public?.phase) || !checkedWarmContent(cs)) return;
-      warmHosts.prepare(key, sim);
+        || warmAttempt !== attempt || !mayWarm(store?.get?.()) || !checkedWarmContent(cs)) return;
+      warmHosts.prepare(key, sim, { retryFailed });
     }).catch(() => {}); // content loading already reports its own failure; no unverified Worker is created
   }
 

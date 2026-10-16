@@ -525,7 +525,8 @@ for (const rhineEnabled of [true, false]) {
   const profile = rhineEnabled ? 'rhine' : 'vanilla';
   test(`${profile}: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool`,
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
-      const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
+      const srv = await startRealServer({ serverDiagnostics: true,
+        fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
       const puppeteer = (await import('puppeteer-core')).default;
       const clients = [];
       let browserPool;

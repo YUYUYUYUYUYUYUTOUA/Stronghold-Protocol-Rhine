@@ -16,7 +16,8 @@ const sixFiles = ['test/ui/six-player-balance.e2e.test.js'];
 const files = sixFiles;
 const vanillaPattern = '^vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool$';
 const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
-  'test/e2e/sixWarmupObserver.mjs', 'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
+  'test/e2e/sixWarmupObserver.mjs', 'test/e2e/fastServer.mjs', 'test/e2e/fastServerDiagnostics.mjs',
+  'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');

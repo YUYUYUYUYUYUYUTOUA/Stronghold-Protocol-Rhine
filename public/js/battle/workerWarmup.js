@@ -14,8 +14,8 @@ export function createWorkerWarmup({ createHost, onFailure }) {
     if (slot) { slot.cancelled = true; slot.host?.stop(); }
   };
   return {
-    prepare(key, sim) {
-      if (idle?.key === key) return idle;
+    prepare(key, sim, { retryFailed = false } = {}) {
+      if (idle?.key === key && (!idle.error || !retryFailed)) return idle;
       clear();
       const slot = { key, host: null, ready: null, owner: null, error: null, cancelled: false };
       idle = slot;

@@ -144,7 +144,7 @@ export function freePort() {
 /**
  * Start the real server (`node server/index.js`, or test/e2e/fastServer.mjs with `fast` speed-ups) on a free port (or
  * `port`: e.g. the port of a server just stopped — a server restart the open clients reconnect to).
- * @param {{ port?: number, pluginsDir?: string, fast?: { timerScale?: number, combatSpeed?: number, startRound?: 'boss'|'hidden'|number, kit?: number, chess?: string[],
+ * @param {{ port?: number, pluginsDir?: string, serverDiagnostics?: boolean, fast?: { timerScale?: number, combatSpeed?: number, startRound?: 'boss'|'hidden'|number, kit?: number, chess?: string[],
  *   items?: string[], idleBots?: boolean, kits?: string[][], botChess?: string[], autoPlace?: boolean, eliminate?: number[], stage?: string,
  *   finishAfter?: number, slowSpawns?: string } }} [opts]
  *   kits: per-human starter kits (seat order); botChess: the AI seats' kit; autoPlace: the kits go onto the board at the
@@ -157,6 +157,7 @@ export async function startRealServer(opts = {}) {
   const port = Number.isInteger(opts.port) && opts.port > 0 ? opts.port : await freePort();
   const entry = opts.fast ? path.join(ROOT, 'test/e2e/fastServer.mjs') : path.join(ROOT, 'server/index.js');
   const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1' };
+  if (opts.serverDiagnostics === true) env.SP_E2E_SERVER_DIAG = '1';
   // under `node --test` the runner's marker would turn fastServer.mjs into a no-op module (it is not a test file)
   delete env.NODE_TEST_CONTEXT;
   if (opts.fast) {
