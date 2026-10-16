@@ -28,5 +28,5 @@ jobs:
           node-version: 24.21.0
       - name: Validate diagnostic-only inputs
         run: node .github/scripts/rhine-browser-preflight.mjs --validate-only
-      - name: Verify complete resources and run the two original plugin browser cases
+      - name: Verify complete resources and run plugin plus vanilla six-seat cases
         run: node .github/scripts/rhine-browser-preflight.mjs

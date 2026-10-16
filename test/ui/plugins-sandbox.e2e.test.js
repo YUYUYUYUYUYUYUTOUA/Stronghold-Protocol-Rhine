@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {Client,hasChrome,sleep,problemsOf} from '../e2e/client.mjs';
 import {scriptFixture} from '../helpers/scriptFixtures.js';
 import {startServer} from '../../server/index.js';
+import {configureMechanismGraphics,observeMechanismBrowser,mechanismResourceSnapshot,
+ readMechanismBrowser,startMechanismServerDiagnostics} from '../e2e/mechanismGraphics.mjs';
 const enabled=process.env.SP_E2E==='1' && hasChrome();
 test('two sandbox-script players start without consent and Worker battles verify under site CSP', {skip:!enabled,timeout:300000},async t=>{
  const f=scriptFixture(t,{mode:'sandbox'});f.put('training',`export default sp => sp.content.register({install(b){b.on('battleStart',()=>{for(const u of b.allyUnits)b.addBuff(u,{key:'training',mods:{atkFlat:2}});});}});`);
@@ -25,6 +27,8 @@ test('two sandbox-script players start without consent and Worker battles verify
  // Browser context destruction releases the retained entry handles even if a diagnostic CDP read has stalled.
  t.after(async()=>{await host.close();await guest.close();});
  let code,match;
+ const serverDiagnostics=startMechanismServerDiagnostics();
+ t.after(()=>serverDiagnostics.stop());
  const readDiagnostic=async promise=>{
   let timer;
   try{return await Promise.race([promise,new Promise(resolve=>{timer=setTimeout(()=>resolve({diagnosticTimeoutMs:5000}),5000);})]);}
@@ -32,9 +36,11 @@ test('two sandbox-script players start without consent and Worker battles verify
   finally{clearTimeout(timer);}
  };
  try{
- await host.open();await host.enter('凯尔希');await host.click('.mode-card','同盟模拟');await host.click('.diff-card','标准模拟');await host.click('.create-box button','创建同盟');
+ await host.open();await observeMechanismBrowser(host);await host.enter('凯尔希');await configureMechanismGraphics(host);
+ await host.click('.mode-card','同盟模拟');await host.click('.diff-card','标准模拟');await host.click('.create-box button','创建同盟');
  code=(await host.waitFor(s=>!!s.room?.code,'room created')).room.code;
- await guest.open();await guest.enter('阿米娅');await guest.click('.join-row input');await guest.page.keyboard.type(code);await guest.click('.join-row button','加入同盟');await guest.page.waitForSelector('.room-screen');
+ await guest.open();await observeMechanismBrowser(guest);await guest.enter('阿米娅');await configureMechanismGraphics(guest);
+ await guest.click('.join-row input');await guest.page.keyboard.type(code);await guest.click('.join-row button','加入同盟');await guest.page.waitForSelector('.room-screen');
  await host.page.evaluate(()=>globalThis.__SP__.net.request('room.setPlugins',{plugins:[{id:'training'}]}));
  for(const c of [host,guest])await c.page.waitForFunction(()=>globalThis.__SP__.store.get().room?.content?.execution==='sandbox');
  await host.click('[data-testid="plugin-tag"]');
@@ -116,24 +122,34 @@ test('two sandbox-script players start without consent and Worker battles verify
  assert.deepEqual(battleIds.map(id=>finished.get(id)?.resultSource),['client','client'],'both captured battles were accepted from their real clients');
  assert.ok(last.verifyStats.checked>=2,'both real client results were re-simulated');
  assert.equal(last.verifyStats.rejected,0);assert.equal(last.verifyStats.mismatches,0);
+ console.log('Sandbox mechanism diagnostics:',JSON.stringify({parent:serverDiagnostics.snapshot(),
+  clients:await Promise.all([host,guest].map(async c=>({label:c.label,resources:mechanismResourceSnapshot(c),
+   browser:await readDiagnostic(readMechanismBrowser(c))})))}));
  assert.deepEqual(problemsOf([host,guest]),[],'no browser console, page or request errors');
  for(const c of [host,guest])assert.equal(await c.page.$('[data-testid="trusted-banner"]'),null);
  }catch(error){
   const room=code&&srv.lobby.getRoom(code),worker=match?.host;
   // Always retain the actual child-host failure, even before the first b.start. Print it before optional CDP/IPC.
   console.log('Sandbox failure:',String(error.stack||error));
-  console.log('Sandbox server failure:',JSON.stringify({serverLog,room:room&&{code,liveMatch:!!room.match,
+  console.log('Sandbox server failure:',JSON.stringify({serverLog,parent:serverDiagnostics.snapshot(),
+   browserObservations:[host,guest].map(c=>({label:c.label,resources:mechanismResourceSnapshot(c)})),room:room&&{code,liveMatch:!!room.match,
    sameMatch:room.match===match,lastSummary:room.lastSummary},match:match&&{hosted:match.hosted,started:match.started,
     ended:match.ended,disposed:match.disposed,pending:match.pending?.size},host:worker&&{ready:worker.ready,dead:worker.dead,
      lastBeat:worker.lastBeat,heartbeatAgeMs:Date.now()-worker.lastBeat,stderr:worker.stderr,
      child:worker.child&&{pid:worker.child.pid,connected:worker.child.connected,exitCode:worker.child.exitCode,signalCode:worker.child.signalCode}}}));
   console.log('Sandbox early-failure diagnostics:',JSON.stringify({server:match&&await readDiagnostic(match.diag()),
    clients:await Promise.all([host,guest].map(async c=>({label:c.label,problems:c.problems,
-    snapshot:c.page&&await readDiagnostic(c.page.evaluate(()=>{
+    snapshot:c.page&&await readDiagnostic(c.page.evaluate(async()=>{
+     const {errorLog,trafficSummary}=await import('/js/diag.js');
      const s=globalThis.__SP__?.store.get(),pub=s?.match.public,priv=s?.match.private;
+     let renderStats;
+     try{renderStats=globalThis.__SP_VIEW__?.raw?.stats?.();}catch(error){renderStats={diagnosticError:error.message};}
      return {room:s?.room,public:pub&&{phase:pub.phase,round:pub.round,deadline:pub.deadline,serverNow:pub.serverNow,
       players:pub.players,draft:pub.draft},private:priv&&{ready:priv.ready,canReady:priv.canReady,alive:priv.alive,
        personalChoice:priv.personalChoice},trace:globalThis.__SP_SANDBOX_E2E__,
+      workerDiagnostics:globalThis.__SP_MECHANISM_WORKERS__,errors:errorLog(),traffic:trafficSummary(),
+      graphics:JSON.parse(localStorage.getItem('sp.pref.settings')),
+      view:{kind:globalThis.__SP_VIEW__?.kind,stats:renderStats},
       content:globalThis.__SP_CONTENT__?.state(),stats:globalThis.__SP_RUNNER__?.stats(),state:globalThis.__SP_RUNNER__?.state(),
       toasts:[...document.querySelectorAll('.toast')].map(e=>e.textContent)};
     }))}))) }));

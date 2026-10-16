@@ -11,7 +11,11 @@ const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const repository = 'YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine';
 const branch = 'refs/heads/codex/rhine-030-browser-preflight';
 const runtimeVersion = 'v24.21.0';
-const files = ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js'];
+const pluginFiles = ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js'];
+const sixFiles = ['test/ui/six-player-balance.e2e.test.js'];
+const files = [...pluginFiles, ...sixFiles];
+const vanillaPattern = '^vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool$';
+const supportFiles = ['test/e2e/mechanismGraphics.mjs'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');
@@ -41,11 +45,14 @@ function validateInputs() {
     archiveName: 'Stronghold-Protocol-v0.3.0.zip', commit: 'c24e17eec3af1e6dedfa9935a6d15245cf2f4586',
     sha256: '5bf3cf3797902e8441aca211706630254c7ebb9636fa0baf301e6c179efcd5b7',
   });
-  for (const relative of [...files, '.github/scripts/rhine-release-archive.py']) {
+  for (const relative of [...files, ...supportFiles, '.github/scripts/rhine-release-archive.py']) {
     assert.ok(fs.statSync(path.join(source, relative)).isFile(), relative);
   }
-  return { diagnosticOnly: true, repository, branch, runtimeVersion, files, concurrency: 1,
+  return { diagnosticOnly: true, repository, branch, runtimeVersion, files, supportFiles, concurrency: 1,
     groupTimeoutMs: 600000, originalCaseDeadlinesAndAssertions: 'unchanged', resourceMode: 'complete verified old-then-upstream overlay',
+    groups: [{ name: 'plugins', files: pluginFiles, expectedTests: 2, testNamePattern: null },
+      { name: 'vanillaSix', files: sixFiles, expectedTests: 1, testNamePattern: vanillaPattern,
+        SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' }],
     flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
     noPublisherImport: true, noReleaseMutation: true, noDistributable: true, noDeployment: true };
@@ -199,28 +206,51 @@ async function main() {
   const tracked = command('git', ['status', '--porcelain', '--untracked-files=no']);
   assert.equal(tracked, '', 'Diagnostic checkout must start clean.');
   console.log(JSON.stringify({ ...plan, commit, platform: process.platform, arch: process.arch, node: process.version,
-    archiveHelperSha256: await sha(archiveHelper), files: await Promise.all(files.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))) }));
+    archiveHelperSha256: await sha(archiveHelper),
+    files: await Promise.all(files.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))),
+    supportFiles: await Promise.all(supportFiles.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))) }));
   const runtime = await prepareResources();
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Resource setup changed tracked source.');
   const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
     .map(directory => path.join(directory, 'Microsoft/Edge/Application/msedge.exe')).find(file => fs.existsSync(file));
   assert.ok(edge, 'Microsoft Edge is required, using the same lookup as the publisher.');
-  progress('Running only the two original plugin browser cases with complete resources and unchanged deadlines/assertions.');
-  const result = spawnSync(runtime.node, ['--test', '--test-reporter=spec', '--test-concurrency=1', ...files], {
-    ...quiet, cwd: source, timeout: plan.groupTimeoutMs, env: { ...process.env, ...plan.flags, CHROME_PATH: edge },
-  });
-  const output = (result.stdout || '') + (result.stderr || '');
-  fs.writeFileSync(path.join(root, 'browser-plugin-preflight.log'), output); console.log(output);
-  assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');
-  if (result.error) throw result.error;
-  assert.equal(result.status, 0, 'Diagnostic plugin browser cases failed; no release operation was attempted.');
-  const totals = {};
-  for (const key of ['tests', 'pass', 'fail', 'skipped']) {
-    const matches = [...output.matchAll(new RegExp(`^[ℹ#] ?${key} (\\d+)$`, 'gm'))];
-    assert.ok(matches.length, `Missing test total: ${key}`); totals[key] = Number(matches.at(-1)[1]);
+  const outcomes = [], failures = [];
+  for (const group of plan.groups) {
+    progress(`Running diagnostic group ${group.name}; original case deadlines/assertions remain unchanged.`);
+    const args = group.testNamePattern ? [`--test-name-pattern=${group.testNamePattern}`] : [];
+    const result = spawnSync(runtime.node, ['--test', '--test-reporter=spec', '--test-concurrency=1', ...args, ...group.files], {
+      ...quiet, cwd: source, timeout: plan.groupTimeoutMs,
+      env: { ...process.env, ...plan.flags, CHROME_PATH: edge,
+        SP_STUDIO: group.SP_STUDIO ?? plan.flags.SP_STUDIO,
+        ...(group.SP_E2E_SWIFTSHADER ? { SP_E2E_SWIFTSHADER: group.SP_E2E_SWIFTSHADER } : {}) },
+    });
+    const output = (result.stdout || '') + (result.stderr || '');
+    fs.writeFileSync(path.join(root, `browser-${group.name}-preflight.log`), output); console.log(output);
+    const outcome = { name: group.name, exitStatus: result.status, signal: result.signal, totals: {} };
+    outcomes.push(outcome);
+    try {
+      if (result.error) throw result.error;
+      for (const key of ['tests', 'pass', 'fail', 'skipped']) {
+        const matches = [...output.matchAll(new RegExp(`^[ℹ#] ?${key} (\\d+)$`, 'gm'))];
+        assert.ok(matches.length, `Missing test total: ${key}`); outcome.totals[key] = Number(matches.at(-1)[1]);
+      }
+      assert.equal(result.status, 0, `Diagnostic group ${group.name} failed.`);
+      assert.equal(outcome.totals.tests, group.expectedTests); assert.equal(outcome.totals.pass, group.expectedTests);
+      assert.equal(outcome.totals.fail, 0); assert.equal(outcome.totals.skipped, 0);
+      outcome.status = 'passed';
+    } catch (error) {
+      outcome.status = 'failed'; outcome.error = String(error?.stack || error);
+      failures.push({ name: group.name, error: outcome.error });
+    }
   }
-  assert.equal(totals.tests, 2); assert.equal(totals.pass, 2); assert.equal(totals.fail, 0); assert.equal(totals.skipped, 0);
-  progress(`Diagnostic-only acceptance passed: ${JSON.stringify(totals)}; no package, release or deployment was created.`);
+  const summary = { diagnosticOnly: true, commit, outcomes, failures };
+  fs.writeFileSync(path.join(root, 'native-browser-preflight-results.json'), JSON.stringify(summary, null, 2) + '\n');
+  console.log(JSON.stringify(summary));
+  assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');
+  assert.equal(failures.length, 0, 'Diagnostic browser cases failed; no release operation was attempted.');
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.tests, 0), 3);
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.pass, 0), 3);
+  progress('Diagnostic-only acceptance passed: 3 tests, 3 pass; no package, release or deployment was created.');
 }
 
 await main();
