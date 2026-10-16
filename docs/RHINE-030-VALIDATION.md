@@ -277,3 +277,11 @@ Linux 采样未覆盖新文档最初 1.349 秒，Windows 采样窗口从导航�
 该 2D 机制路径唯一 Linux 完整专项实际 **1／1 通过、0 失败／跳过／取消**，113.666 秒（个测 113.035 秒）：三份真实正常上传及 Node 精确重放、三端 R2 runner errors=0、两次 reload 的 Context／身份／cookie／localStorage／sessionStorage 隔离、原最终 Canvas 等待、所有文档可见／RAF 历史及最终页面／资源／服务器零错误门槛均越过。末段三页均 actual kind=engine、renderer=true、contextLost=false、board3dOn=false、单张 connected 1280×720 Canvas、fieldWarnings=[]。94 是静态断言调用表达式计数，不冒称 Windows 专属调度分支或 catch 诊断分支在 Linux 执行；该平台所有适用门槛实际完整通过。四份源码 SHA 前后一致、CPU 标志 unset／日志无采样，浏览器及 FastServer 实际退出。这个通过不改写之前两平台默认 3D 路径的失败。
 
 [Windows 机制专项 38918125810](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38918125810) 的同一冻结源码随后实际 **1／1 通过、0 失败／跳过／取消**，125.964 秒（个测 125.027 秒）。真实原版／扩展切换、三端普通战斗上传与 Node 精确重放、R2 runner 零错误、两次实际 reload 隔离、原 Canvas 等待、最终 engine／实际 2D 棋盘及页面／资源／服务器零错误门槛均完成；Windows 适用的真实归属／优先级断言也依源码执行。原始日志 SHA256 `e9c76f78393c011266048bbcb4c5c24261dc3f8a4499c39a3366cd1ac11bd403`，不含 CPUProfiler 采样。Studio 的相同 `95ac02af` 第一例此前真实 Windows 已过；新不可变候选仍必须重新执行全部 48 个浏览器用例及完整包、升级、私配和附件尾段，两个专项不能代替这些门槛。默认 3D 多页面软件渲染冷启动的旧失败继续保留。
+
+### 本次发布频道与最终决定
+
+用户在获知默认 3D 冷启动限制后明确选择先发布，本次 `v0.3.0-rhine.8` 采用 **测试版／prerelease**，建议使用现有 `/?board=2d`。停止继续修默认 3D，不把这一已接受限制作为本轮发行阻断，也不声称原 3D 全过。发布请求明确 `prerelease=true`、`makeLatest=false`；草稿与公开发布均校验频道，发布后按 ID 核对测试版、确认稳定 latest 不变，并验证稳定联网更新继续拒绝测试版。正式稳定版用户不会自动升级至此测试版。
+
+完整安装包、原生 Windows 2D／已通过机制、实际旧 `.6` 升级、六类私配及本地文件保留、重复更新、回滚、五附件重下哈希及源码一致性门槛全部保留。测试版升级使用已解压新包的 `更新旧版.bat --offline --source 新包目录 --target 旧安装目录`，不建议运行旧安装的普通联网更新来获取 prerelease。本轮所有旧标签与失败日志保留；尚未推送的本地 `.8` 标签将在发布频道收尾后固定至最终源码，已发布标签不变。
+
+频道保护纯测试 **12／12** 通过，另与现有在线更新完整文件合跑 **40 项／37 通过／0 失败／3 Windows 专用跳过／0 取消**，507.465 毫秒；没有放宽联网更新器对 prerelease 的拒绝。三个 Windows 跳过仍需在真实 Windows 包回归执行。频道测试明确覆盖测试版禁止晋升 latest、稳定 latest 身份保留、错源码／标签／频道和非法字段；发布工作流在创建草稿前强制执行该测试。频道收尾不改变已通过 Windows／Linux 2D 专项的 13 份应用与夹具字节，不再为默认 3D 启动任何修复或重试。

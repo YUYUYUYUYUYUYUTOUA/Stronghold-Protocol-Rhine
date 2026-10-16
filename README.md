@@ -1,6 +1,8 @@
 # 卫戍协议：阵营拓展 · Stronghold Protocol: Faction Expansion
 
-当前扩展版本：**v0.3.0-rhine.3**。
+当前扩展版本：**v0.3.0-rhine.8 测试版（prerelease）**。
+
+本版建议使用 **2D 棋盘**：在游戏地址后加 `/?board=2d`。默认 3D 在软件渲染、多页面刷新验收中仍有初始化超时，尚未修复。稳定版联网更新不会自动安装此测试版；已有 `.6` 安装请下载并解压本测试包，按[离线更新说明](docs/RHINE-UPDATE.md#命令行离线更新与回退)保留配置升级。
 
 本仓库是 [sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) 的**非官方阵营拓展 fork**（莱茵生命、卡兹戴尔、雷姆必拓），基于上游 **v0.3.0**，固定官方发布标签（提交 [`c24e17ee`](https://github.com/sganggs/Stronghold-Protocol/commit/c24e17eec3af1e6dedfa9935a6d15245cf2f4586)），本次扩展修改日期为 **2026-10-16**。原项目的开发成果与署名保留；本扩展由 [YUYUYUYUYUYUYUTOUA](https://github.com/YUYUYUYUYUYUYUTOUA) 维护，不代表上游作者或《明日方舟》官方。正式开发分支为 `codex/rhine-upstream-021`；后续常规更新直接在该分支维护。
 

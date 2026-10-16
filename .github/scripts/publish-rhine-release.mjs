@@ -6,10 +6,12 @@ import { availableParallelism, constants as osConstants, getPriority, setPriorit
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { releaseChannel, verifyPublishedChannel } from './rhine-release-channel.mjs';
 
 const automation = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workspace = path.dirname(automation);
 const request = JSON.parse(fs.readFileSync(path.join(automation, '.github/rhine-release-request.json'), 'utf8'));
+const publicationChannel = releaseChannel(request);
 const repo = process.env.GITHUB_REPOSITORY;
 const root = path.join(process.env.RUNNER_TEMP || workspace, 'rhine-release');
 const source = path.join(workspace, 'source');
@@ -172,7 +174,7 @@ async function main() {
       assert.ok(matches.length <= 1, 'Ambiguous release drafts; refusing to create another.');
       const created = matches[0] || JSON.parse(command('gh', ['api', '--method', 'POST', `repos/${repo}/releases`, '--input', '-'], {
         input: JSON.stringify({ tag_name: request.tag, target_commitish: request.sourceCommit,
-          name: request.releaseName || `${request.tag} · 莱茵与卡兹戴尔扩展`, body: request.releaseNotes, draft: true, prerelease: false }),
+          name: request.releaseName || `${request.tag} · 莱茵与卡兹戴尔扩展`, body: request.releaseNotes, draft: true, prerelease: publicationChannel.prerelease }),
       }));
       assert.equal(created.draft, true);
       request.draftReleaseId = created.id;
@@ -180,6 +182,8 @@ async function main() {
   }
   const draft = api(`releases/${request.draftReleaseId}`);
   assert.equal(draft.tag_name, request.tag);
+  assert.equal(draft.target_commitish, request.sourceCommit);
+  assert.equal(draft.prerelease, publicationChannel.prerelease, 'An existing release must have the requested publication channel.');
   const tag = api(`git/ref/tags/${request.tag}`);
   assert.equal(tag.object.type, 'commit');
   assert.equal(tag.object.sha, request.sourceCommit);
@@ -518,6 +522,7 @@ async function main() {
   fs.writeFileSync(path.join(assets, 'SHA256SUMS.txt'), `${archiveSha}  ${archiveName}\n`);
   fs.writeFileSync(path.join(assets, 'UPDATE-TOOL-SHA256.txt'), `${toolSha}  ${toolName}\n`);
   const report = { ...request.sourceValidation, createdAt: new Date().toISOString(), sourceCommit: request.sourceCommit,
+    releaseChannel: { prerelease: publicationChannel.prerelease, makeLatest: publicationChannel.make_latest === 'true' },
     approvedArt: request.approvedArt || {},
     remOriginal: request.remOriginal || null,
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
@@ -563,17 +568,28 @@ async function main() {
   }
   const body = uploaded.body.replace(/本次在 Linux 环境[^\n]+/, `本次使用包内 Node.js ${request.runtimeVersion} 验证原生 Windows 服务与回归：${tests.pass} 项通过、${tests.skipped} 项条件跳过、0 失败；HTTP／WebSocket 和全量文件校验通过。交互式浏览器／BAT 启动未作人工验收。`);
   const publication = path.join(root, 'publication.json');
-  fs.writeFileSync(publication, JSON.stringify({ draft: false, prerelease: false, make_latest: 'true', target_commitish: request.sourceCommit, body }));
+  const beforeLatest = api('releases/latest');
+  fs.writeFileSync(publication, JSON.stringify({ draft: false, ...publicationChannel, target_commitish: request.sourceCommit, body }));
   command('gh', ['api', '--method', 'PATCH', `repos/${repo}/releases/${request.draftReleaseId}`, '--input', publication]);
-  const latest = api('releases/latest');
-  assert.equal(latest.tag_name, request.tag); assert.equal(latest.draft, false); assert.equal(latest.prerelease, false);
+  const published = api(`releases/${request.draftReleaseId}`), latest = api('releases/latest');
+  const channelEvidence = verifyPublishedChannel({ published, beforeLatest, afterLatest: latest, request });
+  console.log('Verified publication channel:', JSON.stringify(channelEvidence));
   const online = await import(pathToFileURL(path.join(source, 'scripts/rhine-online-update.mjs')));
   const selected = online.selectRelease(latest);
-  assert.equal(selected.tag, request.tag); assert.equal(selected.commit, request.sourceCommit);
-  assert.equal(selected.zip.sha256, archiveSha);
+  if (publicationChannel.prerelease) {
+    assert.throws(() => online.selectRelease(published), /测试版/, 'Stable online updating must reject this prerelease.');
+    assert.notEqual(selected.tag, request.tag);
+    console.log(`Published prerelease and verified: ${published.html_url}; stable online updater remains at ${selected.tag} (${selected.commit}).`);
+  } else {
+    assert.equal(selected.tag, latest.tag_name);
+    if (publicationChannel.make_latest === 'true') {
+      assert.equal(selected.tag, request.tag); assert.equal(selected.commit, request.sourceCommit);
+      assert.equal(selected.zip.sha256, archiveSha);
+    }
+    console.log(`Published and verified: ${published.html_url}; online updater selects ${selected.tag} at ${selected.commit}`);
+  }
   assert.equal(online.parseChecksum(fs.readFileSync(path.join(downloaded, 'SHA256SUMS.txt'), 'utf8'), archiveName), archiveSha);
-  assert.equal(latest.assets.length, 5);
-  console.log(`Published and verified: ${latest.html_url}; online updater selects ${selected.tag} at ${selected.commit}`);
+  assert.equal(published.assets.length, 5);
 }
 try {
   await main();
