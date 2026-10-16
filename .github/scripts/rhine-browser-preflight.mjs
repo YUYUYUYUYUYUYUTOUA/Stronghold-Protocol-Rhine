@@ -12,12 +12,11 @@ const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const repository = 'YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine';
 const branch = 'refs/heads/codex/rhine-030-browser-preflight';
 const runtimeVersion = 'v24.21.0';
-const pluginFiles = ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js'];
 const sixFiles = ['test/ui/six-player-balance.e2e.test.js'];
-const files = [...pluginFiles, ...sixFiles];
+const files = sixFiles;
 const vanillaPattern = '^vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool$';
 const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
-  'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
+  'test/e2e/sixWarmupObserver.mjs', 'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');
@@ -52,8 +51,8 @@ function validateInputs() {
   }
   return { diagnosticOnly: true, repository, branch, runtimeVersion, files, supportFiles, concurrency: 1,
     groupTimeoutMs: 600000, originalCaseDeadlinesAndAssertions: 'unchanged', resourceMode: 'complete verified old-then-upstream overlay',
-    groups: [{ name: 'plugins', files: pluginFiles, expectedTests: 2, testNamePattern: null },
-      { name: 'vanillaSix', files: sixFiles, expectedTests: 1, testNamePattern: vanillaPattern,
+    scope: 'Only the remaining failed vanilla six-player leaf. The two plugin cases passed in run38894407571 and are not rerun here.',
+    groups: [{ name: 'vanillaSix', files: sixFiles, expectedTests: 1, testNamePattern: vanillaPattern,
         SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' }],
     flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
@@ -286,9 +285,9 @@ async function main() {
   console.log(JSON.stringify(summary));
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');
   assert.equal(failures.length, 0, 'Diagnostic browser cases failed; no release operation was attempted.');
-  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.tests, 0), 3);
-  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.pass, 0), 3);
-  progress('Diagnostic-only acceptance passed: 3 tests, 3 pass; no package, release or deployment was created.');
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.tests, 0), 1);
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.pass, 0), 1);
+  progress('Diagnostic-only vanilla six-player acceptance passed: 1 test, 1 pass; no package, release or deployment was created.');
 }
 
 await main();

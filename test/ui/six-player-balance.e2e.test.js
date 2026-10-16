@@ -5,10 +5,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
-import { getPriority, setPriority } from 'node:os';
+import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, cameraSettled, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
 import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
+import { observeSixWarmup, readSixWarmup } from '../e2e/sixWarmupObserver.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { bossPoolHp } from '../../server/match/finalAssault.js';
@@ -35,23 +36,41 @@ const inventory = c => c.page.evaluate(() => {
 async function openClient(client, query) {
   await client.open(query);
   await observeMechanismVisibility(client);
+  await observeSixWarmup(client);
   client.fieldWarnings = [];
   client.page.on('console', message => {
     if (message.type() === 'warn' && message.text().startsWith('[field]')) client.fieldWarnings.push(message.text());
   });
   if (!SOFTWARE_GPU || !['win32', 'linux'].includes(process.platform)) return;
-  // Hosted Windows jobs inherit BelowNormal, but Chromium raises its GPU process
-  // to AboveNormal: align this browser's owned GPU with the fixture there. On a
-  // four-core Linux runner six SwiftShader GPUs also compete with the real IPC
-  // and simulation Workers: give only their rendering tasks nice +15. Linux nice
+  // Prefer real simulation/IPC over this fixture's software rendering: the test
+  // Node remains NORMAL on Windows; only its owned GPU is BELOW_NORMAL. On a
+  // four-core Linux runner give only the owned rendering tasks nice +15. Linux nice
   // is per-thread, so cover the owned GPU's existing threads too; new threads
   // inherit it. The Node/server/renderer/Worker priorities and rendering stay intact.
   const cdp = await client.browser.target().createCDPSession();
   try {
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
+    const browserPid = client.browser.process()?.pid;
+    assert.ok(Number.isInteger(browserPid), 'the fixture owns its shared browser process');
+    assert.ok(processInfo.some(p => /^browser$/i.test(p.type) && p.id === browserPid), 'CDP confirms this browser ownership');
     const gpuProcesses = processInfo.filter(p => /gpu/i.test(p.type));
     assert.equal(gpuProcesses.length, 1, 'one owned browser GPU process');
-    const priority = process.platform === 'linux' ? 15 : getPriority(process.pid);
+    const priority = process.platform === 'linux' ? 15 : osConstants.priority.PRIORITY_BELOW_NORMAL;
+    const owned = processInfo.filter(p => /^(?:browser|renderer|gpu)$/i.test(p.type));
+    const priorities = () => owned.map(p => {
+      try { return { pid: p.id, type: p.type, priority: getPriority(p.id) }; }
+      catch (error) {
+        if (error.info?.code !== 'ESRCH') throw error;
+        return { pid: p.id, type: p.type, exitedDuringObservation: true };
+      }
+    });
+    const before = process.platform === 'win32' ? priorities() : null;
+    if (process.platform === 'win32') {
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL, 'the Windows test Node remains NORMAL');
+      assert.equal(priority, 10, 'Windows BELOW_NORMAL is the owned GPU target');
+      console.log('Six Windows owned priorities before:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: before }));
+    }
     for (const gpu of gpuProcesses) {
       setPriority(gpu.id, priority);
       if (process.platform === 'linux') {
@@ -69,6 +88,18 @@ async function openClient(client, query) {
       }
       assert.equal(getPriority(gpu.id), priority, 'owned software GPU has the requested rendering priority');
       console.log(`Six-client owned GPU priority: pid=${gpu.id}, priority=${getPriority(gpu.id)}`);
+    }
+    if (process.platform === 'win32') {
+      const after = priorities();
+      console.log('Six Windows owned priorities after:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: after }));
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL);
+      for (const [index, p] of after.entries()) {
+        if (/^gpu$/i.test(p.type)) assert.equal(p.priority, priority, 'only the owned GPU has the rendering target');
+        else if (!p.exitedDuringObservation && !before[index].exitedDuringObservation) {
+          assert.equal(p.priority, before[index].priority, 'the browser and renderer priorities remain unchanged');
+        }
+      }
     }
   } finally { await cdp.detach(); }
 }
@@ -482,10 +513,11 @@ async function failureSnapshot(client) {
             resultSent: entry.resultSent, ticks: entry.battle?.tickCount, time: entry.battle?.time, pending: entry.host?.pending?.size,
           })), beacon: globalThis.__sixBeacon, requests: globalThis.__e2eReq };
       }).then(snapshot => ({ ...snapshot, fieldWarnings: client.fieldWarnings,
-        beacon: snapshot.beacon && { ...snapshot.beacon, waits: client.beaconWaits } })),
-      new Promise(resolve => { timer = setTimeout(() => resolve({ label: client.label, diagnostic: 'page did not answer within 5 s' }), 5000); timer.unref(); }),
+        warmupRpc: readSixWarmup(client), beacon: snapshot.beacon && { ...snapshot.beacon, waits: client.beaconWaits } })),
+      new Promise(resolve => { timer = setTimeout(() => resolve({ label: client.label,
+        diagnostic: 'page did not answer within 5 s', warmupRpc: readSixWarmup(client) }), 5000); timer.unref(); }),
     ]);
-  } catch (error) { return { label: client.label, diagnostic: error.message }; }
+  } catch (error) { return { label: client.label, diagnostic: error.message, warmupRpc: readSixWarmup(client) }; }
   finally { clearTimeout(timer); }
 }
 
@@ -578,7 +610,10 @@ for (const rhineEnabled of [true, false]) {
         }
         assert.equal(authoritativeUploads, 3, 'all three pair fields uploaded and replayed');
         await last.shot('result-compact');
-        for (const client of clients) await assertMechanismVisibility(client);
+        for (const client of clients) {
+          console.log('Six actual warmup RPCs:', JSON.stringify({ client: client.label, trace: readSixWarmup(client) }));
+          await assertMechanismVisibility(client);
+        }
         assert.deepEqual(problemsOf(clients), [], 'no page, console or resource errors');
         assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), []);
       } catch (error) {
