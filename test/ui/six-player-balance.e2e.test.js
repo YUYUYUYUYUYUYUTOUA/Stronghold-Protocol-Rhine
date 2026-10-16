@@ -4,10 +4,10 @@
 // SP_E2E=1 CHROME_PATH=... node --test test/ui/six-player-balance.e2e.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { getPriority, setPriority } from 'node:os';
 import path from 'node:path';
-import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
+import { Client, ROOT, cameraSettled, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { bossPoolHp } from '../../server/match/finalAssault.js';
@@ -33,36 +33,70 @@ const inventory = c => c.page.evaluate(() => {
 
 async function openClient(client, query) {
   await client.open(query);
-  if (!SOFTWARE_GPU || process.platform !== 'win32') return;
+  client.fieldWarnings = [];
+  client.page.on('console', message => {
+    if (message.type() === 'warn' && message.text().startsWith('[field]')) client.fieldWarnings.push(message.text());
+  });
+  if (!SOFTWARE_GPU || !['win32', 'linux'].includes(process.platform)) return;
   // Hosted Windows jobs inherit BelowNormal, but Chromium raises its GPU process
-  // to AboveNormal. Six software GPUs can then starve the real server/network.
-  // Match this fixture's priority, only for the GPU owned by this browser.
+  // to AboveNormal: align this browser's owned GPU with the fixture there. On a
+  // four-core Linux runner six SwiftShader GPUs also compete with the real IPC
+  // and simulation Workers: give only their rendering tasks nice +15. Linux nice
+  // is per-thread, so cover the owned GPU's existing threads too; new threads
+  // inherit it. The Node/server/renderer/Worker priorities and rendering stay intact.
   const cdp = await client.browser.target().createCDPSession();
   try {
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
     const gpuProcesses = processInfo.filter(p => /gpu/i.test(p.type));
     assert.equal(gpuProcesses.length, 1, 'one owned browser GPU process');
-    const priority = getPriority(process.pid);
+    const priority = process.platform === 'linux' ? 15 : getPriority(process.pid);
     for (const gpu of gpuProcesses) {
       setPriority(gpu.id, priority);
-      assert.equal(getPriority(gpu.id), priority, 'software GPU shares the fixture priority');
+      if (process.platform === 'linux') {
+        for (let pass = 0; pass < 2; pass++) {
+          for (const task of readdirSync(`/proc/${gpu.id}/task`)) {
+            try {
+              setPriority(Number(task), priority);
+              assert.equal(getPriority(Number(task)), priority, 'owned software GPU thread has the requested rendering priority');
+            } catch (error) {
+              if (error.info?.code === 'ESRCH' && !existsSync(`/proc/${gpu.id}/task/${task}`)) continue; // a shader/compiler thread already exited
+              throw error;
+            }
+          }
+        }
+      }
+      assert.equal(getPriority(gpu.id), priority, 'owned software GPU has the requested rendering priority');
+      console.log(`Six-client owned GPU priority: pid=${gpu.id}, priority=${getPriority(gpu.id)}`);
     }
   } finally { await cdp.detach(); }
 }
 
 async function lowQuality(client) {
   await client.click('[data-testid="settings-btn"]');
-  await client.click('.set-seg button', '低');
+  await client.page.waitForSelector('.modal .set-list');
+  // The added 0.3 settings put quality below the fold, even on the host's 720p
+  // viewport. Reveal its actual radio before using the same real mouse input.
+  await client.page.$eval('.modal .set-list', list => {
+    const low = [...list.querySelectorAll('button[role="radio"]')].find(button => button.textContent.trim() === '低');
+    if (!low) throw new Error('the low-quality radio is missing from settings');
+    low.scrollIntoView({ block: 'center' });
+  });
+  await client.click('.modal button[role="radio"]', '低');
+  assert.equal(await client.page.$eval('.modal .set-list', list =>
+    [...list.querySelectorAll('button[role="radio"]')].find(button => button.textContent.trim() === '低').getAttribute('aria-checked')), 'true');
   await client.click('.modal__actions button', '完成');
   assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).quality), 'low');
 }
 
 async function warmClient(client, enabled) {
-  // Finish each real cold import while still in the room, before six boards render
-  // simultaneously. This is a readiness barrier, not a substituted simulator/data set.
+  // Finish each room's real module/content lookup before six boards render
+  // simultaneously. A gameplay profile still creates its real isolated Worker at battle start.
   await client.page.waitForFunction(enabled => globalThis.__SP__.store.get().ui.dataReady
     && globalThis.__SP__.data.profileId === (enabled ? 'rhine' : 'vanilla'), { timeout: 30000 }, enabled);
-  await client.page.evaluate(enabled => globalThis.__SP_RUNNER__.ensureSim(enabled).then(() => true), enabled);
+  await client.page.evaluate(enabled => {
+    const cs = globalThis.__SP__.store.get().room?.content?.cs ?? null;
+    return globalThis.__SP_RUNNER__.ensureSim(cs, enabled).then(() => true);
+  }, enabled);
 }
 
 async function createSixHumanRoom(clients, rhineEnabled) {
@@ -128,33 +162,67 @@ async function createSixHumanRoom(clients, rhineEnabled) {
     await sleep(100);
   }
   assert.equal(picked.size, 6, 'six humans selected through actual draft controls');
-  for (const client of clients) await client.waitFor(s => s.phase === 'PREP' && s.round === 14 && !s.ready, 'R14 prep');
+  await Promise.all(clients.map(client => client.waitFor(s => s.phase === 'PREP' && s.round === 14 && !s.ready, 'R14 prep')));
 }
 
 async function recordCombat(client) {
-  await client.page.evaluate(() => {
+  await client.page.evaluate(async () => {
     const copy = value => JSON.parse(JSON.stringify(value));
-    const trace = globalThis.__sixBalance = { starts: [], pools: [], uploads: [], errors: [], byBattle: {}, localPools: {}, phases: [] };
+    const trace = globalThis.__sixBalance = { starts: [], ends: [], pools: [], uploads: [], errors: [], byBattle: {}, localPools: {}, phases: [], states: [] };
+    const remoteHosts = new Map();
     // Capture the real local pool when its field is shown. At accelerated combat speed,
     // RESULT may clear runner entries before the six clients are inspected sequentially.
     const runner = globalThis.__SP_RUNNER__;
     runner.on('field', () => {
       for (const entry of runner._entries.values()) {
-        if (entry.own && entry.battle?.sharedBoss) trace.localPools[entry.battleId] = entry.battle.sharedBoss.maxHp;
+        if (!entry.own || !entry.battle?.sharedBoss) continue;
+        // A Worker exposes its actual Battle snapshot, rather than the engine's
+        // LocalBossPool object. Both paths read the pool the simulation built.
+        trace.localPools[entry.battleId] = entry.host.remote
+          ? entry.host.packet?.snap?.boss?.max : entry.battle.sharedBoss.maxHp;
       }
+    });
+    // Worker syncPool is an ordered RPC. Observe its completion after any pending
+    // step, so replay applies each real pool update at the tick it reached there.
+    const { WorkerSimHost } = await import('/js/battle/simHost.js');
+    const start = WorkerSimHost.prototype.start;
+    WorkerSimHost.prototype.start = async function (spec) {
+      remoteHosts.set(spec.battleId, this);
+      const value = await start.call(this, spec);
+      trace.localPools[spec.battleId] = this.packet?.snap?.boss?.max;
+      return value;
+    };
+    const syncPool = WorkerSimHost.prototype.syncPool;
+    WorkerSimHost.prototype.syncPool = async function (hp, acked) {
+      const value = await syncPool.call(this, hp, acked);
+      if (!this.stopped && this.spec?.battleId && Number.isInteger(this.battle.tickCount)) {
+        (trace.byBattle[this.spec.battleId] ||= []).push({ tick: this.battle.tickCount, hp, acked });
+      }
+      return value;
+    };
+    let stateKey = null;
+    runner.on('state', state => {
+      const key = JSON.stringify([state?.battleId, state?.loading, state?.authoritative, state?.done]);
+      if (key === stateKey) return;
+      stateKey = key;
+      trace.states.push({ at: performance.now(), state: copy(state), entries: [...runner._entries.values()].map(entry => ({
+        battleId: entry.battleId, own: entry.own, remote: entry.host?.remote, authoritative: entry.authoritative,
+        ticks: entry.battle?.tickCount, time: entry.battle?.time, pending: entry.host?.pending?.size,
+      })) });
     });
     const net = globalThis.__SP__.net;
     net.on('*', msg => {
-      if (['m.public', 'b.start', 'b.end'].includes(msg.t)) trace.phases.push({ type: msg.t,
+      if (['m.public', 'b.start', 'b.end'].includes(msg.t)) trace.phases.push({ at: performance.now(), type: msg.t,
         phase: globalThis.__SP__.store.get().match.public?.phase, runner: runner.state() });
       if (msg.t === 'b.start') trace.starts.push(copy(msg));
-      if (msg.t === 'error') trace.errors.push({ code: msg.code, detail: msg.detail });
+      if (msg.t === 'b.end') trace.ends.push({ at: performance.now(), message: copy(msg) });
+      if (msg.t === 'error') trace.errors.push({ at: performance.now(), phase: globalThis.__SP__.store.get().match.public?.phase, ...copy(msg) });
       if (msg.t === 'b.pool') {
         trace.pools.push(copy(msg));
-        // The real runner has already applied the pool message synchronously. Record its exact
-        // simulation tick so server-side replay can apply the same external shared-pool updates.
+        // The in-page host applied this synchronously; Worker application is
+        // recorded by the real RPC completion observer above.
         for (const entry of globalThis.__SP_RUNNER__?._entries?.values() || []) {
-          if (!entry.own || !entry.battle || entry.resultSent) continue;
+          if (!entry.own || !entry.battle || entry.resultSent || entry.host.remote) continue;
           (trace.byBattle[entry.battleId] ||= []).push({ tick: entry.battle.tickCount,
             hp: msg.hp, acked: msg.acked?.[entry.fieldId] });
         }
@@ -164,7 +232,10 @@ async function recordCombat(client) {
     net._sendRaw = msg => {
       if (msg.t === 'b.result') {
         const entry = globalThis.__SP_RUNNER__?._entries?.get(msg.battleId);
-        trace.uploads.push({ message: copy(msg), tick: entry?.battle?.tickCount,
+        // A real Worker can finish and upload during prepare(), before the
+        // runner registers its entry for display. Read that same actual host.
+        const battle = entry?.battle || remoteHosts.get(msg.battleId)?.battle;
+        trace.uploads.push({ message: copy(msg), tick: battle?.tickCount,
           pools: copy(trace.byBattle[msg.battleId] || []) });
       }
       return send(msg);
@@ -180,16 +251,108 @@ async function useAwardedBeacon(clients) {
   await host.page.waitForFunction(uid => !!globalThis.__SP_VIEW__?.pieceScreenRect(uid), {}, beacon.uid);
   await sleep(1500); // real prep camera and entrance banner finish their flight
   await host.hookRequests();
-  const from = await host.piecePoint(beacon.uid), to = await host.tilePoint(core.row, core.col);
-  assert.ok(from && to, 'beacon and core tile have real canvas coordinates');
-  await host.page.mouse.click(from.x, from.y);
+  await host.page.evaluate(async () => {
+    const { serverNow } = await import('/js/store.js');
+    const trace = globalThis.__sixBeacon = { errors: [], replies: [], checkpoints: [] };
+    trace.mark = stage => {
+      const pub = globalThis.__SP__.store.get().match.public, now = serverNow();
+      trace.checkpoints.push({ stage, at: Date.now(), phase: pub.phase, round: pub.round, serverNow: now,
+        wireServerNow: pub.serverNow, deadline: pub.deadline, remainingSeconds: Math.max(0, (pub.deadline - now) / 1000) });
+    };
+    trace.mark('before-detail');
+    globalThis.__SP__.net.on('*', msg => {
+      if (msg.t === 'error') trace.errors.push({ at: performance.now(), ...msg });
+      if (msg.t === 'ok') trace.replies.push({ at: performance.now(), ...msg });
+    });
+  });
+  const detailPoint = await host.piecePoint(beacon.uid);
+  assert.ok(detailPoint, 'beacon has real field coordinates');
+  await host.page.mouse.click(detailPoint.x, detailPoint.y);
   await host.page.waitForFunction(() => document.querySelector('.dpanel')?.textContent.includes('信标'));
   assert.match(await host.page.$eval('.dpanel', panel => panel.textContent), /第14回合六人补给信标.*使用后立即转赠/,
     'the actual awarded item detail explains its special R14 delivery timing');
   await host.shot('beacon-detail');
-  await host.drag(from, to, { midShot: 'beacon-drag' });
-  await host.page.waitForFunction(() => !!globalThis.__SP__.store.get().match.private?.shop?.rewardOffer, { timeout: 10000 });
-  assert.equal((await host.requests('g.equip')).length, 1, 'one equipment request originated from the real drag');
+  // Opening the detail and picking an item can reframe the board. Read its real
+  // position now, then aim at the intended board tile again after the drag fold.
+  const from = await host.piecePoint(beacon.uid), to = await host.tilePoint(core.row, core.col);
+  assert.ok(from && to, 'beacon and core tile have real field coordinates after opening the detail');
+  await host.drops();
+  const geometry = await host.page.evaluate(coords => {
+    // Both production views expose tileScreen; only the engine has debug.app.
+    // Inspect the surface already mounted, without selecting a render backend.
+    const view = globalThis.__SP_VIEW__;
+    const selector = view.kind === 'engine' ? '.gm canvas' : view.kind === 'fallback' ? '.gm .ff-board' : null;
+    const surface = selector && document.querySelector(selector);
+    if (!surface) throw new Error(`the actual ${view.kind} field surface is missing`);
+    const rect = surface.getBoundingClientRect();
+    const inside = p => p.x >= rect.left && p.x < rect.right && p.y >= rect.top && p.y < rect.bottom;
+    const hit = p => { const el = document.elementFromPoint(p.x, p.y); return el && { tag: el.tagName, class: el.className }; };
+    globalThis.__sixBeacon.coords = { ...coords, kind: view.kind,
+      surface: { selector, left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      selectedUid: document.querySelector('.uframe')?.getAttribute('data-uid'), sourceHit: hit(coords.from), targetHit: hit(coords.to) };
+    globalThis.__sixBeacon.mark('after-detail-shot');
+    return { sourceInside: inside(coords.from), targetInside: inside(coords.to), kind: view.kind,
+      surface: globalThis.__sixBeacon.coords.surface };
+  }, { detailPoint, from, to, core: { uid: core.uid, row: core.row, col: core.col } });
+  console.log(`${host.label}: real beacon field geometry ${JSON.stringify(geometry)}; fieldWarnings=${JSON.stringify(host.fieldWarnings)}`);
+  assert.ok(geometry.sourceInside && geometry.targetInside, 'the real item and intended board tile are inside the actual field surface');
+  try {
+    // Keep three actual pickup moves and one final move. Each CDP input waits for
+    // the software-rendered page; extra interpolation must not consume the prep.
+    const releasedAt = await host.drag(from, to, { steps: 4, retarget: async () => {
+      // Preserve the real held-item screenshot before the final coordinate read:
+      // a slow GPU readback must not leave a stale target while the camera folds.
+      await host.shot('beacon-drag');
+      await cameraSettled(host.page);
+      const point = await host.page.evaluate(({ row, col }) => {
+        const view = globalThis.__SP_VIEW__, p = view.raw.tileScreen(row, col);
+        const selector = view.kind === 'engine' ? '.gm canvas' : view.kind === 'fallback' ? '.gm .ff-board' : null;
+        const surface = selector && document.querySelector(selector);
+        if (!surface) throw new Error(`the actual ${view.kind} field surface is missing after pickup`);
+        const rect = surface.getBoundingClientRect();
+        globalThis.__sixBeacon.mark('retarget-after-midshot');
+        const target = p && { x: p.x, y: p.y, kind: view.kind,
+          surface: { selector, left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+          inside: p.x >= rect.left && p.x < rect.right && p.y >= rect.top && p.y < rect.bottom };
+        globalThis.__sixBeacon.retarget = target;
+        return target;
+      }, { row: core.row, col: core.col });
+      assert.ok(point?.inside && Number.isFinite(point.x) && Number.isFinite(point.y),
+        'the intended core tile remains inside the actual field surface after the real drag fold');
+      return { x: point.x, y: point.y };
+    } });
+    await host.page.evaluate(point => { globalThis.__sixBeacon.releasedAt = point; globalThis.__sixBeacon.mark('after-release'); }, releasedAt);
+    await host.page.waitForFunction(() => !!globalThis.__SP__.store.get().match.private?.shop?.rewardOffer, { timeout: 10000 });
+    const requests = await host.requests('g.equip');
+    assert.equal(requests.length, 1, 'one equipment request originated from the real drag');
+    assert.equal(requests[0][1].itemUid, beacon.uid, 'the real drag uses the awarded beacon');
+    assert.equal(requests[0][1].targetUid, core.uid, 'the real drag targets the intended six-tier operator');
+  } catch (error) {
+    // A failed/closed renderer must not replace the actual input/assertion error
+    // with another CDP failure, or spend the protocol timeout on diagnostics.
+    let diagnostic, timer;
+    try {
+      diagnostic = await Promise.race([
+        host.page.evaluate(() => {
+          const state = globalThis.__SP__.store.get(), priv = state.match.private;
+          const kind = globalThis.__SP_VIEW__?.kind;
+          const selector = kind === 'engine' ? '.gm canvas' : kind === 'fallback' ? '.gm .ff-board' : null;
+          const surface = selector && document.querySelector(selector), rect = surface?.getBoundingClientRect();
+          globalThis.__sixBeacon.mark('failed');
+          return { trace: globalThis.__sixBeacon, requests: globalThis.__e2eReq, drops: globalThis.__e2eDrops,
+            phase: state.match.public?.phase, round: state.match.public?.round,
+            selection: { uid: document.querySelector('.uframe')?.getAttribute('data-uid'), detail: document.querySelector('.dpanel')?.textContent },
+            inventory: [...(priv?.hand || []), ...(priv?.temp || []), ...(priv?.board || [])].filter(Boolean),
+            offer: priv?.shop?.rewardOffer, surface: rect && { selector, left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+            view: kind, toasts: [...document.querySelectorAll('.toast')].map(el => el.textContent.trim()) };
+        }),
+        new Promise(resolve => { timer = setTimeout(() => resolve({ diagnostic: 'page did not answer within 5 s' }), 5000); timer.unref(); }),
+      ]);
+    } catch (diagnosticError) { diagnostic = { diagnostic: diagnosticError.message }; }
+    finally { clearTimeout(timer); }
+    console.log(`${host.label}: real beacon drag failed: ${error.message}; before=${JSON.stringify(before)}; after=${JSON.stringify(diagnostic)}`);
+    throw error;
+  }
   const offer = await host.page.evaluate(() => globalThis.__SP__.store.get().match.private.shop.rewardOffer);
   assert.equal(offer.slots.length, 2, 'ordinary beacon offers two operators');
   assert.ok(offer.slots.every(slot => slot.kind === 'chess' && slot.price === 0));
@@ -226,6 +389,29 @@ function replayUpload(start, upload, data) {
   return compactResult(battle.result());
 }
 
+async function failureSnapshot(client) {
+  if (!client.page || client.page.isClosed()) return { label: client.label, closed: true };
+  let timer;
+  try {
+    return await Promise.race([
+      client.page.evaluate(() => {
+        const s = globalThis.__SP__?.store.get(), runner = globalThis.__SP_RUNNER__, trace = globalThis.__sixBalance;
+        return { me: s?.me.playerId, phase: s?.match.public?.phase, round: s?.match.public?.round, ready: s?.match.private?.ready,
+          states: trace?.states, phases: trace?.phases, starts: trace?.starts.map(msg => ({ battleId: msg.battleId,
+            authoritative: msg.authoritative, kind: msg.kind, startAt: msg.startAt, serverNow: msg.serverNow, speed: msg.speed,
+            round: msg.spec?.round, boss: msg.spec?.boss, bossId: msg.spec?.bossId, spec: msg.spec })), ends: trace?.ends,
+          localPools: trace?.localPools, byBattle: trace?.byBattle, uploads: trace?.uploads, errors: trace?.errors,
+          view: globalThis.__SP_VIEW__?.kind, stats: runner?.stats(), state: runner?.state(), entries: [...(runner?._entries.values() || [])].map(entry => ({
+            battleId: entry.battleId, own: entry.own, authoritative: entry.authoritative, remote: entry.host?.remote,
+            resultSent: entry.resultSent, ticks: entry.battle?.tickCount, time: entry.battle?.time, pending: entry.host?.pending?.size,
+          })), beacon: globalThis.__sixBeacon, requests: globalThis.__e2eReq };
+      }).then(snapshot => ({ ...snapshot, fieldWarnings: client.fieldWarnings })),
+      new Promise(resolve => { timer = setTimeout(() => resolve({ label: client.label, diagnostic: 'page did not answer within 5 s' }), 5000); timer.unref(); }),
+    ]);
+  } catch (error) { return { label: client.label, diagnostic: error.message }; }
+  finally { clearTimeout(timer); }
+}
+
 for (const rhineEnabled of [true, false]) {
   const profile = rhineEnabled ? 'rhine' : 'vanilla';
   test(`${profile}: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool`,
@@ -243,22 +429,30 @@ for (const rhineEnabled of [true, false]) {
           assert.equal(awarded[0].giftTiming, 'immediate');
         }
         const last = clients.at(-1), lastId = (await last.st()).me, lastBeacon = rewards[5].find(p => p.id === BEACON).uid;
-        // Finish the simulation module/data boot before navigating away. Unrelated
+        // Finish the room's checked module/content boot before navigating away. Unrelated
         // asset/media traffic need not become globally idle for a valid refresh.
-        await last.page.evaluate(() => globalThis.__SP_RUNNER__.ensureSim().then(() => true));
+        await warmClient(last, rhineEnabled);
         await last.page.reload({ waitUntil: 'domcontentloaded' });
         await last.page.waitForFunction(() => !!globalThis.__SP__ && !!document.querySelector('.gm'));
         await last.waitFor(s => s.phase === 'PREP' && s.round === 14, 'resume R14 prep');
         assert.equal((await last.st()).me, lastId);
         assert.deepEqual((await inventory(last)).filter(p => p.id === BEACON).map(p => p.uid), [lastBeacon], 'refresh does not duplicate the award');
-        // The refreshed page has to import the real simulator again. Complete that boot
-        // before 16x combat; software-rendered six-browser runs can otherwise settle the
-        // whole battle while this client is still fetching its simulation modules/data.
-        await last.page.evaluate(() => globalThis.__SP_RUNNER__.ensureSim().then(() => true));
+        // Restore the refreshed page's exact checked profile/content before 16x
+        // combat. A Worker profile still boots its own engine at the real battle start.
+        await warmClient(last, rhineEnabled);
         await last.shot('prep-compact');
         await useAwardedBeacon(clients);
         await Promise.all(clients.map(recordCombat));
-        for (const client of clients) await client.click('.readybtn');
+        await Promise.all(clients.map(client => client.hookRequests()));
+        // Six real humans confirm independently. Serial CDP waits must not spend
+        // the last prep seconds before the fifth/sixth person's actual click.
+        await Promise.all(clients.map(client => client.click('.readybtn')));
+        const confirmations = await Promise.all(clients.map(client => client.requests('g.ready')));
+        for (const [index, client] of clients.entries()) {
+          const requests = confirmations[index];
+          assert.equal(requests.length, 1, `${client.label}: one real readiness confirmation`);
+          assert.equal(requests[0][1].ready, true);
+        }
         for (const client of clients) await client.page.waitForFunction(() => globalThis.__sixBalance.starts.some(s => s.spec?.round === 14), { timeout: 45000 });
         const data = getDataProfile(rhineEnabled, { log: QUIET }), gd4 = new GameData(data, 'mode_multi_hard', 4);
         for (const client of clients) {
@@ -285,7 +479,7 @@ for (const rhineEnabled of [true, false]) {
         let authoritativeUploads = 0;
         for (const client of clients) {
           const captured = await client.page.evaluate(() => globalThis.__sixBalance);
-          assert.deepEqual(captured.errors, [], `${client.label}: no rejected result`);
+          assert.deepEqual(captured.errors, [], `${client.label}: no rejected game or combat request`);
           for (const start of captured.starts.filter(s => s.authoritative && s.spec?.round === 14)) {
             const upload = captured.uploads.find(u => u.message.battleId === start.battleId);
             assert.ok(upload, `${client.label}: real browser uploaded its authoritative pair field`);
@@ -301,6 +495,11 @@ for (const rhineEnabled of [true, false]) {
         await last.shot('result-compact');
         assert.deepEqual(problemsOf(clients), [], 'no page, console or resource errors');
         assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), []);
+      } catch (error) {
+        console.log(`Six-seat failure: ${String(error.stack || error)}`);
+        console.log(`Six-seat failure diagnostics: ${JSON.stringify({ error: String(error.stack || error), profile, clients: await Promise.all(clients.map(failureSnapshot)),
+          problems: problemsOf(clients), server: srv.logs })}`);
+        throw error;
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
         await Promise.all(clients.map(client => client.close()));

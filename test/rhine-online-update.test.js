@@ -99,7 +99,10 @@ function fixture(t, options = {}) {
     extractionCount++;
     assert.ok(fs.existsSync(archive));
     const output = path.join(destination, 'Stronghold-Protocol-Rhine');
-    fs.cpSync(sourceFixture, output, { recursive: true });
+    // Node 22's unfiltered C++ directory copy can abort on Windows Unicode paths:
+    // https://github.com/nodejs/node/issues/59636. Keep every fixture file and its
+    // Chinese paths, but select Node's JS directory traversal with a true filter.
+    fs.cpSync(sourceFixture, output, { recursive: true, filter: () => true });
     if (options.afterExtract) await options.afterExtract(output, destination);
   };
   const assertStopped = async checked => {

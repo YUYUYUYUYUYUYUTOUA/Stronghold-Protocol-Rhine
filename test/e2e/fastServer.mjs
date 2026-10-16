@@ -37,6 +37,13 @@ import { startServer } from '../../server/index.js';
 import { Match } from '../../server/match/Match.js';
 import { legalTiles, placeClass, tileKey } from '../../server/match/board.js';
 import { planLayout } from '../../server/match/bot.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Hosted profile/plugin matches import this same fixture after installing their
+// isolated data. Importing it must not start another HTTP server in the child.
+let MatchForHost;
+export { MatchForHost as Match };
 
 if (!process.env.NODE_TEST_CONTEXT) {
   const timerScale = Number(process.env.SP_TIMER_SCALE) || 1;
@@ -196,10 +203,14 @@ if (!process.env.NODE_TEST_CONTEXT) {
     }
   }
 
-  const srv = await startServer({ port: Number(process.env.PORT) || 0, host: process.env.HOST || '127.0.0.1', quiet: true, MatchClass: FastMatch,
-    ...(process.env.SP_PLUGINS_DIR ? { pluginsDir: process.env.SP_PLUGINS_DIR } : {}) });
-  console.log(`fast server on ${srv.url} (timers ×${timerScale}, combat ${combatSpeed}×${startAt ? `, first round ${startAt}` : ''})`);
-  const stop = () => { srv.close().finally(() => process.exit(0)); };
-  process.on('SIGTERM', stop);
-  process.on('SIGINT', stop);
+  MatchForHost = FastMatch;
+  if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    const srv = await startServer({ port: Number(process.env.PORT) || 0, host: process.env.HOST || '127.0.0.1', quiet: true, MatchClass: FastMatch,
+      matchHost: { matchModule: fileURLToPath(import.meta.url) },
+      ...(process.env.SP_PLUGINS_DIR ? { pluginsDir: process.env.SP_PLUGINS_DIR } : {}) });
+    console.log(`fast server on ${srv.url} (timers ×${timerScale}, combat ${combatSpeed}×${startAt ? `, first round ${startAt}` : ''})`);
+    const stop = () => { srv.close().finally(() => process.exit(0)); };
+    process.on('SIGTERM', stop);
+    process.on('SIGINT', stop);
+  }
 }

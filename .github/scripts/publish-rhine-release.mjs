@@ -371,33 +371,50 @@ async function main() {
     assert.ok(edge, 'Microsoft Edge is required for the native Windows renderer checks.');
     const browserOutput = path.join(built.destination, 'test/e2e/out');
     assert.equal(fs.existsSync(browserOutput), false);
+    const browserFailures = [];
+    // Browser groups are independent. Collect every group's original result so a fixture failure
+    // cannot hide later compatibility failures behind another complete Windows package rebuild.
+    const runBrowserTests = (...args) => {
+      try {
+        const totals = runTests(...args);
+        assert.ok(totals.pass > 0, 'A browser group must execute at least one passing test.');
+        return totals;
+      } catch (error) {
+        const failure = { log: path.basename(args[3]), error: String(error?.message || error) };
+        browserFailures.push(failure);
+        return { status: 'failed', ...failure };
+      }
+    };
     browserTests = {
-      remSimulation: runTests(node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
+      remSimulation: runBrowserTests(node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
         path.join(root, 'browser-rem-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      remRenderer: runTests(node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
+      remRenderer: runBrowserTests(node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
         path.join(root, 'browser-rem-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      remRally: runTests(node, built.destination, ['test/ui/rem-rally.browser.test.js'],
+      remRally: runBrowserTests(node, built.destination, ['test/ui/rem-rally.browser.test.js'],
         path.join(root, 'browser-rem-rally.log'), { concurrency: 1, env: { SP_E2E: '1', CHROME_PATH: edge } }),
-      kazdelSimulation: runTests(node, built.destination, ['test/sim/kazdel.browser.test.js', 'test/sim/reactive-origin.browser.test.js'],
+      kazdelSimulation: runBrowserTests(node, built.destination, ['test/sim/kazdel.browser.test.js', 'test/sim/reactive-origin.browser.test.js'],
         path.join(root, 'browser-kazdel-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      renderer: runTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
+      renderer: runBrowserTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
         path.join(root, 'browser-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      rhineOperators: runTests(node, built.destination, ['test/render/rhineOperators.browser.test.js'],
+      rhineOperators: runBrowserTests(node, built.destination, ['test/render/rhineOperators.browser.test.js'],
         path.join(root, 'browser-rhine-operators.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      upstreamRenderer: runTests(node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
+      upstreamRenderer: runBrowserTests(node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
         path.join(root, 'browser-upstream-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      upstreamUi: runTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js',
+      upstreamUi: runBrowserTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js',
         'test/ui/rhine-profiles.e2e.test.js'],
-        path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge } }),
-      sixSeatUi: runTests(node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
+        path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
+      sixSeatUi: runBrowserTests(node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
         path.join(root, 'browser-six-seat.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
-      statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
+      statsLandscape: runBrowserTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
-      upstreamPlugins: runTests(node, built.destination, ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js',
+      upstreamPlugins: runBrowserTests(node, built.destination, ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js',
         'test/ui/studio-gameplay.e2e.test.js'], path.join(root, 'browser-plugins.log'),
         { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_STUDIO: 'local' } }),
     };
-    fs.renameSync(browserOutput, path.join(root, 'browser-evidence'));
+    fs.writeFileSync(path.join(root, 'browser-gates.json'), JSON.stringify(browserTests, null, 2) + '\n');
+    if (fs.existsSync(browserOutput)) fs.renameSync(browserOutput, path.join(root, 'browser-evidence'));
+    assert.equal(browserFailures.length, 0, `Windows browser acceptance failed; release remains a draft: ${JSON.stringify(browserFailures)}`);
+    assert.ok(fs.existsSync(path.join(root, 'browser-evidence')), 'Browser acceptance must produce its real screenshots.');
     progress('Native Windows Edge renderer and stats-page checks passed; screenshots moved outside the payload.');
   }
   const server = spawn(node, ['server/index.js'], { cwd: built.destination, windowsHide: true,
@@ -552,7 +569,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'source-author-tests.log', 'packaged-plugin-host-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log']) {
+    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'source-author-tests.log', 'packaged-plugin-host-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log', 'browser-gates.json']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }
