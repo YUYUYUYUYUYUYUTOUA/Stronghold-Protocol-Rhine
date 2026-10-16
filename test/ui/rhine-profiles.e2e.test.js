@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
-import { getPriority, setPriority } from 'node:os';
+import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
 import { getDataProfile } from '../../server/data.js';
@@ -30,11 +30,33 @@ async function openClient(client, query) {
     assert.equal(gpu.featureStatus.gpu_compositing, 'disabled_software', 'software WebGL keeps GPU compositing disabled');
     if (!['win32', 'linux'].includes(process.platform)) return;
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
-    const owned = processInfo.filter(p => /gpu/i.test(p.type));
+    const owned = processInfo.filter(p => /^gpu$/i.test(p.type));
     assert.equal(owned.length, 1, 'one owned browser GPU process');
-    const nodePriority = getPriority(process.pid), priority = process.platform === 'linux' ? 15 : nodePriority;
+    const nodePriority = getPriority(process.pid), priority = process.platform === 'linux' ? 15 : osConstants.priority.PRIORITY_BELOW_NORMAL;
     // Software rendering shares this runner's CPUs with real simulation Workers. Only this browser's GPU is adjusted:
-    // Linux nice is per-thread; Windows aligns Chromium's raised GPU priority with the existing test priority.
+    // Linux nice is per-thread; Windows keeps Node NORMAL and gives only its owned GPU BELOW_NORMAL. This is a
+    // controlled scheduling hypothesis; all cold Worker loads, RPCs, rendering and deadlines remain unchanged.
+    const browserPid = client.browser.process()?.pid;
+    const allOwned = processInfo.filter(p => /^(?:browser|renderer|gpu)$/i.test(p.type));
+    const priorities = () => allOwned.map(p => {
+      try { return { pid: p.id, type: p.type, priority: getPriority(p.id) }; }
+      catch (error) {
+        if (error.info?.code !== 'ESRCH') throw error;
+        return { pid: p.id, type: p.type, exitedDuringObservation: true };
+      }
+    });
+    let before;
+    if (process.platform === 'win32') {
+      assert.ok(Number.isInteger(browserPid), 'the fixture owns its launched browser process');
+      assert.ok(allOwned.some(p => /^browser$/i.test(p.type) && p.id === browserPid), 'CDP confirms this browser ownership');
+      assert.notEqual(owned[0].id, process.pid);
+      assert.notEqual(owned[0].id, browserPid);
+      assert.equal(nodePriority, osConstants.priority.PRIORITY_NORMAL, 'the Windows test Node remains NORMAL');
+      assert.equal(priority, 10, 'Windows BELOW_NORMAL is the owned GPU target');
+      before = priorities();
+      console.log('Profile Windows owned priorities before:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: nodePriority }, browserPid, owned: before }));
+    }
     for (const gpuProcess of owned) {
       setPriority(gpuProcess.id, priority);
       if (process.platform === 'linux') {
@@ -54,6 +76,18 @@ async function openClient(client, query) {
       assert.equal(getPriority(process.pid), nodePriority, 'the test and simulation priority stays unchanged');
       console.log(JSON.stringify({ client: client.label, gpuPid: gpuProcess.id, renderer,
         gpuPriority: getPriority(gpuProcess.id), nodePriority }));
+    }
+    if (process.platform === 'win32') {
+      const after = priorities();
+      console.log('Profile Windows owned priorities after:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: after }));
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL);
+      for (const [index, p] of after.entries()) {
+        if (/^gpu$/i.test(p.type)) assert.equal(p.priority, priority, 'only the owned GPU has the rendering target');
+        else if (!p.exitedDuringObservation && !before[index].exitedDuringObservation) {
+          assert.equal(p.priority, before[index].priority, `owned ${p.type} priority is unchanged`);
+        }
+      }
     }
   } finally { await cdp.detach(); }
 }

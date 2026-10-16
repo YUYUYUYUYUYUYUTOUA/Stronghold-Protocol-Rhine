@@ -80,27 +80,60 @@ test('operator wizard -> borrowed official kit -> saved attributes -> trial -> g
       }, { capture: true, passive: true });
     }, atk);
     await page.waitForSelector(atk); await page.click(atk, { count: 3 }); await page.type(atk, '900');
-    // page.click does not wait for a disabled button. Keep readiness, the one real click and the original saved-state
-    // assertion inside the same 30s budget; do not spend a second deadline retrying a missed click.
+    // Share the original 30s waiting budget across readiness and saved state. CDP/action acknowledgments are still
+    // governed by the unchanged case/protocol deadlines; this waiter budget is not an absolute wall-clock cap.
     const saveDeadline = Date.now() + 30000;
-    const saveRemaining = () => Math.max(1, saveDeadline - Date.now());
+    const saveRemaining = () => {
+      const remaining = saveDeadline - Date.now();
+      assert.ok(remaining > 0, 'the shared 30s operator-save waiting budget has not expired');
+      return remaining;
+    };
     stage = 'save-attack';
+    // Reference pickers fetch after mounting and expand their lists. Their real loaded layout must precede the
+    // one explicit scroll; otherwise a late list can move the button below the viewport after it was measured.
+    const listsReady = await page.waitForFunction(() => {
+      const lists = [...document.querySelectorAll('[data-testid="operator-wizard"] .st-picker__list')];
+      return lists.length > 0 && lists.every(list => !list.classList.contains('is-busy') && list.querySelector('button[data-target]'))
+        ? lists.map(list => ({ busy: list.classList.contains('is-busy'), targets: list.querySelectorAll('button[data-target]').length,
+          height: list.getBoundingClientRect().height })) : false;
+    }, { timeout: saveRemaining() });
+    console.log('Studio operator layout ready:', JSON.stringify(await listsReady.jsonValue()));
+    await listsReady.dispose();
     await page.$eval('[data-testid="save-wizard"]', button => button.scrollIntoView({ block: 'center' }));
-    const ready = await page.waitForFunction(atk => {
-      const input = document.querySelector(atk), button = document.querySelector('[data-testid="save-wizard"]');
-      if (!input || input.value !== '900' || !button || button.disabled) return false;
-      const rect = button.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
-      const hit = document.elementFromPoint(x, y);
-      return rect.width > 0 && rect.height > 0 && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight && button.contains(hit)
-        ? { attack: input.value, saveDisabled: button.disabled, hit: hit.dataset.testid || hit.className, x, y } : false;
-    }, { timeout: saveRemaining() }, atk);
-    console.log('Studio operator save ready:', JSON.stringify(await ready.jsonValue()));
+    const saveTarget = async (selector, expected = null) => {
+      const read = () => {
+        const input = document.querySelector(selector), button = document.querySelector('[data-testid="save-wizard"]');
+        if (!input || input.value !== '900' || !button || button.disabled) return null;
+        const rect = button.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+        const hit = document.elementFromPoint(expected?.x ?? x, expected?.y ?? y);
+        if (rect.width <= 0 || rect.height <= 0 || rect.left < 0 || rect.top < 0 || rect.right > innerWidth || rect.bottom > innerHeight
+          || !button.contains(hit) || (expected && (Math.abs(x - expected.x) > 0.5 || Math.abs(y - expected.y) > 0.5))) return null;
+        return { attack: input.value, saveDisabled: button.disabled, hit: hit.dataset.testid || hit.className,
+          x, y, width: rect.width, height: rect.height, scrollY };
+      };
+      const before = read();
+      if (!before) return false;
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const after = read();
+      return after && ['x', 'y', 'width', 'height', 'scrollY'].every(key => Math.abs(after[key] - before[key]) <= 0.5) ? after : false;
+    };
+    const ready = await page.waitForFunction(saveTarget, { timeout: saveRemaining() }, atk);
+    const point = await ready.jsonValue();
     await ready.dispose();
-    await page.click('[data-testid="save-wizard"]');
+    await page.mouse.move(point.x, point.y);
+    const stable = await page.waitForFunction(saveTarget, { timeout: saveRemaining() }, atk, point);
+    console.log('Studio operator save ready:', JSON.stringify(await stable.jsonValue()));
+    await stable.dispose();
+    saveRemaining();
+    // A second ElementHandle.click would implicitly scroll again. Click the verified real point exactly once.
+    await page.mouse.click(point.x, point.y);
     await page.waitForFunction(() => globalThis.__studio?.state?.authoring?.options?.normal?.atk === 900, { timeout: saveRemaining() });
     const saves = requests.filter(request => request.method === 'POST' && request.path === `/studio/api/plugins/${made.id}/authoring`);
     assert.equal(saves.length, 1, 'one actual wizard save request');
     assert.equal(saves[0].draft.normalAtk, 900, 'the real UI submitted its complete attack draft');
+    const saveClicks = inputEvents.filter(event => event.type === 'click' && event.target === 'save-wizard');
+    assert.equal(saveClicks.length, 1, 'one actual save click');
+    assert.equal(saveClicks[0].trusted, true, 'the save click came from real mouse input');
     const savedRecord = JSON.parse(fs.readFileSync(path.join(tmp, 'plugins', made.id, 'data/operator.json')));
     assert.equal(savedRecord.forms.normal.stats.atk, 900);
     assert.equal(savedRecord.kit.ref, record.kit.ref, 'saving attributes retains the borrowed official kit');
