@@ -8,6 +8,7 @@ import { unitInfo } from '../snapshot.js';
 import { fin } from './util.js';
 import { kazdelCannonImmune } from '../damage.js';
 import { kazdelCannonOwner } from '../kazdelOrigin.js';
+import { isRemMobile } from '../remMobile.js';
 
 export class BattleDeploy {
   /**
@@ -58,7 +59,8 @@ export class BattleDeploy {
     // 联防 reconstructs deployment/battle-start effects first, then restores HP/SP once in Battle.start.
     const restoreLater = this.kind === 'unite' && this._startDeploying;
     if (!restoreLater && cs && u.kind === 'op' && Number.isFinite(cs.hpPct) && cs.hpPct > 0) u.hp = u.s.maxHp * Math.min(1, cs.hpPct);
-    this._occ[k] = u;
+    if (isRemMobile(u)) (this.remTroops ??= new Set()).add(u);
+    else this._occ[k] = u;
     this._refreshRange(u); // also rebuilds baseRangeKeys (initial range incl. permanent rangeExtend)
     if (!u.skill) this._setupUnit(u);
     u.skill.reset(restoreLater ? null : cs);
@@ -131,6 +133,7 @@ export class BattleDeploy {
     unit._removing = false;
     if (unit.side === 'ally') {
       this.releaseBlocked(unit);
+      this.remTroops?.delete(unit);
       const k = unit.tileR * COLS + unit.tileC;
       if (this._occ[k] === unit) this._occ[k] = null;
       // keep persistent buffs only

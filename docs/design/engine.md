@@ -346,13 +346,19 @@ preference and their tie-breaks stay relative to the position's tile.
 
 0.2.4 莱茵适配：余音FIFO条目同时保存攻击值与counter/reflect来源，保留本扩展既有反击边界；不会因套用上游队列而恢复递归反击。扩展平衡规则见[RHINE-CHANGES.md](../RHINE-CHANGES.md)。
 
-### 2026-10-13 扩展：雷姆援军、九档产魂与科研修订
+### 莱茵扩展：雷姆援军、九档产魂与科研修订（2026-10-16 更新）
 
-本轮雷姆机制以 [雷姆必拓](../REM.md) 的完整规格为准。所属玩家独立持有开战档位、集合点、补员时钟、援军来源、种类限额及待落地队列；服务端与浏览器使用同一确定性模拟。普通容量 6／12／16，开场 2／2／3，后续每 10／8／6 秒补 1／2／3，高档替换低档。满额的普通补员不积欠；合法召唤因空间不足等待落地不算丢弃、人数截断或新增上限。嘉辛塔免检查且免占数，珊比／校车免检查但计入普通在场数；所有来源共享当前档厨师上限 1／2／3，老板独立 2。每个常驻名额先判一次 2% 组合矿工，排除满额厨师后的普通池重抽不重复判组合分支。
+本轮雷姆机制以 [雷姆必拓](../REM.md) 的完整规格为准。所属玩家独立持有开战档位、补员时钟、援军来源、种类限额及待落地队列；服务端与浏览器使用同一确定性模拟。集合点 UI、指令、玩家状态与战斗输入已移除。普通容量 6／12／16，开场 2／2／3，后续每 10／8／6 秒补 1／2／3，高档替换低档。满额的普通补员不积欠；合法召唤因空间不足等待落地不算丢弃、人数截断或新增上限。嘉辛塔免检查且免占数，珊比／校车免检查但计入普通在场数；所有来源共享当前档厨师上限 1／2／3，老板独立 2。每个常驻名额先判一次 2% 组合矿工，排除满额厨师后的普通池重抽不重复判组合分支。
 
-入场从己方蓝门开始，校车乘员在集合点附近卸载；准备阶段集合点可改，战斗阶段锁定。常驻援军落位于集合点附近最多 2 格，途中正常接敌、阻挡、攻击，不依赖后排覆盖，不主动追敌。移动必须检查地形、占格、倒地占位及碰撞，不把敌人随己方单位拖动；无合法路径／落点则等待。厨师与车辆不阻挡，老板飞行且不阻挡。老板每秒缓存当前位置与攻击值，1 秒后半径 0.45 对地物理轰炸；定时投弹不随攻速变化，不使用原作面板 5 秒间隔。
+入场从己方蓝门开始，校车沿既有运输路线在固定终点附近卸客。普通援军只索敌同战场友方（包含合作队友）存活且已部署攻击干员火力覆盖内的合法可达敌人，连续移动接近并攻击；目标死亡、离开覆盖或不可达时重评。无合格敌人则在覆盖内四向持续徘徊，无覆盖时安全清让蓝门后待机。援军之间在出生、移动与停留时均可重叠，含车和老板，不占用干员部署格；保留友方穿行，地形及非援军占位仍按原规则检查，不拖拽已阻挡敌人，也不删除全游戏通用寻路。厨师与车辆不阻挡，老板飞行且不阻挡。
+
+六／九档以整数 `survivalTicks` 累计己方实际存活且已部署援军的时间：每名每 tick 贡献1，30为一援军·秒；每援军·秒为己方雷姆干员增加攻击／生命1%／2%，封顶200%／300%。待生成不计，死亡、撤退和移除后停止贡献，已获加成保留；车、老板和额外召唤均贡献，但加成只给干员本体。普通主战至同回合联防以 `remSurvivalTicks` 进入输入、结果摘要与强制复核，下一回合重置。它替换按生成次数增长，不改变温米／暴行对盟约层数的独立贡献。
+
+老板攻击 `1000+2S`，每秒缓存当前位置与攻击值，1 秒后半径0.45内造成200%攻击力的对地物理轰炸；定时投弹不随攻速变化，不使用原作面板5秒间隔，无额外回合倍率，也不获得仅干员享有的存活攻血。最多2名及原有飞行路线保持。
 
 援军不加入人口或盟约人数，不产亡魂、死亡资源及递归召唤。数量、光环、经过事件、标记引导和莱伊额外目标均按 owner 隔离。经过事件对同一援军去重；温米按本玩家实际成功生成的每个援军计数，同种重复生成也计数，同一援军重复事件不计数；共享每回合预算（普通16层／精英32层，每次1／2层，下回合重置）；嘉辛塔只响应成功技能开启，珊比首次等待完整间隔。莱伊额外伤害不再次调用攻击事务，不额外消费弹药或重复触发入神／回弹，S1 保持原生，S3 可强化。战末清理援军与等待队列，不按亡魂协防状态跨场携带；下一战场重新建立临时召唤状态。
+
+九名雷姆扩展精锐默认使用各自已支持的002常规模组，莱伊三级、其他一级；原断崖与莱恩哈特默认保持，普通形态仍无模组。新玩家、机器人和重置直接读数据默认，已保存明确“不装备”、莱伊003或技能选择继续有效，不推测稀疏配置未保存的旧选择。石棉普通／精锐新增独行，不恢复坚守；两个品质同身份，独行启用与禁用遵既有通用规则。
 
 卡兹戴尔恢复 9 档：扩展到本玩家所有阵营干员本体的产魂资格，排除队友、援军、召唤物、装置和魂灵，不赋予卡兹标签或专属特质。原生技能／天赋继承和亡魂协防状态传递保留。炮击仍为 21 格、`800 + 15S` 真伤，自己的活体友军同额承伤，队友和魂灵免疫，误伤及衍生死亡不产层或充能；旧九档免自伤不恢复。
 
@@ -380,6 +386,15 @@ DSL plugin budget and attribution. Vanilla registrations remain empty; no offici
 The same SDK and scriptGuard apply inside SES in sandbox mode (DESIGN §32.11); the evaluator consumes verified
 script descriptors. SDK-owned results are frozen copies; live Battle/Unit objects are not hardened.
 
-### Rhine v0.3.0 Rem balance
+### Rhine v0.3.0 Rem balance (2026-10-16 revision)
 
-Rem 6/9 counts successful reinforcement appearances per owner and battle, including units that later die: +4%/+8% operator ATK/HP each, capped at +200%/+300%. Savage now produces 2/4 bond layers on a real deduplicated enemy death credited to herself or an own Rem operator/reinforcement/vehicle within eight tiles, sharing 24/48 per player per round. Ordinary troops patrol the passable eight tiles around rally after arrival, stop on contact and resume afterward; vehicles/boss routes stay unchanged. Asbestos loses only steadShip. See the extension Rem reference for complete ownership and lifecycle rules.
+Rem 6/9 accumulates living deployed reinforcement time, including vehicles and bosses: each completed
+reinforcement-second gives own Rem operators ATK/HP +1%/+2%, capped at +200%/+300%. Death and withdrawal stop
+contribution but retain earned growth. The integer `remSurvivalTicks` carries normal combat into the same round's
+unite field and resets next round. Savage retains deduplicated real-kill 2/4 layers within eight tiles, shared 24/48
+per player per round; Warmy's generation layers remain separate. Rally is removed. Ordinary troops seek reachable
+legal enemies inside living deployed allied attacking operators' shared-field fire coverage, including co-op teammates, patrol four-neighbour coverage when idle, and
+clear the blue gate then wait without coverage. Rem units can overlap one another without occupying operator
+deployment tiles. Vehicle/boss routes remain; boss ATK is `1000+2S` and pizza deals 200% ATK physical ground damage.
+Asbestos gains Solo without Steadfast. Nine added elite cards gain supported 002 module defaults while saved choices
+remain valid. See [REM](../REM.md) for ownership, timing, modules and lifecycle rules.

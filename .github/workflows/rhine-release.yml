@@ -29,8 +29,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: Test release channel policy
-        run: node --test automation/.github/scripts/rhine-release-channel.test.mjs
+      - name: Test release channel and browser policy
+        run: node --test automation/.github/scripts/rhine-release-channel.test.mjs automation/.github/scripts/rhine-browser-acceptance.test.mjs
       - name: Validate release request
         id: request
         run: node automation/.github/scripts/publish-rhine-release.mjs request

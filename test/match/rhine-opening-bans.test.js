@@ -143,6 +143,8 @@ test('small-roster rotations retain eight shared operators per tier and use the 
       }
       assert.equal(pool.has('chess_rhine_magallan_a'), !off.has('rhineShip'), 'Rhine-only Magallan follows the core rotation');
       assert.equal(pool.has('chess_rhine_astgenne_a'), !(off.has('rhineShip') && off.has('preciShip')), 'Precision can keep Astgenne in the pool');
+      assert.equal(pool.has('chess_rem_asbest_a'), !(off.has('remShip') && off.has('soloShip')),
+        'Solo keeps Asbestos available when Rem alone is banned; both off exclude her');
       for (let level = 1; level <= 6; level++) {
         const id = pool.roll(createRng(seed * 10 + level), { maxTier: level });
         assert.ok(id && pool.has(id) && gd.tierOf(id) <= level, `${modeId}: legal shop roll at ${level}`);

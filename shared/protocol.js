@@ -52,7 +52,7 @@ const isPerPlayer = (p) => isPlain(p) && isInt(p.killed, 0, 1e5) && isInt(p.tota
   // scheduled enemies (server/match/fields.js validateClientResult bounds it against maxTotal instead).
   && optional((x) => isInt(x, 0, 1e5))(p.resolved)
   && optional((x) => isInt(x, 0, 1e9))(p.creditedKills)
-  && optional((x) => isInt(x, 0, 1e9))(p.remAppearances)
+  && optional((x) => isInt(x, 0, 1e9))(p.remSurvivalTicks)
   && isList(p.leaked, RESULT_LIMITS.leaked, isLeak) && isBool(p.perfect)
   && isMap(p.layerGains, RESULT_LIMITS.layerGains, isId, (v) => isNum(v, 0, 1e4))
   && isStat(p.coins) && isStat(p.damageDealt) && isStat(p.bossDamage) && isStat(p.healingDone) && isStat(p.deaths)
@@ -482,7 +482,6 @@ export const C2S = {
   'g.levelUp': {},
   'g.sell': { uid: isUid },
   // dir: the facing chosen on the deploy wheel for a board target (absent ⇒ RIGHT; the piece's own tile ⇒ re-orient)
-  'g.remRally': { row: (v) => isInt(v, 9, 12), col: (v) => isInt(v, 2, 10) },
   'g.move': { uid: isUid, to: target, dir: isDir, $optional: ['dir'] },
   // replaceUid: with both of the target's slots used, the equipped item the replace dialog picked (research 09 §1.2
   // UseEquipUp.unloadInstId; absent ⇒ the oldest; not one of the target's items ⇒ BAD_TARGET)

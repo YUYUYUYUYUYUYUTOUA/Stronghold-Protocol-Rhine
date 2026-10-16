@@ -45,6 +45,7 @@ export function verifyPublishedChannel({ published, beforeLatest, afterLatest, r
   } else {
     assert.equal(afterLatest.id, published.id, 'latest release id must match the published stable release');
     assert.equal(afterLatest.tag_name, published.tag_name, 'latest release tag must match the published stable release');
+    assert.equal(afterLatest.target_commitish, request.sourceCommit, 'latest stable source must match the requested source');
   }
   return { policy, published: { ...publication, sourceCommit: published.target_commitish }, beforeLatest: before, afterLatest: after };
 }

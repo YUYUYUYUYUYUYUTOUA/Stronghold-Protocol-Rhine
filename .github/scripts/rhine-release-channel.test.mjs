@@ -121,3 +121,21 @@ test('missing identities cannot accidentally verify through undefined equality',
     assert.throws(() => verifyPublishedChannel(input), new RegExp(`request.${field}`));
   }
 });
+
+test('formal Rhine nine becomes latest without mutating the prior stable or prerelease records', () => {
+  const input = fixture({ prerelease: false, makeLatest: true });
+  input.request.tag = input.published.tag_name = input.afterLatest.tag_name = 'v0.3.0-rhine.9';
+  input.beforeLatest.tag_name = 'v0.2.4-rhine.6';
+  const previousPrerelease = { ...input.published, id: 201, tag_name: 'v0.3.0-rhine.8', prerelease: true };
+  const snapshot = structuredClone({ input, previousPrerelease });
+  const evidence = verifyPublishedChannel(input);
+  assert.deepEqual(evidence.policy, { prerelease: false, make_latest: 'true' });
+  assert.equal(evidence.afterLatest.tag, 'v0.3.0-rhine.9');
+  assert.deepEqual({ input, previousPrerelease }, snapshot);
+});
+
+test('formal latest with a different source cannot pass on matching id and tag alone', () => {
+  const input = fixture({ prerelease: false, makeLatest: true });
+  input.afterLatest.target_commitish = 'c'.repeat(40);
+  assert.throws(() => verifyPublishedChannel(input), /latest stable source/);
+});

@@ -14,20 +14,6 @@ import { OK, fail } from './common.js';
 import { RHINE_BOND, RHINE_DEVICES, rhineCapacity, rhineDevice, rhineDeviceUnlocked } from '../../../shared/rhineResearch.js';
 
 export class PlayerPlacement {
-  /** A rally marker occupies no tile and is editable only during the ordinary prep gate. */
-  setRemRally(row, col) {
-    const g = this._gate(); if (g) return g;
-    if (!inField(row, col) || this.deployMap().get(tileKey(row, col)) !== 'melee') return fail(ERR.BAD_TARGET);
-    this.remRally = { row, col };
-    this.dirty();
-    return OK;
-  }
-
-  remRallyView() {
-    const point = this.remRally;
-    return point && this.deployMap().get(tileKey(point.row, point.col)) === 'melee' ? { ...point } : null;
-  }
-
   /**
    * g.move {uid, to, dir?}. Pieces: chess / token between board, hand and temp; items only within the hand. `dir`
    * (UP|RIGHT|DOWN|LEFT, absent ⇒ RIGHT; `to.dir` is read when the top-level one is absent) is the facing of a piece

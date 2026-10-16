@@ -36,10 +36,10 @@ test('Rim fixed Ray exposes native sandbeast sources at every skill and original
   }
   assert.equal(files.tokens.token_rem_child,undefined,'reinforcement combat definitions stay layer-scaled, not fake asset-only tokens');
 });
-test('Asbestos removes only Steadfast while keeping her native skills and reinforcement trait',()=>{
+test('Asbestos has the approved Solo add-on without restoring Steadfast, keeping native skills and reinforcement trait',()=>{
   for(const grade of ['a','b']){
     const c=files.chess[`chess_rem_asbest_${grade}`];
-    assert.deepEqual(c.bonds,['remShip']);
+    assert.deepEqual(c.bonds,['remShip','soloShip']);
     assert.equal(c.skills.length,2);
     assert.equal(c.skill.skillId,'skchr_asbest_2');
     const g=files.garrisons[`garrison_rem_asbest_${grade}`];
@@ -47,8 +47,10 @@ test('Asbestos removes only Steadfast while keeping her native skills and reinfo
     assert.ok(c.garrisonIds.includes(g.garrisonId));
     assert.ok(!files.bonds.steadShip.members.includes(c.chessId));
   }
+  assert.ok(files.bonds.soloShip.members.includes('chess_rem_asbest_a'));
+  assert.ok(files.bonds.soloShip.visibleMembers.includes('chess_rem_asbest_a'));
 });
-test('Savage data uses the approved player-shared kill stack limits and summon-count growth text',()=>{
+test('Savage keeps the approved shared kill limits while Rem growth uses reinforcement survival time',()=>{
   for(const grade of ['a','b']){
     const g=files.garrisons[`garrison_rem_savage_${grade}`];
     assert.deepEqual(g.bb,grade==='a'?{layer:2,max_layer:24}:{layer:4,max_layer:48});
@@ -56,8 +58,17 @@ test('Savage data uses the approved player-shared kill stack limits and summon-c
     assert.match(g.desc,/每个敌人只结算一次/);
     assert.match(g.desc,/同玩家每回合共享上限/);
   }
-  assert.match(files.bonds.remShip.desc,/实际成功生成/);
-  assert.match(files.bonds.remShip.desc,/4%\/8%/);
+  assert.match(files.bonds.remShip.desc,/每累计1援军·秒/);
+  assert.match(files.bonds.remShip.desc,/增加1%\/2%/);
   assert.match(files.bonds.remShip.desc,/200%\/300%/);
-  assert.match(files.bonds.remShip.desc,/死亡不扣除/);
+  assert.match(files.bonds.remShip.desc,/死亡或退场停止贡献，已得加成保留/);
+  assert.match(files.bonds.remShip.desc,/本回合联防继承，下回合清零/);
+  assert.match(files.bonds.remShip.desc,/火力覆盖内的合法可达敌人/);
+  assert.match(files.bonds.remShip.desc,/同战场友方（包含合作队友）/);
+  assert.match(files.bonds.remShip.desc,/援军彼此移动和停留可重叠/);
+  assert.match(files.bonds.remShip.desc,/老板攻击力1000\+2S/);
+  assert.match(files.bonds.remShip.desc,/200%攻击力的对地物理伤害/);
+  assert.doesNotMatch(files.bonds.remShip.desc,/4%\/8%|每实际成功生成一个己方援军|设置的集合点/);
+  for(const grade of ['a','b']) assert.deepEqual(files.garrisons[`garrison_rem_warmy_${grade}`].bb,
+    grade==='a'?{layer:1,max_layer:16}:{layer:2,max_layer:32},'Warmy still rewards actual successful generations');
 });

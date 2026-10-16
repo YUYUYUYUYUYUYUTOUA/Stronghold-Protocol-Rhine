@@ -179,7 +179,6 @@ export class PlayerRound {
       })),
       deviceOverrides: { ...this.deviceOverrides },
       research: this.researchView(),
-      remRally: this.remRallyView(),
     };
   }
 }

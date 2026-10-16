@@ -1,39 +1,59 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeMatch } from './harness.js';
-import { validateC2S } from '../../shared/protocol.js';
+import { C2S, validateC2S } from '../../shared/protocol.js';
 import { buildBattleSpec } from '../../server/sim/spec.js';
 import { ERR } from '../../shared/constants.js';
 
-test('rally protocol rejects malformed/outside-board coordinates', () => {
-  assert.equal(validateC2S({ t: 'g.remRally', row: 10, col: 4 }), null);
-  for (const [row,col] of [[8,4],[13,4],[10,1],[10,11],[10.5,4],['10',4]]) {
-    assert.ok(validateC2S({ t: 'g.remRally', row, col }));
+test('retired rally commands are rejected by both the wire catalogue and match dispatch', () => {
+  const h = makeMatch({ mode: 'coop', humans: 2, fake: true }).start();
+  try {
+    h.toPrep(1);
+    assert.equal(Object.hasOwn(C2S, 'g.remRally'), false);
+    for (const fields of [{ row: 10, col: 4 }, { row: 0, col: 0 }, {}]) {
+      const command = { t: 'g.remRally', ...fields };
+      assert.match(validateC2S(command), /^unknown type /);
+      assert.deepEqual(h.m.handle('p_0', command), { error: ERR.BAD_MSG });
+      assert.deepEqual(h.m._handle(h.ps('p_0'), command), { error: ERR.BAD_MSG });
+    }
+    assert.equal(h.m.errorCount, 0);
+  } finally { h.m.dispose(); }
+});
+
+test('new players and reconnect views omit rally metadata even if old state still contains it', () => {
+  const h = makeMatch({ mode: 'coop', humans: 2, fake: true }).start();
+  try {
+    h.toPrep(1);
+    for (const playerId of ['p_0', 'p_1']) {
+      const ps = h.ps(playerId);
+      assert.equal(Object.hasOwn(ps, 'remRally'), false);
+      assert.equal(ps.setRemRally, undefined);
+      assert.equal(ps.remRallyView, undefined);
+      // An older serialized/session record cannot restore either the UI state or battle input.
+      ps.remRally = { row: 10, col: 4 };
+      assert.equal(Object.hasOwn(ps.privateView(), 'remRally'), false);
+      assert.equal(Object.hasOwn(ps.battleInput(), 'remRally'), false);
+      h.m.onDisconnect(playerId);
+      h.m.onReconnect(playerId);
+      const frame = h.lastTo(playerId, 'm.private');
+      assert.ok(frame, 'reconnect sends a fresh private view');
+      assert.equal(Object.hasOwn(frame, 'remRally'), false);
+      assert.equal(Object.hasOwn(h.m._normalOpts(ps).players[0], 'remRally'), false);
+    }
+    h.invariants();
+    assert.equal(h.m.errorCount, 0);
+  } finally { h.m.dispose(); }
+});
+
+test('all newly built battle kinds strip old rally choices without mutating the input', () => {
+  for (const kind of ['normal', 'unite', 'boss', 'hidden']) {
+    for (const remRally of [{ row: 10, col: 4 }, { row: 0, col: 0 }, null, 'legacy', [10, 4]]) {
+      const player = { playerId: 'p_0', remRally, units: [], bonds: { remShip: { active: true, count: 3 } } };
+      const before = JSON.stringify(player);
+      const spec = buildBattleSpec({ kind, players: [player] });
+      assert.equal(Object.hasOwn(spec.players[0], 'remRally'), false, `${kind}: ${JSON.stringify(remRally)}`);
+      assert.equal(JSON.stringify(player), before, 'the source replay/session record stays unchanged');
+      assert.deepEqual(spec.players[0].bonds, player.bonds);
+    }
   }
-});
-
-test('rally is owner-specific, persists into a copied battle spec, and locks in combat', () => {
-  const h = makeMatch({ mode: 'coop', humans: 2, seed: 11 }).start();
-  h.toPrep(1);
-  const ps = h.ps('p_0');
-  const [key] = [...ps.deployMap()].find(([,value]) => value === 'melee');
-  const [row,col] = key.split(',').map(Number);
-  assert.deepEqual(h.m.handle(ps.playerId, { t: 'g.remRally', row, col }), { ok: true });
-  assert.deepEqual(ps.privateView().remRally, { row, col });
-  assert.equal(h.ps('p_1').privateView().remRally, null);
-  const spec = buildBattleSpec({ players: [ps.battleInput()] });
-  ps.remRally.row = 0;
-  assert.deepEqual(spec.players[0].remRally, { row, col });
-  assert.equal(ps.remRallyView(), null);
-  h.m.phase = 'COMBAT';
-  assert.equal(ps.setRemRally(row,col).error, ERR.WRONG_PHASE);
-});
-
-test('rally refuses high ground and sanitizes untrusted spec metadata', () => {
-  const h = makeMatch({ seed: 11 }).start(); h.toPrep(1);
-  const ps = h.ps('p_0');
-  assert.equal(ps.setRemRally(0,0).error, ERR.BAD_TARGET);
-  const high = [...ps.deployMap()].find(([,v]) => v === 'ranged');
-  if (high) assert.equal(ps.setRemRally(...high[0].split(',').map(Number)).error, ERR.BAD_TARGET);
-  assert.equal(buildBattleSpec({ players:[{ remRally:{row:0,col:4}, units:[] }] }).players[0].remRally, null);
 });

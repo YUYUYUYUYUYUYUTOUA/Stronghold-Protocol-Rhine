@@ -148,8 +148,8 @@ export function uniteBattleOpts(m, plan, timeLimit) {
     const colOffset = plan.helpers.length > 1 && i === 0 ? 8 : 0;
     // the layers its own combat reached (bondsView, the round's pending gains; PRTS "以其阵地当前的状态") — see header
     const input = ps.battleInput({ side: 'L', colOffset, carry, reached: true });
-    if (Number.isInteger(r?.remAppearances) && r.remAppearances > 0 && r.remAppearances <= 1e9) {
-      input.remAppearances = r.remAppearances;
+    if (Number.isInteger(r?.remSurvivalTicks) && r.remSurvivalTicks > 0 && r.remSurvivalTicks <= 1e9) {
+      input.remSurvivalTicks = r.remSurvivalTicks;
     }
     const ev = { input, kind: 'unite', round: m.round, spawns: wave.spawns };
     m.dispatch(ps, 'onBattleStart', ev);

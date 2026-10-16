@@ -1,8 +1,11 @@
 // Rim Billiton allies. Player-local generation, deterministic tile marching and finite vehicle routes.
 import { REM_BOND, REM_LIMITS, REM_INTERVALS, REM_BATCHES, REM_OPENING, remStage, remPick } from '../../../shared/rem.js';
-import { COLS } from '../constants.js';
+import { COLS, TICK } from '../constants.js';
 import { hypot } from '../detmath.js';
 import { isMember } from './support/index.js';
+import { absoluteRangeKeys, canTargetEnemy } from '../targeting.js';
+import { bodyInRange, bodyDist } from '../body.js';
+import { effectiveProfile } from '../ai.js';
 
 const present = u => u.alive && u.deployed && !u.removed;
 const key = (r, c) => r * COLS + c;
@@ -52,20 +55,24 @@ function nearby(b, point, radius = 2) {
   }
   return out.sort((a, c) => distance(a, point) - distance(c, point) || a[0] - c[0] || a[1] - c[1]);
 }
-// Count successful creations, including vehicles, bosses and bypass sources; deaths never subtract appearances.
-function refreshAppearance(b, s) {
+// Actual on-field survival in integer 30 Hz unit-ticks. One unit-second gives +1% / +2%.
+// Already earned time survives deaths and same-round unite, never a new combat round.
+const survivalSecond = Math.round(1 / TICK);
+const survivalCapTicks = 200 * survivalSecond;
+function refreshSurvival(b, s) {
   if (s.stage < 2) return;
-  const pct = s.stage >= 3 ? Math.min(300, s.appeared * 8) / 100 : Math.min(200, s.appeared * 4) / 100;
+  const seconds = Math.floor(s.survivalTicks / survivalSecond);
+  const pct = s.stage >= 3 ? Math.min(300, seconds * 2) / 100 : Math.min(200, seconds) / 100;
   for (const u of s.ps.units) {
     if (u.kind !== 'op' || !isMember(b, u, REM_BOND)) continue;
-    if (u.findBuff('rem:appearance')?.mods?.atkPct === pct) continue;
-    b.addBuff(u, { key: 'rem:appearance', mods: { atkPct: pct, hpPct: pct }, persist: true, allowDead: true });
+    if (u.findBuff('rem:survival')?.mods?.atkPct === pct) continue;
+    b.addBuff(u, { key: 'rem:survival', mods: { atkPct: pct, hpPct: pct }, persist: true, allowDead: true });
   }
 }
 function record(type, S) {
   const miner = type === 'miner' || type === 'combined';
   const chef = type === 'chef', boss = type === 'boss', vehicle = type === 'food' || type === 'bus';
-  const atk = boss ? 400 + S : type === 'food' ? 1500 + 5 * S : type === 'bus' ? 0 : miner ? 500 + S + (type === 'combined' ? 600 : 0) : chef ? 200 + .5 * S : 450 + .75 * S;
+  const atk = boss ? 1000 + 2 * S : type === 'food' ? 1500 + 5 * S : type === 'bus' ? 0 : miner ? 500 + S + (type === 'combined' ? 600 : 0) : chef ? 200 + .5 * S : 450 + .75 * S;
   return { name: names[type], spine: art[type], avatar: art[type], stats: { maxHp: miner || type === 'enthusiast' ? 1800 + 5 * S : chef ? 1600 + 4 * S : 1200 + 3 * S,
     atk, def: miner || type === 'enthusiast' ? 200 + (type === 'combined' ? 800 : 0) : chef ? 150 : 100, res: miner || type === 'enthusiast' ? 10 : chef ? 20 : 0,
     bat: miner || chef || type === 'enthusiast' ? 2.5 : 2.4, aspd: 100, blockCnt: chef || boss || vehicle ? 0 : 1,
@@ -75,7 +82,7 @@ function record(type, S) {
 }
 function spawn(b, s, type, source, point = s.gate) {
   if (!free(b, ...point, null, type === 'boss')) return null;
-  const u = b.spawnToken(s.ps.playerId, `token_rem_${type}`, ...point, { def: record(type, layers(s)), kit: { trait: { noAttack: special(type) }, install(_battle, unit) { if (type === 'boss') unit.motion = 'FLY'; } } });
+  const u = b.spawnToken(s.ps.playerId, `token_rem_${type}`, ...point, { def: record(type, layers(s)), kit: { trait: { noAttack: special(type) }, install(_battle, unit) { unit.remMobile = true; if (type === 'boss') unit.motion = 'FLY'; } } });
   if (!u) return null;
   u.remType = type; u.remCounted = !special(type) && source !== 'jacinta'; u.remSource = source;
   u.mem.remBomb = 0; u.mem.remStun = 0; u.mem.remHit = new Set();
@@ -83,7 +90,7 @@ function spawn(b, s, type, source, point = s.gate) {
   if (type === 'food' || type === 'bus') b.addBuff(u, { key: 'rem:vehicle', persist: true, flags: { noBlock: true } });
   s.units.push(u);
   s.appeared++;
-  refreshAppearance(b, s);
+  refreshSurvival(b, s);
   b.emit('remSpawned', { unit: u, type, ownerId: s.ps.playerId, source });
   return u;
 }
@@ -125,9 +132,10 @@ function advanceMarch(b, u, dt) {
   const leg = u.mem.remLeg;
   if (!leg) return;
   // An obstacle/body can appear while crossing. Return along the same segment rather than clipping it.
-  if (!b.grid.groundPassable(...leg.to) || b.downOn(...leg.to)) leg.to = leg.from;
-  u.remTransitAnchor ??= leg.from;
-  b.remTransit.add(u);
+  if (!b.grid.groundPassable(...leg.to) || b.downOn(...leg.to)) {
+    if (!b.grid.groundPassable(...leg.from) || b.downOn(...leg.from)) { u.moving = false; return; }
+    leg.to = leg.from;
+  }
   const [r,c] = leg.to, dx = c-u.x, dy = r-u.y, d = hypot(dx,dy);
   const step = dt; // Preserve the approved one tile per game second; only the motion cadence changes.
   if (step <= 0) return;
@@ -140,17 +148,137 @@ function advanceMarch(b, u, dt) {
   b._refreshRange(u);
   if (arrived) {
     delete u.mem.remLeg;
-    if (free(b,r,c,u)) b.relocate(u,r,c);
   }
-  for (const e of b.enemies) if (present(e)) b._checkBlock(e);
-  if (u.blocking.length) u.moving=false;
+  b._remMoved = true;
 }
+const steps = [[0, 1], [1, 0], [-1, 0], [0, -1]];
+
+/** The live attack ranges of allied operators on this field, including cooperating players. */
+function fireCoverage(b) {
+  if (b._remCoverageTick === b.tickCount) return b._remCoverage;
+  const keys = new Set();
+  for (const op of b.allyUnits) {
+    if (!present(op) || op.hidden || op.kind !== 'op' || op.kazdelSoul || op.remType) continue;
+    const profile = effectiveProfile(op);
+    if (!profile || profile.noAttack || (profile.heal && profile.dmgType === 'heal')
+      || (profile.noAttackUnlessSkill && !op.skill?.active)) continue;
+    if (b.rangeChanged(op)) b._refreshRange(op);
+    for (const k of op.rangeKeys) keys.add(k);
+  }
+  const signature = [...keys].sort((a, c) => a - c).join(',');
+  b._remCoverageTick = b.tickCount;
+  return b._remCoverage = { keys, signature, enemies: new Map(b.enemies.map(e => [e.id, e])) };
+}
+
+/** Rem may cross living allies; terrain and knocked-out bodies remain impassable. */
+function walkable(b, r, c) {
+  return b.grid.groundPassable(r, c) && !b.downOn(r, c)
+    && (!b._occ[key(r, c)] || b._occ[key(r, c)].side === 'ally');
+}
+
+/** A fresh bounded BFS: no shared failed-path cache can stop a later batch or a changed target. */
+function mobilePath(b, start, accept, within = null) {
+  const queue = [start], prev = new Map([[key(...start), null]]);
+  for (let i = 0; i < queue.length; i++) {
+    const at = queue[i], k = key(...at);
+    if ((!within || within(...at)) && free(b, ...at) && accept(...at)) {
+      const path = [at];
+      for (let p = prev.get(k); p; p = prev.get(key(...p))) path.push(p);
+      return path.reverse();
+    }
+    for (const [dr, dc] of steps) {
+      const next = [at[0] + dr, at[1] + dc], nk = key(...next);
+      if (!prev.has(nk) && (!within || within(...next)) && walkable(b, ...next)) {
+        prev.set(nk, at); queue.push(next);
+      }
+    }
+  }
+  return null;
+}
+
+/** Use the same facing, active range override and extension rules as Battle._refreshRange. */
+function attackRangeAt(u, r, c) {
+  const targeting = u.skill?.active ? u.skill.spec.targeting : null;
+  const grid = targeting?.rangeGrid || u.rangeGrid || [[0, 0]];
+  const extend = (targeting?.noRangeExtend ? 0 : u.s.rangeExtend) + (targeting?.rangeExtend || 0);
+  const keys = absoluteRangeKeys(grid, r, c, u.dir, extend);
+  if (u.extraRangeKeys) keys.push(...u.extraRangeKeys);
+  return new Set(keys);
+}
+
+function startMarch(b, u, path, dt, intent, target = null) {
+  if (!path || path.length < 2) return false;
+  u.mem.remLeg = { from: path[0], to: path[1], intent, target: target?.id ?? null };
+  if (target) u.mem.remTarget = target.id;
+  else delete u.mem.remTarget;
+  advanceMarch(b, u, dt);
+  return true;
+}
+
+function moveTroop(b, s, u, dt) {
+  const coverage = fireCoverage(b), within = (r, c) => coverage.keys.has(key(r, c));
+  const profile = effectiveProfile(u), at = [u.tileR, u.tileC];
+  const coveredTarget = e => e && !e.isFlying && canTargetEnemy(u, e, profile) && bodyInRange(e, coverage.keys);
+  // The ordinary attack loop retains its blocked-target priority. Contact never drags an enemy along.
+  if (b.enemiesInKeys(u.rangeKeys, u, profile).length) return;
+  const leg = u.mem.remLeg;
+  if (leg) {
+    const invalidTarget = leg.intent === 'chase' && !coveredTarget(coverage.enemies.get(leg.target));
+    const outside = (leg.intent === 'chase' || leg.intent === 'wander') && !within(...leg.to);
+    if (invalidTarget || outside) {
+      // Reverse the actual segment, rather than teleporting from a rounded tile or following a dead target.
+      delete u.mem.remTarget;
+      if (!walkable(b, ...leg.from)) return;
+      leg.to = leg.from;
+      leg.intent = 'return';
+    }
+    advanceMarch(b, u, dt); return;
+  }
+  const foes = b.enemies.filter(coveredTarget);
+  foes.sort((a, c) => bodyDist(a, u.x, u.y) - bodyDist(c, u.x, u.y) || a.spawnSeq - c.spawnSeq || a.id - c.id);
+  const searchKey = `${coverage.signature};${b.grid.version};${foes.map(e => `${e.id}:${e.x}:${e.y}`).join(',')}`;
+  if (u.mem.remSearchKey === searchKey && u.mem.remSearchAt > b.time) return;
+  u.mem.remSearchKey = searchKey;
+  // A new batch enters the nearest reachable coverage component; pursuit itself never leaves it.
+  if (coverage.keys.size && !within(...at)) {
+    const path = mobilePath(b, at, within);
+    if (startMarch(b, u, path, dt, 'enter')) return;
+  } else if (within(...at)) {
+    let target = null;
+    const path = foes.length ? mobilePath(b, at, (r, c) => {
+      const keys = attackRangeAt(u, r, c);
+      target = foes.find(e => bodyInRange(e, keys)) ?? null;
+      return !!target;
+    }, within) : null;
+    if (startMarch(b, u, path, dt, 'chase', target)) return;
+    // A per-unit rotating cardinal choice produces continuous local wandering, without a fixed rendezvous.
+    const turn = u.mem.remWanderTurn ?? u.id % steps.length;
+    for (let i = 0; i < steps.length; i++) {
+      const index = (turn + i) % steps.length, [dr, dc] = steps[index];
+      const next = [at[0] + dr, at[1] + dc];
+      if (!within(...next) || !free(b, ...next)) continue;
+      u.mem.remWanderTurn = (index + 1) % steps.length;
+      if (startMarch(b, u, [at, next], dt, 'wander')) return;
+    }
+    const wander = mobilePath(b, at, (r, c) => r !== at[0] || c !== at[1], within);
+    if (startMarch(b, u, wander, dt, 'wander')) return;
+  }
+  // With no reachable coverage, clear an entry gate once and wait safely. No new rally or empty-field patrol.
+  const gates = new Set([...b.remState.values()].map(owner => key(...owner.gate)));
+  if (gates.has(key(...at))) {
+    const clear = mobilePath(b, at, (r, c) => !gates.has(key(r, c)));
+    if (startMarch(b, u, clear, dt, 'clear')) return;
+  }
+  delete u.mem.remTarget;
+  u.mem.remSearchAt = b.time + .5;
+}
+
 function move(b, s, u, dt) {
   u.moving = false;
   if (!u.canAct || u.s.flags.noMove || u.blocking.length) return;
-  const type = u.remType, vehicle = special(type), fly = type === 'boss';
-  // A flyer retains a reserved off-road home tile, like Yan's moving summon. Its world
-  // position follows the ground route without occupying or blocking that ground corridor.
+  const type = u.remType, fly = type === 'boss';
+  if (!special(type)) { moveTroop(b, s, u, dt); return; }
+  // Preserve the boss's existing air route and actual world position without occupying or blocking its corridor.
   if (fly) {
     const route = s.airRoute;
     if (route.length < 2) return;
@@ -162,77 +290,29 @@ function move(b, s, u, dt) {
     u.moving = d > 1e-9;
     return;
   }
-  // Blocking uses fractional world coordinates; range keys follow the current tile as in the engine.
-  if (!vehicle && b.enemiesInKeys(u.rangeKeys, u, u.profile).length) return;
   if (u.mem.remLeg) { advanceMarch(b,u,dt); return; }
   if ((u.mem.remPlanAt || 0) > b.time + 1e-9) return;
   const at = [u.tileR, u.tileC];
-  const inRally = (r, c) => Math.max(Math.abs(r - s.rally[0]), Math.abs(c - s.rally[1])) <= 1;
-  // Tour the rendezvous's eight neighbours; the centre is a legal transit tile.
-  // A fixed rotating order keeps the simulation deterministic and patrol paths inside the 3x3 area.
-  if (!vehicle && u.mem.remSettled && !inRally(...at)) u.mem.remSettled = false;
-  if (!vehicle && inRally(...at) && free(b, ...at, u) && !u.remTransitAnchor) u.mem.remSettled = true;
-  if (!vehicle && u.mem.remSettled) {
-    const ring = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]];
-    const start = u.mem.remPatrolIndex ?? u.id % ring.length;
-    for (let i = 0; i < ring.length; i++) {
-      const index = (start + i) % ring.length, [dr, dc] = ring[index];
-      const goal = [s.rally[0] + dr, s.rally[1] + dc];
-      if ((goal[0] === at[0] && goal[1] === at[1]) || !free(b, ...goal, u)) continue;
-      const path = remPath(b, at, [goal], u, false, false, true, inRally);
-      if (path?.length > 1) {
-        u.mem.remPatrolIndex = (index + 1) % ring.length;
-        u.mem.remLeg = { from: at, to: path[1] };
-        advanceMarch(b, u, dt);
-        return;
-      }
-    }
-    if (u.remTransitAnchor) {
-      const path = remPath(b, at, [u.remTransitAnchor], u, false, false, true, inRally);
-      if (path?.length > 1) {
-        u.mem.remLeg = { from: at, to: path[1] };
-        advanceMarch(b, u, dt);
-        return;
-      }
-      if (path?.length === 1) b.relocate(u, ...at);
-    }
-    u.mem.remPlanAt = b.time + 1;
-    return;
-  }
   let goals;
   if (type === 'food' || fly) {
     const end = u.mem.remReturn ? s.gate : s.exit;
     goals = [end, ...[[0, 1], [1, 0], [-1, 0], [0, -1]].map(([dr, dc]) => [end[0] + dr, end[1] + dc])];
   }
-  else if (type === 'bus') goals = nearby(b, s.rally).filter(p => distance(p, s.gate) > 0);
-  else {
-    // Fill deepest reachable route positions first, not the first radius tile encountered.
-    // Manhattan distance gives the wrong order on winding single-lane maps.
-    const candidates = nearby(b, s.rally, 1).filter(p => distance(p, s.gate) > 0 && free(b, ...p, u))
-      .sort((a, c) => (s.depth.get(key(...c)) ?? 0) - (s.depth.get(key(...a)) ?? 0) || distance(a, s.rally) - distance(c, s.rally) || a[0] - c[0] || a[1] - c[1]);
-    goals = [];
-    for (const candidate of candidates) if (remPath(b, [u.tileR, u.tileC], [candidate], u, false, false, true)) { goals = [candidate]; break; }
-  }
+  else goals = nearby(b, s.vehicleStop).filter(p => distance(p, s.gate) > 0);
   goals = goals.filter(p => free(b,...p,u,fly));
-  if (vehicle && goals.length && !remPath(b, [u.tileR,u.tileC], goals, u, fly, false, true)) goals = [];
-  // If the rally filled while this unit was crossing, return to its still-reserved free tile.
-  const returningToAnchor = !goals.length && !!u.remTransitAnchor;
-  if (returningToAnchor) goals = [u.remTransitAnchor];
+  if (goals.length && !remPath(b, [u.tileR,u.tileC], goals, u, fly, false, true)) goals = [];
   if (goals.some(p => p[0] === at[0] && p[1] === at[1])) {
-    // An ally can leave during transit: commit the now-free landing tile before settling/unloading.
-    if (u.remTransitAnchor && !b.relocate(u,...at)) return;
     u.mem.remPlanAt = b.time + 1;
-    if (returningToAnchor) return;
     if (fly) u.mem.remReturn = !u.mem.remReturn;
     else if (type === 'food') b.retreat(u, { reason: 'remRouteEnd', permanent: true });
     else if (type === 'bus') {
       request(b, s, 5, { source: 'bus', point: [u.tileR, u.tileC] });
       b.retreat(u, { reason: 'remPassengersOut', permanent: true });
-    } else u.mem.remSettled = true;
+    }
     return;
   }
   const path = remPath(b, at, goals, u, fly, false, true);
-  // Only transit may share an ally's tile. Destinations and retained reservations remain exclusive.
+  // Other allies still own their tiles; Rem reinforcements themselves do not reserve any tile.
   if (path?.length > 1) {
     u.mem.remLeg = { from: at, to: path[1] };
     advanceMarch(b,u,dt);
@@ -249,7 +329,7 @@ function specials(b, s, u, dt) {
     u.mem.remBomb += dt;
     if (u.mem.remBomb >= 1 - 1e-9) {
       u.mem.remBomb = 0;
-      const x = u.x, y = u.y, amount = u.s.atk;
+      const x = u.x, y = u.y, amount = 2 * u.s.atk;
       b.fx('remPizza', { x, y, src: u.id, ownerId: u.ownerId, r: .45, t: 1 });
       b.after(1, () => {
         if (b.finished) return;
@@ -271,7 +351,13 @@ function aura(b, s) {
 }
 export function install(b) {
   b.remTransit = new Set();
+  b.remTroops = new Set();
   b.on('death', ({unit}) => {
+    if (unit.remMobile) {
+      delete unit.mem.remLeg; delete unit.mem.remTarget;
+      delete unit.mem.remSearchKey; delete unit.mem.remSearchAt;
+      unit.moving = false;
+    }
     if (!unit.remTransitAnchor) return;
     const k = key(...unit.remTransitAnchor);
     if (b._occ[k] === unit) b._occ[k] = null;
@@ -284,23 +370,19 @@ export function install(b) {
     const gates = b.grid.specialTiles('end');
     const home = ps.units[0] ? [ps.units[0].tileR, ps.units[0].tileC] : [10, 3];
     const gate = [...gates].sort((a, c) => distance(a, home) - distance(c, home))[0] ?? home;
-    let rally = ps.input.remRally ? b.mapTile(ps, ps.input.remRally.row, ps.input.remRally.col) : [gate[0], gate[1] + (ps.mirror ? -3 : 3)];
-    if (!ps.input.remRally) {
-      const options = nearby(b, rally).filter(p => distance(p, gate) >= 3);
-      options.sort((a, c) => nearby(b, c).length - nearby(b, a).length || distance(a, rally) - distance(c, rally));
-      rally = options[0] ?? gate;
-    }
-    const exit = b.grid.specialTiles('start').sort((a, c) => distance(a, gate) - distance(c, gate))[0] ?? rally;
+    let vehicleStop = [gate[0], gate[1] + (ps.mirror ? -3 : 3)];
+    const options = nearby(b, vehicleStop).filter(p => distance(p, gate) >= 3);
+    options.sort((a, c) => nearby(b, c).length - nearby(b, a).length || distance(a, vehicleStop) - distance(c, vehicleStop));
+    vehicleStop = options[0] ?? gate;
+    const exit = b.grid.specialTiles('start').sort((a, c) => distance(a, gate) - distance(c, gate))[0] ?? vehicleStop;
     const airRoute = remPath(b, gate, [exit], null, false, true) ?? [gate, exit];
-    const depth = new Map();
-    for (const p of nearby(b, rally)) { const path = remPath(b, gate, [p], null, false, true); if (path) depth.set(key(...p), path.length); }
-    const carry = b.kind === 'unite' && Number.isInteger(ps.input.remAppearances) && ps.input.remAppearances > 0
-      && ps.input.remAppearances <= 1e9 ? ps.input.remAppearances : 0;
-    return { airRoute, depth, ps, stage: remStage(ps.bonds[REM_BOND]), gate, rally, exit, units: [], queue: [], appeared: carry, regular: 0, food: -10, bus: 0, boss: 0, aura: 0 };
+    const carry = b.kind === 'unite' && Number.isInteger(ps.input.remSurvivalTicks) && ps.input.remSurvivalTicks > 0
+      && ps.input.remSurvivalTicks <= 1e9 ? Math.min(survivalCapTicks, ps.input.remSurvivalTicks) : 0;
+    return { airRoute, ps, stage: remStage(ps.bonds[REM_BOND]), gate, vehicleStop, exit, units: [], queue: [], appeared: 0, survivalTicks: carry, regular: 0, food: -10, bus: 0, boss: 0, aura: 0 };
   });
   b.remState = new Map(states.map(s => [s.ps.playerId, s]));
   b.remSummon = (owner, count, opts) => { const s = b.remState.get(owner); return s ? request(b, s, count, opts) : 0; };
-  b.on('deploy', ({ unit }) => { const s = b.remState.get(unit.ownerId); if (s) refreshAppearance(b, s); });
+  b.on('deploy', ({ unit }) => { const s = b.remState.get(unit.ownerId); if (s) refreshSurvival(b, s); });
   b.on('battleStart', () => {
     for (const s of states) if (s.stage) {
       request(b, s, REM_OPENING[s.stage - 1], { source: 'regular', capMode: 'regular' });
@@ -316,6 +398,10 @@ export function install(b) {
   b.on('tick', ({ dt }) => {
     for (const s of states) {
       if (!s.stage && !s.units.length && !s.queue.length) continue;
+      if (s.stage >= 2) {
+        s.survivalTicks = Math.min(survivalCapTicks, s.survivalTicks + living(s).length);
+        refreshSurvival(b, s);
+      }
       if (s.stage) {
         s.regular += dt;
         if (s.regular >= REM_INTERVALS[s.stage - 1] - 1e-9) { s.regular = 0; request(b, s, REM_BATCHES[s.stage - 1], { source: 'regular', capMode: 'regular' }); }
@@ -331,6 +417,12 @@ export function install(b) {
         specials(b, s, u, dt); move(b, s, u, dt); }
       drain(b, s);
       s.aura += dt; if (s.aura >= .2 - 1e-9) { s.aura = 0; aura(b, s); }
+    }
+    // Contact sees all final positions once per tick, rather than rescanning the whole formation for every marcher.
+    if (b._remMoved) {
+      b._remMoved = false;
+      for (const e of b.enemies) if (present(e)) b._checkBlock(e);
+      for (const u of b.remTroops) if (u.blocking.length) u.moving = false;
     }
   });
   b.on('battleEnd', () => { for (const s of states) { s.queue.length = 0; for (const u of living(s)) b.retreat(u, { reason: 'remBattleEnd', permanent: true }); } });

@@ -92,14 +92,13 @@ export function buildBattleSpec(o = {}) {
     ...(isContentHash(o.vs) ? { vs: o.vs } : {}),
   };
   const out = JSON.parse(JSON.stringify(spec, specReplacer));
-  for (const p of out.players) if (p && Object.hasOwn(p, 'remAppearances')) {
-    if (out.kind !== 'unite' || !Number.isInteger(p.remAppearances) || p.remAppearances < 0 || p.remAppearances > 1e9) delete p.remAppearances;
+  for (const p of out.players) if (p && Object.hasOwn(p, 'remSurvivalTicks')) {
+    if (out.kind !== 'unite' || !Number.isInteger(p.remSurvivalTicks) || p.remSurvivalTicks < 0 || p.remSurvivalTicks > 1e9) delete p.remSurvivalTicks;
   }
-  for (const p of out.players) {
-    if (!p || !Object.hasOwn(p, 'remRally')) continue;
-    const r = p.remRally;
-    p.remRally = r && Number.isInteger(r.row) && r.row >= 9 && r.row <= 12 && Number.isInteger(r.col) && r.col >= 2 && r.col <= 10
-      ? { row: r.row, col: r.col } : null;
+  // Retired growth and rally metadata never enter a new battle, including from an older replay/session.
+  for (const p of out.players) if (p) {
+    delete p.remAppearances;
+    delete p.remRally;
   }
   for (const p of out.players) for (const u of (p && Array.isArray(p.units) ? p.units : [])) if (u && typeof u === 'object') sanitizeUnitLoadout(u);
   return out;
@@ -369,7 +368,7 @@ export function resultDigest(result) {
       Math.round(Number(p.damageDealt) || 0), Math.round(Number(p.bossDamage) || 0),
       (Array.isArray(p.unitsEnd) ? p.unitsEnd : []).map((u) => [u && u.uid, r4(u && u.hpPct), r4(u && u.sp), !!(u && u.alive),
         ...(u?.kazdelSoul ? [[r4(u.kazdelSoul.hpPct), r4(u.kazdelSoul.sp)]] : [])]),
-      ...(Number.isInteger(p.remAppearances) && p.remAppearances > 0 ? [p.remAppearances] : []),
+      ...(Number.isInteger(p.remSurvivalTicks) && p.remSurvivalTicks > 0 && p.remSurvivalTicks <= 1e9 ? [p.remSurvivalTicks] : []),
     ];
   });
   const json = JSON.stringify([res.reason ?? null, r4(res.time), res.killed | 0, res.total | 0, players]);
@@ -445,7 +444,7 @@ export function compactResult(res) {
     // the HUD capsule's numerator (or absent for a result that has none: the teammate UI falls back to `killed`)
     const resolved = Number.isFinite(p.resolved) ? Math.max(0, Math.min(total, Math.trunc(p.resolved))) : null;
     if (resolved != null) perPlayer[pid].resolved = resolved;
-    if (Number.isInteger(p.remAppearances) && p.remAppearances > 0 && p.remAppearances <= 1e9) perPlayer[pid].remAppearances = p.remAppearances;
+    if (Number.isInteger(p.remSurvivalTicks) && p.remSurvivalTicks > 0 && p.remSurvivalTicks <= 1e9) perPlayer[pid].remSurvivalTicks = p.remSurvivalTicks;
   }
   const out = {
     reason: ['cleared', 'timeout', 'forced'].includes(r.reason) ? r.reason : 'forced',

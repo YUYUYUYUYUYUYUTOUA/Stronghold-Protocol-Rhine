@@ -1014,13 +1014,20 @@ at zero after a removal, without a `debt` entry. Ordinary grants, 整备 and 机
 to shared availability (§30.2). 凯瑟琳's `pool_equip_kathe` is every shop-eligible item plus 突变细胞 (`also`), uniform
 [ASSUMED], at any 调度中心 level (#631); the shop item slot does not read `also`.
 
-### 雷姆必拓集合点（莱茵扩展）
+### 雷姆必拓自动寻敌（莱茵扩展）
 
-`g.remRally { row, col }` 在可操作的准备阶段设置本玩家集合点，沿用普通准备操作的存活、阶段及准备锁定检查。
-目标使用己方棋盘坐标，必须是本轮部署地图的近战低地格；标记本身不占格，战斗中不可修改。
-`PlayerState.remRally` 跨轮保留选择；`m.private.remRally` 和 `battleInput().remRally` 返回独立副本。
-若换图或地形改变导致原点不再合法，本轮输出 `null`，由援军系统采用蓝门附近默认点。
-最终攻势仍发送棋盘坐标，由模拟的玩家坐标映射转换到对应半场；不发送客户端自报的战场坐标。
+普通援军出场后，只选择同战场友方（包含合作队友）存活且已部署的攻击型干员火力覆盖内的合法可达敌人，连续移动接近并攻击；
+目标死亡、离开覆盖或不可达时重新选敌。无合格敌人时，在覆盖内沿四方向可通行地块持续徘徊；
+无覆盖时安全让开蓝门后待机。雷姆援军彼此出生、移动与停留均可重叠，含车辆与老板，
+不占用干员部署格，也不改地形与非援军占位规则；车辆和老板保留原路线。具体规则见 [REM](REM.md)。
+集合点界面、玩家状态与 `g.remRally` 指令已取消；旧客户端发送该指令会得到 `BAD_MSG`。
+私有视图和 `battleInput()` 不再携带集合点，`buildBattleSpec()` 也会丢弃旧输入中的 `remRally`，
+避免过期的玩家选择进入新战斗或重连后的战斗规格。
+
+六／九档存活攻血以 `remSurvivalTicks` 在普通主战结果、同回合联防输入及强制复核中传递，
+每名己方实际存活已部署援军每游戏 tick 贡献1，30为一援军·秒；每援军·秒增攻血1%／2%，
+上限200%／300%。待生成不计，死退后停止贡献，已得保留至回合结束，下一回合清零。
+此字段与温米／暴行产生的盟约层数分开，援军实体不跨场保留。
 
 ### Rhine v0.3.0 maintainer-approved compatibility
 

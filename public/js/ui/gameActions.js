@@ -83,7 +83,6 @@ export const actions = {
   sell: (uid) => act('g.sell', { uid }),
   // `dir` (UP|RIGHT|DOWN|LEFT): the direction chosen with the deploy wheel (research 09 §6.1 — g.move / g.art carry it;
   // the server defaults to RIGHT when absent)
-  remRally: (row, col) => act('g.remRally', { row, col }),
   move: (uid, to, dir) => act('g.move', dir ? { uid, to, dir } : { uid, to }),
   // `replaceUid`: the equipped item the replace dialog picked (ui/equipReplace.js) — it is destroyed; absent ⇒ none needed
   equip: (itemUid, targetUid, replaceUid) => act('g.equip', Number.isInteger(replaceUid) ? { itemUid, targetUid, replaceUid } : { itemUid, targetUid }),

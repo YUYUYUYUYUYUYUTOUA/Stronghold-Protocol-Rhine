@@ -7,11 +7,13 @@ import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { releaseChannel, verifyPublishedChannel } from './rhine-release-channel.mjs';
+import { browserAcceptancePolicy, browserTestArguments, verifyBrowserAcceptance } from './rhine-browser-acceptance.mjs';
 
 const automation = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workspace = path.dirname(automation);
 const request = JSON.parse(fs.readFileSync(path.join(automation, '.github/rhine-release-request.json'), 'utf8'));
 const publicationChannel = releaseChannel(request);
+const browserPlan = browserAcceptancePolicy(request);
 const repo = process.env.GITHUB_REPOSITORY;
 const root = path.join(process.env.RUNNER_TEMP || workspace, 'rhine-release');
 const source = path.join(workspace, 'source');
@@ -338,7 +340,7 @@ async function main() {
   }
   const tests = runTests(node, built.destination, [
     'test/content/rem.test.js', 'test/content/rem-traits.test.js', 'test/content/rem-balance.test.js', 'test/content/rem_native_kits.test.js',
-    'test/content/rem-pizza-fx.test.js', 'test/rem_data.test.js', 'test/match/rem-rally.test.js',
+    'test/content/rem-pizza-fx.test.js', 'test/rem_data.test.js', 'test/rem-default-modules.test.js', 'test/match/rem-rally.test.js',
     'test/match/rem-price.test.js', 'test/match/kazdel-unite.test.js', 'test/content/rhine_magallan.test.js',
     'test/tools/rem-asset-plan.test.js',
     'test/content/community-round29.test.js', 'test/content/echo-counter-023.test.js',
@@ -382,17 +384,21 @@ async function main() {
   const hostTests = runTests(node, built.destination, ['test/match/plugin-host.test.js', 'test/plugins/sandbox-host.test.js'],
     path.join(root, 'packaged-plugin-host-tests.log'), { concurrency: 1, timeout: 300000 });
   let browserTests = null;
+  let browserAcceptance = null;
   if (fresh) {
     const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
       .map(dir => path.join(dir, 'Microsoft/Edge/Application/msedge.exe')).find(file => fs.existsSync(file));
     assert.ok(edge, 'Microsoft Edge is required for the native Windows renderer checks.');
+    fs.writeFileSync(path.join(root, 'browser-plan.json'), JSON.stringify(browserPlan, null, 2) + '\n');
     const browserOutput = path.join(built.destination, 'test/e2e/out');
     assert.equal(fs.existsSync(browserOutput), false);
     const browserFailures = [];
     // Browser groups are independent. Collect every group's original result so a fixture failure
     // cannot hide later compatibility failures behind another complete Windows package rebuild.
-    const runBrowserTests = (...args) => {
+    const runBrowserTests = (group, ...args) => {
       try {
+        const options = args[4] || {};
+        args[4] = { ...options, args: [...(options.args || []), ...browserTestArguments(browserPlan, group)] };
         const totals = runTests(...args);
         assert.ok(totals.pass > 0, 'A browser group must execute at least one passing test.');
         return totals;
@@ -403,34 +409,38 @@ async function main() {
       }
     };
     browserTests = {
-      remSimulation: runBrowserTests(node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
+      remSimulation: runBrowserTests('remSimulation', node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
         path.join(root, 'browser-rem-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      remRenderer: runBrowserTests(node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
+      newSync: runBrowserTests('newSync', node, built.destination, ['test/sim/rem-survival.browser.test.js'],
+        path.join(root, 'browser-rem-survival.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
+      remRenderer: runBrowserTests('remRenderer', node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
         path.join(root, 'browser-rem-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      remRally: runBrowserTests(node, built.destination, ['test/ui/rem-rally.browser.test.js'],
+      remRally: runBrowserTests('remRally', node, built.destination, ['test/ui/rem-rally.browser.test.js'],
         path.join(root, 'browser-rem-rally.log'), { concurrency: 1, env: { SP_E2E: '1', CHROME_PATH: edge } }),
-      kazdelSimulation: runBrowserTests(node, built.destination, ['test/sim/kazdel.browser.test.js', 'test/sim/reactive-origin.browser.test.js'],
+      kazdelSimulation: runBrowserTests('kazdelSimulation', node, built.destination, ['test/sim/kazdel.browser.test.js', 'test/sim/reactive-origin.browser.test.js'],
         path.join(root, 'browser-kazdel-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      renderer: runBrowserTests(node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
+      renderer: runBrowserTests('renderer', node, built.destination, ['test/render/kazdel.browser.test.js', 'test/render/rhineDevices.browser.test.js', 'test/ui/kazdel-icon.browser.test.js'],
         path.join(root, 'browser-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      rhineOperators: runBrowserTests(node, built.destination, ['test/render/rhineOperators.browser.test.js'],
+      rhineOperators: runBrowserTests('rhineOperators', node, built.destination, ['test/render/rhineOperators.browser.test.js'],
         path.join(root, 'browser-rhine-operators.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      upstreamRenderer: runBrowserTests(node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
+      upstreamRenderer: runBrowserTests('upstreamRenderer', node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
         path.join(root, 'browser-upstream-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      upstreamUi: runBrowserTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js',
+      upstreamUi: runBrowserTests('upstreamUi', node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js',
         'test/ui/rhine-profiles.e2e.test.js'],
         path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
-      sixSeatUi: runBrowserTests(node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
+      sixSeatUi: runBrowserTests('sixSeatUi', node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
         path.join(root, 'browser-six-seat.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
-      statsLandscape: runBrowserTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
+      statsLandscape: runBrowserTests('statsLandscape', node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
-      upstreamPlugins: runBrowserTests(node, built.destination, ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js',
+      upstreamPlugins: runBrowserTests('upstreamPlugins', node, built.destination, ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js',
         'test/ui/studio-gameplay.e2e.test.js'], path.join(root, 'browser-plugins.log'),
         { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_STUDIO: 'local' } }),
     };
     fs.writeFileSync(path.join(root, 'browser-gates.json'), JSON.stringify(browserTests, null, 2) + '\n');
     if (fs.existsSync(browserOutput)) fs.renameSync(browserOutput, path.join(root, 'browser-evidence'));
     assert.equal(browserFailures.length, 0, `Windows browser acceptance failed; release remains a draft: ${JSON.stringify(browserFailures)}`);
+    browserAcceptance = verifyBrowserAcceptance(browserPlan, browserTests);
+    progress(`Reviewed browser acceptance: ${JSON.stringify(browserAcceptance)}`);
     assert.ok(fs.existsSync(path.join(root, 'browser-evidence')), 'Browser acceptance must produce its real screenshots.');
     progress('Native Windows Edge renderer and stats-page checks passed; screenshots moved outside the payload.');
   }
@@ -523,6 +533,7 @@ async function main() {
   fs.writeFileSync(path.join(assets, 'UPDATE-TOOL-SHA256.txt'), `${toolSha}  ${toolName}\n`);
   const report = { ...request.sourceValidation, createdAt: new Date().toISOString(), sourceCommit: request.sourceCommit,
     releaseChannel: { prerelease: publicationChannel.prerelease, makeLatest: publicationChannel.make_latest === 'true' },
+    browserAcceptance,
     approvedArt: request.approvedArt || {},
     remOriginal: request.remOriginal || null,
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
@@ -599,7 +610,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'source-author-tests.log', 'packaged-plugin-host-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log', 'browser-gates.json']) {
+    for (const name of ['browser-rem-sim.log', 'browser-rem-survival.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'source-author-tests.log', 'packaged-plugin-host-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log', 'browser-gates.json', 'browser-plan.json']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }

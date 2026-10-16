@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { makeBattle, chessRec } from '../helpers/battleHarness.js';
+import { makeBattle, chessRec, enemyRec } from '../helpers/battleHarness.js';
 import * as rem from '../../server/sim/content/rem.js';
 import { unitInfo } from '../../server/sim/snapshot.js';
 import { ANIM } from '../../shared/constants.js';
@@ -19,8 +19,11 @@ test('actual reinforcement art follows authoritative fractional samples with the
     content=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
   }
   const h=makeBattle({content:'generic',extraContent:[content],autoFinish:false,
-    defs:{chess:{r:chessRec({id:'r',bonds:[],skill:null})}},units:[{chessId:'r',row:12,col:8}],bonds:{}});
-  h.step();const state=h.b.remState.get('p1');state.gate=[10,3];state.rally=[10,8];state.queue.push({type:'miner',source:'test'});h.step();
+    defs:{chess:{r:chessRec({id:'r',bonds:[],skill:null,stats:{atk:0}})},enemies:{target:enemyRec({key:'target',hp:1e9,atk:0,speed:0})}},units:[{chessId:'r',row:12,col:8}],bonds:{}});
+  h.step();const state=h.b.remState.get('p1');state.gate=[10,3];state.vehicleStop=[10,8];
+  if(before)state.rally=[10,8];
+  const op=h.unit('r');op.rangeGrid=Array.from({length:8},(_,i)=>[10-op.tileR,3+i-op.tileC]);h.b._refreshRange(op);
+  h.spawn('target',{pos:[10,10]});state.queue.push({type:'miner',source:'test'});h.step();
   const u=state.units[0];u.deployedAt=-10;const info=unitInfo(u),snapshots=[];
   for(let i=0;i<60;i++){h.step();const snap=h.b.snapshot();snap.fieldId='rem-motion';snap.units=snap.units.filter(t=>t[0]===u.id);snapshots.push(snap);}
   const jumps=snapshots.slice(1).map((s,i)=>Math.abs(s.units[0][1]-snapshots[i].units[0][1])+Math.abs(s.units[0][2]-snapshots[i].units[0][2]));

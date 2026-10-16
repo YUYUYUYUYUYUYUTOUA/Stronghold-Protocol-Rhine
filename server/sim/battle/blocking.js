@@ -52,6 +52,14 @@ export class BattleBlocking {
       const r2 = fly ? BLOCK_RADIUS_SQ.fly*k*k : BLOCK_RADIUS_SQ.ground;
       if (d2 < r2 && d2 < bd) { u=o; bd=d2; }
     }
+    // Rem reinforcements do not reserve tiles, including when stopped on another reinforcement.
+    for (const o of this.remTroops || []) {
+      if (!this._blockerFor(o, e, w)) continue;
+      const d2 = (e.x - o.x) * (e.x - o.x) + (e.y - o.y) * (e.y - o.y);
+      const k = fly ? 1 + (o.s.blockRadiusScale || 0) : 1;
+      const r2 = fly ? BLOCK_RADIUS_SQ.fly * k * k : BLOCK_RADIUS_SQ.ground;
+      if (d2 < r2 && d2 < bd) { u = o; bd = d2; }
+    }
     if (!u) return false;
     e.blockedBy = u;
     u.blocking.push(e);

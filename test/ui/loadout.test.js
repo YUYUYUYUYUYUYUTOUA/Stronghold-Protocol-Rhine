@@ -524,7 +524,7 @@ test('entry badge (review fix): counts like the screen once chess.json is loaded
   assert.equal(badgeCount({}, get), 0);
 });
 
-test('all nine new Rem fixed cards expose every native skill and allowed module, with unchanged default choices', () => {
+test('all nine new Rem fixed cards expose every native skill and allowed module, defaulting to the first supported ordinary module', () => {
   const expected = [
     ['jcinta', ['skcom_assist_cost[3]', 'skchr_jcinta_2'], ['uniequip_002_jcinta']],
     ['glider', ['skchr_glider_1', 'skchr_glider_2'], ['uniequip_002_glider']],
@@ -542,7 +542,7 @@ test('all nine new Rem fixed cards expose every native skill and allowed module,
     assert.deepEqual(base.skills.map(s => s.skillId), skills, `${name}: all ordinary skills`);
     assert.deepEqual(golden.skills.map(s => s.skillId), skills, `${name}: all elite skills`);
     assert.deepEqual(golden.modules.map(m => m.uniEquipId), modules, `${name}: all permitted modules`);
-    assert.deepEqual(effectiveChoice({}, base, golden), { skill: skills.length - 1, module: 'none', changed: false });
+    assert.deepEqual(effectiveChoice({}, base, golden), { skill: skills.length - 1, module: modules[0], changed: false });
     const options = chessOptions(base, golden);
     assert.deepEqual(options.skills, skills.map((_, i) => i));
     assert.deepEqual(options.modules, [...modules, 'none']);

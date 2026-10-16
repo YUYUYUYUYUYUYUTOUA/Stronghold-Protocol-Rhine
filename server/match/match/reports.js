@@ -124,11 +124,11 @@ export class MatchReports {
    * 'sample' accepts immediately and only logs differences for ~1 battle in 8, even after the field's phase ends.
    */
   _verifyResult(f, result, accept) {
-    // A normal field's appearance count changes the helper's stats in the same round's unite battle. Accept that
+    // A normal field's reinforcement survival ticks change the helper's stats in the same round's unite battle. Accept that
     // carried state only after deterministic server verification, including when diagnostic SP_VERIFY is off.
-    const carriesAppearances = f.kind === 'normal' && Object.values(result.perPlayer || {}).some(p => p.remAppearances > 0);
-    if (this.verifyMode === 'off' && !carriesAppearances) { accept(result); return; }
-    const required = this.verifyMode === 'all' || carriesAppearances;
+    const carriesSurvivalTicks = f.kind === 'normal' && Object.values(result.perPlayer || {}).some(p => p.remSurvivalTicks > 0);
+    if (this.verifyMode === 'off' && !carriesSurvivalTicks) { accept(result); return; }
+    const required = this.verifyMode === 'all' || carriesSurvivalTicks;
     const start = () => {
       const job = new HeadlessJob(this._specBattle(f.spec), { players: f.players, onError: (e) => this.reportError('verify', e) });
       if (required) {

@@ -235,9 +235,9 @@ export class BattleLifecycle {
       // Actual enemy deaths credited to this player's operators / summons, independent of the enemy's wave owner.
       // Sum the full unit list before compactBattleResult caps unitStats (long fights may spawn many summons).
       pp.creditedKills = ps.units.reduce((n, u) => n + u.stats.kills, 0);
-      // A helper keeps this round's appearance bonus when the same formation enters 联防.
-      const remAppearances = this.remState?.get(ps.playerId)?.appeared;
-      if (remAppearances > 0) pp.remAppearances = remAppearances;
+      // A helper keeps this round's accumulated reinforcement survival ticks when entering 联防.
+      const remSurvivalTicks = this.remState?.get(ps.playerId)?.survivalTicks;
+      if (Number.isInteger(remSurvivalTicks) && remSurvivalTicks > 0 && remSurvivalTicks <= 1e9) pp.remSurvivalTicks = remSurvivalTicks;
       // the operators and the board's summon pieces (a board uid): 联防 carries an operator's HP ratio and SP, a summon's
       // SP only (match/unite.js). `sp` is the official 技力 — stored charges included (PRTS 技能 "可充能X次…当前技力上限等于该
       // 技能技力需求的X倍"); a running skill spent its SP at activation, so it reports what was left (0 for one charge).

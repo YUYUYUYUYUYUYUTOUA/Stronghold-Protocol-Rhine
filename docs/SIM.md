@@ -1705,15 +1705,32 @@ A down operator may carry `carryState: { down: true, kazdelSoul: { hpPct, sp } }
 
 `rem` installs before `rem_traits`. `battle.remSummon(playerId, count, { source, poolStage, capMode })` queues deterministic owner-local summons; `capMode: 'regular'` checks the 6/12/16 capacity, while other sources bypass admission checks. Only `source: 'jacinta'` excludes its ordinary units from that count. `remSpawned { unit, type, ownerId, source }` means an actual successful deployment, not a queued request. Units retain `remType`, `remSource`, and `remCounted`; they are temporary tokens, never operator bodies or covenant members. Pending chefs reserve the owner's shared kind limit.
 
-Ground movement uses cardinal terrain paths and checks the next landing tile. A blocked endpoint does not prevent advancement through the free part of a route; the unit waits before the occupied tile. Full formations can still block vehicles under the current collision rule. Flying bosses retain an off-road occupancy anchor while their actual world position follows the route, as with the existing moving Yan summon. Bombs, passage auras and Kazdel cannon checks use that flying world position. End-of-battle cleanup removes reinforcements and pending requests; nothing carries to the next field. Detailed approved balance and ownership rules: [REM.md](REM.md).
+Ground movement uses cardinal terrain paths and checks terrain, downed bodies and non-Rem occupancy. Rem units
+reserve no exclusive tile and can overlap one another, so a full Rem formation does not block later Rem troops or
+vehicles. Flying bosses retain their special world-space route without an exclusive occupancy anchor. Bombs,
+passage auras and Kazdel cannon checks use the actual world position. End-of-battle cleanup removes reinforcement
+entities and pending requests; only the earned `remSurvivalTicks` state carries into same-round Unite through the
+validated result. Detailed balance and ownership rules: [REM.md](REM.md).
 
 Kazdel stage 3 (nine members) also accepts non-Kazdel original operator bodies in soul carry validation. It does not confer membership passives or death-resource production. Six and nine members both retain full same-owner living-unit cannon damage.
 
 ### Rem ground transit
 
-Rem ground reinforcements alone may cross living allies, including teammates. While crossing, `remTransitAnchor` reserves their last free `_occ` tile; actual `tileR/tileC`, `x/y` and range keys follow the transit position. `remTransit` supplies actual-position blocking candidates and reserved tiles do not ghost-block. Successful ordinary `relocate` commits an exclusive free landing and releases the reservation; it still rejects occupied or downed tiles. Death and battle cleanup release only the unit’s own reservation. Full or unreachable destinations cause transit units to try returning to their reservation without triggering vehicle arrival effects.
+Rem reinforcements may cross living allies, including teammates, and overlap other Rem units at spawn, in motion
+and at rest, including vehicles and bosses. They do not reserve an exclusive `_occ` tile or occupy an operator's
+deployment slot. Actual `tileR/tileC`, `x/y` and refreshed range keys drive contact, blocking and snapshots;
+`remTroops` supplies the live actual-position candidates. Terrain, downed bodies and non-Rem occupancy rules still
+apply. Ordinary troops seek legal reachable enemies within living deployed allied attacking operators' shared-field
+coverage, including co-op teammates; they roam through cardinal coverage tiles without targets and clear the blue
+gate then wait without coverage. Vehicle/boss route arrival effects remain separate. General pathfinding and other
+summons retain their existing occupancy behavior. See [REM](REM.md) for the full movement and ownership rules.
 
-Rem walking advances authoritative `x/y` every tick at the unchanged one tile per game second, follows four-neighbour route segments, and derives current tile/range from that position. `remTransit` also covers fractional movement between free tiles, so the anchor never blocks from behind. At each reached free tile `relocate` commits occupancy; external relocation clears the pending segment. Blocked/stunned troops stop without a visual-only offset. Snapshots emit MOVE for marching Rem units; the standard enemy interpolation/Spine move pipeline consumes those coordinates. Stationary route planning remains bounded to once per second.
+Rem walking advances authoritative `x/y` every tick at the unchanged one tile per game second, follows
+four-neighbour route segments and derives current tile/range from that position. Fractional motion does not reserve
+an exclusive tile at either end; `remTroops` provides current-position contact candidates. Blocked/stunned troops
+stop without a visual-only offset. Snapshots emit MOVE for marching Rem units; standard enemy interpolation/Spine
+walk clips consume those same coordinates. Searches are bounded by the field grid; ordinary troop target/wander
+planning and special vehicle routes remain separate.
 
 
 维什戴尔's `shadowTile` requires `Battle.onFieldBoard` before ranking summon candidates: a board of this field (a
