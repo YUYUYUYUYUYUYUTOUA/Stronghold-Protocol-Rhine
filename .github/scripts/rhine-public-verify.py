@@ -206,7 +206,7 @@ def source_eol_rules(tree):
     return scripts, {'sourceCommit': SOURCE, 'path': '.gitattributes', 'gitBlob': tree['.gitattributes'],
                      'sha256': hashlib.sha256(raw).hexdigest(), 'rules': [' '.join(rule) for rule in expected],
                      'eligibleSourceScripts': len(scripts),
-                     'policy': 'Only exact-tag text/eol=crlf scripts allow strict CRLF checkout to canonical LF Git-blob comparison; all other tracked paths use raw Git blobs'}
+                     'policy': 'Exact-tag explicit text/eol=crlf scripts are validated here; other tracked paths use raw Git blobs unless windowsCheckoutModel explicitly lists their exact-tag Git auto-text Windows conversion, compared byte-for-byte.'}
 
 def verify_source_member(data, source_path, tree, crlf_scripts):
     transformed = source_path in crlf_scripts
