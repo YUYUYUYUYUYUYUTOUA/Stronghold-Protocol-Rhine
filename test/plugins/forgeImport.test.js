@@ -476,10 +476,11 @@ test('two language codes that canonicalise together are refused and write nothin
   const pack = path.join(parent, 'pack');
   writePack(pack, {
     id: 'lang-alias', name: '别名', version: '1.0.0', license: 'CC0-1.0', content: [],
-    i18n: { en: 'i18n/en.json', EN: 'i18n/EN.json' },
+    // Distinct file names reach language-code validation without first triggering the portable path-case guard.
+    i18n: { en: 'i18n/english.json', EN: 'i18n/english-alias.json' },
   }, {
-    'i18n/en.json': JSON.stringify({ hello: 'hi' }),
-    'i18n/EN.json': JSON.stringify({ hello: 'HI' }),
+    'i18n/english.json': JSON.stringify({ hello: 'hi' }),
+    'i18n/english-alias.json': JSON.stringify({ hello: 'HI' }),
   });
   try {
     const got = await importForge(pack, { ...forgeOpts(parent), out: path.join(parent, 'lang-alias') });

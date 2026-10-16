@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { data } from '../../public/js/data.js';
 import { MAX_SEATS, PHASE } from '../../shared/constants.js';
 import { validateC2S } from '../../shared/protocol.js';
 import { normalizeSeats, roomFacts } from '../../public/js/screens/room.js';
@@ -9,6 +11,9 @@ import { PlayerAvatar } from '../../public/js/ui/gameComponents.js';
 import { sortedPlayers, normalizeDraft, normalizeResult, prepCamera, homeFieldId, cycleField, fieldLabel } from '../../public/js/ui/gameLogic.js';
 import { observeTarget, teammateProgress, cameraLayers } from '../../public/js/battle/observe.js';
 import { createBattleRunner } from '../../public/js/battle/runner.js';
+
+const CONFIG = JSON.parse(readFileSync(new URL('../../data/config.json', import.meta.url), 'utf8'));
+data.setContent({ id: 'six-player-test-config', values: { config: CONFIG } });
 
 const players = () => Array.from({ length: 6 }, (_, seat) => ({
   playerId: `p${seat}`, seat, name: `博士${seat + 1}`, alive: true, connected: true, ready: true, lp: 12,
@@ -43,24 +48,41 @@ test('sixth AI fills capacity and contributes to the room BAN count without huma
   assert.equal(facts.humans.length, 5);
   assert.equal(facts.readyHumans, 5);
   assert.equal(facts.canStart, true);
-  assert.deepEqual(difficultyInfo('coop', 'NORMAL', facts.occupied.length).openingBans, { core: 2, addon: 4 });
+  assert.deepEqual(difficultyInfo('coop', 'NORMAL', facts.occupied.length).openingBans, { core: 3, addon: 4 });
 });
 
-test('lobby BAN notes are conditional until a room supplies its occupied member count', () => {
+test('lobby BAN notes use the loaded configuration and fixed occupied seat count', () => {
+  assert.deepEqual(CONFIG.bans.NORMAL, { core: 5, addon: 4 });
+  assert.deepEqual(CONFIG.bans.FUNNY, { core: 2, addon: 1 });
   const lobby = difficultyInfo('coop', 'NORMAL');
-  assert.deepEqual(lobby.openingBans, { core: 4, addon: 4 });
-  assert.match(lobby.openingBanNote, /5 人（含 AI）时核心 3；6 人（含 AI）时核心 2/);
-  for (const count of [5, 6]) {
+  assert.deepEqual(lobby.openingBans, { core: 6, addon: 6 });
+  assert.match(lobby.openingBanNote, /5 人（含 AI）时核心 4；6 人（含 AI）时核心 3/);
+  for (const count of [1, 2, 3, 4]) {
+    assert.deepEqual(difficultyInfo('coop', 'NORMAL', count).openingBans, { core: 6, addon: 6 });
+    assert.deepEqual(difficultyInfo('coop', 'FUNNY', count).openingBans, { core: 3, addon: 3 });
+  }
+  for (const [count, core, funnyCore] of [[5, 4, 1], [6, 3, 0]]) {
     const room = difficultyInfo('coop', 'NORMAL', count);
-    const core = count === 6 ? 2 : 3;
     assert.deepEqual(room.openingBans, { core, addon: 4 });
     assert.equal(room.openingBanNote, `开局 BAN：核心 ${core} / 附加 4`);
-    assert.deepEqual(difficultyInfo('coop', 'FUNNY', count).openingBans, { core: 0, addon: 1 });
+    assert.deepEqual(difficultyInfo('coop', 'FUNNY', count).openingBans, { core: funnyCore, addon: 1 });
   }
-  assert.deepEqual(difficultyInfo('coop', 'NORMAL', 4).openingBans, { core: 4, addon: 4 });
   const solo = difficultyInfo('solo', 'NORMAL', 6);
-  assert.deepEqual(solo.openingBans, { core: 4, addon: 4 });
+  assert.deepEqual(solo.openingBans, { core: 6, addon: 6 }, 'solo always has one starting seat');
   assert.doesNotMatch(solo.openingBanNote, /[56] 人/);
+});
+
+test('room BAN notes follow a changed GameData configuration instead of hard-coded build defaults', () => {
+  data.setContent({ id: 'six-player-test-custom-config', values: { config: {
+    ...CONFIG, bans: { ...CONFIG.bans, NORMAL: { core: 8, addon: 5 } },
+  } } });
+  try {
+    for (const [count, core, addon] of [[1, 9, 7], [4, 9, 7], [5, 7, 5], [6, 6, 5]]) {
+      const room = difficultyInfo('coop', 'NORMAL', count);
+      assert.deepEqual(room.openingBans, { core, addon });
+      assert.equal(room.openingBanNote, `开局 BAN：核心 ${core} / 附加 ${addon}`);
+    }
+  } finally { data.setContent({ id: 'six-player-test-config', values: { config: CONFIG } }); }
 });
 
 test('all six room and match avatars use distinct stable seat colours', () => {

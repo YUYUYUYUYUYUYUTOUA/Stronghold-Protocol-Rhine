@@ -13,9 +13,22 @@ test('six real client simulations traverse rounds 1–14 and settle every player
     for (let round = 1; round <= 14; round++) assert.ok(rounds.has(round), `${pid} participated in round ${round}`);
     assert.ok(client.log.some((msg) => msg.t === 'b.result'), `${pid} uploaded normal battle results`);
   }
-  const fifthBoss = h.clients.get('p_4').starts.find((s) => s.fieldId === 'b3' && s.spec.round === 14);
-  const sixthBoss = h.clients.get('p_5').starts.find((s) => s.fieldId === 'b3' && s.spec.round === 14);
-  assert.equal(fifthBoss.authoritative, true);
-  assert.equal(sixthBoss.authoritative, false);
-  assert.deepEqual(sixthBoss.spec.players.map((p) => [p.playerId, p.side]), [['p_4', 'L'], ['p_5', 'R']]);
+  const groups = new Map();
+  for (const [pid, client] of h.clients) {
+    const start = client.starts.find(s => !s.watch && s.spec.kind === 'boss' && s.spec.round === 14);
+    assert.ok(start, `${pid} received its own paired boss field`);
+    assert.ok(start.spec.players.some(p => p.playerId === pid));
+    assert.deepEqual(start.spec.players.map(p => p.side), ['L', 'R']);
+    if (!groups.has(start.fieldId)) groups.set(start.fieldId, []);
+    groups.get(start.fieldId).push({ pid, start });
+  }
+  assert.equal(groups.size, 3);
+  for (const entries of groups.values()) {
+    assert.equal(entries.length, 2, 'both browsers receive each paired field');
+    const pair = entries.map(({ pid }) => pid).sort();
+    for (const { pid, start } of entries) {
+      assert.deepEqual(start.spec.players.map(p => p.playerId).sort(), pair);
+      assert.equal(start.authoritative, pid === pair[0], 'the lowest connected seat controls its actual seeded pair');
+    }
+  }
 });

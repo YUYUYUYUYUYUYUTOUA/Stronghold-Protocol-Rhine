@@ -1,4 +1,5 @@
-// Real production Match + Battle, legal normal intents from an empty board. Seed 8 fixes the shop/wave route.
+// Real production Match + Battle, legal intents from an empty board. Seed 673 retains Rockrock under the current
+// opening bans and fixes a shop/wave route with a real knockout, band revival and a fresh hit on the same enemy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Battle } from '../../server/sim/Battle.js';
@@ -39,10 +40,11 @@ test('Rockrock killed by a real enemy and automatically revived by Ermengard sta
       });
     }
   }
-  const h = makeMatch({ mode: 'solo', seed: 8 });
+  const h = makeMatch({ mode: 'solo', seed: 673 });
   h.m.BattleClass = ObservedBattle; // read-only observers, no combat state writes
   const p = h.ps('p_0'), act = msg => assert.deepEqual(h.m.handle('p_0', msg), { ok: true });
   try {
+    assert.ok(h.m.pool.has('chess_char_2_10_a'), 'the fixed setup keeps Rockrock available under the opening bans');
     h.start().toPrep(1, { band: 'band_ermengard' });
     act({ t: 'g.buy', slot: 0 });
     act({ t: 'g.move', uid: p.hand.find(x => x?.id === 'chess_char_1_09_a').uid,
@@ -50,8 +52,8 @@ test('Rockrock killed by a real enemy and automatically revived by Ermengard sta
     h.toPrep(2, { band: 'band_ermengard' });
     act({ t: 'g.levelUp' });
     h.toPrep(5, { band: 'band_ermengard' });
-    assert.equal(p.shop.slots[3].id, 'chess_char_2_10_a');
-    act({ t: 'g.buy', slot: 3 });
+    assert.equal(p.shop.slots[0].id, 'chess_char_2_10_a');
+    act({ t: 'g.buy', slot: 0 });
     act({ t: 'g.move', uid: p.hand.find(x => x?.id === 'chess_char_2_10_a').uid,
       to: { area: 'board', row: 12, col: 8 }, dir: 'RIGHT' });
     h.toPrep(7, { band: 'band_ermengard' });

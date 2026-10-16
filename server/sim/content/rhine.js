@@ -305,6 +305,7 @@ export function install(battle) {
     }
     laserActive(s, true);
     s.laserTime += dt;
+    // loop-cap: fixed-step finite accumulator; every pass consumes the frozen positive laserTick.
     while (s.laserTime >= B.laserTick - 1e-9 && target.alive && !target.removed && laserSelectable(s, target) && !target.s.flags.invulnerable) {
       s.laserTime = Math.max(0, s.laserTime - B.laserTick);
       const beforeShield = target.s.shield, beforeProgress = s.laserProgress;
@@ -323,6 +324,7 @@ export function install(battle) {
         }
         if (beforeProgress >= B.laserRampSeconds - 1e-9) {
           s.laserTrue += B.laserTick;
+          // loop-cap: finite laser-tick accumulator; each pass subtracts the frozen positive true interval.
           while (s.laserTrue >= B.laserTrueInterval - 1e-9 && target.alive && !target.removed) {
             s.laserTrue = Math.max(0, s.laserTrue - B.laserTrueInterval);
             const maxHp = target.bossPool?.maxHp ?? target.s.maxHp;

@@ -373,8 +373,15 @@ describe('the runner\'s cs check (public/js/battle/runner.js)', () => {
     const s = realStart();
     s.spec.cs = 'cd'.repeat(32);
     const state = { held: null, loading: 'cd'.repeat(32) };
-    const r = rig({ state, contentFor: async (cs) => { await tick(); state.held = { cs, data: DATA }; state.loading = null; return state.held; } });
-    r.net.emit('b.start', s);
+    let finishLoading;
+    const loaded = new Promise((resolve) => { finishLoading = resolve; });
+    const r = rig({ state, contentFor: async (cs) => { await loaded; state.held = { cs, data: DATA }; state.loading = null; return state.held; } });
+    const prepared = r.runner.onStart(s);
+    await Promise.resolve();
+    assert.equal(r.runner._entries.size, 0, 'no battle is built before the content check finishes');
+    assert.equal(r.sent.some((m) => m.t === 'b.progress' || m.t === 'b.result'), false);
+    finishLoading();
+    await prepared;
     await r.run(60_000);
     const e = r.runner._entries.get(s.battleId);
     assert.equal(e.authoritative, true, 'kept while the page loaded the set, confirmed once it was there');

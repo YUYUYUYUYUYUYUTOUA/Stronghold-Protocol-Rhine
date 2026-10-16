@@ -87,5 +87,6 @@ test('CLI test runs the template harness with composed data',t=>{
  fs.writeFileSync(path.join(f.pluginsDir,'config.json'),JSON.stringify({trusted:{'script-demo':'wrong-pin'}}));
  const env={...process.env,SP_PLUGIN_SCRIPTS:'sandbox'};delete env.NODE_TEST_CONTEXT;
  const r=spawnSync(process.execPath,['tools/plugin.mjs','test','script-demo','--root',f.root],{encoding:'utf8',timeout:20000,env});
- assert.equal(r.status,0,r.stdout+r.stderr);assert.match(r.stdout,/# pass 1/);
+ // Node 22/24 may select TAP or spec; the composed template must still pass exactly once with zero failures.
+ assert.equal(r.status,0,r.stdout+r.stderr);assert.match(r.stdout,/^(?:#|ℹ) pass 1$/m);assert.match(r.stdout,/^(?:#|ℹ) fail 0$/m);
 });

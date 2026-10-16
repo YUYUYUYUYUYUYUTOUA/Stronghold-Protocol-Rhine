@@ -33,7 +33,9 @@ const { data, getMode } = await import('../../public/js/data.js');
 const { DATA, makeMatch } = await import('../match/harness.js');
 
 await data.loadAll('chess', 'bonds', 'assets', 'config');
-const SRC = (modeId) => ({ bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: getMode(modeId) });
+const SRC = (modeId, gd = null) => gd
+  ? { bonds: Object.values(gd.raw.bonds), chess: (id) => gd.chess(id), mode: gd.mode }
+  : { bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: getMode(modeId) };
 
 function* walk(v) {
   if (Array.isArray(v)) { for (const x of v) yield* walk(x); return; }
@@ -171,10 +173,12 @@ test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "o
     const h = makeMatch({ mode, difficulty: 'FUNNY', humans: 1, seed: 11 }).start();
     const pub = h.m.publicView();
     assert.equal(pub.modeId, modeId);
-    const m = matchInfoModel(pub, SRC(pub.modeId));
+    assert.equal(pub.startingPlayerCount, 1, 'both starts have one occupied seat');
+    assert.deepEqual(pub.openingBans, { core: 3, addon: 3 }, 'the small-room increase is one core and two add-on bans');
+    const m = matchInfoModel(pub, SRC(pub.modeId, h.m.gd));
     assert.deepEqual([...m.sets.off].sort(), [...OFF_FUNNY].sort(), `${modeId}: 标准模拟's inactiveBondIdList`);
-    assert.equal(m.sets.drawn.size, 3, 'the expanded roster retains the standard core/add-on disabling rule');
-    assert.equal([...m.sets.drawn].filter((b) => DATA.bonds[b].isCore).length, 2, 'ten expanded core bonds disable two under the unchanged proportional rule');
+    assert.equal(m.sets.drawn.size, 6, 'three core and three add-on bonds are drawn for one starting seat');
+    assert.equal([...m.sets.drawn].filter((b) => h.m.gd.raw.bonds[b].isCore).length, 3);
     assert.ok([...m.sets.drawn].every((b) => !OFF_FUNNY.includes(b)));
     assert.deepEqual([...m.banned].sort(), [...pub.bannedChess].sort(), 'every banned operator is known');
     assert.deepEqual(m.banned.map((id) => DATA.chess[id].tier), [...m.banned.map((id) => DATA.chess[id].tier)].sort((a, b) => a - b));
@@ -183,11 +187,14 @@ test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "o
     assert.match(textOf(MatchLegend({ model: m })), /或本模式禁用/);
     h.m.dispose();
   }
-  // Hard disables half the core roster: five of ten, plus four add-on bonds.
+  // Two starting seats use the approved six core / six add-on rotation on their own GameData.
   const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, bots: 1, seed: 4 }).start();
-  const m = matchInfoModel(h.m.publicView(), SRC('mode_multi_hard'));
+  const pub = h.m.publicView();
+  assert.equal(pub.startingPlayerCount, 2, 'the AI contributes one starting seat');
+  assert.deepEqual(pub.openingBans, { core: 6, addon: 6 });
+  const m = matchInfoModel(pub, SRC(pub.modeId, h.m.gd));
   assert.equal(m.sets.off.size, 0);
-  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [5, 4]);
+  assert.deepEqual([m.core.filter((b) => m.stateOf(b.bondId)).length, m.addon.filter((b) => m.stateOf(b.bondId)).length], [6, 6]);
   assert.deepEqual([...m.banned].sort(), [...h.m.bannedChess].sort());
   h.m.dispose();
 });

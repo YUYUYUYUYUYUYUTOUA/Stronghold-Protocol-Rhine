@@ -82,6 +82,7 @@ export function ifrit(_bb, chess) {
         // 灼地 is a maintained skill (PRTS 游戏数据基础#维持技能状态): hard control ends it.
         if (u.s.flags.stun || u.s.flags.sleep) { skill.end('interrupted'); return; }
         u.mem.ifritPulse += dt;
+        // loop-cap: fixed-step finite pulse accumulator; every pass consumes one second.
         while (u.mem.ifritPulse >= 1 - 1e-9 && up(u)) {
           u.mem.ifritPulse -= 1;
           for (const e of b.enemiesInKeys(u.rangeKeys, u, { canHitFly: false, groundOnly: true })) {

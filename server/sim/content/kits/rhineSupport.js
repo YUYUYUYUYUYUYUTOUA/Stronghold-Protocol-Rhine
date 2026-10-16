@@ -126,6 +126,7 @@ export function wuhoo(bb, chess, def) {
     if (firstIsSelf) { amount *= selfScale; remaining++; }
     if (withHide) hide(b, u, first);
     let noDecay = firstIsSelf;
+    // loop-cap: each bounce adds a distinct ally to seen; the field population bounds self-bonus jumps too.
     while (remaining-- > 0) {
       const target = b.alliesInRadius(prev.x, prev.y, 2.5).filter(a => !seen.has(a.id) && healable(b, u, a))
         .sort((a, c) => a.hpRatio - c.hpRatio || c.deploySeq - a.deploySeq)[0];
