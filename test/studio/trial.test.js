@@ -90,11 +90,18 @@ test('watchdog kills a real non-responsive child process and allows the next job
   const f = fixture(t); const id = plugin(f);
   const entry = path.join(f.dir, 'hang.cjs');
   fs.writeFileSync(entry, "process.on('message', () => { for (;;) {} });\n");
-  let child;
-  const b = bench(f, { spawn: (_entry, args, options) => (child = fork(entry, args, options)), limits: { ...TRIAL_LIMITS, timeoutMs: 400 } });
+  let child, exited = false;
+  const b = bench(f, { spawn: (_entry, args, options) => {
+    child = fork(entry, args, options);
+    child.once('exit', () => { exited = true; });
+    return child;
+  }, limits: { ...TRIAL_LIMITS, timeoutMs: 400 } });
   t.after(() => b.close());
   await assert.rejects(b.run({ id }), { code: 'PLUGIN_STUDIO_TRIAL_TIMEOUT' });
-  assert.equal(child.killed, true); assert.equal(b.active(), 0);
+  // Windows taskkill terminates the tree before child.kill(); observe the reaped process, not that call's flag.
+  assert.equal(exited, true);
+  assert.throws(() => process.kill(child.pid, 0), { code: 'ESRCH' });
+  assert.equal(b.active(), 0);
 });
 
 test('wizard API creates each class, saves with revision, validates DSL, and keeps executable files off studio GET', async t => {

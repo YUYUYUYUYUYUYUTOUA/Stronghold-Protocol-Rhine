@@ -103,6 +103,14 @@ export const pluginDirs = (root) => ({
   publicDir: path.join(root, 'public'), dataDir: path.join(root, 'data'), packsDir: path.join(root, 'packs'), pluginsDir: path.join(root, 'plugins'),
 });
 
+/** Native test paths stay argv paths; an ESM preload needs a file URL, including on Windows.
+ * @param {string[]} tests
+ * @param {string | URL} [cliUrl]
+ */
+export const scriptTestArgs = (tests, cliUrl = import.meta.url) => [
+  '--import', new URL('../server/plugins/scriptTestSetup.js', cliUrl).href, '--test', ...tests,
+];
+
 /** The vanilla content of a checkout (server/plugins/identity.js). @param {string} root */
 export const vanillaOf = (root) => computeVanillaContent({
   simDir: path.join(root, 'server', 'sim'), sharedDir: path.join(root, 'shared'), dataDir: path.join(root, 'data'), shim: DATA_SHIM_JS,
@@ -199,7 +207,7 @@ export async function main(argv) {
     try {
       const file = path.join(tmp,'set.json'); fs.writeFileSync(file,JSON.stringify(set));
       const env = {...process.env,SP_PLUGIN_TEST_SET:file}; delete env.NODE_TEST_CONTEXT;
-      const r = spawnSync(process.execPath,['--import',path.join(REPO,'server/plugins/scriptTestSetup.js'),'--test',...tests],{
+      const r = spawnSync(process.execPath,scriptTestArgs(tests),{
         stdio:'inherit',env,timeout:120000,
       });
       return r.status ?? 1;

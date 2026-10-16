@@ -45,7 +45,7 @@ test('stage guard allows the exact harness but rejects private plugin and extra 
 const hasZip = !spawnSync('zip', ['-v']).error || /bsdtar/.test(spawnSync('tar', ['--version'], { encoding: 'utf8' }).stdout || '');
 test('offline release stage runs plugin CLI, native author harness and sandbox trials; mounted plugins do not hide templates',
   { skip: !hasZip && 'no zip / bsdtar', timeout: 120000 }, t => {
-    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-author-release-'));
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-author # release-'));
     t.after(() => fs.rmSync(out, { recursive: true, force: true }));
     const p = plan(ROOT, { lite: true, allowDirty: true, scan: false, measure: false });
     assert.deepEqual(p.problems, []);
@@ -117,7 +117,7 @@ test('offline release stage runs plugin CLI, native author harness and sandbox t
 
 test('Docker copies real production dependencies and separate author resources with narrow context exceptions', () => {
   const docker = fs.readFileSync(path.join(ROOT, 'Dockerfile'), 'utf8');
-  const ignore = fs.readFileSync(path.join(ROOT, '.dockerignore'), 'utf8').split('\n');
+  const ignore = fs.readFileSync(path.join(ROOT, '.dockerignore'), 'utf8').split(/\r?\n/);
   assert.match(docker, /npm ci --omit=dev --ignore-scripts/);
   assert.match(docker, /COPY --from=deps \/app\/node_modules \.\/node_modules/);
   assert.match(docker, /SP_PLUGIN_RESOURCES=\/app\/plugin-resources/);

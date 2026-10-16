@@ -1,16 +1,19 @@
 // test/plugins/forgeImport.test.js — Forge workshop import (DESIGN §32.12, docs/PLUGINS.md §16).
 // The three packs under test/fixtures/forge/ are written for this test (no official art, nothing copied from Forge).
+// Executable bait is stored as .js.fixture so `node --test` cannot discover it. A temporary input tree restores the
+// real .js names before the importer sees it, preserving the script refusal and non-execution checks.
 // The chess, official-kit and kit packs of round 43 are written inline into temporary folders: a kit is a .js file,
 // and `node --test` runs every .js under test/ (an `@kit/…` import would fail it there). Their numbers are made up;
 // only official ids (skills, kits, bonds, garrisons) are real.
 // A cosmetic product must resolve through createVisualSets with no problems and no warnings. A content product must
 // come back from buildContentSet with an empty problems list. There is no buildVisualSet symbol.
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { main } from '../../tools/plugin.mjs';
 import { importForge, readUntrustedZip } from '../../server/plugins/forgeImport.js';
@@ -27,8 +30,14 @@ import { DataSource } from '../../server/sim/simdata.js';
 import { setGameData } from '../../server/sim/content/support/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const FIXTURES = path.join(ROOT, 'test', 'fixtures', 'forge');
-const BAIT = '/tmp/sp-forge-bait-wp-h.txt';
+const FIXTURE_SOURCE = path.join(ROOT, 'test', 'fixtures', 'forge');
+const FIXTURES = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-forge-fixtures-'));
+const BAIT = path.join(os.tmpdir(), 'sp-forge-bait-wp-h.txt');
+after(() => fs.rmSync(FIXTURES, { recursive: true, force: true }));
+fs.cpSync(FIXTURE_SOURCE, FIXTURES, { recursive: true });
+for (const rel of walk(FIXTURES)) {
+  if (rel.endsWith('.js.fixture')) fs.renameSync(path.join(FIXTURES, rel), path.join(FIXTURES, rel.slice(0, -'.fixture'.length)));
+}
 const vanilla = readVanillaAssets(path.join(ROOT, 'data'));
 
 const quiet = async (argv) => {
@@ -114,6 +123,22 @@ function setsOf(parent) {
   }, { recheckMs: 0, log: { info() {}, warn() {} } });
   return { registry, visual: createVisualSets({ registry }) };
 }
+
+test('bait scripts stay outside test discovery and remain executable in temporary Forge inputs', () => {
+  assert.equal(walk(FIXTURE_SOURCE).some((rel) => rel.endsWith('.js')), false);
+  const scripts = walk(FIXTURES).filter((rel) => rel.endsWith('.js'));
+  assert.equal(scripts.length, 5);
+  try {
+    for (const rel of scripts) {
+      fs.rmSync(BAIT, { force: true });
+      const run = spawnSync(process.execPath, ['--input-type=module', '-e', fs.readFileSync(path.join(FIXTURES, rel), 'utf8')], {
+        encoding: 'utf8', timeout: 10000,
+      });
+      assert.equal(run.status, 0, run.stdout + run.stderr);
+      assert.equal(fs.readFileSync(BAIT, 'utf8'), 'executed\n');
+    }
+  } finally { fs.rmSync(BAIT, { force: true }); }
+});
 
 test('skin pack: cosmetic overlay, check --strict, pack, visual set with no problems', async () => {
   fs.rmSync(BAIT, { force: true });
@@ -1064,7 +1089,7 @@ test('a kit whose import does not map, that fails the script check, or uses synt
     chess: { ...pairOf('rose_dir'), ...pairOf('rose_fs'), ...pairOf('rose_date'), ...pairOf('rose_async'), ...pairOf('rose_tier') },
     kits: {
       'kits/chess_rose_dir_a.js': "import { dirVec } from '@sim/dir.js';\nexport default function kit() { return { skill: null, x: dirVec }; }\n",
-      'kits/chess_rose_fs_a.js': `import { writeFileSync } from 'node:fs';\nwriteFileSync('${BAIT}', 'executed\\n');\nexport default function kit() { return {}; }\n`,
+      'kits/chess_rose_fs_a.js': `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(BAIT)}, 'executed\\n');\nexport default function kit() { return {}; }\n`,
       'kits/chess_rose_date_a.js': 'export default function kit() { return { skill: { kind: "passive", mods: { atkPct: Date.now() % 2 } } }; }\n',
       'kits/chess_rose_async_a.js': 'export default async function kit() { return {}; }\n',
       'kits/chess_rose_tier_a.js': "import { selectedId } from '@kit/tier3.js';\nexport default function kit() { return { x: selectedId }; }\n",

@@ -5,6 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { diySlot } from '../shared/diy.js';
 
 const read = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8'));
 const MATCHES = read('./golden/matches.json');
@@ -25,7 +26,10 @@ test('matches: the 自选 match\'s human seat draws its 自选 pieces in its sho
   for (const [r, , f] of dg.diy.rounds) {
     for (const x of f ? f.split(' ') : []) {
       const [slot, charId] = x.split('→');
-      assert.equal(dg.diy.picks[`chess_char_${slot}`].charId, charId, `round ${r}: ${x} fights as its pick`);
+      // An elite piece keeps the pick of its normal slot after merging.
+      const baseId = diySlot(`chess_char_${slot}`, { backups: BACKUPS })?.baseId;
+      assert.ok(baseId, `round ${r}: ${x} names a 自选 slot`);
+      assert.equal(dg.diy.picks[baseId].charId, charId, `round ${r}: ${x} fights as its pick`);
     }
   }
   // the stock: never above its cap (8 at tier 5, 5 at tier 6 — doubled in co-op like the shared pool, GitHub #650)

@@ -83,7 +83,7 @@ test('numeric fields mirror default skills; wizard revision protects external ed
 
 test('generated script harness runs with tools/plugin.mjs test, with SDK registrations preloaded', { timeout: 30000 }, t => {
   const f = fixture(t); makePlugin(f, 'script', 'harness-demo');
-  for (const name of ['data', 'test', 'server', 'shared']) fs.symlinkSync(path.resolve(name), path.join(f.dir, name));
+  for (const name of ['data', 'test', 'server', 'shared']) fs.symlinkSync(path.resolve(name), path.join(f.dir, name), 'junction');
   const run = spawnSync(process.execPath, ['tools/plugin.mjs', 'test', 'harness-demo', '--root', f.dir], { encoding: 'utf8', timeout: 25000 });
   assert.equal(run.status, 0, run.stdout + run.stderr);
   assert.match(run.stdout, /^(?:#|ℹ) pass 1$/m);

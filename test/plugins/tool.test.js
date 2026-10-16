@@ -10,8 +10,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import { main, buildPluginLock } from '../../tools/plugin.mjs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { main, buildPluginLock, scriptTestArgs } from '../../tools/plugin.mjs';
 import { readPluginFolder, readVanillaAssets, listPluginFiles } from '../../server/plugins/registry.js';
 import { png, skel, atlas, writePlugin, cosmetic } from '../helpers/pluginFixtures.js';
 
@@ -25,6 +26,40 @@ const quiet = async (argv) => {
   console.error = (...a) => out.push(a.join(' '));
   try { return { code: await main(argv), out: out.join('\n') }; } finally { console.log = log; console.error = err; }
 };
+
+test('author tests use file-URL preloads for POSIX and Windows install paths', () => {
+  const windowsRoot = 'D:\\Stronghold Protocol #1';
+  const windowsTest = path.win32.join(windowsRoot, 'plugins', 'demo', 'test', 'guard.test.js');
+  for (const [cli, preload, tests] of [
+    ['file:///opt/Stronghold%20Protocol%20%231/tools/plugin.mjs', 'file:///opt/Stronghold%20Protocol%20%231/server/plugins/scriptTestSetup.js', ['/opt/Stronghold Protocol #1/plugins/demo/test/guard.test.js']],
+    ['file:///D:/Stronghold%20Protocol%20%231/tools/plugin.mjs', 'file:///D:/Stronghold%20Protocol%20%231/server/plugins/scriptTestSetup.js', [windowsTest]],
+  ]) {
+    assert.deepEqual(scriptTestArgs(tests, cli), ['--import', preload, '--test', ...tests]);
+    assert.equal(new URL(preload).protocol, 'file:');
+    assert.equal(new URL(preload).hash, '', 'a # in the install path remains a path segment');
+  }
+  // The old native-path argument reproduces Node's loader error, even on a POSIX test host.
+  const badPreload = path.win32.join(windowsRoot, 'server', 'plugins', 'scriptTestSetup.js');
+  const bad = spawnSync(process.execPath, ['--import', badPreload, '--eval', ''], { encoding: 'utf8', timeout: 10000 });
+  assert.equal(bad.status, 1, bad.stdout + bad.stderr);
+  assert.match(bad.stderr, /ERR_UNSUPPORTED_ESM_URL_SCHEME/);
+  assert.match(bad.stderr, /protocol 'd:'/);
+});
+
+test('author-test argv actually preloads a module under a path containing spaces and #', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-author # preload-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(dir, 'server', 'plugins'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
+  fs.writeFileSync(path.join(dir, 'server', 'plugins', 'scriptTestSetup.js'), 'await Promise.resolve(); globalThis.__authorTestPreloaded = true;');
+  const testFile = path.join(dir, 'author.test.mjs');
+  fs.writeFileSync(testFile, "import { test } from 'node:test'; import assert from 'node:assert/strict'; test('preloaded', () => assert.equal(globalThis.__authorTestPreloaded, true));");
+  const env = { ...process.env }; delete env.NODE_TEST_CONTEXT;
+  const r = spawnSync(process.execPath, scriptTestArgs([testFile], pathToFileURL(path.join(dir, 'tools', 'plugin.mjs'))), { env, encoding: 'utf8', timeout: 10000 });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /^(?:#|ℹ) pass 1$/m);
+  assert.match(r.stdout, /^(?:#|ℹ) fail 0$/m);
+});
 
 test('pack writes plugin.lock.json: the files\' hashes and each model\'s clip data; then the plugin loads', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-pack-'));

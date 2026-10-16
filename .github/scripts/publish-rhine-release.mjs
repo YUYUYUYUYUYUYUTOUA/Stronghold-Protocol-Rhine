@@ -312,13 +312,21 @@ async function main() {
     'test/plugins/contentBattle.test.js', 'test/plugins/script-integration.test.js',
     'test/plugins/script-sandbox-integration.test.js', 'test/plugins/profile-content-sets.test.js',
     'test/plugins/rhine-shared-tokens.test.js',
+    'test/plugins/tool.test.js', 'test/plugins/forgeImport.test.js', 'test/plugins/script-review.test.js',
     'test/ui/profile-plugins.test.js',
-    'test/studio/trial.test.js', 'test/studio/room-settings.test.js',
+    'test/studio/trial.test.js', 'test/studio/room-settings.test.js', 'test/studio/gameplay.test.js',
+    'test/golden-diy.test.js',
   ], path.join(root, 'packaged-tests.log'), {
     // This expanded acceptance batch includes real package/upgrade fixtures and plugin composition.
     // Keep individual test deadlines intact while allowing the complete Windows batch to finish.
     timeout: 900000, env: { SP_UPDATE_E2E: '1', SP_STUDIO: 'lan' },
   });
+  // The normal release author-resource test needs a Git checkout to select its stage inputs.
+  // Exercise it with the same verified Windows runtime in the clean tagged source checkout.
+  const sourceAuthorTests = runTests(node, source, ['test/plugin-package.test.js'],
+    path.join(root, 'source-author-tests.log'), { concurrency: 1, timeout: 300000 });
+  const hostTests = runTests(node, built.destination, ['test/match/plugin-host.test.js', 'test/plugins/sandbox-host.test.js'],
+    path.join(root, 'packaged-plugin-host-tests.log'), { concurrency: 1, timeout: 300000 });
   let browserTests = null;
   if (fresh) {
     const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
@@ -449,7 +457,7 @@ async function main() {
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
     updateChecks,
     packagedWindows: { node: request.runtimeVersion, platform: runtimeIdentity.platform, arch: runtimeIdentity.arch,
-      tests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
+      tests, sourceAuthorTests, hostTests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
     limitations: [
@@ -501,7 +509,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log']) {
+    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'source-author-tests.log', 'packaged-plugin-host-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }
