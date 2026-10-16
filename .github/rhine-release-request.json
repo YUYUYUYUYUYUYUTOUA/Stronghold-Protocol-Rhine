@@ -1,13 +1,13 @@
 {
-  "tag": "v0.3.0-rhine.4",
-  "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
+  "tag": "v0.3.0-rhine.5",
+  "sourceCommit": "ca282a1ef45878923e2511ac9ae928498fc948d4",
   "previousTag": "v0.2.4-rhine.6",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.3.0-rhine.4 · 阵营拓展与雷姆平衡",
-  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆与原版开关。继续完整拓展版分发，未迁移为插件。\n\n- 雷姆 6／9 档：每成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣已出现数，普通战斗到同轮联防延续。\n- 暴行：沿用原版普通主战产层范围，自身与周围八格的本玩家雷姆干员和援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重；混品质使用共享预算。替换旧经过加攻，保留原生技能。\n- 普通援军抵达后在集合点周围八格可通行地块持续徘徊，接敌停下、脱战继续；车辆和老板原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用或拖欠装备库存；抽取干员仍遵共享池／本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展普通以上为 6+6、趣味局 3+3，引导训练仍 0 BAN；每阶至少保留 8 种共享可刷干员，有界抽取防止卡死。最终数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库容量按上游 .3 翻倍，旧概率估计作废。\n- 适配 .3 的插件／Studio、官方特效、攻击提交、格子判定和已展示装备透支。原版切换与独立内容集／Worker 保持一致。Windows 包安装 .3 锁定依赖，包含 SES、Acorn 和 local-fx。\n- 项目对外展示名称改为“阵营拓展”，README 重点补充雷姆必拓的援军、集合点与平衡机制，保留莱茵和卡兹戴尔介绍。仓库地址、安装目录、启动文件与升级渠道不变。整体游戏内阵营描述重写、变形同构体无限库存均未加入；未部署用户服务器。\n\n首次安装下载 Windows x64 ZIP，完整解压后运行「启动莱茵科研版.bat」。已有 .6 玩家结束对局并关闭服务后，在原目录运行「联网更新.bat」。原生 Windows 验收包含实际 .6 包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚和附件重新下载哈希校验；仅全部发行门槛通过后公开，实际结果见 RELEASE-VALIDATION.json。\n\n未做真人完整多人平衡试玩或人工 BAT 点击验收。Linux 无完整美术环境下的浏览器流程核心机制通过，但资源检查报 404，不将其标作整套通过；包内 Windows／Edge 使用完整素材另行验收。官方原始数据全量生成缓存未齐，固定 .3 原版快照与三个扩展叠加的逐表重建已验证。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n\n.1、.2 均为未公开验收候选，旧标签保持原指向。.3 修复上游 Windows 插件作者 CLI 的 ESM 文件 URL，并完善真实浏览器模拟夹具、实际进程退出、精锐 DIY、CRLF 和 Forge 测试诱饵的跨平台验收；保留原生产沙箱期限与批准玩法。新候选重新执行全部 Windows 发行门槛。Windows Node 22 更新测试在 .6 已有原生崩溃，底层原因未查明；本包采用 Node 24.21.0 实验收，详见验证报告。\n\n.3 同样为未公开候选：实际 Windows 包内 915 项（913 通过、0 失败、2 跳过）、作者发行 4 项、插件宿主 9 项、浏览器模拟 2 项与移动渲染通过；立绘旧测试绕过上游 CSP 的生产 Pixi 适配器而失败，未公开包。.4 改用生产 ensurePixi()，保留 CSP 和全部视觉断言；Studio 探针测试恢复生产默认 5000 毫秒预算并保持实际 PID 与 ESRCH 检查。新候选重新执行全部发行门槛，完整 Studio review 也纳入原生 Windows 验收。此前 .3 源码矩阵 Ubuntu24 与 tooling 通过，其余有房间请求／沙箱心跳／测试探针超时及既有 Windows22 原生崩溃，未标作全绿；逐环境证据和最终结果见 RELEASE-VALIDATION.json。",
+  "releaseName": "v0.3.0-rhine.5 · 阵营拓展与雷姆平衡",
+  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆与原版开关。继续完整拓展版分发，未迁移为插件。\n\n- 雷姆 6／9 档：每成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣已出现数，普通战斗到同轮联防延续。\n- 暴行：沿用原版普通主战产层范围，自身与周围八格的本玩家雷姆干员和援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重；混品质使用共享预算。替换旧经过加攻，保留原生技能。\n- 普通援军抵达后在集合点周围八格可通行地块持续徘徊，接敌停下、脱战继续；车辆和老板原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用或拖欠装备库存；抽取干员仍遵共享池／本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展普通以上为 6+6、趣味局 3+3，引导训练仍 0 BAN；每阶至少保留 8 种共享可刷干员，有界抽取防止卡死。最终数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库容量按上游 .3 翻倍，旧概率估计作废。\n- 适配 .3 的插件／Studio、官方特效、攻击提交、格子判定和已展示装备透支。原版切换与独立内容集／Worker 保持一致。Windows 包安装 .3 锁定依赖，包含 SES、Acorn 和 local-fx。\n- 项目对外展示名称改为“阵营拓展”，README 重点补充雷姆必拓的援军、集合点与平衡机制，保留莱茵和卡兹戴尔介绍。仓库地址、安装目录、启动文件与升级渠道不变。整体游戏内阵营描述重写、变形同构体无限库存均未加入；未部署用户服务器。\n\n首次安装下载 Windows x64 ZIP，完整解压后运行「启动莱茵科研版.bat」。已有 .6 玩家结束对局并关闭服务后，在原目录运行「联网更新.bat」。原生 Windows 验收包含实际 .6 包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚和附件重新下载哈希校验；仅全部发行门槛通过后公开，实际结果见 RELEASE-VALIDATION.json。\n\n未做真人完整多人平衡试玩或人工 BAT 点击验收。Linux 无完整美术环境下的浏览器流程核心机制通过，但资源检查报 404，不将其标作整套通过；包内 Windows／Edge 使用完整素材另行验收。官方原始数据全量生成缓存未齐，固定 .3 原版快照与三个扩展叠加的逐表重建已验证。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n\n.1、.2 均为未公开验收候选，旧标签保持原指向。.3 修复上游 Windows 插件作者 CLI 的 ESM 文件 URL，并完善真实浏览器模拟夹具、实际进程退出、精锐 DIY、CRLF 和 Forge 测试诱饵的跨平台验收；保留原生产沙箱期限与批准玩法。新候选重新执行全部 Windows 发行门槛。Windows Node 22 更新测试在 .6 已有原生崩溃，底层原因未查明；本包采用 Node 24.21.0 实验收，详见验证报告。\n\n.3 同样为未公开候选：实际 Windows 包内 915 项（913 通过、0 失败、2 跳过）、作者发行 4 项、插件宿主 9 项、浏览器模拟 2 项与移动渲染通过；立绘旧测试绕过上游 CSP 的生产 Pixi 适配器而失败，未公开包。.4 改用生产 ensurePixi()，保留 CSP 和全部视觉断言；Studio 探针测试恢复生产默认 5000 毫秒预算并保持实际 PID 与 ESRCH 检查。新候选重新执行全部发行门槛，完整 Studio review 也纳入原生 Windows 验收。此前 .3 源码矩阵 Ubuntu24 与 tooling 通过，其余有房间请求／沙箱心跳／测试探针超时及既有 Windows22 原生崩溃，未标作全绿；逐环境证据和最终结果见 RELEASE-VALIDATION.json。\n\n.4 仍为未公开验收候选，其 Windows Node24 全套源码 CI 为 8434 通过、0 失败；实际包内回归、作者／Studio、插件宿主、雷姆 19 模型与移动及集合点交互也均通过，后续卡兹戴尔浏览器旧 eval 夹具被严格 CSP 拒绝。.5 将五项夹具改为真实浏览器对象句柄调用，完整保留结果断言；本地真实 Chromium 五项全部通过。卡兹戴尔预览页 import map 仅统一为官方页面已有的精确字节，映射内容及 CSP 策略不变；全部五项 CSP 回归纳入原生安装包验收。继续使用新不可变源码重新完成所有发行门槛，不改变批准玩法。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -372,35 +372,6 @@
         }
       }
     },
-    "currentFixtureRepair": {
-      "tag": "v0.3.0-rhine.4",
-      "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
-      "productionCodeChanged": false,
-      "pixi": {
-        "actualSiteCspPreserved": true,
-        "oldEntryReproducedUnsafeEvalFailure": true,
-        "productionEntryRenderedVisiblePixels": 1024,
-        "cspTestsPass": 5,
-        "fullRemArtLocal": "not run; resources absent"
-      },
-      "studioProbe": {
-        "timeoutMs": 5000,
-        "productionBudgetUnchanged": true,
-        "pass": 1,
-        "fail": 0,
-        "cancelled": 0,
-        "skipped": 0,
-        "durationSeconds": 7.088,
-        "realPidAndEsrchAssertionsPreserved": true
-      },
-      "docsAndCiTests": {
-        "tests": 40,
-        "pass": 40,
-        "fail": 0,
-        "skipped": 0
-      },
-      "nativeAcceptance": "Rerun all gates from clean immutable source; source-author batch additionally includes the complete Studio review file."
-    },
     "initialWindowsAttempt4": {
       "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38864282703",
       "job": 116853427329,
@@ -444,8 +415,147 @@
         "archive/upload/download validation"
       ],
       "resumeDraftId": 414644048
+    },
+    "candidate4FixtureRepair": {
+      "tag": "v0.3.0-rhine.4",
+      "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
+      "productionCodeChanged": false,
+      "pixi": {
+        "actualSiteCspPreserved": true,
+        "oldEntryReproducedUnsafeEvalFailure": true,
+        "productionEntryRenderedVisiblePixels": 1024,
+        "cspTestsPass": 5,
+        "fullRemArtLocal": "not run; resources absent"
+      },
+      "studioProbe": {
+        "timeoutMs": 5000,
+        "productionBudgetUnchanged": true,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 7.088,
+        "realPidAndEsrchAssertionsPreserved": true
+      },
+      "docsAndCiTests": {
+        "tests": 40,
+        "pass": 40,
+        "fail": 0,
+        "skipped": 0
+      },
+      "nativeAcceptance": "Rerun all gates from clean immutable source; source-author batch additionally includes the complete Studio review file."
+    },
+    "retiredCandidate4": {
+      "tag": "v0.3.0-rhine.4",
+      "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
+      "draftReleaseId": 414644048,
+      "published": false,
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38865524781",
+      "job": 116857346549,
+      "nativeMain": {
+        "tests": 915,
+        "pass": 913,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 2
+      },
+      "sourceAuthorAndStudio": {
+        "tests": 27,
+        "pass": 27,
+        "fail": 0,
+        "skipped": 0
+      },
+      "hostTests": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "remAndRhineBrowserSimulation": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "remRenderer": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0,
+        "models": 19,
+        "movementFrames": 55
+      },
+      "remRally": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "kazdelBrowserSimulation": {
+        "tests": 5,
+        "pass": 0,
+        "fail": 5,
+        "skipped": 0,
+        "reason": "Legacy in-page eval of shared test exercises violates the strict v0.3.0 site CSP, before gameplay-result comparisons."
+      },
+      "notRun": [
+        "remaining browser renderer/UI groups",
+        "HTTP/WebSocket smoke",
+        "actual .6 upgrade/private configurations/repeat/rollback",
+        "archive/upload/download validation"
+      ],
+      "sourceCiWindows24": {
+        "run": 38864282683,
+        "job": 116853427630,
+        "tests": 8519,
+        "pass": 8434,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 85,
+        "durationSeconds": 1231.859,
+        "serverSmoke": "passed",
+        "threeActualStudioExitBranches": "passed"
+      }
+    },
+    "currentBrowserFixtureRepair": {
+      "tag": "v0.3.0-rhine.5",
+      "sourceCommit": "ca282a1ef45878923e2511ac9ae928498fc948d4",
+      "gameplayLogicChanged": false,
+      "siteCspHeaderAndHashSetChanged": false,
+      "kazdelAndReactiveBrowser": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 20.72,
+        "platform": "actual Linux Chromium",
+        "assertionCallsUnchanged": 28,
+        "exerciseBodiesUnchanged": 5
+      },
+      "csp": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "kazdelDemoExactImportmapCovered": true,
+        "addedToPackagedNativeAcceptance": true
+      },
+      "remainingBrowserStaticAudit": {
+        "literalImportClosureFiles": 310,
+        "rendererTestFiles": 7,
+        "newConfirmedBlockersRemaining": 0,
+        "interpretation": "Static audit, not a substitute for native Windows full-asset browser acceptance."
+      },
+      "docsAndCiTests": {
+        "tests": 40,
+        "pass": 40,
+        "fail": 0,
+        "skipped": 0
+      },
+      "nativeAcceptance": "Rerun every normal release gate from the clean immutable source; do not treat previous candidate partial gates as publication acceptance."
     }
   },
-  "rendererDiagnostics": false,
-  "draftReleaseId": 414644048
+  "rendererDiagnostics": false
 }
