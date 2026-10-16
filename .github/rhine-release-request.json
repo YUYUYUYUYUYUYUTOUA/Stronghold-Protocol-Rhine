@@ -88,6 +88,11 @@
       "previousStatus": "failed before package construction; draft only",
       "cause": "Incremental Rem asset downloader changed only the derived manifest hash and final newline; exact failure SHA reproduced from those two changes.",
       "recovery": "Require identical resource metadata including all URLs, models and statistics, restore exact tagged manifest bytes, and resume the existing draft without changing the source tag."
+    },
+    "nativeRegressionTimeoutRecovery": {
+      "previousRun": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38856832843",
+      "previousStatus": "draft only; 44,979-file Windows package built, complete acceptance batch stopped at its 300-second process deadline without a final test summary",
+      "recovery": "Allow this expanded functional batch 900 seconds; preserve every individual test deadline and assertion. Print the full captured test output on any subsequent failure. No tests removed or skipped."
     }
   },
   "draftReleaseId": 414581699

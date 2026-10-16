@@ -137,7 +137,7 @@ function runTests(node, directory, files, log, options = {}) {
   });
   const text = (result.stdout || '') + (result.stderr || '');
   fs.writeFileSync(log, text);
-  console.log(text.split('\n').slice(-12).join('\n'));
+  console.log(result.error || result.status !== 0 ? text : text.split('\n').slice(-12).join('\n'));
   if (result.error) throw result.error;
   assert.equal(result.status, 0, 'Packaged regression failed; release remains a draft.');
   const totals = {};
@@ -313,7 +313,11 @@ async function main() {
     'test/plugins/rhine-shared-tokens.test.js',
     'test/ui/profile-plugins.test.js',
     'test/studio/trial.test.js', 'test/studio/room-settings.test.js',
-  ], path.join(root, 'packaged-tests.log'), { env: { SP_UPDATE_E2E: '1', SP_STUDIO: 'lan' } });
+  ], path.join(root, 'packaged-tests.log'), {
+    // This expanded acceptance batch includes real package/upgrade fixtures and plugin composition.
+    // Keep individual test deadlines intact while allowing the complete Windows batch to finish.
+    timeout: 900000, env: { SP_UPDATE_E2E: '1', SP_STUDIO: 'lan' },
+  });
   let browserTests = null;
   if (fresh) {
     const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
