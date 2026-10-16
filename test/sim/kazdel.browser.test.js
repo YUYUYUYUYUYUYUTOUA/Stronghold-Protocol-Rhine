@@ -50,6 +50,8 @@ test('Kazdel cannon ownership and native data agree in Chromium and Node across 
     const page = await browser.newPage();
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${srv.port}/sim/spec.js`);
+    const cannon = await page.evaluateHandle(async () => import('/sim/content/kazdel/cannon.js'));
+    const browserSource = await cannon.getProperty('cannonSource'), browserTick = await cannon.getProperty('tickCannon');
     const ds = new DataSource(getData({ log: { warn() {}, error() {}, info() {} } }));
     for (const kind of ['normal', 'unite', 'boss', 'hidden']) for (const count of [6, 9]) {
       const spec = buildBattleSpec({ fieldId: `kaz:${kind}`, kind, seed: 417, stageId: 'act2autochess_m01',
@@ -58,12 +60,13 @@ test('Kazdel cannon ownership and native data agree in Chromium and Node across 
           units: [{ uid: seat + 1, chessId: `chess_kazdel_hoederer_${seat ? 'b' : 'a'}`, row: 10, col: 5 + seat, moduleId: 'none' }],
         })), flags: { autoFinish: false }, spawns: [] });
       const node = exercise(createBattleFromSpec(spec, ds), cannonSource, tickCannon);
-      const web = await page.evaluate(async ({ spec, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        const C = await import('/sim/content/kazdel/cannon.js');
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds), C.cannonSource, C.tickCannon);
-      }, { spec, body: exercise.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exercise, battle, browserSource, browserTick);
+      await battle.dispose();
       assert.deepEqual(node.hit, [800, 0, 800]);
       assert.deepEqual(node.soulHits, [0, 0]);
       assert.deepEqual(node.soulsAlive, [true, true]);
@@ -71,6 +74,7 @@ test('Kazdel cannon ownership and native data agree in Chromium and Node across 
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${count}`);
       assert.deepEqual(node.layers, [0, 0], 'no passive production from the retired Ascalon trait');
     }
+    await browserSource.dispose(); await browserTick.dispose(); await cannon.dispose();
     assert.deepEqual(errors, []);
   } finally { await browser?.close(); await srv.close(); }
 });
@@ -110,11 +114,13 @@ test('Kazdel equipment generated data, inheritance and owner-only combo agree in
             items: [`chess_item_kazdel_blade_${q}`, ...(seat ? [] : [`chess_item_kazdel_sigil_${q}`])] }],
         })), flags: { autoFinish: false }, spawns: [] });
       const node = exerciseEquipment(createBattleFromSpec(spec, ds));
-      const web = await page.evaluate(async ({ spec, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
-      }, { spec, body: exerciseEquipment.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exerciseEquipment, battle);
+      await battle.dispose();
       assert.deepEqual(node.hit, [135, 120]); assert.deepEqual(node.stages, [3, 3]);
       assert.deepEqual(node.before, node.after); assert.deepEqual(node.errors, []);
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${q}`);
@@ -178,11 +184,13 @@ test('Soul native skills, talents, summons, metadata and cleanup match Chromium/
             { uid: seat * 2 + 2, chessId: `chess_kazdel_hoederer_${seat ? 'b' : 'a'}`, row: 10 + seat * 3, col: 5, skillIndex: 1 },
           ] })), flags: { autoFinish: false }, spawns: [] });
       const node = exerciseSoulSkills(createBattleFromSpec(spec, ds));
-      const web = await page.evaluate(async ({ spec, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
-      }, { spec, body: exerciseSoulSkills.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exerciseSoulSkills, battle);
+      await battle.dispose();
       assert.deepEqual(node.errors, []); assert.ok(node.casts.length >= 4);
       assert.ok(node.info.some(u => u.kazdelSoul && u.ammoSkill && u.skillIndex === 2));
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), kind);
@@ -224,11 +232,13 @@ test('unite carried souls, owner links and render metadata agree in Node and Chr
           units: [{ uid: 1, kind: 'chess', chessId: count === 9 ? 'chess_char_3_02_a' : 'chess_kazdel_meteorite_a', row: 10, col: 4,
             carryState: { down: true, kazdelSoul: { hpPct: 0.4, sp: 7 } } }] })) });
       const node = exerciseUniteSoul(createBattleFromSpec(spec, ds));
-      const web = await page.evaluate(async ({ spec, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
-      }, { spec, body: exerciseUniteSoul.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exerciseUniteSoul, battle);
+      await battle.dispose();
       assert.deepEqual(node.restored.map(u => [u.owner, u.soulOwner, u.down, u.sp]), [['p1', 'p1', true, 7], ['p2', 'p2', true, 7]]);
       assert.deepEqual(node.afterReturn, [false, true]);
       assert.equal(node.soulsAfterEnd, 0);

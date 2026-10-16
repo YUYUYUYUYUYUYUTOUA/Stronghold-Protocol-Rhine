@@ -49,11 +49,13 @@ test('reactive damage origins agree in Chromium and Node for Mlynar, Vendla and 
         players: [{ playerId: 'p1', seat: 0, coords: 'field', units: ids.map((chessId, i) => ({ uid: i + 1, chessId, row: 10, col: 5 - i })) }],
         flags: { autoFinish: false, startOpCooldown: 0 }, spawns: [] });
       const node = exercise(createBattleFromSpec(spec, ds), pair);
-      const web = await page.evaluate(async ({ spec, pair, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds), pair);
-      }, { spec, pair, body: exercise.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exercise, battle, pair);
+      await battle.dispose();
       assert.deepEqual(node.errors, [], `${kind}/${pair}`);
       assert.ok(node.damage.some(c => c.tags.includes(pair === 'mlynar' ? 'reflect' : 'counter')), 'fixture exercises reactive chain');
       assert.deepEqual(web, JSON.parse(JSON.stringify(node)), `${kind}/${pair}`);

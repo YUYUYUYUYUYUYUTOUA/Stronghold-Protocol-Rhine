@@ -349,7 +349,7 @@ async function main() {
     'test/plugins/contentBattle.test.js', 'test/plugins/script-integration.test.js',
     'test/plugins/script-sandbox-integration.test.js', 'test/plugins/profile-content-sets.test.js',
     'test/plugins/rhine-shared-tokens.test.js',
-    'test/plugins/tool.test.js', 'test/plugins/forgeImport.test.js', 'test/plugins/script-review.test.js',
+    'test/plugins/tool.test.js', 'test/plugins/forgeImport.test.js', 'test/plugins/script-review.test.js', 'test/plugins/csp.test.js',
     'test/ui/profile-plugins.test.js',
     'test/studio/trial.test.js', 'test/studio/room-settings.test.js', 'test/studio/gameplay.test.js',
     'test/golden-diy.test.js',
