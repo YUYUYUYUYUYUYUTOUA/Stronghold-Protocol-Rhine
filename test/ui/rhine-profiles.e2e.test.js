@@ -2,7 +2,7 @@
 // Opt-in: SP_E2E=1 CHROME_PATH=... node --test test/ui/rhine-profiles.e2e.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
@@ -26,8 +26,29 @@ const VIEWPORT = { width: 1280, height: 720 };
 const ISOLATION_KEY = '__sp_e2e_rhine_profile_context';
 const scheduledBrowsers = new WeakMap();
 
+function installProfileResourceTiming() {
+  performance.setResourceTimingBufferSize(5000);
+  globalThis.__SP_PROFILE_RESOURCE_TIMING__ = () => {
+    const resources = performance.getEntriesByType('resource');
+    return { requestedBufferSize: 5000, documentId: String(performance.timeOrigin), totalCount: resources.length,
+      entries: resources.filter(entry => /\/js\/render\/|pixi|three|manifest|font|board|\/data\/(?:local-)?assets|\/cs\/[^/]+\/index\.json/i.test(entry.name))
+        .slice(-120).map(entry => {
+          const url = new URL(entry.name, location.href);
+          return { path: `${url.origin === location.origin ? '' : url.origin}${url.pathname}${url.search}`,
+            initiatorType: entry.initiatorType, startTime: entry.startTime, duration: entry.duration,
+            fetchStart: entry.fetchStart, domainLookupStart: entry.domainLookupStart, domainLookupEnd: entry.domainLookupEnd,
+            connectStart: entry.connectStart, connectEnd: entry.connectEnd, secureConnectionStart: entry.secureConnectionStart,
+            requestStart: entry.requestStart, responseStart: entry.responseStart, responseEnd: entry.responseEnd,
+            transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize };
+        }) };
+  };
+}
+
 async function openClient(client, query) {
   await client.open(query);
+  // Passive capture only. The early-document hook covers reloads, including their cold render-module requests.
+  await client.page.evaluateOnNewDocument(installProfileResourceTiming);
+  await client.page.evaluate(installProfileResourceTiming);
   assert.deepEqual(client.page.viewport(), VIEWPORT, `${client.label}: the configured viewport is desktop 1280x720`);
   const actualViewport = await client.page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   assert.deepEqual(actualViewport, VIEWPORT, `${client.label}: the real document has the configured desktop dimensions`);
@@ -55,10 +76,10 @@ async function openClient(client, query) {
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
     const owned = processInfo.filter(p => /^gpu$/i.test(p.type));
     assert.equal(owned.length, 1, 'one owned browser GPU process');
-    const nodePriority = getPriority(process.pid), priority = process.platform === 'linux' ? 15 : osConstants.priority.PRIORITY_BELOW_NORMAL;
-    // Software rendering shares this runner's CPUs with real simulation Workers. Only this browser's GPU is adjusted:
-    // Linux nice is per-thread; Windows keeps Node NORMAL and gives only its owned GPU BELOW_NORMAL. This is a
-    // controlled scheduling hypothesis; all cold Worker loads, RPCs, rendering and deadlines remain unchanged.
+    const nodePriority = getPriority(process.pid), priority = osConstants.priority.PRIORITY_NORMAL;
+    // One shared software GPU serves these independent contexts. Windows aligns only its CDP-owned GPU to NORMAL;
+    // Linux only reads the default GPU priority and never writes process/thread priorities. This controlled scheduling
+    // hypothesis changes no Worker load, RPC, renderer lifecycle or deadline.
     const browserPid = client.browser.process()?.pid;
     const allOwned = processInfo.filter(p => /^(?:browser|renderer|gpu)$/i.test(p.type));
     const priorities = () => allOwned.map(p => {
@@ -85,30 +106,18 @@ async function openClient(client, query) {
       assert.notEqual(owned[0].id, process.pid);
       assert.notEqual(owned[0].id, browserPid);
       assert.equal(nodePriority, osConstants.priority.PRIORITY_NORMAL, 'the Windows test Node remains NORMAL');
-      assert.equal(priority, 10, 'Windows BELOW_NORMAL is the owned GPU target');
+      assert.equal(priority, 0, 'Windows NORMAL is the owned GPU target');
       before = priorities();
       console.log('Profile Windows owned priorities before:', JSON.stringify({ client: client.label,
         node: { pid: process.pid, priority: nodePriority }, browserPid, owned: before }));
     }
     for (const gpuProcess of owned) {
-      setPriority(gpuProcess.id, priority);
-      if (process.platform === 'linux') {
-        for (let pass = 0; pass < 2; pass++) {
-          for (const task of readdirSync(`/proc/${gpuProcess.id}/task`)) {
-            try {
-              setPriority(Number(task), priority);
-              assert.equal(getPriority(Number(task)), priority, 'owned software GPU thread has the requested rendering priority');
-            } catch (error) {
-              if (error.info?.code === 'ESRCH' && !existsSync(`/proc/${gpuProcess.id}/task/${task}`)) continue;
-              throw error;
-            }
-          }
-        }
-      }
+      if (process.platform === 'win32' && getPriority(gpuProcess.id) !== priority) setPriority(gpuProcess.id, priority);
       assert.equal(getPriority(gpuProcess.id), priority, 'owned software GPU has the requested rendering priority');
       assert.equal(getPriority(process.pid), nodePriority, 'the test and simulation priority stays unchanged');
       console.log(JSON.stringify({ client: client.label, gpuPid: gpuProcess.id, renderer,
-        gpuPriority: getPriority(gpuProcess.id), nodePriority }));
+        gpuPriority: getPriority(gpuProcess.id), nodePriority,
+        priorityPolicy: process.platform === 'linux' ? 'default-read-only' : 'owned-GPU-NORMAL' }));
     }
     if (process.platform === 'win32') {
       const after = priorities();
@@ -121,6 +130,9 @@ async function openClient(client, query) {
           assert.equal(p.priority, before[index].priority, `owned ${p.type} priority is unchanged`);
         }
       }
+    } else {
+      console.log('Profile default owned priorities read-only:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: priorities() }));
     }
     scheduledBrowsers.set(client.browser, { browserPid, gpuPid: owned[0].id, nodePriority });
   } finally { await cdp.detach(); }
@@ -691,6 +703,8 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
                   hit: hit && { tag: hit.tagName, class: hit.className, testId: hit.getAttribute('data-testid'), receivesClick: button.contains(hit) } };
               }),
               ui: { route: s?.ui.route, dataReady: s?.ui.dataReady, dataError: s?.ui.dataError },
+              resourceTiming: globalThis.__SP_PROFILE_RESOURCE_TIMING__?.(),
+              visibility: globalThis.__SP_MECHANISM_VISIBILITY__?.snapshot(),
               view: { kind: view?.kind, app: !!app, renderer: !!app?.renderer,
                 contextLost: app?.renderer?.gl?.isContextLost?.() },
               canvases: [...document.querySelectorAll('.gm canvas')].map(canvas => ({ width: canvas.width, height: canvas.height,
@@ -706,6 +720,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
           sleep(5000).then(() => ({ diagnosticTimedOut: true })),
         ]);
         console.log(JSON.stringify({ client: client.label, diagnostic, fieldWarnings: client.fieldWarnings,
+          visibilityHistory: readMechanismVisibility(client),
           pendingRequests: [...(client.pendingRequests?.values() || [])].map(({ at, ...request }) => ({ ...request, ageMs: Date.now() - at })) }));
       }));
       console.log(JSON.stringify({ serverCombat: srv.logs.filter(line => /takeover|verify|rejected/i.test(line)).slice(-60) }));
