@@ -46,7 +46,14 @@ function installProfileResourceTiming() {
 }
 
 async function openClient(client, query) {
-  await client.open(query);
+  // Use the documented production 2D board URL for this profile/Worker mechanism fixture. The Pixi engine and real
+  // art remain enabled; default 3D multi-context cold initialization remains outside this fixture's coverage.
+  const params = new URLSearchParams(query || '');
+  params.set('board', '2d');
+  await client.open(`?${params}`);
+  const actualUrl = await client.page.evaluate(() => location.href);
+  assert.equal(new URL(actualUrl).searchParams.get('board'), '2d', `${client.label}: the real page uses the production 2D board URL`);
+  console.log('Profile actual board URL:', JSON.stringify({ client: client.label, url: actualUrl }));
   // Passive capture only. The early-document hook covers reloads, including their cold render-module requests.
   await client.page.evaluateOnNewDocument(installProfileResourceTiming);
   await client.page.evaluate(installProfileResourceTiming);
@@ -147,12 +154,14 @@ async function contextSnapshot(clients) {
     assert.equal(client.page.browserContext(), client.browserContext);
     const observed = await client.page.evaluate(key => ({ documentId: String(performance.timeOrigin),
       playerId: globalThis.__SP__.store.get().me.playerId, profile: globalThis.__SP__.data.profileId,
+      board: new URL(location.href).searchParams.get('board'),
       viewport: { width: innerWidth, height: innerHeight },
       local: localStorage.getItem(key), session: sessionStorage.getItem(key),
       cookie: document.cookie.split('; ').find(cookie => cookie.startsWith(`${key}=`))?.slice(key.length + 1) ?? null }), ISOLATION_KEY);
     assert.deepEqual({ local: observed.local, session: observed.session, cookie: observed.cookie },
       { local: client.label, session: client.label, cookie: client.label }, `${client.label}: storage belongs only to this context`);
     assert.deepEqual(observed.viewport, VIEWPORT, `${client.label}: desktop dimensions remain unchanged across reloads`);
+    assert.equal(observed.board, '2d', `${client.label}: the actual 2D URL survives both real reloads`);
     return { client: client.label, contextId: client.browserContext.id, ...observed };
   }));
   assert.ok(observations.every(observed => observed.playerId), 'every context has a real player identity');
@@ -672,11 +681,14 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         const actualView = await client.page.evaluate(() => {
           const view = globalThis.__SP_VIEW__, app = view?.raw?.debug?.app;
           return { kind: view?.kind, renderer: !!app?.renderer, contextLost: app?.renderer?.gl?.isContextLost?.(),
+            board3dOn: view?.raw?.stats?.()?.board3d?.on,
             canvases: [...document.querySelectorAll('.gm canvas')].map(canvas => ({ width: canvas.width, height: canvas.height,
               connected: canvas.isConnected, display: getComputedStyle(canvas).display,
               rect: { width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height } })) };
         });
         console.log('Profile final actual view:', JSON.stringify({ client: client.label, ...actualView, fieldWarnings: client.fieldWarnings }));
+        assert.equal(actualView.kind, 'engine', `${client.label}: the real Pixi engine is required, with no DOM fallback`);
+        assert.equal(actualView.board3dOn, false, `${client.label}: the actual renderer uses its 2D atlas board`);
       }
       assert.deepEqual(pageProblems(clients), [], 'no console, page or resource errors in the real pages');
       assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), [], 'no server verification/content errors');
