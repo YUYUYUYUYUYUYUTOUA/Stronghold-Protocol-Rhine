@@ -13,9 +13,7 @@ const repository = 'YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine';
 const branch = 'refs/heads/codex/rhine-030-browser-preflight';
 const runtimeVersion = 'v24.21.0';
 const profileFiles = ['test/ui/rhine-profiles.e2e.test.js'];
-const studioFiles = ['test/ui/studio-gameplay.e2e.test.js'];
-const files = [...profileFiles, ...studioFiles];
-const studioPattern = '^operator wizard -> borrowed official kit -> saved attributes -> trial -> game-renderer replay and comparison$';
+const files = profileFiles;
 const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
   'test/e2e/fastServer.mjs', 'test/e2e/fastServerDiagnostics.mjs',
   'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
@@ -53,11 +51,9 @@ function validateInputs() {
   }
   return { diagnosticOnly: true, repository, branch, runtimeVersion, files, supportFiles, concurrency: 1,
     groupTimeoutMs: 600000, originalCaseDeadlinesAndAssertions: 'unchanged', resourceMode: 'complete verified old-then-upstream overlay',
-    scope: 'Only the two failed profile and first Studio cases from native candidate7 run38899986209. The other46 browser cases passed there and are not rerun here.',
+    scope: 'Only the remaining profile case after run38906606052. The Studio firstcase passed there and the other46 browser cases passed native7; none of those47 are rerun here. This is not full native acceptance.',
     groups: [{ name: 'profiles', files: profileFiles, expectedTests: 1,
-        SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' },
-      { name: 'studioOperator', files: studioFiles, expectedTests: 1, testNamePattern: studioPattern,
-        SP_STUDIO: 'local' }],
+        SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' }],
     flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
     noPublisherImport: true, noReleaseMutation: true, noDistributable: true, noDeployment: true };
@@ -289,9 +285,9 @@ async function main() {
   console.log(JSON.stringify(summary));
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');
   assert.equal(failures.length, 0, 'Diagnostic browser cases failed; no release operation was attempted.');
-  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.tests, 0), 2);
-  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.pass, 0), 2);
-  progress('Diagnostic-only profile and Studio acceptance passed: 2 tests, 2 passes; no package, release or deployment was created.');
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.tests, 0), 1);
+  assert.equal(outcomes.reduce((sum, group) => sum + group.totals.pass, 0), 1);
+  progress('Diagnostic-only profile acceptance passed: 1 test, 1 pass; no package, release or deployment was created.');
 }
 
 await main();

@@ -6,6 +6,8 @@ import { existsSync, readdirSync } from 'node:fs';
 import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
+import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility,
+  readMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { DataSource } from '../../server/sim/simdata.js';
 import { compactResult, createBattleFromSpec, resultDigest } from '../../server/sim/spec.js';
@@ -18,9 +20,30 @@ const QUIET = { info() {}, warn() {}, error() {}, debug() {} };
 const profileId = enabled => enabled ? 'rhine' : 'vanilla';
 const SOFTWARE_GPU = process.env.SP_E2E_SWIFTSHADER === '1';
 const BROWSER_ARGS = SOFTWARE_GPU ? ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] : [];
+// A desktop mechanism viewport, also used by the six-player fixture. Dedicated renderer suites retain their sizes.
+// This reduces pixel work without changing any UI/simulation condition, deadline or the real reload Canvas gate.
+const VIEWPORT = { width: 1280, height: 720 };
+const ISOLATION_KEY = '__sp_e2e_rhine_profile_context';
+const scheduledBrowsers = new WeakMap();
 
 async function openClient(client, query) {
   await client.open(query);
+  assert.deepEqual(client.page.viewport(), VIEWPORT, `${client.label}: the configured viewport is desktop 1280x720`);
+  const actualViewport = await client.page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  assert.deepEqual(actualViewport, VIEWPORT, `${client.label}: the real document has the configured desktop dimensions`);
+  console.log('Profile actual viewport:', JSON.stringify({ client: client.label, ...actualViewport }));
+  assert.ok(client.browserContext?.id, `${client.label}: this player owns a browser context`);
+  assert.equal(client.page.browserContext(), client.browserContext);
+  await observeMechanismVisibility(client);
+  const untouched = await client.page.evaluate(key => ({ local: localStorage.getItem(key), session: sessionStorage.getItem(key),
+    cookie: document.cookie.split('; ').find(cookie => cookie.startsWith(`${key}=`)) ?? null }), ISOLATION_KEY);
+  assert.deepEqual(untouched, { local: null, session: null, cookie: null }, `${client.label}: another context's markers are absent`);
+  // These namespaced markers never touch the game's identity, settings, profile or simulation state.
+  await client.page.evaluate(({ key, value }) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+    document.cookie = `${key}=${value}; Path=/; SameSite=Lax`;
+  }, { key: ISOLATION_KEY, value: client.label });
   if (!SOFTWARE_GPU) return;
   const cdp = await client.browser.target().createCDPSession();
   try {
@@ -45,6 +68,16 @@ async function openClient(client, query) {
         return { pid: p.id, type: p.type, exitedDuringObservation: true };
       }
     });
+    const scheduled = scheduledBrowsers.get(client.browser);
+    if (scheduled) {
+      assert.equal(browserPid, scheduled.browserPid, 'later contexts use the same owned browser');
+      assert.equal(owned[0].id, scheduled.gpuPid, 'later contexts use the same owned GPU');
+      assert.equal(getPriority(owned[0].id), priority, 'the shared GPU retains its rendering priority');
+      assert.equal(nodePriority, scheduled.nodePriority, 'the test and simulation priority stays unchanged');
+      console.log('Profile shared owned priorities read-only:', JSON.stringify({ client: client.label, browserPid,
+        node: { pid: process.pid, priority: nodePriority }, owned: priorities(), renderer }));
+      return;
+    }
     let before;
     if (process.platform === 'win32') {
       assert.ok(Number.isInteger(browserPid), 'the fixture owns its launched browser process');
@@ -89,7 +122,40 @@ async function openClient(client, query) {
         }
       }
     }
+    scheduledBrowsers.set(client.browser, { browserPid, gpuPid: owned[0].id, nodePriority });
   } finally { await cdp.detach(); }
+}
+
+async function contextSnapshot(clients) {
+  const contextIds = clients.map(client => client.browserContext?.id);
+  assert.ok(contextIds.every(Boolean), 'each player owns a browser context');
+  assert.equal(new Set(contextIds).size, clients.length, 'the three browser contexts are distinct');
+  const observations = await Promise.all(clients.map(async client => {
+    assert.equal(client.page.browserContext(), client.browserContext);
+    const observed = await client.page.evaluate(key => ({ documentId: String(performance.timeOrigin),
+      playerId: globalThis.__SP__.store.get().me.playerId, profile: globalThis.__SP__.data.profileId,
+      viewport: { width: innerWidth, height: innerHeight },
+      local: localStorage.getItem(key), session: sessionStorage.getItem(key),
+      cookie: document.cookie.split('; ').find(cookie => cookie.startsWith(`${key}=`))?.slice(key.length + 1) ?? null }), ISOLATION_KEY);
+    assert.deepEqual({ local: observed.local, session: observed.session, cookie: observed.cookie },
+      { local: client.label, session: client.label, cookie: client.label }, `${client.label}: storage belongs only to this context`);
+    assert.deepEqual(observed.viewport, VIEWPORT, `${client.label}: desktop dimensions remain unchanged across reloads`);
+    return { client: client.label, contextId: client.browserContext.id, ...observed };
+  }));
+  assert.ok(observations.every(observed => observed.playerId), 'every context has a real player identity');
+  assert.equal(new Set(observations.map(observed => observed.playerId)).size, clients.length, 'the three player identities are distinct');
+  console.log('Profile context isolation:', JSON.stringify(observations));
+  return observations;
+}
+
+function assertReloadIsolation(before, after, reloaded) {
+  for (const [index, old] of before.entries()) {
+    const current = after[index];
+    const { documentId: oldDocument, ...oldStable } = old, { documentId: currentDocument, ...currentStable } = current;
+    assert.deepEqual(currentStable, oldStable, `${old.client}: reload preserves context, storage, identity and profile`);
+    if (old.client === reloaded.label) assert.notEqual(currentDocument, oldDocument, 'reload creates a new document realm');
+    else assert.equal(currentDocument, oldDocument, `${old.client}: another context's reload does not replace this document`);
+  }
 }
 
 function observeImageReplacement(client) {
@@ -383,12 +449,20 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       if (previousVerify === undefined) delete process.env.SP_VERIFY;
       else process.env.SP_VERIFY = previousVerify;
     }
-    const puppeteer = (await import('puppeteer-core')).default;
-    const vanillaHost = new Client(puppeteer, srv.base, 'vanilla-host', { prefix: 'rhine-profiles-vanilla-host', browserArgs: BROWSER_ARGS });
-    const guest = new Client(puppeteer, srv.base, 'vanilla-guest', { prefix: 'rhine-profiles-vanilla-guest', browserArgs: BROWSER_ARGS });
-    const rhineHost = new Client(puppeteer, srv.base, 'rhine-host', { prefix: 'rhine-profiles-rhine-host', browserArgs: BROWSER_ARGS });
-    const clients = [vanillaHost, guest, rhineHost];
+    const clients = [];
+    let browserPool;
     try {
+      const puppeteer = (await import('puppeteer-core')).default;
+      // Share only the browser/GPU, as the six-player and plugin mechanism fixtures do. Each Client creates its own
+      // BrowserContext, page, storage and simulation Workers; this is not coverage of independent browser processes.
+      browserPool = await createMechanismBrowserPool(puppeteer, { browserArgs: BROWSER_ARGS });
+      const vanillaHost = new Client(puppeteer, srv.base, 'vanilla-host',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-vanilla-host', sharedBrowser: browserPool.browser });
+      const guest = new Client(puppeteer, srv.base, 'vanilla-guest',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-vanilla-guest', sharedBrowser: browserPool.browser });
+      const rhineHost = new Client(puppeteer, srv.base, 'rhine-host',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-rhine-host', sharedBrowser: browserPool.browser });
+      clients.push(vanillaHost, guest, rhineHost);
       const code = await createCoop(vanillaHost, '原版房主');
       await openClient(guest, `?room=${code}`);
       observeImageReplacement(guest);
@@ -469,11 +543,16 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         });
       }
       assert.deepEqual(await rosterSnapshot(rhineHost), initial, 'the parallel Rhine room still uses its own roster');
+      const poolState = await browserPool.diagnostics();
+      assert.equal(poolState.gpuCount, 1, 'the mechanism fixture uses one real owned GPU');
+      assert.deepEqual(new Set(poolState.contextIds), new Set(clients.map(client => client.browserContext.id)));
+      console.log('Profile browser pool:', JSON.stringify(poolState));
       await vanillaHost.shot('six-seat-room');
       await rhineHost.shot('six-seat-room');
 
       // Reload while waiting in the vanilla room: restore identity and fetch that profile before controls unlock.
       const guestId = (await guest.st()).me;
+      const beforeGuestReload = await contextSnapshot(clients);
       await guest.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
       await guest.page.reload({ waitUntil: 'domcontentloaded' });
       await guest.page.waitForFunction(() => !!globalThis.__SP__, { timeout: 30000 });
@@ -481,6 +560,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       await waitProfile(guest, false);
       assert.equal((await guest.st()).me, guestId);
       assert.deepEqual(await rosterSnapshot(guest), vanilla);
+      assertReloadIsolation(beforeGuestReload, await contextSnapshot(clients), guest);
       await guest.click('.room-bar__right button', '准备就绪');
       await Promise.all([vanillaHost.click('.room-bar__right button', '开始模拟'), rhineHost.click('.room-bar__right button', '开始模拟')]);
       for (const [client, enabled] of [[vanillaHost, false], [guest, false], [rhineHost, true]]) {
@@ -556,6 +636,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         assert.equal((await roomSnapshot(client)).pubEnabled, enabled);
         assert.equal(await client.page.evaluate(() => globalThis.__SP_RUNNER__.stats().errors), 0);
       }
+      const beforeHostReload = await contextSnapshot(clients);
       await vanillaHost.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
       await vanillaHost.page.reload({ waitUntil: 'domcontentloaded' });
       await vanillaHost.page.waitForFunction(() => !!globalThis.__SP__ && !!globalThis.__SP_RUNNER__, { timeout: 30000 });
@@ -563,10 +644,25 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       await waitProfile(vanillaHost, false);
       assert.equal((await roomSnapshot(vanillaHost)).pubProfile, 'vanilla');
       assert.deepEqual(await rosterSnapshot(vanillaHost), vanilla);
+      assertReloadIsolation(beforeHostReload, await contextSnapshot(clients), vanillaHost);
       await vanillaHost.page.waitForFunction(() => globalThis.__SP_VIEW__ && document.querySelector('.gm canvas')?.width > 0,
         { timeout: 30000 });
       await sleep(1800); // the reconnected prep camera and round banner complete their entrance
       await vanillaHost.shot('reconnected-prep');
+      for (const client of clients) {
+        await assertMechanismVisibility(client);
+        const visibility = readMechanismVisibility(client);
+        assert.ok(visibility.documents.every(document => document.frames > 0), `${client.label}: real animation frames ran in every observed document`);
+        assert.equal(visibility.documents.length, client === rhineHost ? 1 : 2, `${client.label}: visibility includes both sides of each reload`);
+        const actualView = await client.page.evaluate(() => {
+          const view = globalThis.__SP_VIEW__, app = view?.raw?.debug?.app;
+          return { kind: view?.kind, renderer: !!app?.renderer, contextLost: app?.renderer?.gl?.isContextLost?.(),
+            canvases: [...document.querySelectorAll('.gm canvas')].map(canvas => ({ width: canvas.width, height: canvas.height,
+              connected: canvas.isConnected, display: getComputedStyle(canvas).display,
+              rect: { width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height } })) };
+        });
+        console.log('Profile final actual view:', JSON.stringify({ client: client.label, ...actualView, fieldWarnings: client.fieldWarnings }));
+      }
       assert.deepEqual(pageProblems(clients), [], 'no console, page or resource errors in the real pages');
       assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), [], 'no server verification/content errors');
     } catch (error) {
@@ -616,7 +712,10 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       throw error;
     } finally {
       if (pageProblems(clients).length) console.log(pageProblems(clients).slice(0, 20).join('\n'));
-      await Promise.all(clients.map(client => client.close()));
-      await srv.stop();
+      try { await Promise.all(clients.map(client => client.close())); }
+      finally {
+        try { await browserPool?.close(); }
+        finally { await srv.stop(); }
+      }
     }
   });
