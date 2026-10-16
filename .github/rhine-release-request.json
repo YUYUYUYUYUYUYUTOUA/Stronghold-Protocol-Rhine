@@ -1,13 +1,13 @@
 {
-  "tag": "v0.3.0-rhine.5",
-  "sourceCommit": "ca282a1ef45878923e2511ac9ae928498fc948d4",
+  "tag": "v0.3.0-rhine.6",
+  "sourceCommit": "c7799362a1366a430ff8e9393828468f10ca7326",
   "previousTag": "v0.2.4-rhine.6",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.3.0-rhine.5 · 阵营拓展与雷姆平衡",
-  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆与原版开关。继续完整拓展版分发，未迁移为插件。\n\n- 雷姆 6／9 档：每成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣已出现数，普通战斗到同轮联防延续。\n- 暴行：沿用原版普通主战产层范围，自身与周围八格的本玩家雷姆干员和援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重；混品质使用共享预算。替换旧经过加攻，保留原生技能。\n- 普通援军抵达后在集合点周围八格可通行地块持续徘徊，接敌停下、脱战继续；车辆和老板原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用或拖欠装备库存；抽取干员仍遵共享池／本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展普通以上为 6+6、趣味局 3+3，引导训练仍 0 BAN；每阶至少保留 8 种共享可刷干员，有界抽取防止卡死。最终数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库容量按上游 .3 翻倍，旧概率估计作废。\n- 适配 .3 的插件／Studio、官方特效、攻击提交、格子判定和已展示装备透支。原版切换与独立内容集／Worker 保持一致。Windows 包安装 .3 锁定依赖，包含 SES、Acorn 和 local-fx。\n- 项目对外展示名称改为“阵营拓展”，README 重点补充雷姆必拓的援军、集合点与平衡机制，保留莱茵和卡兹戴尔介绍。仓库地址、安装目录、启动文件与升级渠道不变。整体游戏内阵营描述重写、变形同构体无限库存均未加入；未部署用户服务器。\n\n首次安装下载 Windows x64 ZIP，完整解压后运行「启动莱茵科研版.bat」。已有 .6 玩家结束对局并关闭服务后，在原目录运行「联网更新.bat」。原生 Windows 验收包含实际 .6 包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚和附件重新下载哈希校验；仅全部发行门槛通过后公开，实际结果见 RELEASE-VALIDATION.json。\n\n未做真人完整多人平衡试玩或人工 BAT 点击验收。Linux 无完整美术环境下的浏览器流程核心机制通过，但资源检查报 404，不将其标作整套通过；包内 Windows／Edge 使用完整素材另行验收。官方原始数据全量生成缓存未齐，固定 .3 原版快照与三个扩展叠加的逐表重建已验证。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n\n.1、.2 均为未公开验收候选，旧标签保持原指向。.3 修复上游 Windows 插件作者 CLI 的 ESM 文件 URL，并完善真实浏览器模拟夹具、实际进程退出、精锐 DIY、CRLF 和 Forge 测试诱饵的跨平台验收；保留原生产沙箱期限与批准玩法。新候选重新执行全部 Windows 发行门槛。Windows Node 22 更新测试在 .6 已有原生崩溃，底层原因未查明；本包采用 Node 24.21.0 实验收，详见验证报告。\n\n.3 同样为未公开候选：实际 Windows 包内 915 项（913 通过、0 失败、2 跳过）、作者发行 4 项、插件宿主 9 项、浏览器模拟 2 项与移动渲染通过；立绘旧测试绕过上游 CSP 的生产 Pixi 适配器而失败，未公开包。.4 改用生产 ensurePixi()，保留 CSP 和全部视觉断言；Studio 探针测试恢复生产默认 5000 毫秒预算并保持实际 PID 与 ESRCH 检查。新候选重新执行全部发行门槛，完整 Studio review 也纳入原生 Windows 验收。此前 .3 源码矩阵 Ubuntu24 与 tooling 通过，其余有房间请求／沙箱心跳／测试探针超时及既有 Windows22 原生崩溃，未标作全绿；逐环境证据和最终结果见 RELEASE-VALIDATION.json。\n\n.4 仍为未公开验收候选，其 Windows Node24 全套源码 CI 为 8434 通过、0 失败；实际包内回归、作者／Studio、插件宿主、雷姆 19 模型与移动及集合点交互也均通过，后续卡兹戴尔浏览器旧 eval 夹具被严格 CSP 拒绝。.5 将五项夹具改为真实浏览器对象句柄调用，完整保留结果断言；本地真实 Chromium 五项全部通过。卡兹戴尔预览页 import map 仅统一为官方页面已有的精确字节，映射内容及 CSP 策略不变；全部五项 CSP 回归纳入原生安装包验收。继续使用新不可变源码重新完成所有发行门槛，不改变批准玩法。",
+  "releaseName": "v0.3.0-rhine.6 · 阵营拓展与雷姆平衡",
+  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆必拓及原版切换，继续完整拓展版分发。\n\n- 雷姆 6／9 档：每实际成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣出现数，普通战斗到同轮联防延续。\n- 暴行：自身与周围八格的本玩家雷姆干员及援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重，混品质共用预算。替换原经过加攻，保留原生技能；沿用原版普通主战 IN_BATTLE 产层范围。\n- 普通援军抵达集合点后，在周围八格可通行地块持续徘徊；接敌停下，脱战继续。车辆和老板保留原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用装备五份库存；抽取干员仍遵守共享池及本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展险境及以上为 6+6、标准模拟为 3+3，引导训练仍为 0；每阶至少保留 8 种共享可刷干员，有界抽取避免无限重抽。.3 固定数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库按上游 .3 翻倍，旧概率估计已重算。\n- 适配 .3 插件／Studio、官方特效、攻击提交、格子判定及已展示装备透支，保持原版／扩展内容集和 Worker 一致。Windows 包采用 Node 24.21.0，包含锁定依赖 SES、Acorn 与 local-fx。\n- 对外展示名称改为“阵营拓展”，README 补充雷姆援军和集合点介绍，保留莱茵、卡兹戴尔介绍。仓库地址、安装目录、启动文件及联网升级渠道保持一致。\n\n首次安装：下载 Windows x64 ZIP，完整解压，运行「启动莱茵科研版.bat」。已有 .6：结束对局并关闭服务后，在原目录运行「联网更新.bat」。随附更新工具用于旧安装尚无更新入口的情况。\n\n发行使用真实 Windows x64 和包内 node.exe 验收：源码机制回归、完整素材 Edge 浏览器、HTTP／WebSocket、从实际 .6 安装包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚、全量文件和五个附件重新下载 SHA256。任一发行门槛失败时只保留草稿，完整结果见 RELEASE-VALIDATION.json；之前 .1–.5 均为未公开候选，旧标签不变。\n\n已知验证边界：未进行真人完整多人平衡试玩或人工 BAT 点击；官方原始表全量生成缓存缺失，固定 .3 原版快照和三个扩展逐表重建已验证。先前 Windows Node 22 的更新测试发生原生崩溃；已知中文目录 fs.cpSync 问题提供了具体线索，本次仅调整该测试夹具的遍历方式，不宣称修复底层运行时，最终源码矩阵结果另行披露。早期本地缺素材及容器僵尸进程导致的失败保留在源码验收记录，未抹作通过。\n\n整体游戏内阵营描述重写、变形同构体无限库存均未加入，未部署用户服务器。非官方、非商业同人扩展；素材权属与第三方声明随包保留。\n",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -45,11 +45,13 @@
     "limitations": [
       "No human full-match balance playtest or manual BAT clicking.",
       "Original official source-table cache absent; pinned v0.3.0 vanilla snapshot and complete extension-overlay rebuild verified.",
-      "Local Linux browser mechanism assertions passed but full resource console checks failed without fonts/audio/art; native packaged Windows/Edge acceptance is mandatory.",
       "Repository About PATCH was refused by the API channel (Forbidden) and remains unchanged; README updated.",
-      "Two strict Unix grandson ESRCH checks remain failed in the non-reaping Linux container; exact isolated PIDs were Z/PPID1 with no live group members. Do not describe local full CI as all-green.",
-      "Windows Node 22 rhine-online-update.test.js exits natively with code 3221226505 without a JS stack; the same file/code was the only failure in published .6 Windows Node22 CI while that baseline Windows24 and both Ubuntu jobs passed. Cause unresolved; bundled Windows Node24 acceptance is required.",
-      "Retired .3 full source CI also had room-configuration 2s request and virtual-time sandbox 10s heartbeat failures. Their complete parallel-run cause remains unresolved; isolated 9/9 native host passes do not erase source-matrix failures. The 1s Studio test probe fixture is repaired to the unchanged production 5s budget in .4."
+      "Historical: early local browser runs lacked full fonts/audio/art and failed resource-console checks. Candidate6 local full-resource cases are listed individually below; neither those cases nor static audit replace fresh native Windows full acceptance.",
+      "Historical local initial full CI retained two strict Unix ESRCH failures in this non-reaping Linux container; isolated exact PIDs were Z/PPID1 with no live group members. The full local run is not all-green. Later candidate5 Ubuntu22/24 and Windows24 source CI passed, including the true cleanup branches.",
+      "Historical candidate5 Windows Node22 source CI had exactly one native updater-test process exit3221226505 without a JS/native crash stack; the same test/code failed the published old.6 Node22 CI. A known Windows Unicode fs.cpSync issue is a concrete hypothesis, not a confirmed root cause. Candidate6 changes only the fixture to a true-filter traversal, retaining all Chinese paths/files/assertions; actual Windows22 verification was pending when this request was prepared; consult the exact-tag CI for the final result. Bundled Windows Node24 native acceptance is mandatory.",
+      "Historical retired .3 source CI contained websocket-request/heartbeat timing failures and the old 1s Studio probe fixture failure. The unchanged production5s fixture was corrected in .4; candidate5 hosts/sandbox/review passed in all four source matrix environments. Retired results remain recorded rather than reclassified as passes.",
+      "Candidate6 local profile mechanism fixture passed1/1 using real graphics UI low quality and official FX off. It preserves viewport, engine, canvas, simulation and original budgets, but does not cover official-FX visuals. Dedicated renderer suites retain their original settings; their native outcomes are recorded separately.",
+      "Latest complete local six-seat run failed:2tests/0pass/2fail/0skip in499.235545819s. Rhine missed real readiness after PREP elapsed. Vanilla initial seat1 authority was taken over during loading; replacement seat5, plus original2/3, uploaded real zero-error results but do not satisfy the original initial-owner assertion. First-nonloading windows31.5602–35.6997s include boot/catchup/scheduling, not isolated Worker construction, and CPU is not proven the sole root cause. All six vanilla clients also logged the nonfatal highlightTiles null.clear field warning; do not claim both profiles had zero warnings or assign takeover causality to that warning. No complete replay or full local six-seat pass is claimed; fresh native Windows all48 browser outcomes must be reported separately; later native results do not erase this local failure."
     ],
     "localFullCi": {
       "platform": "Linux Node24.19.0",
@@ -100,14 +102,14 @@
     "retiredCandidate": {
       "tag": "v0.3.0-rhine.1",
       "sourceCommit": "650bdffce70f810d9370e2a9fc672441cae937b5",
-      "draftReleaseId": 414581699,
       "published": false,
       "reason": "Three upstream browser simulator test fixtures copied nodeData.js under Windows backslash paths, causing a top-level-await dependency cycle; immutable tag retained, corrected source uses .2.",
       "attemptedCancellation": {
         "run": 38857619741,
         "status": "Forbidden by API channel; cancellation not executed"
       },
-      "finalStatus": "Third attempt ended after its 900-second batch limit with the same proven test-fixture top-level-await cycle; no package was published."
+      "finalStatus": "Third attempt ended after its 900-second batch limit with the same proven test-fixture top-level-await cycle; no package was published.",
+      "historicalReleaseId": 414581699
     },
     "windowsFixtureRegression": {
       "files": 3,
@@ -129,7 +131,6 @@
     "retiredCandidate2": {
       "tag": "v0.3.0-rhine.2",
       "sourceCommit": "ad811e273a3502b97bf3cb20fb0ae137ff6d4263",
-      "draftReleaseId": 414609088,
       "published": false,
       "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38858164951",
       "nativeWindows": {
@@ -148,7 +149,8 @@
         "browser acceptance",
         "actual .6 upgrade",
         "attachment validation"
-      ]
+      ],
+      "historicalReleaseId": 414609088
     },
     "finalCompatibilityRegression": {
       "files": 8,
@@ -290,7 +292,6 @@
     "retiredCandidate3": {
       "tag": "v0.3.0-rhine.3",
       "sourceCommit": "5fc855ae01435a7bd8cef307baad176a7f0ae875",
-      "draftReleaseId": 414616397,
       "published": false,
       "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38862614651",
       "nativeWindows": {
@@ -370,7 +371,8 @@
             "existing updater native process exit 3221226505"
           ]
         }
-      }
+      },
+      "historicalReleaseId": 414616397
     },
     "initialWindowsAttempt4": {
       "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38864282703",
@@ -448,7 +450,6 @@
     "retiredCandidate4": {
       "tag": "v0.3.0-rhine.4",
       "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
-      "draftReleaseId": 414644048,
       "published": false,
       "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38865524781",
       "job": 116857346549,
@@ -515,7 +516,8 @@
         "durationSeconds": 1231.859,
         "serverSmoke": "passed",
         "threeActualStudioExitBranches": "passed"
-      }
+      },
+      "historicalReleaseId": 414644048
     },
     "currentBrowserFixtureRepair": {
       "tag": "v0.3.0-rhine.5",
@@ -554,7 +556,686 @@
         "fail": 0,
         "skipped": 0
       },
-      "nativeAcceptance": "Rerun every normal release gate from the clean immutable source; do not treat previous candidate partial gates as publication acceptance."
+      "nativeAcceptance": "Rerun every normal release gate from the clean immutable source; do not treat previous candidate partial gates as publication acceptance.",
+      "historical": true,
+      "supersededBy": "v0.3.0-rhine.6"
+    },
+    "historicalLimitationsFromCandidate5": [
+      "No human full-match balance playtest or manual BAT clicking.",
+      "Original official source-table cache absent; pinned v0.3.0 vanilla snapshot and complete extension-overlay rebuild verified.",
+      "Local Linux browser mechanism assertions passed but full resource console checks failed without fonts/audio/art; native packaged Windows/Edge acceptance is mandatory.",
+      "Repository About PATCH was refused by the API channel (Forbidden) and remains unchanged; README updated.",
+      "Two strict Unix grandson ESRCH checks remain failed in the non-reaping Linux container; exact isolated PIDs were Z/PPID1 with no live group members. Do not describe local full CI as all-green.",
+      "Windows Node 22 rhine-online-update.test.js exits natively with code 3221226505 without a JS stack; the same file/code was the only failure in published .6 Windows Node22 CI while that baseline Windows24 and both Ubuntu jobs passed. Cause unresolved; bundled Windows Node24 acceptance is required.",
+      "Retired .3 full source CI also had room-configuration 2s request and virtual-time sandbox 10s heartbeat failures. Their complete parallel-run cause remains unresolved; isolated 9/9 native host passes do not erase source-matrix failures. The 1s Studio test probe fixture is repaired to the unchanged production 5s budget in .4."
+    ],
+    "retiredCandidate5": {
+      "tag": "v0.3.0-rhine.5",
+      "sourceCommit": "ca282a1ef45878923e2511ac9ae928498fc948d4",
+      "historicalReleaseId": 414667367,
+      "published": false,
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867454299",
+      "job": 116863458125,
+      "completedGates": {
+        "nativeMain": {
+          "timestamp": "2026-10-16T07:34:59.0067758Z",
+          "total": 920,
+          "pass": 918,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 2
+        },
+        "sourceAuthorAndFullStudioReview": {
+          "timestamp": "2026-10-16T07:37:03.0665116Z",
+          "total": 27,
+          "pass": 27,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "isolatedPluginHosts": {
+          "timestamp": "2026-10-16T07:38:18.7694486Z",
+          "total": 9,
+          "pass": 9,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "remRhineBrowserSimulation": {
+          "timestamp": "2026-10-16T07:38:55.1450272Z",
+          "total": 2,
+          "pass": 2,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "remArtAndMovement": {
+          "timestamp": "2026-10-16T07:39:19.6030513Z",
+          "total": 2,
+          "pass": 2,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "remRally": {
+          "timestamp": "2026-10-16T07:39:25.9910453Z",
+          "total": 1,
+          "pass": 1,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "kazdelReactiveBrowserSimulation": {
+          "timestamp": "2026-10-16T07:40:05.8510755Z",
+          "total": 5,
+          "pass": 5,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "kazdelRhineRenderer": {
+          "timestamp": "2026-10-16T07:45:36.6840567Z",
+          "total": 13,
+          "pass": 13,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "rhineOperatorsRenderer": {
+          "timestamp": "2026-10-16T07:46:14.7785717Z",
+          "total": 2,
+          "pass": 2,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        "upstreamRenderer": {
+          "timestamp": "2026-10-16T07:47:18.5877413Z",
+          "total": 7,
+          "pass": 7,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        }
+      },
+      "failedGate": {
+        "group": "upstreamUi",
+        "timestamp": "2026-10-16T07:47:59.7278295Z",
+        "total": 8,
+        "pass": 7,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "cause": "TypeError at test/ui/rhine-profiles.e2e.test.js:180 reading initial.dorothy.tier; removed chess_rhine_dorothy_a persists in old fixture; ptilopsis and saria checks at178/179 passed"
+      },
+      "failureDiagnosis": "The profile browser fixture still used removed chess_rhine_dorothy_a; initial.dorothy.tier failed. Ptilopsis/Saria initial tier assertions passed. Candidate6 replaces the obsolete fixture with the current Rhine-only Magallan and retains real profile/authority/result checks.",
+      "mechanismPassingAssertions": 32,
+      "mechanismPassLines": [
+        "2026-10-16T07:34:58.9251905Z ✔ Rem 6/9 appearance attack and HP count successful generations of all types and sources to 200/300% (93.2341ms)",
+        "2026-10-16T07:34:58.9252869Z ✔ Rem appearance ignores failed deployment, preserves the buff through redeploy and resets in a new round (5.8118ms)",
+        "2026-10-16T07:34:58.9253618Z ✔ Rem appearance is player-local in shared fields (2.8839ms)",
+        "2026-10-16T07:34:58.9254644Z ✔ Rem appearance crosses normal combat into unite, survives the wire and never carries into a new round (10.0516ms)",
+        "2026-10-16T07:34:58.9255864Z ✔ ordinary Rem reinforcements continuously patrol passable rally neighbours, stop to fight and resume (101.3554ms)",
+        "2026-10-16T07:34:58.9260357Z ✔ Rem armor upgrades to strongest on passage and persists; Savage passage no longer grants attack (3.6821ms)",
+        "2026-10-16T07:34:58.9261276Z ✔ Rem Savage shares its 24/48 layer budget across copies, counts self kills once and resets next round (18.5911ms)",
+        "2026-10-16T07:34:58.9262218Z ✔ Rem Savage includes adjacent owned Rem operators and every reinforcement type, including vehicles (4.6507ms)",
+        "2026-10-16T07:34:58.9263073Z ✔ Rem Savage excludes distant kills, revives, non-kill removals and source-less deaths (2.0884ms)",
+        "2026-10-16T07:34:58.9264017Z ✔ Rem Savage separated normal/elite auras share 48 layers, retain the budget after elite death and isolate owners (4.3094ms)",
+        "2026-10-16T07:34:58.9265132Z ✔ Rem Savage ordinary budget expands only after a real elite deployment and resets in a fresh battle (6.8507ms)",
+        "2026-10-16T07:34:58.9289110Z ✔ food hits each grounded enemy only once per vehicle and never attacks or blocks (24.927ms)",
+        "2026-10-16T07:34:58.9309472Z ✔ moving boss bombs its world position, keeps an off-road home and does not occupy the ground route (5.1502ms)",
+        "2026-10-16T07:34:58.9443968Z ✔ 石棉 native effective profile and damage: normal S1 (3.6633ms)",
+        "2026-10-16T07:34:58.9444967Z ✔ 石棉 native effective profile and damage: normal S2 (4.9598ms)",
+        "2026-10-16T07:34:58.9445911Z ✔ 石棉 native effective profile and damage: elite S1 (5.2311ms)",
+        "2026-10-16T07:34:58.9446846Z ✔ 石棉 native effective profile and damage: elite S2 (7.1733ms)",
+        "2026-10-16T07:34:58.9640528Z ✔ unite inputs carry only each helper own normal-field appearances and fresh normal inputs reset (118.2888ms)",
+        "2026-10-16T07:34:58.9641365Z ✔ SP_VERIFY off still verifies positive client appearance carry and discards a forged count (94.2126ms)",
+        "2026-10-16T07:34:58.9660622Z ✔ small starting rosters add one core and two add-on draws; five/six-seat reductions and training stay fixed (1.1475ms)",
+        "2026-10-16T07:34:58.9663216Z ✔ guided training still draws no core or add-on bonds in the actual match (46.1162ms)",
+        "2026-10-16T07:34:58.9664330Z ✔ small-roster rotations retain eight shared operators per tier and use the all-bonds ban rule (383.2635ms)",
+        "2026-10-16T07:34:58.9667336Z ✔ a repeated invalid draw reaches a finite valid fallback without weakening BAN counts (5.0841ms)",
+        "2026-10-16T07:34:58.9668775Z ✔ an impossible custom shared roster fails promptly instead of rerolling forever (2.4007ms)",
+        "2026-10-16T07:34:58.9711190Z ✔ five/six starting seats add one operator shop slot at every level and preserve equipment slots (125.7273ms)",
+        "2026-10-16T07:34:58.9712059Z ✔ Rhine R3/R7 supply reaches all six alive players outside the five-copy item stock (188.6423ms)",
+        "2026-10-16T07:34:58.9712803Z ✔ original R3/R7 supply reaches all six alive players outside the five-copy item stock (346.4928ms)",
+        "2026-10-16T07:34:58.9713531Z ✔ system copies do not repay debt when consumed, while ordinary copies still do (62.426ms)",
+        "2026-10-16T07:34:58.9714252Z ✔ the R3 supply keeps overflowing hand/temp contents and skips eliminated players (64.6159ms)",
+        "2026-10-16T07:34:58.9715045Z ✔ a system communicator still draws only remaining shared copies and excludes banned operators (96.0647ms)",
+        "2026-10-16T07:34:58.9873000Z ✔ Asbestos removes only Steadfast while keeping her native skills and reinforcement trait (0.358ms)",
+        "2026-10-16T07:34:58.9874505Z ✔ Savage data uses the approved player-shared kill stack limits and summon-count growth text (0.5292ms)"
+      ],
+      "nativeMainSkipLines": [
+        "2026-10-16T07:34:59.0031143Z ﹣ Rem original downloads into an empty asset root with exact accepted bytes (0.2577ms) # set SP_ASSET_E2E=1 for live source acceptance",
+        "2026-10-16T07:34:59.0066128Z ﹣ every shipped vanilla snapshot is byte-identical to the fixed v0.3.0 commit (69.2827ms) # fixed upstream Git object unavailable in the portable package or shallow checkout"
+      ],
+      "remArtModels": 19,
+      "movementFrames": 55,
+      "notRun": [
+        "sixSeatUi",
+        "statsLandscape",
+        "upstreamPlugins",
+        "HTTP/WebSocket release smoke",
+        "compression/archive verification",
+        "real .6 update, private configuration/repeat/rollback",
+        "upload/download acceptance and publication"
+      ],
+      "sourceCi": {
+        "run": 38867452789,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789",
+        "sourceCommit": "ca282a1ef45878923e2511ac9ae928498fc948d4",
+        "conclusion": "failure: Windows Node 22 test process crash; other four jobs success",
+        "jobs": [
+          {
+            "job": 116863452941,
+            "name": "test (ubuntu-latest, node 24)",
+            "conclusion": "success",
+            "counts": {
+              "tests": 8519,
+              "pass": 8424,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 95,
+              "duration_ms": 1061679.805867
+            },
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789/job/116863452941",
+            "failureContexts": [],
+            "realStudioProbeResults": [
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial close (2181.492337ms)",
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout (6050.316071ms)",
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial probe-timeout (6923.287383ms)"
+            ]
+          },
+          {
+            "job": 116863453196,
+            "name": "tooling (lint, imports, typecheck)",
+            "conclusion": "success",
+            "counts": {},
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789/job/116863453196",
+            "failureContexts": [],
+            "realStudioProbeResults": []
+          },
+          {
+            "job": 116863453226,
+            "name": "test (windows-latest, node 24)",
+            "conclusion": "success",
+            "counts": {
+              "tests": 8519,
+              "pass": 8434,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 85,
+              "duration_ms": 2151006.5182
+            },
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789/job/116863453226",
+            "failureContexts": [],
+            "realStudioProbeResults": [
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial close (4407.6675ms)",
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout (6165.1269ms)",
+              "✔ a real pinned SIGTERM-ignoring probe leaves no grandson after trial probe-timeout (8481.8326ms)"
+            ]
+          },
+          {
+            "job": 116863453237,
+            "name": "test (ubuntu-latest, node 22)",
+            "conclusion": "success",
+            "counts": {
+              "tests": 8519,
+              "pass": 8424,
+              "fail": 0,
+              "cancelled": 0,
+              "skipped": 95,
+              "duration_ms": 1214474.811705
+            },
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789/job/116863453237",
+            "failureContexts": [],
+            "realStudioProbeResults": []
+          },
+          {
+            "job": 116863453269,
+            "name": "test (windows-latest, node 22)",
+            "conclusion": "failure",
+            "counts": {
+              "tests": 8497,
+              "pass": 8411,
+              "fail": 1,
+              "cancelled": 0,
+              "skipped": 85,
+              "duration_ms": 1738359.0546
+            },
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38867452789/job/116863453269",
+            "failureContexts": [
+              [
+                "  ...",
+                "# Subtest: test\\\\rhine-online-update.test.js",
+                "not ok 568 - test\\\\rhine-online-update.test.js",
+                "  ---",
+                "  duration_ms: 1163.451",
+                "  type: 'test'",
+                "  location: 'D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\rhine-online-update.test.js:1:1'",
+                "  failureType: 'testCodeFailure'",
+                "  exitCode: 3221226505",
+                "  signal: ~",
+                "  error: 'test failed'",
+                "  code: 'ERR_TEST_FAILURE'",
+                "  ..."
+              ]
+            ],
+            "realStudioProbeResults": []
+          }
+        ]
+      }
+    },
+    "candidate6LocalFullResourcePreflight": {
+      "platform": "Linux",
+      "nodeVersion": "v24.19.0",
+      "browser": "actual Chromium /usr/bin/chromium",
+      "resourcePreparation": "Full pinned old.6 then upstream.3 resource overlay; see /tmp/rhine-browser-assets-downloads/cache-verification.json",
+      "scope": "Individually listed real cases across separate runs, including complete profile1/1 pass and complete six-seat0/2 failure. Initial failed aggregate batches remain preserved; no claim of an all-green local browser suite.",
+      "pluginsContent": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 88.90918219199999,
+        "sourceSha256": "b59cc79a252df5dacb41ffa6fbf8cee71f2473813049a902273f3fb91a2efb8e",
+        "logSha256": "6cf977bc176e36570438e48f2f81978186de83c3305067a5f9a047647ee37f0a",
+        "hostResultSource": "client",
+        "guestResultSource": "server",
+        "requiredActualHostEntry": {
+          "authoritative": true,
+          "delivery": "delivered",
+          "cs": "158230d12855937063054f665c10cc5ce3bd53ebe55d94bdc7f670b45656a6c0"
+        },
+        "requiredActualGuestEntry": null,
+        "serverVerifyStats": {
+          "checked": 0,
+          "mismatches": 0,
+          "rejected": 0,
+          "takeovers": 1
+        },
+        "zeroBrowserErrors": true,
+        "meaning": "Same captured first battle IDs: normal host accepted client result, forged-content guest no authority/result and actual server timeout takeover. Worker isolation and all console/page/request gates passed. Content test did not force all-results re-simulation; checked=0 here is expected."
+      },
+      "pluginsSandbox": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 75.399293538,
+        "sourceSha256": "543df1a5dd772d95e57118a46e7098a6f2ccbb797bf8be5794e2b0f86b50c65c",
+        "logSha256": "507270d680be941de7a44bcc4c5394e54db2dc33c8addc56698c7810a875bcc1",
+        "bothCapturedFirstResultSources": [
+          "client",
+          "client"
+        ],
+        "serverVerifyStats": {
+          "checked": 2,
+          "mismatches": 0,
+          "rejected": 0,
+          "takeovers": 0
+        },
+        "actualWorkerInstances": 2,
+        "siteCspPreserved": true,
+        "zeroBrowserErrors": true,
+        "containingBatchExitCode": 1,
+        "containingBatchNote": "The same two-file batch failed because the then-unfixed content observer missed R1. This row records the sandbox case only; content has a newer independent passing run.",
+        "optionalPostSettlementDiagnostics": [
+          {
+            "label": "host",
+            "problems": [],
+            "diagnosticTimeoutMs": 5000
+          },
+          {
+            "label": "guest",
+            "problems": [],
+            "diagnosticTimeoutMs": 5000
+          }
+        ],
+        "meaning": "Both captured first normal battle IDs accepted from their actual isolated client Workers, both server-re-simulated under verify:all; checked2/mismatch0/rejected0/takeovers0. Site CSP/SES/two-client and zero console/page/request errors passed."
+      },
+      "studio": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "sourceSha256": "6fb8c190b15faa7eebd7f2054f4786688406f283d0007a00db29356909fe5e6c",
+        "caseMilliseconds": [
+          104570.630266,
+          54589.62061
+        ],
+        "meaning": "Both Studio wizard/real renderer replay cases passed inside the initial four-test plugin batch; that batch exit1 from the then-failing two plugin cases is retained."
+      },
+      "sixSeatLayout": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "caseMilliseconds": 48885.540385,
+        "sourceSha256": "bd51910efb54237d642ffee3603101483746d32aa2dc46bb19830805a11476a9",
+        "meaning": "Only the actual six-card/prep layout case passed. The initial combined batch had two separate balance-case failures; complete final two-profile balance remains pending."
+      },
+      "statsLandscape": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "caseMilliseconds": 2885.507109,
+        "totalDurationSeconds": 3.951688471,
+        "sourceSha256": "74b72925c61aaeb596a9bd11413e13ca0d8b2e60cdf54628055853f538ea95c6",
+        "namePattern": "phone in landscape",
+        "meaning": "One selected real landscape case; other stats flows were outside the requested name filter, not claimed passed."
+      },
+      "httpSmoke": {
+        "http": "passed",
+        "webSocket": "welcome + pong",
+        "httpArtifactsVerified": 214,
+        "timestamp": "2026-10-16T08:01:09.434Z",
+        "meaning": "Real local service with full pinned resource cache; not yet a bundled native Windows HTTP smoke or actual installer upgrade."
+      },
+      "initialAggregateBatches": [
+        {
+          "key": "sixseat",
+          "exitCode": 1,
+          "totals": {
+            "tests": 3,
+            "suites": 0,
+            "pass": 1,
+            "fail": 2,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "elapsedSeconds": 106.618
+        },
+        {
+          "key": "stats",
+          "exitCode": 0,
+          "totals": {
+            "tests": 1,
+            "suites": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "elapsedSeconds": 3.989
+        },
+        {
+          "key": "plugins",
+          "exitCode": 1,
+          "totals": {
+            "tests": 4,
+            "suites": 1,
+            "pass": 2,
+            "fail": 2,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          },
+          "elapsedSeconds": 344.115
+        }
+      ],
+      "evidenceNotes": [
+        "These are Linux/Chromium acceptance runs; native Windows release gates remain the parent task.",
+        "Original content16x host resultSource was server, but its exact takeover reason was not collected; no claim that it was necessarily timeout.",
+        "Original sandbox16x actual timeout reason and cold-load/tick evidence are in /tmp/rhine-030-r6-sandbox-diagnosis.json.",
+        "Sandbox optional post-settlement CDP diagnostic reads timed out at5000ms on both clients; required isolation/actual result verification and zero browser-error gates passed."
+      ],
+      "pending": [
+        "Preparation-time record: remote tag6 publication and the atomic formal-main/tag push remain pending; the local immutable source tag has been created.",
+        "Fresh four-environment source CI for the sealed candidate6 commit",
+        "Fresh bundled native Windows functional/source-author/host/all48 browser/HTTP gates",
+        "Fresh real old.6 update/private-preservation/repeat/rollback and complete archive verification",
+        "Public five-attachment upload/download hashes and independent anonymous full verification"
+      ],
+      "profileMechanismFixtureVisualScope": {
+        "status": "complete full-resource profile run passed1/1; source and log fingerprints recorded",
+        "realUiGraphicsQuality": "low",
+        "realUiOfficialFx": "off",
+        "officialFxVisualCoverage": false,
+        "meaning": "This profile/authority/result mechanism fixture does not claim official-FX visual acceptance. Other renderer suites retain their original settings and their actual outcomes must be reported separately; no claim that every VFX browser suite has run."
+      },
+      "sixSeatBalance": {
+        "status": "ACTUAL_LOCAL_FULL_RUN_FAILED_NATIVE_WINDOWS_PENDING",
+        "completeTwoProfileSuitePassed": false,
+        "latestRhinePartialObservation": {
+          "scope": "Partial local fixture observation only; no final two-profile test summary is claimed.",
+          "actualEngineAndCanvas": "1280x720",
+          "fieldWarnings": 0,
+          "pageProblems": 0,
+          "runnerErrors": 0,
+          "actualEquipAndRewardObserved": true,
+          "fixtureObservationFailure": "Screenshots and real UI actions consumed the final41s of PREP; combat started automatically before the ready actions and the then-late hook did not capture its start.",
+          "vanillaTerminalResult": "failed; see actualFinalLocalRun.vanilla"
+        },
+        "acceptance": "Keep all6 ready inputs, all3 authoritative result uploads, exact real replay and original per-test/process deadlines; fresh native Windows full48 browser acceptance decides release readiness. Do not infer a pass from clean partial engine/canvas observations.",
+        "nextUpdate": "Local complete two-profile0/2 failure is final and retained; no identical local retry is claimed. New immutable source requires fresh strict native Windows acceptance with all6 readiness inputs, all3 initial-authority uploads and exact replays preserved.",
+        "tests": 2,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 499.235545819,
+        "actualFinalLocalRun": {
+          "log": "/tmp/rhine-030-r6-local-sixseat-surfaces.log",
+          "logSha256": "4f2c2f22de8659e97d6564c473c693553a64fc3d3fc5a47cc2aa8e2d3eefc726",
+          "sourceSha256": "cc008c24291c2a57884601044b2a956580a5bf4db7e3ba07890c7b5c34b68ec4",
+          "rhine": {
+            "pass": 0,
+            "fail": 1,
+            "durationSeconds": 264.430294065,
+            "failure": "rhine-5: nothing clickable for .readybtn",
+            "location": "test/ui/six-player-balance.e2e.test.js:449",
+            "context": "PREP elapsed during real screenshots/UI; no relaxation of6ready or other assertions."
+          },
+          "vanilla": {
+            "pass": 0,
+            "fail": 1,
+            "durationSeconds": 234.144009444,
+            "failure": "vanilla-1: real browser uploaded its authoritative pair field (required actual initial upload missing)",
+            "location": "test/ui/six-player-balance.e2e.test.js:485",
+            "takeoverOrColdStartCause": {
+              "observed": "The initial seat1 authority received the production silence takeover while still loading; partner seat5 received a replacement authoritative start12081ms after the original server start.",
+              "originalServerStartToReplacementAuthorityMs": 12081,
+              "seat1InitialUploadPresent": false,
+              "actualUploadedOwners": [
+                "seat2 original",
+                "seat3 original",
+                "seat5 replacement"
+              ],
+              "actualUploadErrors": 0,
+              "initialBstartToFirstNonloadingMs": [
+                31560.2,
+                33066.8,
+                32945.3,
+                32246.4,
+                35699.7,
+                34969.4
+              ],
+              "timingBoundary": "Browser performance times are per-page; startReceivedToFirstNonloading includes real Worker boot, prepare/catchup and scheduling, and is not an isolated Worker constructor duration. No Worker RPC error hook was installed in this test; runner stats errors and wire errors are preserved.",
+              "inference": "The observed long loading/catchup and the production 12 s boss silence watchdog explain the authority handover under six SwiftShader browsers on a four-core runner. These logs do not isolate Worker construction from actual catchup/scheduling or prove CPU is the sole root cause.",
+              "pureWorkerConstructionDurationMeasured": false,
+              "cpuAsSoleRootCauseEstablished": false,
+              "renderWarningAsTakeoverCauseEstablished": false
+            },
+            "allSixActualWorkerPoolMax": 16000000,
+            "exactReplayStatus": "Not claimed: the first initial-owner upload assertion failed before the exact-replay loop could complete."
+          },
+          "meaning": "Actual complete two-case local run failed both cases. Clean partial canvas/equip observations do not supersede these failures. Fresh native Windows strict release gates remain unrun."
+        },
+        "fullDiagnosticEvidence": {
+          "path": "/tmp/rhine-030-r6-sixseat-surfaces-evidence.json",
+          "bytes": 1044592,
+          "sha256": "e0c8ddd8c80fb81542842efe627944b0d8bb4d41f78d2d2c35f4ec11a9dcba0f",
+          "embedded": false,
+          "reason": "Keep the complete1.04MB original evidence separately; summary only in this request."
+        },
+        "perProfileWarningAndErrorObservations": {
+          "rhine": {
+            "fieldWarningCountsBySeat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "fieldWarningsZero": true,
+            "runnerErrorsBySeat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "wireErrorCountsBySeat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "pageOrResourceProblems": []
+          },
+          "vanilla": {
+            "fieldWarningCountsBySeat": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "fieldWarningsZero": false,
+            "runnerErrorsBySeat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "wireErrorCountsBySeat": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "pageOrResourceProblems": []
+          }
+        },
+        "renderWarning": {
+          "profile": "vanilla",
+          "affectedClients": 6,
+          "text": "[field] engine view highlightTiles failed TypeError: Cannot read properties of null (reading 'clear')",
+          "classification": "Observed nonfatal field warning; original console/page/resource and runner error checks remain unchanged. Do not claim both profiles had zero warnings, and do not infer this warning caused the authority takeover."
+        }
+      },
+      "profile": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "durationSeconds": 203.198095624,
+        "caseDurationSeconds": 202.544855049,
+        "processStartedAtUTC": "2026-10-16T09:28:12.146234721Z",
+        "processCompletedAtUTC": "2026-10-16T09:31:35.374188729Z",
+        "sourceFile": "test/ui/rhine-profiles.e2e.test.js",
+        "sourceSha256": "8f6fab6ca73ec35a6d0e337009557f3fd5cf36afa0d48b8fb76e9529a77a099c",
+        "log": "/tmp/rhine-profiles-magallan-full-assets-fx-off.log",
+        "logBytes": 828,
+        "logSha256": "8c4b8c15d3cd248cf1f93ae428cee7171326600b70bd0740a921d3ca70eae0d6",
+        "actualIndependentBrowsers": 3,
+        "viewportWidth": 1920,
+        "qualitySelectedThroughRealUi": "low",
+        "officialFxSelectedThroughRealUi": "off",
+        "actualAuthoritativeNormalUploads": 3,
+        "uploadedResultErrors": 0,
+        "realNodeResultReplays": 3,
+        "originalProfileRealWorkerDataAndRhineProfileVerified": true,
+        "round2SettlementAndRunnerErrorsZero": true,
+        "realReloadOriginal15sNetworkIdleAndCanvas": "passed",
+        "finalConsolePageResourceErrors": 0,
+        "finalServerErrors": 0,
+        "originalGameplayAndTestBudgetsPreserved": true,
+        "visualScope": "Profile/authority/result mechanism regression with real engine/canvas; this low-quality official-FX-off fixture does not cover official-FX visuals. Other renderer suites retain their original settings and must be reported separately."
+      },
+      "allLocalBrowserPreflightsPassed": false
+    },
+    "candidate6Preparation": {
+      "status": "IMMUTABLE_SOURCE_SEALED_PREPARATION_TIME_VALIDATION_RECORD",
+      "releaseNotesInput": "/tmp/rhine-next-release-notes.txt",
+      "releaseNotesSha256": "7c91c997736ef72ac7fbdf3fd59ce0b7d69917e14ca0622dbd83a440962296ad",
+      "draftSelection": "No draftReleaseId key anywhere in this request; retired numeric IDs are history-only under historicalReleaseId.",
+      "remoteExistenceCheck": {
+        "checkedAt": "2026-10-16T09:19:52.628080+00:00",
+        "tag": "v0.3.0-rhine.6",
+        "tagRef": "404 Not Found",
+        "byTagRelease": "404 Not Found; drafts may be hidden by this endpoint",
+        "authenticatedReleaseListItems": 34,
+        "authenticatedReleaseListTagMatches": 0,
+        "meaning": "No tag, public release or authenticated listed draft for candidate6 observed; recheck before cut if another writer could act."
+      },
+      "win22FixtureCompatibility": {
+        "change": "Only test fixture fs.cpSync(...,{recursive:true,filter:()=>true})",
+        "allChinesePathsAndFilesPreserved": true,
+        "originalAssertionsPreserved": true,
+        "linuxTargeted": {
+          "tests": 28,
+          "pass": 25,
+          "fail": 0,
+          "skipped": 3,
+          "reasonForSkips": "unchanged real Windows-only ZIP extraction/BAT tests"
+        },
+        "actualWindows22": "Pending at request preparation; exact-tag source CI must report the final outcome. No claim of a runtime fix."
+      },
+      "publisherCollection": {
+        "browserGroups": 11,
+        "everyGroupRequiresActualPass": true,
+        "allFailuresCollectedBeforeFailClosedBarrier": true,
+        "successRequiresRealScreenshotOutput": true,
+        "allFailuresBlockHttpArchiveUpgradeUploadPublication": true,
+        "successfulReportTotalsShapeUnchanged": true,
+        "allOriginalFilesConcurrencyDeadlinesPreserved": true,
+        "explicitSoftwareGpuForUpstreamUi": true,
+        "upstreamUiGpuEnvironment": {
+          "SP_E2E_SWIFTSHADER": "1",
+          "meaning": "Explicit software WebGL fixture flag; no gameplay/renderer/clock/deadline assertion substituted."
+        }
+      },
+      "sourceCommit": "c7799362a1366a430ff8e9393828468f10ca7326",
+      "sourceSealed": true,
+      "recordedAtUTC": "2026-10-16T09:34:28.561025+00:00",
+      "notYetExecutedAtPreparationTime": [
+        "Root lightweight tag6 and atomic push",
+        "Full new source CI",
+        "Strict native Windows complete acceptance",
+        "Public release and anonymous five-attachment verification"
+      ],
+      "localStatic": {
+        "eslintErrors": 0,
+        "docs": {
+          "tests": 32,
+          "pass": 32,
+          "fail": 0
+        },
+        "diffCheck": "passed",
+        "producerRuntimeCodeChanged": false,
+        "evidence": "root actual source-commit validation record"
+      },
+      "localSourceTag": "v0.3.0-rhine.6",
+      "sourceTagCommitVerified": "c7799362a1366a430ff8e9393828468f10ca7326"
     }
   },
   "rendererDiagnostics": false
