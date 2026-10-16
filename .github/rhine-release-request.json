@@ -82,6 +82,13 @@
       "assertionsUnmodified": true
     },
     "sourceRegressionRecord": "docs/RHINE-030-VALIDATION.md",
-    "firstSourceCiUrl": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38855266392"
-  }
+    "firstSourceCiUrl": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38855266392",
+    "releasePreparationRecovery": {
+      "previousRun": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38856433421",
+      "previousStatus": "failed before package construction; draft only",
+      "cause": "Incremental Rem asset downloader changed only the derived manifest hash and final newline; exact failure SHA reproduced from those two changes.",
+      "recovery": "Require identical resource metadata including all URLs, models and statistics, restore exact tagged manifest bytes, and resume the existing draft without changing the source tag."
+    }
+  },
+  "draftReleaseId": 414581699
 }

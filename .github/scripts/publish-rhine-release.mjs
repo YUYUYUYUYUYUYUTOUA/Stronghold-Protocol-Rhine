@@ -256,11 +256,22 @@ async function main() {
     progress('New extension voice assets downloaded and checked against the tagged manifest.');
   }
   if (request.remOriginal) {
-    const manifestBefore = await sha(path.join(source, 'data/assets.json'));
+    const manifestFile = path.join(source, 'data/assets.json');
+    const manifestBytes = fs.readFileSync(manifestFile);
+    const manifestBefore = await sha(manifestFile);
     command(bundledNode, ['tools/fetch-rem-assets.mjs', '--units'], { cwd: source });
     command(bundledNode, ['tools/fetch-rem-assets.mjs'], { cwd: source });
-    assert.equal(await sha(path.join(source, 'data/assets.json')), manifestBefore,
-      'Downloaded Rem assets must resolve to the exact tagged manifest.');
+    // The incremental downloader hashes a different envelope from the upstream full generator
+    // and adds a newline. Require identical resource metadata and restore the tagged bytes;
+    // neither a newly resolved model nor any changed URL/statistic may enter the package.
+    const { hash: originalHash, ...originalContent } = JSON.parse(manifestBytes);
+    const { hash: downloadedHash, ...downloadedContent } = JSON.parse(fs.readFileSync(manifestFile));
+    assert.match(originalHash, /^[0-9a-f]{12}$/);
+    assert.match(downloadedHash, /^[0-9a-f]{12}$/);
+    assert.deepEqual(downloadedContent, originalContent,
+      'Downloaded Rem assets must resolve to the exact tagged resource metadata.');
+    fs.writeFileSync(manifestFile, manifestBytes);
+    assert.equal(await sha(manifestFile), manifestBefore, 'Preserve the exact tagged asset manifest bytes.');
     await verifyRemOriginal(source);
     progress('New Rem models and exact original logo downloaded; tagged manifest unchanged.');
   }
