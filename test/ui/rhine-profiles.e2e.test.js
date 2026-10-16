@@ -2,10 +2,13 @@
 // Opt-in: SP_E2E=1 CHROME_PATH=... node --test test/ui/rhine-profiles.e2e.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync } from 'node:fs';
-import { getPriority, setPriority } from 'node:os';
+import { existsSync } from 'node:fs';
+import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
+import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility,
+  readMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
+import { startProfileCpuDiagnostics } from '../e2e/profileCpuDiagnostics.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { DataSource } from '../../server/sim/simdata.js';
 import { compactResult, createBattleFromSpec, resultDigest } from '../../server/sim/spec.js';
@@ -18,9 +21,58 @@ const QUIET = { info() {}, warn() {}, error() {}, debug() {} };
 const profileId = enabled => enabled ? 'rhine' : 'vanilla';
 const SOFTWARE_GPU = process.env.SP_E2E_SWIFTSHADER === '1';
 const BROWSER_ARGS = SOFTWARE_GPU ? ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] : [];
+// A desktop mechanism viewport, also used by the six-player fixture. Dedicated renderer suites retain their sizes.
+// This reduces pixel work without changing any UI/simulation condition, deadline or the real reload Canvas gate.
+const VIEWPORT = { width: 1280, height: 720 };
+const ISOLATION_KEY = '__sp_e2e_rhine_profile_context';
+const scheduledBrowsers = new WeakMap();
+
+function installProfileResourceTiming() {
+  performance.setResourceTimingBufferSize(5000);
+  globalThis.__SP_PROFILE_RESOURCE_TIMING__ = () => {
+    const resources = performance.getEntriesByType('resource');
+    return { requestedBufferSize: 5000, documentId: String(performance.timeOrigin), totalCount: resources.length,
+      entries: resources.filter(entry => /\/js\/render\/|pixi|three|manifest|font|board|\/data\/(?:local-)?assets|\/cs\/[^/]+\/index\.json/i.test(entry.name))
+        .slice(-120).map(entry => {
+          const url = new URL(entry.name, location.href);
+          return { path: `${url.origin === location.origin ? '' : url.origin}${url.pathname}${url.search}`,
+            initiatorType: entry.initiatorType, startTime: entry.startTime, duration: entry.duration,
+            fetchStart: entry.fetchStart, domainLookupStart: entry.domainLookupStart, domainLookupEnd: entry.domainLookupEnd,
+            connectStart: entry.connectStart, connectEnd: entry.connectEnd, secureConnectionStart: entry.secureConnectionStart,
+            requestStart: entry.requestStart, responseStart: entry.responseStart, responseEnd: entry.responseEnd,
+            transferSize: entry.transferSize, encodedBodySize: entry.encodedBodySize, decodedBodySize: entry.decodedBodySize };
+        }) };
+  };
+}
 
 async function openClient(client, query) {
-  await client.open(query);
+  // Use the documented production 2D board URL for this profile/Worker mechanism fixture. The Pixi engine and real
+  // art remain enabled; default 3D multi-context cold initialization remains outside this fixture's coverage.
+  const params = new URLSearchParams(query || '');
+  params.set('board', '2d');
+  await client.open(`?${params}`);
+  const actualUrl = await client.page.evaluate(() => location.href);
+  assert.equal(new URL(actualUrl).searchParams.get('board'), '2d', `${client.label}: the real page uses the production 2D board URL`);
+  console.log('Profile actual board URL:', JSON.stringify({ client: client.label, url: actualUrl }));
+  // Passive capture only. The early-document hook covers reloads, including their cold render-module requests.
+  await client.page.evaluateOnNewDocument(installProfileResourceTiming);
+  await client.page.evaluate(installProfileResourceTiming);
+  assert.deepEqual(client.page.viewport(), VIEWPORT, `${client.label}: the configured viewport is desktop 1280x720`);
+  const actualViewport = await client.page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  assert.deepEqual(actualViewport, VIEWPORT, `${client.label}: the real document has the configured desktop dimensions`);
+  console.log('Profile actual viewport:', JSON.stringify({ client: client.label, ...actualViewport }));
+  assert.ok(client.browserContext?.id, `${client.label}: this player owns a browser context`);
+  assert.equal(client.page.browserContext(), client.browserContext);
+  await observeMechanismVisibility(client);
+  const untouched = await client.page.evaluate(key => ({ local: localStorage.getItem(key), session: sessionStorage.getItem(key),
+    cookie: document.cookie.split('; ').find(cookie => cookie.startsWith(`${key}=`)) ?? null }), ISOLATION_KEY);
+  assert.deepEqual(untouched, { local: null, session: null, cookie: null }, `${client.label}: another context's markers are absent`);
+  // These namespaced markers never touch the game's identity, settings, profile or simulation state.
+  await client.page.evaluate(({ key, value }) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+    document.cookie = `${key}=${value}; Path=/; SameSite=Lax`;
+  }, { key: ISOLATION_KEY, value: client.label });
   if (!SOFTWARE_GPU) return;
   const cdp = await client.browser.target().createCDPSession();
   try {
@@ -30,32 +82,102 @@ async function openClient(client, query) {
     assert.equal(gpu.featureStatus.gpu_compositing, 'disabled_software', 'software WebGL keeps GPU compositing disabled');
     if (!['win32', 'linux'].includes(process.platform)) return;
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
-    const owned = processInfo.filter(p => /gpu/i.test(p.type));
+    const owned = processInfo.filter(p => /^gpu$/i.test(p.type));
     assert.equal(owned.length, 1, 'one owned browser GPU process');
-    const nodePriority = getPriority(process.pid), priority = process.platform === 'linux' ? 15 : nodePriority;
-    // Software rendering shares this runner's CPUs with real simulation Workers. Only this browser's GPU is adjusted:
-    // Linux nice is per-thread; Windows aligns Chromium's raised GPU priority with the existing test priority.
-    for (const gpuProcess of owned) {
-      setPriority(gpuProcess.id, priority);
-      if (process.platform === 'linux') {
-        for (let pass = 0; pass < 2; pass++) {
-          for (const task of readdirSync(`/proc/${gpuProcess.id}/task`)) {
-            try {
-              setPriority(Number(task), priority);
-              assert.equal(getPriority(Number(task)), priority, 'owned software GPU thread has the requested rendering priority');
-            } catch (error) {
-              if (error.info?.code === 'ESRCH' && !existsSync(`/proc/${gpuProcess.id}/task/${task}`)) continue;
-              throw error;
-            }
-          }
-        }
+    const nodePriority = getPriority(process.pid), priority = osConstants.priority.PRIORITY_NORMAL;
+    // One shared software GPU serves these independent contexts. Windows aligns only its CDP-owned GPU to NORMAL;
+    // Linux only reads the default GPU priority and never writes process/thread priorities. This controlled scheduling
+    // hypothesis changes no Worker load, RPC, renderer lifecycle or deadline.
+    const browserPid = client.browser.process()?.pid;
+    const allOwned = processInfo.filter(p => /^(?:browser|renderer|gpu)$/i.test(p.type));
+    const priorities = () => allOwned.map(p => {
+      try { return { pid: p.id, type: p.type, priority: getPriority(p.id) }; }
+      catch (error) {
+        if (error.info?.code !== 'ESRCH') throw error;
+        return { pid: p.id, type: p.type, exitedDuringObservation: true };
       }
+    });
+    const scheduled = scheduledBrowsers.get(client.browser);
+    if (scheduled) {
+      assert.equal(browserPid, scheduled.browserPid, 'later contexts use the same owned browser');
+      assert.equal(owned[0].id, scheduled.gpuPid, 'later contexts use the same owned GPU');
+      assert.equal(getPriority(owned[0].id), priority, 'the shared GPU retains its rendering priority');
+      assert.equal(nodePriority, scheduled.nodePriority, 'the test and simulation priority stays unchanged');
+      console.log('Profile shared owned priorities read-only:', JSON.stringify({ client: client.label, browserPid,
+        node: { pid: process.pid, priority: nodePriority }, owned: priorities(), renderer }));
+      return;
+    }
+    let before;
+    if (process.platform === 'win32') {
+      assert.ok(Number.isInteger(browserPid), 'the fixture owns its launched browser process');
+      assert.ok(allOwned.some(p => /^browser$/i.test(p.type) && p.id === browserPid), 'CDP confirms this browser ownership');
+      assert.notEqual(owned[0].id, process.pid);
+      assert.notEqual(owned[0].id, browserPid);
+      assert.equal(nodePriority, osConstants.priority.PRIORITY_NORMAL, 'the Windows test Node remains NORMAL');
+      assert.equal(priority, 0, 'Windows NORMAL is the owned GPU target');
+      before = priorities();
+      console.log('Profile Windows owned priorities before:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: nodePriority }, browserPid, owned: before }));
+    }
+    for (const gpuProcess of owned) {
+      if (process.platform === 'win32' && getPriority(gpuProcess.id) !== priority) setPriority(gpuProcess.id, priority);
       assert.equal(getPriority(gpuProcess.id), priority, 'owned software GPU has the requested rendering priority');
       assert.equal(getPriority(process.pid), nodePriority, 'the test and simulation priority stays unchanged');
       console.log(JSON.stringify({ client: client.label, gpuPid: gpuProcess.id, renderer,
-        gpuPriority: getPriority(gpuProcess.id), nodePriority }));
+        gpuPriority: getPriority(gpuProcess.id), nodePriority,
+        priorityPolicy: process.platform === 'linux' ? 'default-read-only' : 'owned-GPU-NORMAL' }));
     }
+    if (process.platform === 'win32') {
+      const after = priorities();
+      console.log('Profile Windows owned priorities after:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: after }));
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL);
+      for (const [index, p] of after.entries()) {
+        if (/^gpu$/i.test(p.type)) assert.equal(p.priority, priority, 'only the owned GPU has the rendering target');
+        else if (!p.exitedDuringObservation && !before[index].exitedDuringObservation) {
+          assert.equal(p.priority, before[index].priority, `owned ${p.type} priority is unchanged`);
+        }
+      }
+    } else {
+      console.log('Profile default owned priorities read-only:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: priorities() }));
+    }
+    scheduledBrowsers.set(client.browser, { browserPid, gpuPid: owned[0].id, nodePriority });
   } finally { await cdp.detach(); }
+}
+
+async function contextSnapshot(clients) {
+  const contextIds = clients.map(client => client.browserContext?.id);
+  assert.ok(contextIds.every(Boolean), 'each player owns a browser context');
+  assert.equal(new Set(contextIds).size, clients.length, 'the three browser contexts are distinct');
+  const observations = await Promise.all(clients.map(async client => {
+    assert.equal(client.page.browserContext(), client.browserContext);
+    const observed = await client.page.evaluate(key => ({ documentId: String(performance.timeOrigin),
+      playerId: globalThis.__SP__.store.get().me.playerId, profile: globalThis.__SP__.data.profileId,
+      board: new URL(location.href).searchParams.get('board'),
+      viewport: { width: innerWidth, height: innerHeight },
+      local: localStorage.getItem(key), session: sessionStorage.getItem(key),
+      cookie: document.cookie.split('; ').find(cookie => cookie.startsWith(`${key}=`))?.slice(key.length + 1) ?? null }), ISOLATION_KEY);
+    assert.deepEqual({ local: observed.local, session: observed.session, cookie: observed.cookie },
+      { local: client.label, session: client.label, cookie: client.label }, `${client.label}: storage belongs only to this context`);
+    assert.deepEqual(observed.viewport, VIEWPORT, `${client.label}: desktop dimensions remain unchanged across reloads`);
+    assert.equal(observed.board, '2d', `${client.label}: the actual 2D URL survives both real reloads`);
+    return { client: client.label, contextId: client.browserContext.id, ...observed };
+  }));
+  assert.ok(observations.every(observed => observed.playerId), 'every context has a real player identity');
+  assert.equal(new Set(observations.map(observed => observed.playerId)).size, clients.length, 'the three player identities are distinct');
+  console.log('Profile context isolation:', JSON.stringify(observations));
+  return observations;
+}
+
+function assertReloadIsolation(before, after, reloaded) {
+  for (const [index, old] of before.entries()) {
+    const current = after[index];
+    const { documentId: oldDocument, ...oldStable } = old, { documentId: currentDocument, ...currentStable } = current;
+    assert.deepEqual(currentStable, oldStable, `${old.client}: reload preserves context, storage, identity and profile`);
+    if (old.client === reloaded.label) assert.notEqual(currentDocument, oldDocument, 'reload creates a new document realm');
+    else assert.equal(currentDocument, oldDocument, `${old.client}: another context's reload does not replace this document`);
+  }
 }
 
 function observeImageReplacement(client) {
@@ -106,10 +228,18 @@ async function observeRoomProfile(client) {
         return event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom;
       });
       if (!button) return;
+      const ancestors = [];
+      for (let node = button; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        ancestors.push({ tag: node.tagName, class: node.className, visibility: style.visibility,
+          display: style.display, opacity: style.opacity, pointerEvents: style.pointerEvents,
+          hidden: node.hidden, inert: node.inert });
+      }
       trace.inputs.push({ at: performance.now(), type: event.type, trusted: event.isTrusted,
         target: event.target?.tagName, targetTestId: event.target?.getAttribute?.('data-testid'),
         button: button.dataset.testid, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled,
-        visibility: getComputedStyle(button).visibility, loadoutHidden: document.documentElement.classList.contains('sp-loadout-open') });
+        visibility: getComputedStyle(button).visibility, loadoutHidden: document.documentElement.classList.contains('sp-loadout-open'),
+        statsHidden: document.documentElement.classList.contains('sp-stats-open'), ancestors });
     };
     document.addEventListener('pointerdown', observeInput, true);
     document.addEventListener('click', observeInput, true);
@@ -193,9 +323,38 @@ async function searchLoadout(client, query) {
 
 async function closeLoadout(client) {
   await client.page.keyboard.press('Escape');
-  // LoadoutHost removes the overlay before its effect unhides the room. Wait for both parts of the real close.
-  await client.page.waitForFunction(() => !document.querySelector('.lo')
-    && !document.documentElement.classList.contains('sp-loadout-open'), { timeout: 5000 });
+  // Overlay/class removal alone did not prove the room was interactive on Windows: a real click still hit its
+  // ancestor DIV while the button's computed visibility was hidden. Keep the original close budget and check hit.
+  await client.page.waitForFunction(profileControlPoint, { timeout: 5000 }, '[data-testid="rhine-vanilla"]');
+}
+
+function profileControlPoint(selector) {
+  if (document.querySelector('.lo') || document.documentElement.classList.contains('sp-loadout-open')) return null;
+  const button = document.querySelector(selector);
+  if (!button?.isConnected || button.tagName !== 'BUTTON' || button.matches(':disabled')
+    || button.getAttribute('aria-disabled') === 'true' || !button.getClientRects().length) return null;
+  for (let node = button; node; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    if (node.hidden || node.inert || node.hasAttribute('inert') || style.display === 'none'
+      || style.visibility !== 'visible' || Number(style.opacity) <= 0 || style.pointerEvents === 'none'
+      || style.contentVisibility === 'hidden') return null;
+  }
+  const rect = button.getBoundingClientRect(), x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+  if (rect.width < 2 || rect.height < 2 || x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return null;
+  const hit = document.elementFromPoint(x, y);
+  // A containing DIV is the native failure's exact false positive. Only the button or a descendant receives its click.
+  return hit && button.contains(hit) ? { x, y, button: button.dataset.testid,
+    target: hit.tagName, targetTestId: hit.getAttribute('data-testid') } : null;
+}
+
+async function clickProfileControl(client, selector) {
+  const handle = await client.page.waitForFunction(profileControlPoint, { timeout: 15000 }, selector);
+  try {
+    const point = await handle.jsonValue();
+    console.log(JSON.stringify({ client: client.label, profileClickPoint: point }));
+    // Exactly one trusted mouse click; no scripted DOM click, network shortcut or retry after missing acknowledgement.
+    await client.page.mouse.click(point.x, point.y);
+  } finally { await handle.dispose(); }
 }
 
 async function createCoop(client, name) {
@@ -312,12 +471,20 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       if (previousVerify === undefined) delete process.env.SP_VERIFY;
       else process.env.SP_VERIFY = previousVerify;
     }
-    const puppeteer = (await import('puppeteer-core')).default;
-    const vanillaHost = new Client(puppeteer, srv.base, 'vanilla-host', { prefix: 'rhine-profiles-vanilla-host', browserArgs: BROWSER_ARGS });
-    const guest = new Client(puppeteer, srv.base, 'vanilla-guest', { prefix: 'rhine-profiles-vanilla-guest', browserArgs: BROWSER_ARGS });
-    const rhineHost = new Client(puppeteer, srv.base, 'rhine-host', { prefix: 'rhine-profiles-rhine-host', browserArgs: BROWSER_ARGS });
-    const clients = [vanillaHost, guest, rhineHost];
+    const clients = [];
+    let browserPool, cpuDiagnostics;
     try {
+      const puppeteer = (await import('puppeteer-core')).default;
+      // Share only the browser/GPU, as the six-player and plugin mechanism fixtures do. Each Client creates its own
+      // BrowserContext, page, storage and simulation Workers; this is not coverage of independent browser processes.
+      browserPool = await createMechanismBrowserPool(puppeteer, { browserArgs: BROWSER_ARGS });
+      const vanillaHost = new Client(puppeteer, srv.base, 'vanilla-host',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-vanilla-host', sharedBrowser: browserPool.browser });
+      const guest = new Client(puppeteer, srv.base, 'vanilla-guest',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-vanilla-guest', sharedBrowser: browserPool.browser });
+      const rhineHost = new Client(puppeteer, srv.base, 'rhine-host',
+        { w: VIEWPORT.width, h: VIEWPORT.height, prefix: 'rhine-profiles-rhine-host', sharedBrowser: browserPool.browser });
+      clients.push(vanillaHost, guest, rhineHost);
       const code = await createCoop(vanillaHost, '原版房主');
       await openClient(guest, `?room=${code}`);
       observeImageReplacement(guest);
@@ -347,7 +514,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         const s = globalThis.__SP__.store.get();
         return s.room.seats.find(seat => seat?.playerId === s.me.playerId)?.ready;
       });
-      await vanillaHost.click('[data-testid="rhine-vanilla"]');
+      await clickProfileControl(vanillaHost, '[data-testid="rhine-vanilla"]');
       const profileReply = vanillaHost.page.waitForFunction(() => {
         const trace = globalThis.__profileRoom;
         const request = trace.requests.find(request => request.enabled === false);
@@ -398,11 +565,16 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         });
       }
       assert.deepEqual(await rosterSnapshot(rhineHost), initial, 'the parallel Rhine room still uses its own roster');
+      const poolState = await browserPool.diagnostics();
+      assert.equal(poolState.gpuCount, 1, 'the mechanism fixture uses one real owned GPU');
+      assert.deepEqual(new Set(poolState.contextIds), new Set(clients.map(client => client.browserContext.id)));
+      console.log('Profile browser pool:', JSON.stringify(poolState));
       await vanillaHost.shot('six-seat-room');
       await rhineHost.shot('six-seat-room');
 
       // Reload while waiting in the vanilla room: restore identity and fetch that profile before controls unlock.
       const guestId = (await guest.st()).me;
+      const beforeGuestReload = await contextSnapshot(clients);
       await guest.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
       await guest.page.reload({ waitUntil: 'domcontentloaded' });
       await guest.page.waitForFunction(() => !!globalThis.__SP__, { timeout: 30000 });
@@ -410,6 +582,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       await waitProfile(guest, false);
       assert.equal((await guest.st()).me, guestId);
       assert.deepEqual(await rosterSnapshot(guest), vanilla);
+      assertReloadIsolation(beforeGuestReload, await contextSnapshot(clients), guest);
       await guest.click('.room-bar__right button', '准备就绪');
       await Promise.all([vanillaHost.click('.room-bar__right button', '开始模拟'), rhineHost.click('.room-bar__right button', '开始模拟')]);
       for (const [client, enabled] of [[vanillaHost, false], [guest, false], [rhineHost, true]]) {
@@ -485,17 +658,38 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         assert.equal((await roomSnapshot(client)).pubEnabled, enabled);
         assert.equal(await client.page.evaluate(() => globalThis.__SP_RUNNER__.stats().errors), 0);
       }
+      const beforeHostReload = await contextSnapshot(clients);
       await vanillaHost.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
+      if (process.env.SP_PROFILE_CPU_DIAG === '1') cpuDiagnostics = await startProfileCpuDiagnostics(vanillaHost.page,
+        { outDir: path.join(ROOT, 'test/e2e/out') });
       await vanillaHost.page.reload({ waitUntil: 'domcontentloaded' });
       await vanillaHost.page.waitForFunction(() => !!globalThis.__SP__ && !!globalThis.__SP_RUNNER__, { timeout: 30000 });
       await vanillaHost.waitFor(s => s.phase === 'PREP' && s.round === 2 && s.room?.code === code, 'vanilla mid-match reconnect');
       await waitProfile(vanillaHost, false);
       assert.equal((await roomSnapshot(vanillaHost)).pubProfile, 'vanilla');
       assert.deepEqual(await rosterSnapshot(vanillaHost), vanilla);
+      assertReloadIsolation(beforeHostReload, await contextSnapshot(clients), vanillaHost);
       await vanillaHost.page.waitForFunction(() => globalThis.__SP_VIEW__ && document.querySelector('.gm canvas')?.width > 0,
         { timeout: 30000 });
       await sleep(1800); // the reconnected prep camera and round banner complete their entrance
       await vanillaHost.shot('reconnected-prep');
+      for (const client of clients) {
+        await assertMechanismVisibility(client);
+        const visibility = readMechanismVisibility(client);
+        assert.ok(visibility.documents.every(document => document.frames > 0), `${client.label}: real animation frames ran in every observed document`);
+        assert.equal(visibility.documents.length, client === rhineHost ? 1 : 2, `${client.label}: visibility includes both sides of each reload`);
+        const actualView = await client.page.evaluate(() => {
+          const view = globalThis.__SP_VIEW__, app = view?.raw?.debug?.app;
+          return { kind: view?.kind, renderer: !!app?.renderer, contextLost: app?.renderer?.gl?.isContextLost?.(),
+            board3dOn: view?.raw?.stats?.()?.board3d?.on,
+            canvases: [...document.querySelectorAll('.gm canvas')].map(canvas => ({ width: canvas.width, height: canvas.height,
+              connected: canvas.isConnected, display: getComputedStyle(canvas).display,
+              rect: { width: canvas.getBoundingClientRect().width, height: canvas.getBoundingClientRect().height } })) };
+        });
+        console.log('Profile final actual view:', JSON.stringify({ client: client.label, ...actualView, fieldWarnings: client.fieldWarnings }));
+        assert.equal(actualView.kind, 'engine', `${client.label}: the real Pixi engine is required, with no DOM fallback`);
+        assert.equal(actualView.board3dOn, false, `${client.label}: the actual renderer uses its 2D atlas board`);
+      }
       assert.deepEqual(pageProblems(clients), [], 'no console, page or resource errors in the real pages');
       assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), [], 'no server verification/content errors');
     } catch (error) {
@@ -510,10 +704,22 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
               room: { code: s?.room?.code, enabled: s?.room?.rhineEnabled, hostId: s?.room?.hostId, inMatch: s?.room?.inMatch },
               roomProfile: globalThis.__profileRoom,
               loadout: { open: !!document.querySelector('.lo'), hidden: document.documentElement.classList.contains('sp-loadout-open') },
-              profileButtons: [...document.querySelectorAll('[data-testid="rhine-toggle"] button')].map(button => ({
-                id: button.dataset.testid, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled,
-                visibility: getComputedStyle(button).visibility })),
+              profileButtons: [...document.querySelectorAll('[data-testid="rhine-toggle"] button')].map(button => {
+                const r = button.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                const ancestors = [];
+                for (let node = button; node; node = node.parentElement) {
+                  const style = getComputedStyle(node);
+                  ancestors.push({ tag: node.tagName, class: node.className, visibility: style.visibility,
+                    display: style.display, opacity: style.opacity, pointerEvents: style.pointerEvents,
+                    hidden: node.hidden, inert: node.inert });
+                }
+                return { id: button.dataset.testid, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled,
+                  visibility: getComputedStyle(button).visibility, ancestors,
+                  hit: hit && { tag: hit.tagName, class: hit.className, testId: hit.getAttribute('data-testid'), receivesClick: button.contains(hit) } };
+              }),
               ui: { route: s?.ui.route, dataReady: s?.ui.dataReady, dataError: s?.ui.dataError },
+              resourceTiming: globalThis.__SP_PROFILE_RESOURCE_TIMING__?.(),
+              visibility: globalThis.__SP_MECHANISM_VISIBILITY__?.snapshot(),
               view: { kind: view?.kind, app: !!app, renderer: !!app?.renderer,
                 contextLost: app?.renderer?.gl?.isContextLost?.() },
               canvases: [...document.querySelectorAll('.gm canvas')].map(canvas => ({ width: canvas.width, height: canvas.height,
@@ -529,13 +735,20 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
           sleep(5000).then(() => ({ diagnosticTimedOut: true })),
         ]);
         console.log(JSON.stringify({ client: client.label, diagnostic, fieldWarnings: client.fieldWarnings,
+          visibilityHistory: readMechanismVisibility(client),
           pendingRequests: [...(client.pendingRequests?.values() || [])].map(({ at, ...request }) => ({ ...request, ageMs: Date.now() - at })) }));
       }));
       console.log(JSON.stringify({ serverCombat: srv.logs.filter(line => /takeover|verify|rejected/i.test(line)).slice(-60) }));
       throw error;
     } finally {
       if (pageProblems(clients).length) console.log(pageProblems(clients).slice(0, 20).join('\n'));
-      await Promise.all(clients.map(client => client.close()));
-      await srv.stop();
+      try { await cpuDiagnostics?.stop(); }
+      finally {
+        try { await Promise.all(clients.map(client => client.close())); }
+        finally {
+          try { await browserPool?.close(); }
+          finally { await srv.stop(); }
+        }
+      }
     }
   });

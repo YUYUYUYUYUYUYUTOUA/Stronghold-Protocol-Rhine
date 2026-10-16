@@ -1,6 +1,6 @@
 # v0.3.0 阵营拓展源码验收
 
-本轮从正式主线 `45d962f7` 合并上游发布标签 `v0.3.0` 的固定提交 `c24e17eec3af1e6dedfa9935a6d15245cf2f4586`，不包含标签之后的 master。合并提交为 `7f2e98ba`；后续提交仅收尾测试夹具、报告格式和已有循环的有限界说明，不改批准数值。
+本轮从正式主线 `45d962f7` 合并上游发布标签 `v0.3.0` 的固定提交 `c24e17eec3af1e6dedfa9935a6d15245cf2f4586`，不包含标签之后的 master。合并提交为 `7f2e98ba`；后续完成已授权机制、.3 兼容与启动路径修正，并补齐回归夹具和发行验证，不改批准数值。具体实际结果与未完成边界逐轮记录如下。
 
 ## 源码检查
 
@@ -183,6 +183,16 @@ Windows Node 22 崩溃进一步定位到首个异步准备测试：前五个同�
 
 原 16 倍速与全部期限保持，真实信标发放／使用／转交、reload 不重复发放、六端实际双倍池与零模拟错误、三份初始权威真实上传及各自实际共享池时间线的 Node 精确重放、六人 RESULT，以及页面／控制台／资源与服务器 mismatch 门槛均执行通过。成功日志没有另行转储 starts／uploads／digest／实际池数值，以上结论来自冻结源码中执行通过的原断言，不额外声称第二次独立事后重放或反推出初始权威席号。成功场次没有打印服务端诊断 ring，不能据此补填父 lag／布局耗时，也不能反推上轮房间退出的原因已确定。此轮没有重跑先前已通过的两个插件用例，完整 Windows 安装包与全部 48 项浏览器仍待新候选独立执行；旧失败全部保留。
 
+### `.7` 完整原生 Windows 验收
+
+正式元数据 `923f8243301c9adc0d51b0ab95d2980d14521ac2`、不可变源码 `a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4` 的 [Windows 发行任务 38899986209](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38899986209) 实际 **failure**，未公开。真实 Windows x64／包内 Node 24.21.0 主回归 **974 项／972 通过／0 失败／2 条件跳过**，172.935 秒；作者／Studio **27／27**，94.549 秒，隔离宿主 **9／9**，57.422 秒；全部取消数为 0。两条主回归跳过仍是未启用可选 `SP_ASSET_E2E` live 下载及便携／浅克隆缺固定 Git 对象，准备步骤已独立实际校验旧包 25,947 文件、上游清单及固定快照。新增 runner 四文件也在真实包内执行通过。
+
+全部 11 个浏览器组均实际执行，合计 **48 项／46 通过／2 失败／0 跳过／0 取消**。上游 UI 为 8／7／1，插件／Studio 为 4／3／1，其余九组共 36／36。图标所在 13 项渲染组全过；莱茵与原版六人分别 184.525／173.594 秒，真实引擎 Canvas 1280×720、几何 source／target 均在范围内，观测时 `fieldWarnings=[]`，未采用 fallback；这不是全程帧率流畅的声明。内容插件房主首场结果由客户端送达，伪造内容的队友由服务器接管，`checked=0`；沙箱两份真实首场客户端结果均送达，`checked=2`、mismatches／rejected 为 0。
+
+配置用例失败于 `rhine-profiles.e2e.test.js:351`：真实 trusted pointer／click 的目标为 DIV，所选按钮当时 computed visibility 为 hidden，`room.setRhine` 请求和答复均为空，原 30 秒请求观察超时。旧宽松点击辅助允许包含按钮的祖先 DIV 命中，未证明按钮本身可点击；日志没有完整祖先样式，不能指定某个残余 class／transition 为唯一原因。Studio 第一例失败于 `studio-gameplay.e2e.test.js:47`：点击保存后 30 秒内未观察已保存 `normal.atk=900`，尚未进入该例的 trial／replay；旧日志未记录输入值、保存按钮状态或 API，不能断言 disabled／draft 竞态已被证实。DSL 第二例通过。失败门槛阻止后续 HTTP／WebSocket、最终 ZIP 压缩／重解压、实际旧包升级／私配保留／重复更新／回滚、五附件上传下载与公开；这些尾段本轮均未执行，不能把草稿或源码审查记为通过。
+
+后续仅修正上述两个真实 UI 夹具：配置关闭原 5 秒与点击原 15 秒预算内校验按钮／祖先可见性及严格实际命中，再发送一次可信鼠标点击；原 30 秒请求、三独立浏览器及全部 59 个原断言保持。Studio 输入 900 后，原 30 秒等待预算由保存就绪与保存状态等待共享；实际 CDP／鼠标操作仍受原个测和协议期限约束，不称绝对 30 秒墙钟上限。另检查真实 POST、HTTP 回应及磁盘内容，180 秒个测和全部后续试验／双渲染回放／比较／打包／iframe 断言保留。生产游戏和公共 Client 不改。纯 DOM 形状模型 18／18 通过，不等同真实 CSS 引擎；Linux Studio 完整第一例 **1／1**、29.020 秒，实际可信保存一次、POST 900／HTTP 200、磁盘属性及原借用 kit 正确，后续原断言均越过；不反推旧 Windows 失败原因。完整配置及新的 Windows 两项专项结果另记，旧失败不改写。
+
 发行自动化对独立浏览器组继续执行各自的原断言、原期限，收集所有组结果后统一拒绝失败候选，避免一个夹具错误掩盖后续问题。任意一组失败仍禁止压缩、升级验收和公开发布；全部通过后的报告格式及五附件校验要求不变。
 
 源码验收不代替 Windows 安装包验收。发行流水线必须在真实 Windows x64 使用包内 `node.exe`，安装 .3 锁定依赖并包含 SES／Acorn、插件／Studio 和 local-fx；执行包内回归、完整素材 Edge 浏览器、HTTP／WebSocket、从实际 `.6` 包升级、私人配置及插件配置／Studio 钥匙保留、重复更新、回滚，以及附件重新下载 SHA256 校验。只有发行门槛通过才公开，实际结果以发行附件 `RELEASE-VALIDATION.json` 为准。
@@ -190,3 +200,80 @@ Windows Node 22 崩溃进一步定位到首个异步准备测试：前五个同�
 未做真人完整多人平衡试玩或人工 BAT 点击验收，未部署用户服务器。整体游戏内阵营描述改写和变形同构体无限库存均不在本轮。
 
 展示名称改为“阵营拓展”，README 重点补充雷姆必拓并保留其他阵营介绍。仓库 slug／地址、安装目录、启动文件、升级渠道和任务名称保持不变。仓库 About 的 PATCH 写入被当前 API 通道以 `Forbidden` 拒绝；再次读取确认仍为旧简介，README 更新不代表 About 已更新。
+
+### `.7` 最终源码 CI
+
+不可变源码 `a2a29afe592dd3cf0a156b65bd4e232df1f9fdf4` 的 [tag CI 38899984904](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38899984904)，以及仅相差发布请求文件的正式元数据 `923f8243301c9adc0d51b0ab95d2980d14521ac2` 的 [主线 CI 38899986092](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38899986092)，均为 **failure**。以下为封存日志的完整测试汇总；Node 22 实际为 **22.23.3**，Node 24 为 **24.21.0**，耗时按秒取三位小数。
+
+| 引用 | 环境 | 项目／通过／失败／跳过 | 测试耗时（秒） | 结果 |
+| --- | --- | --- | ---: | --- |
+| tag | Ubuntu Node 22 | 8540／8444／1／95 | 2054.748 | failure |
+| tag | Ubuntu Node 24 | 8540／8445／0／95 | 1093.269 | success |
+| tag | Windows Node 22 | 8540／8451／4／85 | 2474.307 | failure |
+| tag | Windows Node 24 | 8540／8455／0／85 | 2138.402 | success |
+| 主线 | Ubuntu Node 22 | 8540／8443／2／95 | 2086.133 | failure |
+| 主线 | Ubuntu Node 24 | 8540／8445／0／95 | 1077.418 | success |
+| 主线 | Windows Node 22 | 8540／8450／5／85 | 2548.718 | failure |
+| 主线 | Windows Node 24 | 8540／8455／0／85 | 1547.258 | success |
+
+八个任务取消数均为 0。两个独立 tooling 任务均通过 lint／导入边界／类型检查，lint 各为 **0 error／151 warnings**。四个 Node 24 任务随后实际通过服务器 smoke；四个 Node 22 任务的 smoke 因前步失败而跳过。
+
+Node 22 中，tag Ubuntu 的 1 项、主线 Ubuntu 的 2 项及两个 Windows 各 3 项失败，直接日志均为 `plugin-host.test.js` 的 `timeout waiting for any`，堆栈止于 `wsClient.js:106`，约 2.34–2.50 秒。固定源码及近期帧序列支持 `room.setPlugins` 默认 2000 毫秒请求发生于房间设置阶段的推断；异步调用者没有打印在该堆栈中，不能把这个推断写成日志直接证明，也不能据此声称真正 watchdog／OOM 注入或验证行为已执行成功。两个 Windows Node 22 还各有一次真实 SES 全机器人对局失败：`sandbox-host.test.js:61` 收到 `plugin-hang`、分别 10／11 秒无心跳，`victory` 为 undefined；这是实际对局故障，区别于设置等待超时。上述签名曾在旧轮出现，但签名相同不证明根因，也不排除回归。
+
+主线 Windows Node 22 另有本轮新观测的性能门槛失败：`test/sim/perf.test.js:57` 的最坏场景测得 **0.5059190833333336 ms/tick**，要求 **< 0.5 ms/tick**。它不归入旧超时失败，也没有证据确定为 CPU 原因；不同 GitHub Actions 任务运行于独立 VM，不能称它们共用 CPU。本轮没有记录新的 runner／prewarm 失败，但不能因此称全部源码矩阵通过。
+
+六个更新／发行校验文件按固定源码逐标题映射，共 **98 项**：`rhine-bundle-update` 28、`rhine-online-update` 28、`rhine-update-boot` 5、`update-boot` 10、`update-package` 11、`tools/verify-rhine-release` 16，无重名或未映射标题。四个 Windows 任务均 **97 通过／0 失败／1 条件跳过**，四个 Ubuntu 任务均 **94 通过／0 失败／4 条件跳过**。所有任务均跳过需显式开启 `SP_UPDATE_E2E` 的 CLI rollback 用例；Ubuntu 另跳过三项 Windows ZIP／BAT 专用用例，这三项在四个 Windows 任务均实际通过。源码 CI 及这些夹具结果不替代安装包升级／私配保留验收，也不改变前述 `.7` 原生发行失败终态。
+
+### `.7` 后配置与 Studio 的两项专项
+
+严格配置点击夹具在 Linux 三独立浏览器完整 **1／1** 通过，193.730 秒，实际点击目标为 BUTTON；原 59 个断言包含真实切换 ACK、三份普通战斗上传及 Node 重放、引擎 Canvas、reload、15 秒空闲和最终零错误，均执行通过。随后冻结诊断源码 `5aef1d912a74115dad833a87b2bd01d4d61f0131` 的 [Windows 专项 38904452488](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38904452488) 仍为 **2 项／0 通过／2 失败／0 跳过／0 取消**。配置点击及真实 ACK 已通过，三端普通战斗实际上传均记录 errors=0；但顺序校验只完成首位 vanilla-host 的普通战斗 Node 重放，便在该端 runner 零错误断言失败。其普通战斗后的 UNITE 冷 Worker load 耗时 19.507 秒，真实触发原 15 秒超时；另两端重放、reload 及最终门槛未触达，不能补称全部完成。guest 的 UNITE load 15.097 秒和 start 3.676 秒实际返回 done，之后清理的 STOPPED 不改记超时。原 Windows GPU 为 NORMAL（0），现有日志不能证明 GPU 是唯一原因。
+
+同轮 Studio 输入已为 900、保存按钮可用，观测点 y858 在视口内；随后的 ElementHandle 隐式滚动未完成真实点击，失败时按钮 top1137 超出 1000 高视口，无保存 POST、磁盘仍 410。随后 Linux 坐标点击修订仍 **1 项／0 通过／1 失败**，33.484 秒：唯一显式滚动后的稳定目标一直未满足，尚未移动／点击鼠标或发 POST。实际两个目标列表请求在输入 900 后 15／19 毫秒才返回，列表高度增长使保存按钮再次下移；这一观测不反推更早 `.7` 无诊断日志的确切原因。
+
+最小就绪修正先在同一原等待预算内等待两个真实列表非 busy 且有目标，再唯一显式滚动、跨 RAF 复核稳定实际命中点并发送一次 mouse.click，不改产品 CSS、视口或期限。冻结 Studio 文件 SHA256 `95ac02afa8295265c8ac9052f91c824265efcfe77070e72e94e1d7b9bebb24e3` 的 Linux 第一例随后完整 **1／1** 通过，29.804 秒：两列表各 60 目标、高 300，唯一可信保存点击实际 POST 900／HTTP 200，磁盘为 900 且原 kit 保留，全部原试战／双 Canvas／重放／比较／打包下载／iframe 门槛完成；DSL 第二例未选择且源码不变。
+
+配置夹具另仅在 Windows 将 CDP 归属确认的本浏览器 GPU 设为 BelowNormal（10），实读核对 Node 始终 NORMAL（0）及其他存活所属浏览器／renderer 优先级不变；Linux 原 nice 15 保持。三独立浏览器、20 个原 timer／wait 表达式、原 59 个断言及真实冷 UNITE 路径保持，新增归属和调度硬断言；7／7 纯 VM 模型探针不是原生 Windows 实测。新两项诊断源码 `6c74d36f7bf18397102477f5b1a529b430b3bca2` 已送入 [Windows 专项 38906606052](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38906606052)，结果须据实际终态另记。该只读权限诊断流程不制作安装包、不写发行、不部署服务器，不代替正式 48 项与升级尾段。
+
+该专项随后实际 **2 项／1 通过／1 失败／0 跳过／0 取消**：Studio 完整第一例 **1／1**，33.113 秒，原后段试战／双渲染回放／比较／打包／iframe 及新增真实保存断言均通过；本轮未选择 DSL 第二例。配置仍 **failure**，128.867 秒，三个 GPU 实际从 -7 调至 10、Node 均为 0，其他实读所属进程优先级不变；这一控制不足以通过门槛。vanilla-host 的 UNITE 冷 load 耗时 20.995 秒、报原 `PLUGIN_WORKER_TIMEOUT`（15000 ms）；guest 同类 load 1.768 秒、start 25.3 毫秒成功。三端普通战斗上传 errors=0，仍仅首位 vanilla-host 的普通战斗 Node 重放完成便在 `:557` 的 runner errors=1 断言失败，后两端重放、reload 和最终门槛未触达。失败诊断还显示 guest、Rhine 两页已降为 fallback、无 Canvas，均记录 `createFieldView timed out`；只有 vanilla-host 当时为真实 1920×1080 引擎且 warnings 为空，不能称三端引擎成功。未重跑同条件，也没有据此认定 GPU 或生产生命周期为唯一原因；公开版仍未变化。
+
+两项独立只读源码审查确认，超时 UNITE 的新 Worker 在收到战斗消息后约 2.8 毫秒已发出首条 load，尚无 start／step 排队、取消或重复 load 的证据；测得时长包含消息传递、加载及页面处理响应／计时回调，不能等同 Worker CPU 耗时。随后仅机制夹具复用现有 BrowserContextPool，三个真实玩家各自独立 Context、页面模块、存储与模拟状态，共用一个浏览器／GPU；原 59 个断言、已加就绪／调度断言及 33 条 timer／wait 调用 AST 均保留，新增 cookie／localStorage／sessionStorage、三个真实身份、目标 reload 文档独占及真实可见性／RAF 历史检查。生产 Worker 池、冷 UNITE、2 倍速和全部时限不变；这种资源拓扑通过也不能称旧三独立进程压力故障已修复，专门渲染套件保持原设置。
+
+冻结 profile 文件 `4b631614972f24cc162f8dcba0139a243548e5bbb7cc3e0dffdbe6c82f127a6a` 的唯一 Linux 整项仍 **1 项／0 通过／1 失败**，255.766 秒：三端真实普通战斗上传及每份 Node 精确重放、R2 runner errors=0、两个 reload 的身份／存储／其他文档不变检查均已通过，但最后原房主 reload 后 Canvas 的 30 秒等待失败。诊断中房主为 fallback、无 Canvas、`createFieldView timed out`，另两页为真实 1920×1080 双 Canvas、contextLost=false、warnings=[]；不能称整项或最终可见性／页面错误门槛通过。未完成 `/healthz` 请求 age65.862 秒只是页面观测，不证明服务器 CPU 阻塞。原 1920×1080 的三个画面仍有较高软件渲染负荷，下一受控变量评估显式 1280×720 桌面夹具（像素数为原 44.44%），参照此前真实六人单 GPU 的同尺寸机制验证；不以改超时、跳过重放或接受 fallback 来通过。
+
+显式 1280×720 桌面没有跨过原房间／自选界面的响应断点，新增实际尺寸回读，全部原 88 个断言表达式保留（现 91），33 条 timer／wait AST 相同。冻结文件 `47d13dbebac50dc30036f95d32415d8a33288b639cb7e73c118fafb11ea65a89` 的唯一 Linux 整项依旧 **1 项／0 通过／1 失败**，180.422 秒，在原 `:648` 的房主 reload Canvas 等待失败；三份普通战斗上传／Node 精确重放、R2 runner errors=0 与两次 reload 隔离均先通过，最终可见性／页面错误门槛未触达。房主仍 fallback，另两页实际双 1280×720 Canvas、contextLost=false、warnings=[]；不能称减像素已解决 Linux 故障。该源码独立送入诊断 `4293615aae3c2b8721e76ccdbc79dc6a82952254` 的 [Windows 剩余单项 38909342655](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38909342655)，单独检验目标发行环境；Studio 已通过的相同源码不再重复，完整发行仍须重跑全部 48 项。
+
+该 Windows 剩余单项实际 **1 项／0 通过／1 失败／0 跳过／0 取消**，177.081 秒，也失败于 `:648` 的房主 reload 后原 30 秒 Canvas 检查。三端普通战斗真实上传、三次 Node 精确重放、三端 R2 runner errors=0 和两次实际 reload 的独立上下文／身份／配置／存储检查均已完成；随后房主 fallback、无 Canvas、`createFieldView timed out`，另两页实际 engine 且 warnings=[]。最终 RAF 历史及综合页面／服务端错误检查尚未执行。真实单浏览器／单 GPU／三独立 Context、1280×720 与 Node=0／GPU=10 均有日志，不能把通过的战斗断言扩展成整项通过。host reload 后旧文档 RPC 轨迹已丢弃，不能据错误数为 0 编造此前 UNITE 的单独加载耗时；guest UNITE load 8.201 秒、start 2.027 秒实际 done，清理时的 STOPPED 单独保留。下一测试变量是共享 GPU 的 NORMAL 优先级，并记录被动资源时序；仍不修改生产加载／执行／渲染时限。
+
+共享 GPU 恢复 NORMAL 的文件 `513c5c2ce414be94d5517b0b80620a942d7fbe64b16b69bb203f27217ab366c0` 保留所有机制／UI／隔离／上传／重放／Canvas／零错误断言及 33 条 timer／wait AST；调度断言按新变量将 Windows 目标 10 改为 0，并随 Linux 全部优先级写入删除旧线程 nice15 断言（91→90），不冒称旧调度断言逐字相同。Linux 只实读默认 GPU=0，不修改任何进程／线程；Windows 只把 CDP 所属 GPU 从 -7 调为 0，Node=0 和其他存活所属进程不变。9 项纯 VM 契约通过不等同实际性能证明。
+
+该文件唯一 Linux 整项 **0／1**，172.463 秒，[Windows 专项 38911311460](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38911311460)（诊断源码 `34067fa23a97c876a51b4bf203af203e43147792`）同样 **0／1**，194.232 秒，均在原 `:660` 的房主 reload 后 Canvas 30 秒等待失败。此前三份正常上传／Node 精确重放、三端 R2 runner errors=0、两次真实 reload 隔离已通过；最终可见性历史／综合错误门槛未触达。另两页为 engine、warnings=[]，房主 factory12s 失败进入 fallback。GPU 正常优先级未解决此问题，不能继续归为已证 GPU 根因。
+
+新增被动 ResourceTiming 只扩大记录容量至 5000，最多输出 120 条筛选资源，不预加载或改请求。Linux 新房主文档共 385 条／筛选 88 条，样本最长 203.4 毫秒、pending=[]，实际 visible、836 RAF、hiddenFrames=0，但最大 RAF 间隔 8.9997 秒；缓存的 three.module 在 5.0112 秒完成获取，静态依赖 three.core 到 14.0022 秒才开始，这个间隔不是 9 秒网络下载，也没有证明 JS code cache 命中或某个具体同步栈。Windows 为 387／88 条，样本最长 74.6 毫秒、最后筛选资源在 4.424 秒完成，visible、1650 RAF、hiddenFrames=0，最大 RAF 间隔 5.4997 秒。筛选样本不覆盖全部资源、模块执行或 WebGL 初始化，catch 的空 Canvas 也可能是正常 abort 释放后的状态。下一诊断只在真实房主最后 reload 前启用可选 CDP CPUProfiler，保留原门槛与源码执行，用采样定位初始化调用栈；不再盲调画面尺寸或优先级。
+
+### 实际 CPU 采样与纹理拷贝诊断
+
+可选诊断只在最后房主真实 reload 前启用 CDP CPUProfiler，默认发行验收不开启；profile 文件 `caf112ad` 保留原 90 个断言、33 条 timer／wait AST、300 秒个测及现有画质／隔离。独立真实 reload 小探针的最初“NavigationStart 必须位于 profile 内”断言实际失败，原记录保留；同一原始数据离线复核仍含新文档已知函数 264 个 self samples，282 个样本在新文档交集，profile 从导航后 5.795 毫秒开始。因此只能证明实际采样交集，不称捕获了导航瞬间或整个探针进程通过；没有重写时间字段或重跑掩盖原失败。
+
+Linux 唯一完整诊断仍 **1 项／0 通过／1 失败**，179.070 秒；[Windows 诊断 38913793523](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38913793523) 同样 **1 项／0 通过／1 失败／0 跳过／0 取消**，236.491 秒，均在原 `:663` 的 reload Canvas 等待失败。此前三份普通战斗真实上传／Node 精确重放、R2 runner errors=0 与两个 reload 隔离检查已通过，最终 Canvas／RAF 历史／综合错误门槛没有通过。Linux 原 CPU profile 418415 字节、SHA256 `85e92ec40c88dbc05b5720399e6306e051696d52c603938a427959a9b0186700`，Windows 为 497708 字节、SHA256 `2ec4099a4826693bdb5ef236e9072327741c57c3ecad60c78ddd09b391085951`；两者 gzip、分块、字节数和原始 SHA 均独立核验。
+
+Linux 采样未覆盖新文档最初 1.349 秒，Windows 采样窗口从导航后 2.327 秒开始、首个实际样本为 2.576 秒；Windows 原有 -30／-74 微秒的两个负 delta 原样保留。采样命中数不是调用次数或 CPU 毫秒，累计 delta 区间也不是线程 CPU 耗时；采样包含失败后的诊断及销毁操作。Linux 的 `createFieldView → TileField → tileAtlas → MATERIALS.forEach → drawImage` 栈为 1740 个 self samples，位置分布于导航后 11.115–15.406 秒；对应 47 种材质在同一 2048² atlas 上依次扩展上下、左右四条边，代码源矩形很小，不能声称代码要求复制整张 atlas，或据 profile 断定浏览器具体 native 实现。另有 Pixi 支持探测、真正 context 创建、扩展及 batch 能力 shader 查询；首次 ticker 的 program／uniform 查询也属于 Pixi。超时后的 `loseContext` 是释放路径，不能当作初始化原因。
+
+下一最小候选只评估复用 256² cell 画布完成原内部和四条扩边，再整数坐标 1:1 拷入总 atlas，保留材质顺序、种子、UV、透明度、美术层、缓存和渲染 ready／取消契约。必须先比较真实 Canvas 的全 atlas RGBA 像素及真实美术，再执行关闭 profiler 的完整场景；本段不把尚未完成的优化或后续验收记为成功。
+
+首版 256² cell 全部重绘候选 `6ca43b9b` 的真实 Chrome／SwiftShader AB 像素探针实际失败，未执行 BA，也未降低容差：每张 4,194,304 像素，procedural 差 1,508 像素／2,445 通道，最大差 4；真实美术差 1,516 像素／2,455 通道，最大差 3，artCount 均为 40。差异主要在 infection／infection2，另有少量其他材质；UV、artCount、缓存命中／淘汰均一致。单次墙钟绘制观测 old procedural／art 为 1079／1129 毫秒、candidate 为 71／44 毫秒，不能用这一观测替代像素等价或完整初始化验收。探针还记录一个 favicon 404，不称零资源错误。浏览器和临时 HTTP 均在 finally 关闭，baseline 只在内存，无临时美术文件；该候选暂不采用，尚未送入新的 Linux／Windows 完整专项，也未推正式主线。
+
+改为只在 256² scratch 处理边缘的第二版 `a18cfc95` 保留原 atlas 全局内部绘图，再只写回四条互不重叠的 gutter。真实 Linux Chrome 151／SwiftShader、1280×720、Node／GPU 优先级 0、默认 2D context（没有 `willReadFrequently`）执行 AB 与 BA 两种顺序；每种均比较 procedural、真实美术及 art replacement 三张 2048² atlas，合计 **25,165,824 像素逐 RGBA 全部零差异**，内部、上下左右与四角分别累计也为 0。UV、alpha、artCount（0 或 40）、缓存命中及旧 art 淘汰一致，真实美术包含 alpha／rotation／tint 层。两序中的程序构建墙钟样本由旧 962–1083 毫秒降为 69–75 毫秒，真实美术由 973–1090 毫秒降为 48–84 毫秒；这不包含后续 GPU 上传，也不作平台通用性能或完整初始化通过声明。临时 favicon 改答 204，两序 errors=[]；旧版 favicon 404 和像素失败原样保存在独立 v1 证据。
+
+第二版通过现有 tiles／boardart／originium-art **26／26**、fieldHost lifecycle **5／5**，语法及 diff 检查通过；该文件 lint **0 error／6 warnings**，六项均与精确 `a2a29afe` 基线相同。probe 的浏览器、GPU 和 HTTP 已实际退出，无临时美术。完整 Linux 配置专项及新诊断源码 `23712ca9893f733a4e7b671c17bae82c63421255` 的 [Windows 专项 38916658418](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38916658418) 均关闭 CPUProfiler，并保持全部原期限与断言；其终态另记，本段仅证明已完成的像素／定向检查。
+
+关闭 profiler 的第二版唯一 Linux 完整专项实际仍 **1 项／0 通过／1 失败**，167.136 秒：三份正常上传／Node 精确重放、三端 R2 runner errors=0、两次 reload 隔离均先通过，但房主 reload 后原 `:663` Canvas 30 秒检查失败，factory 12 秒后进入 fallback。该文档实际 visible、913 RAF／hiddenFrames=0、最大 RAF 间隔 5.2164 秒、pending=[]；另两页为双 1280×720 引擎 Canvas、contextLost=false、warnings=[]。最终 Canvas／可见性历史／综合错误门槛未通过；代码四个 SHA 前后不变，浏览器及 FastServer 已退出。atlas 像素等价及短调用加速没有解决这一整项故障，Windows 目标环境独立结果仍须据新专项终态判断，不据 Linux 结果猜测。
+
+同一第二版的 [Windows 专项 38916658418](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38916658418) 也实际 **1 项／0 通过／1 失败／0 跳过／0 取消**，248.757 秒、个测 245.507 秒；计划明确 CPUProfiler=false，环境没有启用标志，日志无 CPU 采样。实际 Node／GPU 均为 0，前三份正常上传／Node 精确重放、R2 runner errors=0 和两次 reload 隔离均先通过，仍在 `:663` 的房主 reload 原 30 秒引擎 Canvas 等待失败，factory 12 秒后 fallback。房主实际 visible、1584 RAF／hiddenFrames=0；最终 Canvas／RAF 历史／综合错误门槛未通过。此正常运行独立于采样诊断，证实纹理局部优化未解决该环境默认 3D 的整项冷启动问题。
+
+源码只读审查确认项目已有 [部署文档](DEPLOY.md) 的 `/?board=2d` 入口：它仍创建真正 Pixi Application、atlas／Spine 与独立模拟 Worker，由 fieldHost 标记为 engine；仅跳过 3D 支持探测、Three context 和 boardReady 等待。当前配置切换用例没有 3D 专属或第二 Canvas 断言，机制目标为配置／内容集、真实模拟上传与重放及身份隔离；因此下一机制夹具明确选择已有 2D 棋盘并增加实际 URL、engine 和 `board3d.on=false` 核验，保留原 Canvas、全部机制断言、reload 与期限。guest 的 room 参数与两个 reload 的 board 参数都须真实保留，专门 3D／渲染套件保持原设置。这是验证范围的明确调整，不是默认 3D 多页面软件渲染冷启动故障的修复；该限制保留，尚未据此运行结果称任何新专项通过。
+
+这一 2D 机制夹具冻结为 SHA256 `1b36891568bdd963eeb2a9e2e381924b229b022dc0b729893722f3866c68b7aa`：原 90 个断言表达式逐字保留、现 94 个，新增真实 URL、reload 保参、engine 及实际 `board3d.on=false` 检查；原 33 条 timer／wait AST 无增删改。语法、定向 lint、diff 及独立只读审查通过；公共 graphics helper 与游戏代码不改。唯一 Linux 正常全项及诊断源码 `6c846fb9d6fd3e664add0645338408364808519d` 的 [Windows 机制专项 38918125810](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38918125810) 均不启用 CPUProfiler，实际终态另记。
+
+该 2D 机制路径唯一 Linux 完整专项实际 **1／1 通过、0 失败／跳过／取消**，113.666 秒（个测 113.035 秒）：三份真实正常上传及 Node 精确重放、三端 R2 runner errors=0、两次 reload 的 Context／身份／cookie／localStorage／sessionStorage 隔离、原最终 Canvas 等待、所有文档可见／RAF 历史及最终页面／资源／服务器零错误门槛均越过。末段三页均 actual kind=engine、renderer=true、contextLost=false、board3dOn=false、单张 connected 1280×720 Canvas、fieldWarnings=[]。94 是静态断言调用表达式计数，不冒称 Windows 专属调度分支或 catch 诊断分支在 Linux 执行；该平台所有适用门槛实际完整通过。四份源码 SHA 前后一致、CPU 标志 unset／日志无采样，浏览器及 FastServer 实际退出。这个通过不改写之前两平台默认 3D 路径的失败。
+
+[Windows 机制专项 38918125810](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38918125810) 的同一冻结源码随后实际 **1／1 通过、0 失败／跳过／取消**，125.964 秒（个测 125.027 秒）。真实原版／扩展切换、三端普通战斗上传与 Node 精确重放、R2 runner 零错误、两次实际 reload 隔离、原 Canvas 等待、最终 engine／实际 2D 棋盘及页面／资源／服务器零错误门槛均完成；Windows 适用的真实归属／优先级断言也依源码执行。原始日志 SHA256 `e9c76f78393c011266048bbcb4c5c24261dc3f8a4499c39a3366cd1ac11bd403`，不含 CPUProfiler 采样。Studio 的相同 `95ac02af` 第一例此前真实 Windows 已过；新不可变候选仍必须重新执行全部 48 个浏览器用例及完整包、升级、私配和附件尾段，两个专项不能代替这些门槛。默认 3D 多页面软件渲染冷启动的旧失败继续保留。
