@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { availableParallelism, constants as osConstants, getPriority, setPriority } from 'node:os';
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -192,6 +193,15 @@ async function main() {
   assert.equal(process.argv[2], 'publish');
   assert.equal(process.platform, 'win32', 'This job validates the real bundled Windows runtime.');
   assert.equal(draft.draft, true, 'Published releases must never be overwritten by a rebuild.');
+  // The hosted runner starts Node BelowNormal, while Chromium can raise its own
+  // processes. Use the ordinary desktop process class before spawning the real
+  // server/tests; preserve all game, RPC and watchdog deadlines.
+  const runnerScheduling = { beforePriority: getPriority(process.pid),
+    targetPriority: osConstants.priority.PRIORITY_NORMAL, availableParallelism: availableParallelism() };
+  setPriority(process.pid, runnerScheduling.targetPriority);
+  runnerScheduling.actualPriority = getPriority(process.pid);
+  assert.equal(runnerScheduling.actualPriority, osConstants.priority.PRIORITY_NORMAL);
+  progress(`Windows validation scheduling: ${JSON.stringify(runnerScheduling)}`);
   assert.equal(command('git', ['-C', source, 'rev-parse', 'HEAD']).trim(), request.sourceCommit);
   await verifyApprovedArt(source);
   fs.mkdirSync(root);
@@ -232,8 +242,9 @@ async function main() {
   const bundledNode = path.join(runtime, 'node.exe');
   assert.equal(command(bundledNode, ['--version']).trim(), request.runtimeVersion);
   const runtimeIdentity = JSON.parse(command(bundledNode, ['-p',
-    'JSON.stringify({platform:process.platform,arch:process.arch,version:process.version})']));
-  assert.deepEqual(runtimeIdentity, { platform: 'win32', arch: 'x64', version: request.runtimeVersion });
+    'JSON.stringify({platform:process.platform,arch:process.arch,version:process.version,priority:require("node:os").getPriority(process.pid)})']));
+  assert.deepEqual(runtimeIdentity, { platform: 'win32', arch: 'x64', version: request.runtimeVersion,
+    priority: osConstants.priority.PRIORITY_NORMAL });
   for (const relative of ['public/assets', 'public/fonts', 'public/vendor', ...(fresh ? [] : ['node_modules'])]) {
     assert.equal(fs.existsSync(path.join(source, relative)), false, relative);
     fs.cpSync(path.join(previous, relative), path.join(source, relative), { recursive: true });
@@ -343,6 +354,8 @@ async function main() {
     'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
     'test/match/round-communicators.test.js', 'test/match/rem-round-carry.test.js', 'test/match/rhine-opening-bans.test.js',
     'test/match/original-profile-host.test.js',
+    'test/match/sim-host.test.js', 'test/match/runner.test.js',
+    'test/match/runner-profile.test.js', 'test/match/runner-pending.test.js',
     'test/match/kazdel-client-layers.test.js', 'test/match/six-player.test.js', 'test/match/six-player-round-beacons.test.js',
     'test/protocol-seats.test.js', 'test/rhine-update-boot.test.js', 'test/ui/kazdel.test.js',
     'test/tools/rhine-bundle.test.js', 'test/plugins/schema.test.js', 'test/plugins/dsl-data.test.js',
@@ -511,6 +524,7 @@ async function main() {
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
     updateChecks,
     packagedWindows: { node: request.runtimeVersion, platform: runtimeIdentity.platform, arch: runtimeIdentity.arch,
+      runnerScheduling: { ...runnerScheduling, bundledNodePriority: runtimeIdentity.priority },
       tests, sourceAuthorTests, hostTests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },

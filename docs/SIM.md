@@ -1733,6 +1733,24 @@ Only sandbox script Workers/children run SES lockdown, before engine import. Bot
 `@script` descriptors and use `createSDK(plugin, { settings, log })` plus the production extension registry/budget.
 SDK-owned return records are immutable copies; live Battle/Unit callback objects remain mutable.
 
+The runner prepares one unused gameplay Worker once a room's content is checked, including the room lobby before
+`m.public` arrives, INFO_CHECK and round preparation. The slot belongs to the content, profile, room and local match
+scope. `load` retains its 15 s watchdog; script `install` and subsequent RPCs retain 2 s. No Battle, battle spec or
+progress is created by warmup. Setup round 0 can advance to any first actual round without stopping a healthy unused
+realm or restarting its pending load/watchdog. The first matching `b.start` claims it once, waits for that original
+load, and calls `start`; a realm used for a battle never returns to the slot. Changed content/profile/room, lost
+checked content or native-script consent, leaving, RESULT, an observed match exit/rewind and disposal terminate an
+obsolete idle realm. The next lobby therefore starts a fresh realm even for the same room and content. A warmup
+failure stays recorded, is not silently retried in the same round, and can retry at most once in a subsequent
+preparation round; healthy unused realms survive round changes. A claimed failure follows the existing takeover
+path. A later preparation replaces a consumed slot with a fresh realm. Normal-to-UNITE has no preparation
+phase, so another fresh Worker there can still cold-load; this optimization does not eliminate every cold start.
+
+Sandbox lockdown and source checks still precede script execution. Infinite setup remains bounded by the install
+watchdog. Explicitly consented native trusted scripts retain their existing trust model: an idle realm has no
+continuous watchdog when no RPC is pending; a later `start` is watched for 2 s and lifecycle cleanup terminates it.
+There is no idle health RPC, synthetic battle progress, heartbeat or longer deadline.
+
 ### Rhine v0.3.0 Rem balance
 
 Rem 6/9 counts successful reinforcement appearances per owner and battle, including units that later die: +4%/+8% operator ATK/HP each, capped at +200%/+300%. Savage now produces 2/4 bond layers on a real deduplicated enemy death credited to herself or an own Rem operator/reinforcement/vehicle within eight tiles, sharing 24/48 per player per round. Ordinary troops patrol the passable eight tiles around rally after arrival, stop on contact and resume afterward; vehicles/boss routes stay unchanged. Asbestos loses only steadShip. See the extension Rem reference for complete ownership and lifecycle rules.

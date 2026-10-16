@@ -324,3 +324,22 @@ P3b integration (DESIGN §32.11): sandbox script sets require valid locked bytes
 `content.trusted`. Execution mode is bound to cs through the hashed script descriptors. Mixed script/trusted sets
 are entirely native and require consent [ASSUMED]; trusted classes cannot load in sandbox mode. The page verifies
 same-origin native script responses before import; all gameplay battle simulations run in Workers.
+
+Gameplay Worker preparation (C4) starts the real `load`/`install` as soon as a room has checked content, including
+the room lobby before `m.public`, INFO_CHECK and round preparation, rather than caching only a content descriptor.
+There is at most one unused realm per runner, scoped to the room, checked `cs`, profile and local match. Healthy
+unused realms survive round changes: setup round 0 can advance to any first actual round without cancelling or
+restarting their original load/watchdog. A matching `b.start` atomically claims the slot once and only then constructs
+its Battle. Used realms never return to the slot; a later preparation can create the next fresh realm. A
+content/profile/room change, loss of checked content or native consent, RESULT, an observed match exit/rewind,
+leaving or disposal cancels obsolete work and late completions. A new lobby after match end gets a fresh candidate.
+Failures remain recorded with no same-round automatic retry; only a subsequent preparation round permits one retry
+of a failed idle slot, while a healthy slot remains intact. A claimed
+failure uses the existing server-takeover signal. The 15 s load, 2 s install/start/step and server silence/result
+deadlines do not change. No progress or claimed battle result is sent while a realm is idle. Native consent is checked
+before preparing/claiming a realm and, after loading, before starting its Battle. Store-observed revocation cancels
+idle or claimed hosts; it does not add a consent handshake inside `load` before its already-queued install. Another
+content's legal display-replica behavior remains intact. Further
+fields without a preparation phase (normal-to-UNITE) still create fresh Workers. An explicitly consented native
+script in an idle realm has no continuous watchdog without a pending RPC; sandbox setup keeps its original isolated
+2 s installation watchdog. No idle probe or additional heartbeat is introduced. See SIM.md's browser-host section.

@@ -18,6 +18,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, problemsOf } from '../e2e/client.mjs';
+import { configureMechanismGraphics, observeMechanismBrowser, mechanismResourceSnapshot,
+  readMechanismBrowser, startMechanismServerDiagnostics, createMechanismBrowserPool,
+  assertMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
 import { writePlugin } from '../helpers/pluginFixtures.js';
 
 const ENABLED = process.env.SP_E2E === '1' && hasChrome();
@@ -44,9 +47,9 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       await sleep(150);
     }
     const P = (await import('puppeteer-core')).default;
-    const host = new Client(P, srv.url, 'host', { prefix: 'plugins-content', w: 1600, h: 900 });
-    const guest = new Client(P, srv.url, 'guest', { prefix: 'plugins-content', w: 1600, h: 900 });
-    let observing = true, observation = null;
+    let pool, host, guest;
+    let observing = true, observation = null, code, match;
+    const serverDiagnostics = startMechanismServerDiagnostics(srv.server);
     const readClient = async promise => {
       let timer;
       try {
@@ -55,14 +58,21 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       finally { clearTimeout(timer); }
     };
     try {
+      pool = await createMechanismBrowserPool(P);
+      host = new Client(P, srv.url, 'host', { prefix: 'plugins-content', w: 1600, h: 900, sharedBrowser: pool.browser });
+      guest = new Client(P, srv.url, 'guest', { prefix: 'plugins-content', w: 1600, h: 900, sharedBrowser: pool.browser });
       await host.open();
+      await observeMechanismBrowser(host);
       await host.enter('凯尔希');
+      await configureMechanismGraphics(host);
       await host.click('.mode-card', '同盟模拟');
       await host.click('.diff-card', '标准模拟');
       await host.click('.create-box button', '创建同盟');
-      const code = (await host.waitFor((s) => !!s.room?.code, 'room created')).room.code;
+      code = (await host.waitFor((s) => !!s.room?.code, 'room created')).room.code;
       await guest.open();
+      await observeMechanismBrowser(guest);
       await guest.enter('阿米娅');
+      await configureMechanismGraphics(guest);
       await guest.click('.join-row input');
       await guest.page.keyboard.type(code);
       await guest.click('.join-row button', '加入同盟');
@@ -96,7 +106,11 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       // the guest's page claims another content than the one it checked: its runner must refuse the authority
       await guest.page.evaluate(() => globalThis.__SP_CONTENT__.forgeHeldCs('0'.repeat(64)));
       for (const c of [host, guest]) await c.page.evaluate(() => {
-        const trace = globalThis.__SP_CONTENT_E2E__ = { starts: [], ends: [] };
+        const trace = globalThis.__SP_CONTENT_E2E__ = { starts: [], ends: [], phases: [], lifecycle: [] };
+        globalThis.__SP__.net.on('*', m => {
+          if (m.t === 'm.public') trace.phases.push({ at: performance.now(), phase: m.phase, round: m.round, deadline: m.deadline });
+          if (['room.state', 'm.toast', 'm.result', 'error'].includes(m.t)) trace.lifecycle.push({ at: performance.now(), ...m });
+        });
         globalThis.__SP__.net.on('b.start', m => trace.starts.push({ at: performance.now(), battleId: m.battleId,
           authoritative: m.authoritative, elapsed: m.elapsed, speed: m.speed, cs: m.spec?.cs, timeLimit: m.spec?.timeLimit }));
         globalThis.__SP__.net.on('b.end', m => trace.ends.push({ at: performance.now(), ...m }));
@@ -104,15 +118,30 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       await guest.click('.room-bar__right button', '准备就绪');
       await host.page.waitForFunction(() => !document.querySelector('.room-bar__right button[disabled]'), { timeout: 15000 });
       await host.click('.room-bar__right button', '开始模拟');
-      await host.page.waitForSelector('.brief [data-testid="unofficial-mark"]', { timeout: 30000 });
+      // A real mouse click only dispatches room.start; its socket response may still be pending. Capture the
+      // actual proxy in parallel with the existing 30s briefing wait, including if it ends before the screenshot.
+      const briefingDeadline = Date.now() + 30000;
+      await Promise.all([
+        (async () => {
+          while (observing && Date.now() < briefingDeadline) {
+            match = srv.lobby.getRoom(code)?.match;
+            if (match) return;
+            await sleep(20);
+          }
+        })(),
+        host.page.waitForSelector('.brief [data-testid="unofficial-mark"]', { timeout: 30000 }),
+      ]);
+      assert.equal(match?.hosted, true, 'the match runs in the content set\'s match host');
       await host.shot('briefing');
-      const match = srv.lobby.getRoom(code).match;
-      assert.equal(match.hosted, true, 'the match runs in the content set\'s match host');
 
       // round 1: the host's battle — authority on the set's data, b.result with the room's cs, accepted
       const hostId = await host.page.evaluate(() => globalThis.__SP__.store.get().me.playerId);
       const guestId = await guest.page.evaluate(() => globalThis.__SP__.store.get().me.playerId);
-      await host.waitFor((s) => s.phase === 'COMBAT', 'the first battle', 120000);
+      await host.waitFor((s) => {
+        const room = srv.lobby.getRoom(code);
+        assert.ok(room?.match === match, `the content match ended before combat: ${JSON.stringify(room?.lastSummary)}`);
+        return s.phase === 'COMBAT';
+      }, 'the first battle', 120000);
       // Keep handles to the real entries before settlement clears runner._entries. Their delivery fields continue
       // to change on the actual b.result response; copying their initial values or reading the next round is wrong.
       const hostBattle = await host.page.waitForFunction(() => {
@@ -189,16 +218,59 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       assert.deepEqual(hostEntry, { authoritative: true, delivery: 'delivered', cs });
       assert.ok(guestEntry === null || (guestEntry.authoritative === false && guestEntry.delivery === null), 'the forged-content guest sent no result');
 
+      for (const client of [host, guest]) await assertMechanismVisibility(client);
+
+      console.log('Content mechanism diagnostics:', JSON.stringify({ parent: serverDiagnostics.snapshot(),
+        clients: await Promise.all([host, guest].map(async c => ({ label: c.label,
+          resources: mechanismResourceSnapshot(c), browser: await readClient(readMechanismBrowser(c)) }))) }));
+
       // no errors; a failed request only for the game's own art when this checkout has none
       const art = fs.existsSync(path.join(ROOT, 'public/assets'));
       const problems = problemsOf([host, guest]).filter((p) => art || !/\/assets\//.test(p));
       assert.deepEqual(problems, []);
+    } catch (error) {
+      const room = code && srv.lobby.getRoom(code), worker = match?.host;
+      // Read Node evidence first, before any optional CDP/IPC read can stall. A stale PREP page may remain after
+      // the lobby has ended a failed match; its ready flag cannot identify why the real match host stopped.
+      console.log('Content failure:', String(error.stack || error));
+      console.log('Content server failure:', JSON.stringify({ serverLog, parent: serverDiagnostics.snapshot(),
+        browserObservations: [host, guest].filter(Boolean).map(c => ({ label: c.label, resources: mechanismResourceSnapshot(c) })),
+        room: room && { code, liveMatch: !!room.match,
+        sameMatch: room.match === match, lastSummary: room.lastSummary }, match: match && {
+        hosted: match.hosted, started: match.started, ended: match.ended, disposed: match.disposed,
+        pending: match.pending?.size }, host: worker && { ready: worker.ready, dead: worker.dead,
+        lastBeat: worker.lastBeat, heartbeatAgeMs: Date.now() - worker.lastBeat, stderr: worker.stderr,
+        child: worker.child && { pid: worker.child.pid, connected: worker.child.connected,
+          exitCode: worker.child.exitCode, signalCode: worker.child.signalCode } } }));
+      console.log('Content early-failure diagnostics:', JSON.stringify({
+        server: match && await readClient(match.diag()),
+        clients: await Promise.all([host, guest].filter(Boolean).map(async c => ({ label: c.label, problems: c.problems,
+          snapshot: c.page && await readClient(c.page.evaluate(async () => {
+            const { errorLog, trafficSummary } = await import('/js/diag.js');
+            const s = globalThis.__SP__?.store.get(), pub = s?.match.public, priv = s?.match.private;
+            let renderStats;
+            try { renderStats = globalThis.__SP_VIEW__?.raw?.stats?.(); } catch (error) { renderStats = { diagnosticError: error.message }; }
+            return { room: s?.room, public: pub && { phase: pub.phase, round: pub.round, deadline: pub.deadline,
+              serverNow: pub.serverNow, players: pub.players, draft: pub.draft }, private: priv && {
+              ready: priv.ready, canReady: priv.canReady, alive: priv.alive, personalChoice: priv.personalChoice },
+              trace: globalThis.__SP_CONTENT_E2E__, content: globalThis.__SP_CONTENT__?.state(),
+              workerDiagnostics: globalThis.__SP_MECHANISM_WORKERS__, errors: errorLog(), traffic: trafficSummary(),
+              graphics: JSON.parse(localStorage.getItem('sp.pref.settings')),
+              view: { kind: globalThis.__SP_VIEW__?.kind, stats: renderStats },
+              stats: globalThis.__SP_RUNNER__?.stats(), state: globalThis.__SP_RUNNER__?.state(),
+              toasts: [...document.querySelectorAll('.toast')].map(e => e.textContent) };
+          })) }))),
+      }));
+      throw error;
     } finally {
       observing = false;
+      serverDiagnostics.stop();
       // Closing the contexts releases the retained handles, including if a page can no longer answer CDP reads.
-      await host.close();
-      await guest.close();
-      await srv.close();
+      try {
+        await host?.close();
+        await guest?.close();
+        await pool?.close();
+      } finally { await srv.close(); }
       await observation;
       fs.rmSync(tmp, { recursive: true, force: true });
     }

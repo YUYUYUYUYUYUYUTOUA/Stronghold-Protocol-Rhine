@@ -56,10 +56,19 @@ describe('supplied Kazdel icon: real interface and transparent Pixi display', { 
     evidence.screenshots.push(name);
   }
   async function icons(page, selector) {
-    return page.$$eval(selector, els => els.map(el => {
-      const r = el.getBoundingClientRect(), s = getComputedStyle(el);
-      return { natural: [el.naturalWidth, el.naturalHeight], box: [r.width, r.height], fit: s.objectFit, filter: s.filter, src: new URL(el.currentSrc).pathname };
-    }));
+    // An img's src attribute is assigned before Chromium selects/loads currentSrc.
+    // Wait and sample the same real nodes together so a fresh detail icon cannot
+    // reach URL() with an empty currentSrc between separate CDP evaluations.
+    const sample = await page.waitForFunction(sel => {
+      const els = [...document.querySelectorAll(sel)];
+      if (!els.length || els.some(el => !el.complete || !el.currentSrc)) return false;
+      return els.map(el => {
+        const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+        return { natural: [el.naturalWidth, el.naturalHeight], box: [r.width, r.height], fit: s.objectFit, filter: s.filter, src: new URL(el.currentSrc).pathname };
+      });
+    }, {}, selector);
+    try { return await sample.jsonValue(); }
+    finally { await sample.dispose(); }
   }
   function assertIcons(list) {
     assert.ok(list.length > 0, 'the real entry must render its icon');

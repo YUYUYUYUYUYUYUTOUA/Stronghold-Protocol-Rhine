@@ -81,6 +81,41 @@ function observeImageReplacement(client) {
 }
 const pageProblems = clients => problemsOf(clients).filter(problem => !clients.some(client => client.replacedImageRequests?.has(problem)));
 
+async function observeRoomProfile(client) {
+  await client.page.evaluate(() => {
+    const trace = globalThis.__profileRoom = { inputs: [], requests: [], replies: [], states: [] };
+    const net = globalThis.__SP__.net, send = net._sendRaw.bind(net);
+    net._sendRaw = msg => {
+      const sent = send(msg);
+      if (msg.t === 'room.setRhine') trace.requests.push({ at: performance.now(), rid: msg.rid, enabled: msg.enabled, sent });
+      return sent;
+    };
+    net.on('*', msg => {
+      if (trace.requests.some(request => request.rid === msg.rid)) {
+        trace.replies.push({ at: performance.now(), t: msg.t, rid: msg.rid, code: msg.code, detail: msg.detail });
+      }
+      if (msg.t === 'room.state') trace.states.push({ at: performance.now(), code: msg.code,
+        enabled: msg.rhineEnabled, inMatch: msg.inMatch, phase: msg.phase,
+        seats: msg.seats?.filter(Boolean).map(seat => ({ playerId: seat.playerId, ready: seat.ready })) });
+    });
+    // Observe real input before the room handler. A click in a hidden button's old rect must not look like success.
+    const observeInput = event => {
+      const buttons = [...document.querySelectorAll('[data-testid="rhine-toggle"] button')];
+      const button = buttons.find(button => {
+        const r = button.getBoundingClientRect();
+        return event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom;
+      });
+      if (!button) return;
+      trace.inputs.push({ at: performance.now(), type: event.type, trusted: event.isTrusted,
+        target: event.target?.tagName, targetTestId: event.target?.getAttribute?.('data-testid'),
+        button: button.dataset.testid, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled,
+        visibility: getComputedStyle(button).visibility, loadoutHidden: document.documentElement.classList.contains('sp-loadout-open') });
+    };
+    document.addEventListener('pointerdown', observeInput, true);
+    document.addEventListener('click', observeInput, true);
+  });
+}
+
 async function lowQuality(client) {
   // Use the real graphics control so three software-rendered boards leave time for their real simulation Workers.
   await client.click('[data-testid="settings-btn"]');
@@ -158,12 +193,15 @@ async function searchLoadout(client, query) {
 
 async function closeLoadout(client) {
   await client.page.keyboard.press('Escape');
-  await client.page.waitForFunction(() => !document.querySelector('.lo'), { timeout: 5000 });
+  // LoadoutHost removes the overlay before its effect unhides the room. Wait for both parts of the real close.
+  await client.page.waitForFunction(() => !document.querySelector('.lo')
+    && !document.documentElement.classList.contains('sp-loadout-open'), { timeout: 5000 });
 }
 
 async function createCoop(client, name) {
   await openClient(client);
   observeImageReplacement(client);
+  await observeRoomProfile(client);
   await client.enter(name);
   await lowQuality(client);
   await client.click('.mode-card', '同盟模拟');
@@ -283,6 +321,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       const code = await createCoop(vanillaHost, '原版房主');
       await openClient(guest, `?room=${code}`);
       observeImageReplacement(guest);
+      await observeRoomProfile(guest);
       await guest.enter('原版队友');
       await guest.waitFor(s => s.room?.code === code, 'guest joins');
       await waitProfile(guest, true);
@@ -309,7 +348,17 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
         return s.room.seats.find(seat => seat?.playerId === s.me.playerId)?.ready;
       });
       await vanillaHost.click('[data-testid="rhine-vanilla"]');
-      await Promise.all([waitProfile(vanillaHost, false), waitProfile(guest, false)]);
+      const profileReply = vanillaHost.page.waitForFunction(() => {
+        const trace = globalThis.__profileRoom;
+        const request = trace.requests.find(request => request.enabled === false);
+        const reply = request && trace.replies.find(reply => reply.rid === request.rid);
+        return reply && { enabled: request.enabled, sent: request.sent, reply: reply.t, code: reply.code ?? null };
+      }, { timeout: 30000 }).then(handle => handle.jsonValue());
+      const [, , reply] = await Promise.all([waitProfile(vanillaHost, false), waitProfile(guest, false), profileReply]);
+      assert.deepEqual(reply, { enabled: false, sent: true, reply: 'ok', code: null }, 'the actual room control sends a request accepted by the server');
+      assert.equal(await vanillaHost.page.evaluate(() => globalThis.__profileRoom.inputs.some(input => input.type === 'click'
+        && input.trusted && input.button === 'rhine-vanilla' && input.targetTestId === 'rhine-vanilla'
+        && input.visibility === 'visible' && !input.disabled && !input.loadoutHidden)), true, 'the visible vanilla control receives the real mouse click');
       const vanillaRoom = await roomSnapshot(vanillaHost);
       assert.equal(vanillaRoom.seats.filter(seat => !seat.isBot).every(seat => !seat.ready), true, 'switching clears every human ready flag');
       assert.equal(await guest.page.$eval('[data-testid="rhine-vanilla"]', button => button.getAttribute('aria-pressed')), 'true');
@@ -458,6 +507,12 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
             const view = globalThis.__SP_VIEW__, app = view?.raw?.debug?.app;
             return { phase: s?.match.public?.phase, round: s?.match.public?.round,
               profile: globalThis.__SP__?.data.profileId,
+              room: { code: s?.room?.code, enabled: s?.room?.rhineEnabled, hostId: s?.room?.hostId, inMatch: s?.room?.inMatch },
+              roomProfile: globalThis.__profileRoom,
+              loadout: { open: !!document.querySelector('.lo'), hidden: document.documentElement.classList.contains('sp-loadout-open') },
+              profileButtons: [...document.querySelectorAll('[data-testid="rhine-toggle"] button')].map(button => ({
+                id: button.dataset.testid, pressed: button.getAttribute('aria-pressed'), disabled: button.disabled,
+                visibility: getComputedStyle(button).visibility })),
               ui: { route: s?.ui.route, dataReady: s?.ui.dataReady, dataError: s?.ui.dataError },
               view: { kind: view?.kind, app: !!app, renderer: !!app?.renderer,
                 contextLost: app?.renderer?.gl?.isContextLost?.() },

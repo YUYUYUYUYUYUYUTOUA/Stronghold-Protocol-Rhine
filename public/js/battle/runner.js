@@ -82,12 +82,13 @@
 import { net as appNet } from '../net.js';
 import { MAX_SEATS } from '../../../shared/constants.js';
 import { store as appStore } from '../store.js';
-import { contentFor as appContentFor, simContent as appSimContent, contentSet as appContentSet } from '../content.js';
+import { contentFor as appContentFor, simContent as appSimContent, contentSet as appContentSet, hasScriptConsent } from '../content.js';
 import { fxForm } from '../../../shared/protocol.js';
 import { spectateEffects } from './observe.js';
 import { recordError, setBattleSource } from '../diag.js';
 import { loadBrowserSim } from './simLoader.js';
 import { InPageSimHost, WorkerSimHost } from './simHost.js';
+import { createWorkerWarmup } from './workerWarmup.js';
 import { trackCombat, combineCombat } from './metrics.js';
 import { t } from '../../../shared/i18n.js';
 export { loadBrowserSim, SIM_DATA_FILES } from './simLoader.js';
@@ -158,7 +159,7 @@ const SIM_LOGGER = Object.freeze({
  * @param {{ net: any, store: any, loadSim?: () => Promise<{ spec: any, ds: any }>, now?: () => number,
  *   raf?: (fn: (t: number) => void) => any, caf?: (h: any) => void, setInterval?: Function, clearInterval?: Function,
  *   doc?: { hidden?: boolean, addEventListener?: Function } | null, logger?: object,
- *   combatMetrics?: boolean, createHost?: Function }} deps
+ *   combatMetrics?: boolean, createHost?: Function, scriptConsent?: (cs: string) => boolean }} deps
  * `combatMetrics` true/false pins the 作战统计 meter for a test. Omit it and call setCombatMetrics (the settings
  * screen does; the default is off). A Worker host never attaches the meter.
  */
@@ -177,6 +178,7 @@ export function createBattleRunner(deps) {
   // the content sets (DESIGN §32.6): the room's set the page holds (content.js) and the server's original one
   const contentFor = deps.contentFor || appContentFor;
   const heldContent = deps.simContent || appSimContent;
+  const scriptConsent = deps.scriptConsent || hasScriptConsent;
   /** the content set the page is downloading now (content.js contentSet: its cs while loading), else null */
   const loadingContent = deps.loadingContent || (() => { const c = appContentSet.get(); return c.status === 'loading' ? c.cs : null; });
   const vanillaCs = deps.vanillaCs || (() => { try { return store?.get?.()?.content?.vanilla ?? null; } catch { return null; } });
@@ -240,6 +242,20 @@ export function createBattleRunner(deps) {
   /** a normal field's leak count (or a battle's bond layers) changed since the last publishState() */
   let leaksDirty = false;
   const stats = { ticks: 0, stepMs: 0, maxFrameMs: 0, catchups: 0, errors: 0, battles: 0, frames: 0 };
+  const reportedWarmFailures = new WeakSet();
+  const createHost = (sim, onFailure) => deps.createHost ? deps.createHost(sim, onFailure) : sim.remote
+    ? new WorkerSimHost({ onFailure, timeoutMs: deps.workerTimeoutMs }) : new InPageSimHost();
+  const warmHosts = createWorkerWarmup({ createHost, onFailure: (error, owner) => {
+    if (owner) { failWorker(owner, error); return; }
+    reportedWarmFailures.add(error);
+    stats.errors++;
+    recordError('runner', error, 'simulation worker warmup stopped');
+  } });
+  const warmPhases = new Set(['INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK', 'ROUND_START', 'SP_DRAFT', 'PREP']);
+  let warmEpoch = 0, warmContext = null, warmAttempt = null, warmRound = null, disposed = false;
+  let warmInMatch = initial?.room?.inMatch === true;
+  const dropWarm = () => { warmEpoch++; warmContext = null; warmAttempt = null; warmRound = null; warmHosts.clear(); };
+  const warmKey = (cs, enabled) => `${warmEpoch}:${enabled}:${cs}`;
   /** Hidden-tab backlog tuple → the game time it was drained at (emitFrame batches the backlog by it). */
   const heldAt = new WeakMap();
 
@@ -287,6 +303,51 @@ export function createBattleRunner(deps) {
     if (enabled === activeProfile) return;
     activeProfile = enabled;
     clear();
+  }
+
+  const scriptsAllowed = content => !content?.scripts?.some(p => (p.execution || 'trusted') === 'trusted')
+    || scriptConsent(content.cs);
+  const checkedWarmContent = cs => {
+    const content = heldContent();
+    return content?.cs === cs && content.data && scriptsAllowed(content) ? content : null;
+  };
+  const consentFailure = () => Object.assign(new Error('simulation script consent is no longer available'), { code: 'PLUGIN_WORKER_FAILED' });
+
+  const mayWarm = s => !!s?.room && (!s.match?.public?.phase || s.match.public.phase === 'LOBBY'
+    || warmPhases.has(s.match.public.phase));
+  // A gameplay ensureSim() prepares checked content, not its Worker. Load/install one actual isolated realm as
+  // soon as the room is checked. Keep the unused realm through setup/round changes without resetting its watchdog.
+  // No Battle, spec, progress or result exists until a b.start claims it.
+  function warmForState(s, pub, resetMatch) {
+    const room = s?.room, phase = pub?.phase;
+    const cs = room?.content?.vanilla === false ? room.content.cs : null;
+    const available = cs && checkedWarmContent(cs);
+    const endedMatch = warmInMatch && room?.inMatch !== true;
+    warmInMatch = room?.inMatch === true;
+    const context = room && phase !== 'RESULT' && pub?.combatMode !== 'server' && cs && available
+      ? `${room.code}:${activeProfile}:${cs}` : null;
+    if (resetMatch || endedMatch || context !== warmContext) {
+      dropWarm();
+      warmContext = context;
+    }
+    for (const entry of [...entries.values(), ...pending.values()]) {
+      if (entry.host?.remote && entry.scriptContent && !scriptsAllowed(entry.scriptContent)) failWorker(entry, consentFailure());
+    }
+    if (!context || !mayWarm(s)) return;
+    const round = Number(pub?.round) || 0;
+    const key = warmKey(cs, activeProfile), attempt = `${key}:${round}`;
+    if (warmAttempt === attempt) return;
+    // Only a subsequent round permits replacing a failed idle realm. Healthy unused realms (including a pending
+    // lobby load) remain valid even when the first actual round is not 1, e.g. a resumed match or a round-14 fixture.
+    const retryFailed = warmRound !== null && warmRound !== round;
+    warmAttempt = attempt;
+    warmRound = round;
+    const epoch = warmEpoch;
+    ensureSim(cs).then(sim => {
+      if (disposed || epoch !== warmEpoch || warmContext !== context || !sim.remote
+        || warmAttempt !== attempt || !mayWarm(store?.get?.()) || !checkedWarmContent(cs)) return;
+      warmHosts.prepare(key, sim, { retryFailed });
+    }).catch(() => {}); // content loading already reports its own failure; no unverified Worker is created
   }
 
   /** Counted leaks so far of every normal field simulated here: { [fieldId]: n } (user playtest #3 item 2). */
@@ -634,8 +695,10 @@ export function createBattleRunner(deps) {
     const authority = e.authoritative;
     e.failed = true; e.authoritative = false; e.done = true;
     e.host?.stop();
-    stats.errors++;
-    recordError('runner', err, 'plugin worker stopped');
+    if (!reportedWarmFailures.has(err)) {
+      stats.errors++;
+      recordError('runner', err, 'plugin worker stopped');
+    }
     const text = t('插件卡死，本场由服务器接管');
     if (deps.toast) deps.toast(text, 'error');
     else if (typeof document !== 'undefined') import('../ui/toasts.js').then(m => m.toast(text, 'error')).catch(() => {});
@@ -803,12 +866,20 @@ export function createBattleRunner(deps) {
       if (!csAccepted(e.spec.cs)) e.authoritative = false;
       let battle;
       try {
-        e.host = deps.createHost ? deps.createHost(sim, err => failWorker(e, err)) : sim.remote
-          ? new WorkerSimHost({ onFailure: err => failWorker(e, err), timeoutMs: deps.workerTimeoutMs })
-          : new InPageSimHost();
+        if (sim.remote) {
+          e.scriptContent = sim.content;
+          if (!scriptsAllowed(sim.content)) { failWorker(e, consentFailure()); return; }
+        }
+        const warm = sim.remote ? warmHosts.take(warmKey(sim.cs, e.rhineEnabled), e) : null;
+        e.host = warm ? warm.host : createHost(sim, err => failWorker(e, err));
+        if (warm) {
+          try { await warm.ready; } catch (error) { failWorker(e, error); return; }
+          if (!wanted() || e.failed) return;
+        }
         if (e.host.remote) {
-          await e.host.load(sim.cs, sim.content);
-          if (!wanted()) return;
+          if (!warm) await e.host.load(sim.cs, sim.content);
+          if (!wanted() || e.failed) return;
+          if (!scriptsAllowed(sim.content)) { failWorker(e, consentFailure()); return; }
           await e.host.start(e.spec);
         } else { e.host.sim = sim; e.host.start(e.spec, { logger }); }
         battle = e.host.battle;
@@ -902,7 +973,8 @@ export function createBattleRunner(deps) {
    * Drop every battle (a new round's prep, the match ended, the player left). Each dropped battle keeps its last
    * combat snapshot in combatHistory for the panel's match totals; `keepMetrics` false (a new match) starts over.
    */
-  function clear({ keepMetrics = false } = {}) {
+  function clear({ keepMetrics = false, keepWarm = false } = {}) {
+    if (!keepWarm) dropWarm();
     ++startSeq;
     loading = null;
     for (const e of entries.values()) {
@@ -945,6 +1017,7 @@ export function createBattleRunner(deps) {
         selectProfile(storeProfile);
       }
       const round = Number(pub?.round) || 0;
+      const rewindWarm = round < lastRound;
       // a fresh match (m.public gone), a rewound round or a return to a lobby-like phase resets the combat totals
       const resetMetrics = (!pub && lastPhase != null) || round < lastRound
         || (pub?.phase !== lastPhase && ['LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(pub?.phase));
@@ -953,10 +1026,13 @@ export function createBattleRunner(deps) {
       // solo pause (DESIGN §14): the local battle clocks follow m.public.paused
       setPaused(!!(pub && pub.paused));
       const phase = pub ? pub.phase : null;
+      // Observe content/room changes even when the match remains in the same phase. Phase-only early returns must
+      // never keep an old plugin realm or let an asynchronously completed load revive after leaving the match.
+      warmForState(s, pub, rewindWarm);
       if (phase === lastPhase && !resetMetrics) return;
       lastPhase = phase;
       if (!phase || ['PREP', 'ROUND_START', 'SP_DRAFT', 'RESULT', 'LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(phase)) {
-        if (entries.size || pending.size) clear({ keepMetrics: !resetMetrics });
+        if (entries.size || pending.size) clear({ keepMetrics: !resetMetrics, keepWarm: true });
       }
       // warm the simulation up as soon as a match runs (the first b.start then starts at once) — on the room's content set
       // when it plays one (DESIGN §32.6)
@@ -967,6 +1043,7 @@ export function createBattleRunner(deps) {
   if (doc && typeof doc.addEventListener === 'function') {
     doc.addEventListener('visibilitychange', () => { if (hidden()) return; flushHidden(); schedule(); });
   }
+  warmForState(initial, initial?.match?.public, false);
 
   return {
     on(type, fn) {
@@ -1058,7 +1135,7 @@ export function createBattleRunner(deps) {
     _frame: frame,
     _pump: pump,
     onStart, onPool, onEnd, clear, ensureSim, redeliver, setPaused,
-    dispose() { clear(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } },
+    dispose() { disposed = true; clear(); for (const off of offs) { try { off?.(); } catch { /* ignore */ } } },
   };
 }
 

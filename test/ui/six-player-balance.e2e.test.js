@@ -5,9 +5,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync } from 'node:fs';
-import { getPriority, setPriority } from 'node:os';
+import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, cameraSettled, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
+import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
+import { observeSixWarmup, readSixWarmup } from '../e2e/sixWarmupObserver.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { bossPoolHp } from '../../server/match/finalAssault.js';
@@ -21,9 +23,9 @@ const KIT = [CORE, 'chess_char_1_01_a', 'chess_char_1_19_a', 'chess_char_2_01_a'
 const QUIET = { info() {}, warn() {}, error() {}, debug() {} };
 // Opt into software WebGL (not software GPU compositing) only in this test harness.
 // Combat speed, deadlines and gameplay assertions are unchanged. The six clients
-// use actual low-quality controls with a 720p host and compact teammate windows;
-// separate renderer/layout suites cover
-// full-quality art and the desktop/phone viewport matrix.
+// use actual low-quality controls with official FX off, a 720p host and compact
+// teammate windows. This mechanism fixture does not cover official FX visuals;
+// separate renderer/layout suites cover art and the desktop/phone viewport matrix.
 const SOFTWARE_GPU = process.env.SP_E2E_SWIFTSHADER === '1';
 const BROWSER_ARGS = SOFTWARE_GPU ? ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] : [];
 const inventory = c => c.page.evaluate(() => {
@@ -33,23 +35,42 @@ const inventory = c => c.page.evaluate(() => {
 
 async function openClient(client, query) {
   await client.open(query);
+  await observeMechanismVisibility(client);
+  await observeSixWarmup(client);
   client.fieldWarnings = [];
   client.page.on('console', message => {
     if (message.type() === 'warn' && message.text().startsWith('[field]')) client.fieldWarnings.push(message.text());
   });
   if (!SOFTWARE_GPU || !['win32', 'linux'].includes(process.platform)) return;
-  // Hosted Windows jobs inherit BelowNormal, but Chromium raises its GPU process
-  // to AboveNormal: align this browser's owned GPU with the fixture there. On a
-  // four-core Linux runner six SwiftShader GPUs also compete with the real IPC
-  // and simulation Workers: give only their rendering tasks nice +15. Linux nice
+  // Prefer real simulation/IPC over this fixture's software rendering: the test
+  // Node remains NORMAL on Windows; only its owned GPU is BELOW_NORMAL. On a
+  // four-core Linux runner give only the owned rendering tasks nice +15. Linux nice
   // is per-thread, so cover the owned GPU's existing threads too; new threads
   // inherit it. The Node/server/renderer/Worker priorities and rendering stay intact.
   const cdp = await client.browser.target().createCDPSession();
   try {
     const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
+    const browserPid = client.browser.process()?.pid;
+    assert.ok(Number.isInteger(browserPid), 'the fixture owns its shared browser process');
+    assert.ok(processInfo.some(p => /^browser$/i.test(p.type) && p.id === browserPid), 'CDP confirms this browser ownership');
     const gpuProcesses = processInfo.filter(p => /gpu/i.test(p.type));
     assert.equal(gpuProcesses.length, 1, 'one owned browser GPU process');
-    const priority = process.platform === 'linux' ? 15 : getPriority(process.pid);
+    const priority = process.platform === 'linux' ? 15 : osConstants.priority.PRIORITY_BELOW_NORMAL;
+    const owned = processInfo.filter(p => /^(?:browser|renderer|gpu)$/i.test(p.type));
+    const priorities = () => owned.map(p => {
+      try { return { pid: p.id, type: p.type, priority: getPriority(p.id) }; }
+      catch (error) {
+        if (error.info?.code !== 'ESRCH') throw error;
+        return { pid: p.id, type: p.type, exitedDuringObservation: true };
+      }
+    });
+    const before = process.platform === 'win32' ? priorities() : null;
+    if (process.platform === 'win32') {
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL, 'the Windows test Node remains NORMAL');
+      assert.equal(priority, 10, 'Windows BELOW_NORMAL is the owned GPU target');
+      console.log('Six Windows owned priorities before:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: before }));
+    }
     for (const gpu of gpuProcesses) {
       setPriority(gpu.id, priority);
       if (process.platform === 'linux') {
@@ -68,6 +89,18 @@ async function openClient(client, query) {
       assert.equal(getPriority(gpu.id), priority, 'owned software GPU has the requested rendering priority');
       console.log(`Six-client owned GPU priority: pid=${gpu.id}, priority=${getPriority(gpu.id)}`);
     }
+    if (process.platform === 'win32') {
+      const after = priorities();
+      console.log('Six Windows owned priorities after:', JSON.stringify({ client: client.label,
+        node: { pid: process.pid, priority: getPriority(process.pid) }, browserPid, owned: after }));
+      assert.equal(getPriority(process.pid), osConstants.priority.PRIORITY_NORMAL);
+      for (const [index, p] of after.entries()) {
+        if (/^gpu$/i.test(p.type)) assert.equal(p.priority, priority, 'only the owned GPU has the rendering target');
+        else if (!p.exitedDuringObservation && !before[index].exitedDuringObservation) {
+          assert.equal(p.priority, before[index].priority, 'the browser and renderer priorities remain unchanged');
+        }
+      }
+    }
   } finally { await cdp.detach(); }
 }
 
@@ -84,13 +117,25 @@ async function lowQuality(client) {
   await client.click('.modal button[role="radio"]', '低');
   assert.equal(await client.page.$eval('.modal .set-list', list =>
     [...list.querySelectorAll('button[role="radio"]')].find(button => button.textContent.trim() === '低').getAttribute('aria-checked')), 'true');
+  // Set the production control before the first field/battle exists: the six
+  // mechanism clients do not need the renderer suite's background FX preloads.
+  await client.page.waitForSelector('.modal [data-testid="official-fx"]');
+  await client.page.$eval('.modal [data-testid="official-fx"]', group => {
+    const off = [...group.querySelectorAll('button[role="radio"]')].find(button => button.textContent.trim() === '关');
+    if (!off) throw new Error('the official-effects off radio is missing from settings');
+    off.scrollIntoView({ block: 'center' });
+  });
+  await client.click('.modal [data-testid="official-fx"] button[role="radio"]', '关');
+  assert.equal(await client.page.$eval('.modal [data-testid="official-fx"]', group =>
+    [...group.querySelectorAll('button[role="radio"]')].find(button => button.textContent.trim() === '关').getAttribute('aria-checked')), 'true');
   await client.click('.modal__actions button', '完成');
   assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).quality), 'low');
+  assert.equal(await client.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).officialFx), 'off');
 }
 
 async function warmClient(client, enabled) {
   // Finish each room's real module/content lookup before six boards render
-  // simultaneously. A gameplay profile still creates its real isolated Worker at battle start.
+  // simultaneously. Production preparation owns the real isolated Worker lifecycle.
   await client.page.waitForFunction(enabled => globalThis.__SP__.store.get().ui.dataReady
     && globalThis.__SP__.data.profileId === (enabled ? 'rhine' : 'vanilla'), { timeout: 30000 }, enabled);
   await client.page.evaluate(enabled => {
@@ -168,7 +213,7 @@ async function createSixHumanRoom(clients, rhineEnabled) {
 async function recordCombat(client) {
   await client.page.evaluate(async () => {
     const copy = value => JSON.parse(JSON.stringify(value));
-    const trace = globalThis.__sixBalance = { starts: [], ends: [], pools: [], uploads: [], errors: [], byBattle: {}, localPools: {}, phases: [], states: [] };
+    const trace = globalThis.__sixBalance = { starts: [], ends: [], pools: [], uploads: [], errors: [], byBattle: {}, localPools: {}, phases: [], states: [], workerRpc: [], workerFailures: [], workerTakeovers: [] };
     const remoteHosts = new Map();
     // Capture the real local pool when its field is shown. At accelerated combat speed,
     // RESULT may clear runner entries before the six clients are inspected sequentially.
@@ -185,6 +230,40 @@ async function recordCombat(client) {
     // Worker syncPool is an ordered RPC. Observe its completion after any pending
     // step, so replay applies each real pool update at the tick it reached there.
     const { WorkerSimHost } = await import('/js/battle/simHost.js');
+    const workers = new WeakMap();
+    let workerSeq = 0;
+    const workerId = host => {
+      if (!workers.has(host)) workers.set(host, ++workerSeq);
+      return workers.get(host);
+    };
+    const rpc = WorkerSimHost.prototype.rpc;
+    WorkerSimHost.prototype.rpc = function (...rpcArgs) {
+      const [method, args = [], timeoutMs] = rpcArgs;
+      const event = { at: performance.now(), workerId: workerId(this), rpcId: this.seq + 1, method, cs: this.cs,
+        battleId: args[0]?.battleId ?? this.spec?.battleId, timeoutMs: timeoutMs ?? this.timeoutMs };
+      const important = !['step', 'syncPool', 'unitStats'].includes(method);
+      if (important) trace.workerRpc.push(event);
+      // Return the exact production promise: no changed payload, deadline, state
+      // or retry. Keep failures and unusually slow steps for the original cause.
+      const result = rpc.apply(this, rpcArgs);
+      const finish = (error, packet) => {
+        event.durationMs = performance.now() - event.at;
+        event.status = error ? 'error' : 'done';
+        if (error) { event.code = error.code; event.message = String(error.message || error); event.stack = error.stack; }
+        if (packet?.state) event.packet = { tick: packet.state.tickCount, poolMax: packet.snap?.boss?.max };
+        if (!important && (error || event.durationMs > 500)) trace.workerRpc.push(event);
+      };
+      result.then(packet => finish(null, packet), error => finish(error));
+      return result;
+    };
+    const fail = WorkerSimHost.prototype.fail;
+    WorkerSimHost.prototype.fail = function (error) {
+      trace.workerFailures.push({ at: performance.now(), workerId: workerId(this), cs: this.cs,
+        battleId: this.spec?.battleId, code: error?.code, message: String(error?.message || error), stack: error?.stack,
+        pendingRpcIds: [...this.pending.keys()], stopped: this.stopped });
+      return fail.call(this, error);
+    };
+    runner.on('takeover', message => trace.workerTakeovers.push({ at: performance.now(), message: copy(message) }));
     const start = WorkerSimHost.prototype.start;
     WorkerSimHost.prototype.start = async function (spec) {
       remoteHosts.set(spec.battleId, this);
@@ -245,6 +324,22 @@ async function recordCombat(client) {
 
 async function useAwardedBeacon(clients) {
   const host = clients[0], before = await Promise.all(clients.map(inventory));
+  const waits = host.beaconWaits = [];
+  const waitForRewardStore = async (name, predicate) => {
+    // The store is updated by WebSocket handlers, independently of render RAFs.
+    // These actual arm/completion clocks belong to the Node test runner; the
+    // incoming packet clocks below belong to the page. No extra CDP probe.
+    const event = { name, clock: 'node-test-runner', timeoutMs: 10000, pollingMs: 100,
+      arm: { date: Date.now(), perf: performance.now() } };
+    waits.push(event);
+    try {
+      await host.page.waitForFunction(predicate, { timeout: 10000, polling: 100 });
+      event.complete = { date: Date.now(), perf: performance.now() };
+    } catch (error) {
+      event.failed = { date: Date.now(), perf: performance.now(), message: error.message };
+      throw error;
+    }
+  };
   const beacon = before[0].find(p => p.kind === 'item' && p.id === BEACON && p.giftTiming === 'immediate');
   const core = before[0].find(p => p.kind === 'chess' && p.id === CORE);
   assert.ok(beacon && core, 'R14 reward beacon and the actual six-tier starter operator exist');
@@ -253,16 +348,25 @@ async function useAwardedBeacon(clients) {
   await host.hookRequests();
   await host.page.evaluate(async () => {
     const { serverNow } = await import('/js/store.js');
-    const trace = globalThis.__sixBeacon = { errors: [], replies: [], checkpoints: [] };
+    const trace = globalThis.__sixBeacon = { errors: [], replies: [], checkpoints: [], privateOffers: [] };
     trace.mark = stage => {
       const pub = globalThis.__SP__.store.get().match.public, now = serverNow();
-      trace.checkpoints.push({ stage, at: Date.now(), phase: pub.phase, round: pub.round, serverNow: now,
+      trace.checkpoints.push({ stage, at: Date.now(), perf: performance.now(), phase: pub.phase, round: pub.round, serverNow: now,
         wireServerNow: pub.serverNow, deadline: pub.deadline, remainingSeconds: Math.max(0, (pub.deadline - now) / 1000) });
     };
     trace.mark('before-detail');
     globalThis.__SP__.net.on('*', msg => {
       if (msg.t === 'error') trace.errors.push({ at: performance.now(), ...msg });
       if (msg.t === 'ok') trace.replies.push({ at: performance.now(), ...msg });
+      if (msg.t === 'm.private') {
+        // Net emits '*' after every typed handler, including main.js's store
+        // patch. The actual private packet is flat (msg.shop), not msg.private.
+        const snapshot = value => value == null ? null : JSON.parse(JSON.stringify(value));
+        trace.privateOffers.push({ at: Date.now(), perf: performance.now(), clock: 'browser-page',
+          order: 'wildcard-after-typed-handlers', packetKeys: Object.keys(msg),
+          packetOffer: snapshot(msg.shop?.rewardOffer),
+          storeOffer: snapshot(globalThis.__SP__.store.get().match.private?.shop?.rewardOffer) });
+      }
     });
   });
   const detailPoint = await host.piecePoint(beacon.uid);
@@ -322,7 +426,7 @@ async function useAwardedBeacon(clients) {
       return { x: point.x, y: point.y };
     } });
     await host.page.evaluate(point => { globalThis.__sixBeacon.releasedAt = point; globalThis.__sixBeacon.mark('after-release'); }, releasedAt);
-    await host.page.waitForFunction(() => !!globalThis.__SP__.store.get().match.private?.shop?.rewardOffer, { timeout: 10000 });
+    await waitForRewardStore('reward-offer-present', () => !!globalThis.__SP__.store.get().match.private?.shop?.rewardOffer);
     const requests = await host.requests('g.equip');
     assert.equal(requests.length, 1, 'one equipment request originated from the real drag');
     assert.equal(requests[0][1].itemUid, beacon.uid, 'the real drag uses the awarded beacon');
@@ -350,7 +454,7 @@ async function useAwardedBeacon(clients) {
       ]);
     } catch (diagnosticError) { diagnostic = { diagnostic: diagnosticError.message }; }
     finally { clearTimeout(timer); }
-    console.log(`${host.label}: real beacon drag failed: ${error.message}; before=${JSON.stringify(before)}; after=${JSON.stringify(diagnostic)}`);
+    console.log(`${host.label}: real beacon drag failed: ${error.message}; before=${JSON.stringify(before)}; after=${JSON.stringify(diagnostic)}; waits=${JSON.stringify(waits)}`);
     throw error;
   }
   const offer = await host.page.evaluate(() => globalThis.__SP__.store.get().match.private.shop.rewardOffer);
@@ -374,8 +478,9 @@ async function useAwardedBeacon(clients) {
   await host.click('.shopbar__reward .scard');
   await sleep(250);
   await host.click('.shopbar__reward .scard.is-armed');
-  await host.page.waitForFunction(() => !globalThis.__SP__.store.get().match.private?.shop?.rewardOffer, { timeout: 10000 });
+  await waitForRewardStore('reward-offer-cleared', () => !globalThis.__SP__.store.get().match.private?.shop?.rewardOffer);
   assert.equal((await host.requests('g.reward')).length, 1, 'one replacement selected through the reward controls');
+  console.log(`${host.label}: real reward store waits ${JSON.stringify(waits)}`);
 }
 
 function replayUpload(start, upload, data) {
@@ -394,21 +499,25 @@ async function failureSnapshot(client) {
   let timer;
   try {
     return await Promise.race([
-      client.page.evaluate(() => {
+      client.page.evaluate(async () => {
+        const { errorLog } = await import('/js/diag.js');
         const s = globalThis.__SP__?.store.get(), runner = globalThis.__SP_RUNNER__, trace = globalThis.__sixBalance;
         return { me: s?.me.playerId, phase: s?.match.public?.phase, round: s?.match.public?.round, ready: s?.match.private?.ready,
           states: trace?.states, phases: trace?.phases, starts: trace?.starts.map(msg => ({ battleId: msg.battleId,
             authoritative: msg.authoritative, kind: msg.kind, startAt: msg.startAt, serverNow: msg.serverNow, speed: msg.speed,
             round: msg.spec?.round, boss: msg.spec?.boss, bossId: msg.spec?.bossId, spec: msg.spec })), ends: trace?.ends,
           localPools: trace?.localPools, byBattle: trace?.byBattle, uploads: trace?.uploads, errors: trace?.errors,
+          workerRpc: trace?.workerRpc, workerFailures: trace?.workerFailures, workerTakeovers: trace?.workerTakeovers, runtimeErrors: errorLog(),
           view: globalThis.__SP_VIEW__?.kind, stats: runner?.stats(), state: runner?.state(), entries: [...(runner?._entries.values() || [])].map(entry => ({
             battleId: entry.battleId, own: entry.own, authoritative: entry.authoritative, remote: entry.host?.remote,
             resultSent: entry.resultSent, ticks: entry.battle?.tickCount, time: entry.battle?.time, pending: entry.host?.pending?.size,
           })), beacon: globalThis.__sixBeacon, requests: globalThis.__e2eReq };
-      }).then(snapshot => ({ ...snapshot, fieldWarnings: client.fieldWarnings })),
-      new Promise(resolve => { timer = setTimeout(() => resolve({ label: client.label, diagnostic: 'page did not answer within 5 s' }), 5000); timer.unref(); }),
+      }).then(snapshot => ({ ...snapshot, fieldWarnings: client.fieldWarnings,
+        warmupRpc: readSixWarmup(client), beacon: snapshot.beacon && { ...snapshot.beacon, waits: client.beaconWaits } })),
+      new Promise(resolve => { timer = setTimeout(() => resolve({ label: client.label,
+        diagnostic: 'page did not answer within 5 s', warmupRpc: readSixWarmup(client) }), 5000); timer.unref(); }),
     ]);
-  } catch (error) { return { label: client.label, diagnostic: error.message }; }
+  } catch (error) { return { label: client.label, diagnostic: error.message, warmupRpc: readSixWarmup(client) }; }
   finally { clearTimeout(timer); }
 }
 
@@ -416,12 +525,20 @@ for (const rhineEnabled of [true, false]) {
   const profile = rhineEnabled ? 'rhine' : 'vanilla';
   test(`${profile}: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool`,
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
-      const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
+      const srv = await startRealServer({ serverDiagnostics: true,
+        fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
       const puppeteer = (await import('puppeteer-core')).default;
-      const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
-        { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}`, browserArgs: BROWSER_ARGS }));
+      const clients = [];
+      let browserPool;
       try {
+        browserPool = await createMechanismBrowserPool(puppeteer, { browserArgs: BROWSER_ARGS });
+        clients.push(...Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
+          { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}`,
+            sharedBrowser: browserPool.browser })));
         await createSixHumanRoom(clients, rhineEnabled);
+        const contextIds = clients.map(client => client.browserContext?.id);
+        assert.ok(contextIds.every(Boolean), 'each real player owns a separate browser context');
+        assert.equal(new Set(contextIds).size, 6, 'six isolated browser contexts remain distinct');
         const rewards = await Promise.all(clients.map(inventory));
         for (const [i, pieces] of rewards.entries()) {
           const awarded = pieces.filter(p => p.kind === 'item' && p.id === BEACON);
@@ -438,7 +555,7 @@ for (const rhineEnabled of [true, false]) {
         assert.equal((await last.st()).me, lastId);
         assert.deepEqual((await inventory(last)).filter(p => p.id === BEACON).map(p => p.uid), [lastBeacon], 'refresh does not duplicate the award');
         // Restore the refreshed page's exact checked profile/content before 16x
-        // combat. A Worker profile still boots its own engine at the real battle start.
+        // combat. The production runner owns pre-battle Worker loading.
         await warmClient(last, rhineEnabled);
         await last.shot('prep-compact');
         await useAwardedBeacon(clients);
@@ -463,17 +580,18 @@ for (const rhineEnabled of [true, false]) {
           const expected = bossPoolHp(gd4, start.spec.bossId, 4) * 2;
           assert.equal(start.spec.boss.poolMax, expected, `${client.label}: doubled four-seat maximum in real battle spec`);
           assert.equal(start.spec.boss.poolHp, expected, `${client.label}: doubled four-seat initial current HP`);
-          await client.page.waitForFunction(id => globalThis.__SP_RUNNER__?.stats().errors === 0
-            && globalThis.__sixBalance.localPools[id] > 0, { timeout: 30000 }, start.battleId).catch(async error => {
-            const diagnostic = await client.page.evaluate(() => ({ phase: globalThis.__SP__.store.get().match.public.phase,
-              localPools: globalThis.__sixBalance.localPools, phases: globalThis.__sixBalance.phases,
-              stats: globalThis.__SP_RUNNER__.stats(),
-              entries: [...globalThis.__SP_RUNNER__._entries.values()].map(e => ({ battleId: e.battleId,
-                own: e.own, maxHp: e.battle?.sharedBoss?.maxHp })) }));
+          await client.page.waitForFunction(id => globalThis.__SP_RUNNER__?.stats().errors > 0
+            || globalThis.__sixBalance.localPools[id] > 0, { timeout: 30000 }, start.battleId).catch(async error => {
+            const diagnostic = await failureSnapshot(client);
             throw new Error(`${client.label}: ${error.message}; ${JSON.stringify(diagnostic)}`, { cause: error });
           });
-          const max = await client.page.evaluate(id => globalThis.__sixBalance.localPools[id], start.battleId);
-          assert.equal(max, expected, `${client.label}: actual local shared pool has the same maximum`);
+          const observed = await client.page.evaluate(async id => {
+            const { errorLog } = await import('/js/diag.js'), trace = globalThis.__sixBalance;
+            return { max: trace.localPools[id], errors: globalThis.__SP_RUNNER__.stats().errors,
+              workerRpc: trace.workerRpc, workerFailures: trace.workerFailures, runtimeErrors: errorLog() };
+          }, start.battleId);
+          assert.equal(observed.errors, 0, `${client.label}: actual simulation must succeed before its pool is checked; ${JSON.stringify(observed)}`);
+          assert.equal(observed.max, expected, `${client.label}: actual local shared pool has the same maximum`);
         }
         for (const client of clients) await client.waitFor(s => s.phase === 'RESULT', 'complete boss settlement', 150000);
         let authoritativeUploads = 0;
@@ -493,6 +611,10 @@ for (const rhineEnabled of [true, false]) {
         }
         assert.equal(authoritativeUploads, 3, 'all three pair fields uploaded and replayed');
         await last.shot('result-compact');
+        for (const client of clients) {
+          console.log('Six actual warmup RPCs:', JSON.stringify({ client: client.label, trace: readSixWarmup(client) }));
+          await assertMechanismVisibility(client);
+        }
         assert.deepEqual(problemsOf(clients), [], 'no page, console or resource errors');
         assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), []);
       } catch (error) {
@@ -502,8 +624,11 @@ for (const rhineEnabled of [true, false]) {
         throw error;
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
-        await Promise.all(clients.map(client => client.close()));
-        await srv.stop();
+        try { await Promise.all(clients.map(client => client.close())); }
+        finally {
+          try { await browserPool?.close(); }
+          finally { await srv.stop(); }
+        }
       }
     });
 }
