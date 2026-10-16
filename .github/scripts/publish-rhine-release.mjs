@@ -311,7 +311,10 @@ async function main() {
       automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` } };
     const reportFile = path.join(root, 'RELEASE-VALIDATION.json');
     fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
-    const attachments = [...rendererDiagnosticNames.map(name => path.join(root, name)).filter(file => fs.existsSync(file)), reportFile];
+    const diagnosticFiles = rendererDiagnosticNames.map(name => path.join(root, name)).filter(file => fs.existsSync(file));
+    for (const file of diagnosticFiles) progress(`Diagnostic attachment ${path.basename(file)}: ${fs.statSync(file).size} bytes.`);
+    // GitHub's release endpoint rejects an empty upload body. Preserve the byte count in the job log.
+    const attachments = [...diagnosticFiles.filter(file => fs.statSync(file).size > 0), reportFile];
     assert.equal(api(`releases/${request.draftReleaseId}`).draft, true);
     command('gh', ['release', 'upload', request.tag, '--repo', repo, '--clobber', ...attachments]);
     assert.equal(api(`releases/${request.draftReleaseId}`).draft, true);
