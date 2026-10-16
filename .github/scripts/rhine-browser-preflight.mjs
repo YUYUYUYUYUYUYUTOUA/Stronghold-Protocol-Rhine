@@ -16,7 +16,9 @@ const profileFiles = ['test/ui/rhine-profiles.e2e.test.js'];
 const files = profileFiles;
 const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
   'test/e2e/fastServer.mjs', 'test/e2e/fastServerDiagnostics.mjs',
-  'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
+  'test/e2e/profileCpuDiagnostics.mjs',
+  'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js',
+  'public/js/battle/simHost.js', 'public/js/render/app.js', 'public/js/ui/fieldHost.js'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');
@@ -54,7 +56,7 @@ function validateInputs() {
     scope: 'Only the remaining profile case after run38906606052. The Studio firstcase passed there and the other46 browser cases passed native7; none of those47 are rerun here. This is not full native acceptance.',
     groups: [{ name: 'profiles', files: profileFiles, expectedTests: 1,
         SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' }],
-    flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
+    flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1', SP_PROFILE_CPU_DIAG: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
     noPublisherImport: true, noReleaseMutation: true, noDistributable: true, noDeployment: true };
 }
@@ -243,6 +245,10 @@ async function main() {
     supportFiles: await Promise.all(supportFiles.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))) }));
   const runtime = await prepareResources();
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Resource setup changed tracked source.');
+  const runtimeVendors = await Promise.all(['public/vendor/pixi.min.js', 'public/vendor/pixi-spine.js',
+    'public/vendor/three.module.js', 'public/vendor/three.core.js'].map(async relative => ({ path: relative,
+      bytes: fs.statSync(path.join(source, relative)).size, sha256: await sha(path.join(source, relative)) })));
+  progress(`Diagnostic runtime vendor fingerprints: ${JSON.stringify(runtimeVendors)}`);
   const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
     .map(directory => path.join(directory, 'Microsoft/Edge/Application/msedge.exe')).find(file => fs.existsSync(file));
   assert.ok(edge, 'Microsoft Edge is required, using the same lookup as the publisher.');

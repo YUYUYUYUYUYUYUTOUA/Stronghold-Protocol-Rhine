@@ -8,6 +8,7 @@ import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf, waitForFunctionLong } from '../e2e/client.mjs';
 import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility,
   readMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
+import { startProfileCpuDiagnostics } from '../e2e/profileCpuDiagnostics.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { DataSource } from '../../server/sim/simdata.js';
 import { compactResult, createBattleFromSpec, resultDigest } from '../../server/sim/spec.js';
@@ -462,7 +463,7 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       else process.env.SP_VERIFY = previousVerify;
     }
     const clients = [];
-    let browserPool;
+    let browserPool, cpuDiagnostics;
     try {
       const puppeteer = (await import('puppeteer-core')).default;
       // Share only the browser/GPU, as the six-player and plugin mechanism fixtures do. Each Client creates its own
@@ -650,6 +651,8 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       }
       const beforeHostReload = await contextSnapshot(clients);
       await vanillaHost.page.waitForNetworkIdle({ idleTime: 500, timeout: 15000 });
+      if (process.env.SP_PROFILE_CPU_DIAG === '1') cpuDiagnostics = await startProfileCpuDiagnostics(vanillaHost.page,
+        { outDir: path.join(ROOT, 'test/e2e/out') });
       await vanillaHost.page.reload({ waitUntil: 'domcontentloaded' });
       await vanillaHost.page.waitForFunction(() => !!globalThis.__SP__ && !!globalThis.__SP_RUNNER__, { timeout: 30000 });
       await vanillaHost.waitFor(s => s.phase === 'PREP' && s.round === 2 && s.room?.code === code, 'vanilla mid-match reconnect');
@@ -727,10 +730,13 @@ test('Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fi
       throw error;
     } finally {
       if (pageProblems(clients).length) console.log(pageProblems(clients).slice(0, 20).join('\n'));
-      try { await Promise.all(clients.map(client => client.close())); }
+      try { await cpuDiagnostics?.stop(); }
       finally {
-        try { await browserPool?.close(); }
-        finally { await srv.stop(); }
+        try { await Promise.all(clients.map(client => client.close())); }
+        finally {
+          try { await browserPool?.close(); }
+          finally { await srv.stop(); }
+        }
       }
     }
   });
