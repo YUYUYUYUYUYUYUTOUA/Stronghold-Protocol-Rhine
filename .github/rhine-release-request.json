@@ -400,7 +400,52 @@
         "skipped": 0
       },
       "nativeAcceptance": "Rerun all gates from clean immutable source; source-author batch additionally includes the complete Studio review file."
+    },
+    "initialWindowsAttempt4": {
+      "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38864282703",
+      "job": 116853427329,
+      "sourceCommit": "4ea4d5b0182c3c1fedf53b22cd63e9cf2a8b3416",
+      "published": false,
+      "nativeMain": {
+        "tests": 915,
+        "pass": 913,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 2,
+        "durationSeconds": 132.147
+      },
+      "sourceAuthorBatch": {
+        "completedPassingCases": 15,
+        "finalSummary": false,
+        "stoppedAfterSeconds": 300,
+        "reason": "The newly included Studio review HTTP test inherited SP_STUDIO=off and awaited a trial spawn that disabled Studio never performs."
+      },
+      "controlledReproduction": {
+        "sameActualTest": "normal request close preserves a trial; incomplete request or disconnected response cancels and cleans it",
+        "studioOff": {
+          "timedOutSeconds": 12,
+          "enteredTrial": false
+        },
+        "studioLan": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "caseMilliseconds": 314.882
+        }
+      },
+      "repair": "Enable SP_STUDIO=lan for this isolated source-author fixture batch, as the existing main acceptance batch already does; preserve the 300-second deadline and every actual test and assertion. No tagged source/runtime change.",
+      "notRun": [
+        "packaged host suite",
+        "all browser groups",
+        "HTTP/WebSocket smoke",
+        "actual .6 upgrade/private configurations/repeat/rollback",
+        "archive/upload/download validation"
+      ],
+      "resumeDraftId": 414644048
     }
   },
-  "rendererDiagnostics": false
+  "rendererDiagnostics": false,
+  "draftReleaseId": 414644048
 }
