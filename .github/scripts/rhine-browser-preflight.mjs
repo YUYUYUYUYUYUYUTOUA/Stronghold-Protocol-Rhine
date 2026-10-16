@@ -18,7 +18,8 @@ const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
   'test/e2e/fastServer.mjs', 'test/e2e/fastServerDiagnostics.mjs',
   'test/e2e/profileCpuDiagnostics.mjs',
   'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js',
-  'public/js/battle/simHost.js', 'public/js/render/app.js', 'public/js/ui/fieldHost.js'];
+  'public/js/battle/simHost.js', 'public/js/render/app.js', 'public/js/ui/fieldHost.js',
+  'public/js/render/textures.js'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');
@@ -39,6 +40,7 @@ async function sha(file) {
 }
 
 function validateInputs() {
+  assert.notEqual(process.env.SP_PROFILE_CPU_DIAG, '1', 'This atlas acceptance preflight runs without CPU profiling.');
   assert.equal(request.previousTag, 'v0.2.4-rhine.6');
   assert.equal(request.previousArchiveName, 'Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip');
   assert.equal(request.previousArchiveSha256, '492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926');
@@ -52,11 +54,11 @@ function validateInputs() {
     assert.ok(fs.statSync(path.join(source, relative)).isFile(), relative);
   }
   return { diagnosticOnly: true, repository, branch, runtimeVersion, files, supportFiles, concurrency: 1,
-    groupTimeoutMs: 600000, originalCaseDeadlinesAndAssertions: 'unchanged', resourceMode: 'complete verified old-then-upstream overlay',
+    groupTimeoutMs: 600000, originalCaseDeadlinesAndAssertions: 'unchanged', cpuProfilerEnabled: false, resourceMode: 'complete verified old-then-upstream overlay',
     scope: 'Only the remaining profile case after run38906606052. The Studio firstcase passed there and the other46 browser cases passed native7; none of those47 are rerun here. This is not full native acceptance.',
     groups: [{ name: 'profiles', files: profileFiles, expectedTests: 1,
         SP_STUDIO: 'off', SP_E2E_SWIFTSHADER: '1' }],
-    flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1', SP_PROFILE_CPU_DIAG: '1',
+    flags: { NO_COLOR: '1', SP_STUDIO: 'local', SP_ASSET_INDEX: '0', SP_E2E: '1',
       SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0' },
     noPublisherImport: true, noReleaseMutation: true, noDistributable: true, noDeployment: true };
 }

@@ -608,6 +608,9 @@ export function tileAtlas(art = null) {
   const P = PIXI();
   const canvas = makeCanvas(ATLAS_W, ATLAS_H);
   const ctx = canvas.getContext('2d');
+  // Keep interior drawing in atlas coordinates; clamp its edges on a small canvas before copying only the gutters.
+  const cell = makeCanvas(CELL, CELL);
+  const cellCtx = cell.getContext('2d');
   const perRow = ATLAS_W / CELL;
   const uv = {};
   let artCount = 0;
@@ -638,10 +641,16 @@ export function tileAtlas(art = null) {
     }
     ctx.restore();
     // clamp gutters: stretch the edge pixels outwards
-    ctx.drawImage(canvas, x, y, INNER, 1, x, cy, INNER, GUTTER);
-    ctx.drawImage(canvas, x, y + INNER - 1, INNER, 1, x, y + INNER, INNER, GUTTER);
-    ctx.drawImage(canvas, x, cy, 1, CELL, cx, cy, GUTTER, CELL);
-    ctx.drawImage(canvas, x + INNER - 1, cy, 1, CELL, x + INNER, cy, GUTTER, CELL);
+    cellCtx.clearRect(0, 0, CELL, CELL);
+    cellCtx.drawImage(canvas, cx, cy, CELL, CELL, 0, 0, CELL, CELL);
+    cellCtx.drawImage(cell, GUTTER, GUTTER, INNER, 1, GUTTER, 0, INNER, GUTTER);
+    cellCtx.drawImage(cell, GUTTER, GUTTER + INNER - 1, INNER, 1, GUTTER, GUTTER + INNER, INNER, GUTTER);
+    cellCtx.drawImage(cell, GUTTER, 0, 1, CELL, 0, 0, GUTTER, CELL);
+    cellCtx.drawImage(cell, GUTTER + INNER - 1, 0, 1, CELL, GUTTER + INNER, 0, GUTTER, CELL);
+    ctx.drawImage(cell, GUTTER, 0, INNER, GUTTER, x, cy, INNER, GUTTER);
+    ctx.drawImage(cell, GUTTER, GUTTER + INNER, INNER, GUTTER, x, y + INNER, INNER, GUTTER);
+    ctx.drawImage(cell, 0, 0, GUTTER, CELL, cx, cy, GUTTER, CELL);
+    ctx.drawImage(cell, GUTTER + INNER, 0, GUTTER, CELL, x + INNER, cy, GUTTER, CELL);
     const e = 0.5; // half-texel inset
     uv[name] = [(x + e) / ATLAS_W, (y + e) / ATLAS_H, (x + INNER - e) / ATLAS_W, (y + INNER - e) / ATLAS_H];
   });
