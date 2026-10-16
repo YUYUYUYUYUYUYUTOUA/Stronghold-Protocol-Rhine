@@ -94,6 +94,8 @@ test('apply updates only managed files, preserves private settings and unknown f
     '.env': 'PORT=3009\n', '.env.production': 'local-only',
     'scripts/service.env.cmd': 'set PORT=3009', 'logs/session.txt': 'player log',
     '.cache/session.json': '{"local":true}', 'my-local-settings.json': '{"sound":false}',
+    'plugins/config.json': '{"scripts":"off"}', 'plugins/.studio-key': 'synthetic-private-key',
+    'plugins/mine/plugin.json': '{"name":"private"}', 'plugins/mine/.studio.json': '{"draft":true}',
   };
   for (const [relative, contents] of Object.entries(privateFiles)) put(f.target, relative, contents);
   let stopChecks = 0;
@@ -399,7 +401,8 @@ test('manifest duplicate entries, size/hash errors, counts and totals are refuse
 });
 
 test('even a hash-valid manifest cannot designate private settings or logs as managed payload', async t => {
-  for (const relative of ['.env', '.env.production', 'scripts/service.env.cmd', '.cache/session.json', 'logs/session.txt']) {
+  for (const relative of ['.env', '.env.production', 'scripts/service.env.cmd', '.cache/session.json', 'logs/session.txt',
+    'plugins/config.json', 'plugins/.studio-key', 'plugins/mine/plugin.json', 'plugins/mine/.studio.json']) {
     const f = fixture(t);
     manifest(f.source, { 'server/index.js': 'new', [relative]: 'upstream must not manage this' }, 'b');
     put(f.target, relative, 'player setting');

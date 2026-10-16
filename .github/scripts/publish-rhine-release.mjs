@@ -132,7 +132,8 @@ async function verifyTree(directory) {
 function runTests(node, directory, files, log, options = {}) {
   const result = spawnSync(node, ['--test', '--test-reporter=spec', `--test-concurrency=${options.concurrency ?? 3}`, ...(options.args || []), ...files], {
     ...quiet, cwd: directory, timeout: options.timeout ?? 300000,
-    env: { ...process.env, NO_COLOR: '1', SP_E2E: '0', SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0', ...options.env },
+    // Hash-cache persistence is covered by source CI; keep these package acceptance runs from writing runner caches.
+    env: { ...process.env, NO_COLOR: '1', SP_STUDIO: 'off', SP_ASSET_INDEX: '0', SP_E2E: '0', SP_REAL_E2E: '0', RENDER_E2E: '0', SIM_E2E: '0', ...options.env },
   });
   const text = (result.stdout || '') + (result.stderr || '');
   fs.writeFileSync(log, text);
@@ -203,9 +204,8 @@ async function main() {
   const oldManifest = await verifyTree(previous);
   progress(`Verified ${oldManifest.fileCount} previous payload files; checking official Windows Node.`);
   const fresh = request.upstreamResources ? await upstreamResources(downloads) : null;
-  // The previous full bundle includes development tools used by packaged regression tests.
-  // Reuse them only when the entire resolved dependency lock is unchanged.
-  if (fresh) assert.deepEqual(dependencyLock(previous), dependencyLock(source));
+  // A major upstream adaptation may add runtime dependencies (0.3.0 adds SES and Acorn).
+  // Fresh resources were checked against the tagged source lock above; never reuse the old node_modules for them.
   if (!fresh) {
     for (const file of ['package-lock.json', 'data/assets.json']) {
       assert.equal(await sha(path.join(previous, file)), await sha(path.join(source, file)),
@@ -227,16 +227,30 @@ async function main() {
   const runtime = path.join(root, 'official-runtime', `node-${request.runtimeVersion}-win-x64`);
   const bundledNode = path.join(runtime, 'node.exe');
   assert.equal(command(bundledNode, ['--version']).trim(), request.runtimeVersion);
-  for (const relative of ['public/assets', 'public/fonts', 'public/vendor', 'node_modules']) {
+  const runtimeIdentity = JSON.parse(command(bundledNode, ['-p',
+    'JSON.stringify({platform:process.platform,arch:process.arch,version:process.version})']));
+  assert.deepEqual(runtimeIdentity, { platform: 'win32', arch: 'x64', version: request.runtimeVersion });
+  for (const relative of ['public/assets', 'public/fonts', 'public/vendor', ...(fresh ? [] : ['node_modules'])]) {
     assert.equal(fs.existsSync(path.join(source, relative)), false, relative);
     fs.cpSync(path.join(previous, relative), path.join(source, relative), { recursive: true });
     if (fresh && relative !== 'node_modules') fs.cpSync(path.join(fresh, relative), path.join(source, relative), { recursive: true });
   }
-  const localOrigin = fresh && fs.existsSync(path.join(fresh, 'data/local-assets.json')) ? fresh : previous;
-  if (fs.existsSync(path.join(localOrigin, 'data/local-assets.json'))) {
-    fs.copyFileSync(path.join(localOrigin, 'data/local-assets.json'), path.join(source, 'data/local-assets.json'));
+  for (const relative of ['data/local-assets.json', 'data/local-fx.json']) {
+    const localOrigin = fresh && fs.existsSync(path.join(fresh, relative)) ? fresh : previous;
+    if (fs.existsSync(path.join(localOrigin, relative))) {
+      fs.copyFileSync(path.join(localOrigin, relative), path.join(source, relative));
+    }
   }
   if (fresh) {
+    assert.equal(fs.existsSync(path.join(source, 'node_modules')), false);
+    // Install the exact new lock, including tooling needed by packaged tests, with the verified Windows runtime.
+    // Explicitly run only our vendor step, rather than arbitrary dependency lifecycle scripts.
+    command(bundledNode, [path.join(runtime, 'node_modules/npm/bin/npm-cli.js'), 'ci', '--include=dev',
+      '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: source });
+    command(bundledNode, ['tools/vendor.mjs'], { cwd: source });
+    for (const relative of ['node_modules/ses/dist/ses.umd.js', 'node_modules/acorn/dist/acorn.mjs',
+      'public/vendor/ses.umd.js', 'public/vendor/acorn.mjs']) assert.ok(fs.statSync(path.join(source, relative)).size > 0, relative);
+    progress('Installed tagged Windows dependencies and rebuilt client vendor files, including SES and Acorn.');
     command(bundledNode, ['--input-type=module', '-e',
       "import fs from 'node:fs'; import {fetchExtensionVoices} from './tools/assets/extension-voices.mjs'; import {rhineArtInput} from './tools/assets/rhine-plan.mjs'; import {kazdelArtInput} from './tools/assets/kazdel-plan.mjs'; const expected=JSON.parse(fs.readFileSync('data/assets.json')); const actual=structuredClone(expected); await fetchExtensionVoices(process.cwd(),kazdelArtInput(rhineArtInput()),actual); const {default:assert}=await import('node:assert/strict'); assert.deepEqual(actual,expected,'Rebuilt extension voices must exactly match tagged metadata.');"], { cwd: source });
     progress('New extension voice assets downloaded and checked against the tagged manifest.');
@@ -260,7 +274,7 @@ async function main() {
   progress(`Built ${built.manifest.fileCount} files from ${request.sourceCommit}; running native Windows regression.`);
   const node = path.join(built.destination, 'runtime/node/node.exe');
   const tests = runTests(node, built.destination, [
-    'test/content/rem.test.js', 'test/content/rem-traits.test.js', 'test/content/rem_native_kits.test.js',
+    'test/content/rem.test.js', 'test/content/rem-traits.test.js', 'test/content/rem-balance.test.js', 'test/content/rem_native_kits.test.js',
     'test/content/rem-pizza-fx.test.js', 'test/rem_data.test.js', 'test/match/rem-rally.test.js',
     'test/match/rem-price.test.js', 'test/match/kazdel-unite.test.js', 'test/content/rhine_magallan.test.js',
     'test/tools/rem-asset-plan.test.js',
@@ -279,9 +293,16 @@ async function main() {
     'test/rhine-bundle-launch.test.js',
     'test/extension-potential.test.js', 'test/room-rhine-profile.test.js', 'test/vanilla-data.test.js',
     'test/match/potential.test.js', 'test/sim/potential-battle.test.js', 'test/ui/inspect-range.test.js',
+    'test/match/round-communicators.test.js', 'test/match/rem-round-carry.test.js', 'test/match/rhine-opening-bans.test.js',
+    'test/match/original-profile-host.test.js',
     'test/match/kazdel-client-layers.test.js', 'test/match/six-player.test.js', 'test/match/six-player-round-beacons.test.js',
     'test/protocol-seats.test.js', 'test/rhine-update-boot.test.js', 'test/ui/kazdel.test.js',
-  ], path.join(root, 'packaged-tests.log'));
+    'test/tools/rhine-bundle.test.js', 'test/plugins/schema.test.js', 'test/plugins/dsl-data.test.js',
+    'test/plugins/contentBattle.test.js', 'test/plugins/script-sandbox-integration.test.js', 'test/plugins/profile-content-sets.test.js',
+    'test/plugins/rhine-shared-tokens.test.js',
+    'test/ui/profile-plugins.test.js',
+    'test/studio/trial.test.js', 'test/studio/room-settings.test.js',
+  ], path.join(root, 'packaged-tests.log'), { env: { SP_UPDATE_E2E: '1', SP_STUDIO: 'lan' } });
   let browserTests = null;
   if (fresh) {
     const edge = [process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', process.env.ProgramFiles || 'C:/Program Files']
@@ -304,18 +325,24 @@ async function main() {
         path.join(root, 'browser-rhine-operators.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
       upstreamRenderer: runTests(node, built.destination, ['test/render/held-pose.browser.test.js', 'test/render/recovery.browser.test.js'],
         path.join(root, 'browser-upstream-render.log'), { concurrency: 1, timeout: 600000, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),
-      upstreamUi: runTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js'],
+      upstreamUi: runTests(node, built.destination, ['test/ui/followup-023.e2e.test.js', 'test/ui/data-profile.browser.test.js',
+        'test/ui/rhine-profiles.e2e.test.js'],
         path.join(root, 'browser-upstream-ui.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge } }),
       sixSeatUi: runTests(node, built.destination, ['test/ui/six-player-layout.e2e.test.js', 'test/ui/six-player-balance.e2e.test.js'],
         path.join(root, 'browser-six-seat.log'), { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_E2E_SWIFTSHADER: '1' } }),
       statsLandscape: runTests(node, built.destination, ['test/ui/stats.e2e.test.js'], path.join(root, 'browser-stats.log'),
         { concurrency: 1, args: ['--test-name-pattern=phone in landscape'], env: { SP_E2E: '1', CHROME_PATH: edge } }),
+      upstreamPlugins: runTests(node, built.destination, ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-sandbox.e2e.test.js',
+        'test/ui/studio-gameplay.e2e.test.js'], path.join(root, 'browser-plugins.log'),
+        { concurrency: 1, timeout: 600000, env: { SP_E2E: '1', CHROME_PATH: edge, SP_STUDIO: 'local' } }),
     };
     fs.renameSync(browserOutput, path.join(root, 'browser-evidence'));
     progress('Native Windows Edge renderer and stats-page checks passed; screenshots moved outside the payload.');
   }
   const server = spawn(node, ['server/index.js'], { cwd: built.destination, windowsHide: true,
-    env: { ...process.env, HOST: '127.0.0.1', PORT: '3214' }, stdio: 'ignore' });
+    // HTTP data-byte validation uses the unrewritten tagged manifests; browser suites above cover UI and rendering.
+    // Do not create this runner's private Studio key or asset cache inside the release payload.
+    env: { ...process.env, HOST: '127.0.0.1', PORT: '3214', SP_STUDIO: 'off', SP_ASSET_INDEX: '0' }, stdio: 'ignore' });
   let smoke;
   const smokeReport = path.join(built.destination, 'rhine-equipment-verification.json');
   assert.equal(fs.existsSync(smokeReport), false);
@@ -369,10 +396,12 @@ async function main() {
   assert.deepEqual(updatePlan.conflicts, []);
   const privateFixture = path.join(previous, 'release-validation-private.txt');
   fs.writeFileSync(privateFixture, 'preserve private player files');
-  const privateConfigs = ['.env', 'scripts/service.env.cmd'];
+  const privateConfigs = ['.env', 'scripts/service.env.cmd', 'plugins/config.json', 'plugins/.studio-key',
+    'plugins/release-validation-private/plugin.json', 'plugins/release-validation-private/.studio.json'];
   for (const relative of privateConfigs) {
     const file = path.join(previous, relative);
     assert.equal(fs.existsSync(file), false, 'Release payload must not contain private configuration');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, 'release validation synthetic private configuration');
   }
   const checkPrivateConfigs = () => {
@@ -403,7 +432,8 @@ async function main() {
     archive: { name: archiveName, bytes: fs.statSync(archive).size, sha256: archiveSha, payloadFilesVerified: verified.fileCount, zipFilesVerified: verified.fileCount + 1 },
     updateToolkit: { name: toolName, bytes: fs.statSync(toolZip).size, sha256: toolSha, sourceCommit: request.sourceCommit, verifiedFiles: toolManifest.files.length + 1 },
     updateChecks,
-    packagedWindows: { node: request.runtimeVersion, tests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
+    packagedWindows: { node: request.runtimeVersion, platform: runtimeIdentity.platform, arch: runtimeIdentity.arch,
+      tests, browserTests, http: smoke.checks[0].http, webSocket: smoke.checks[0].webSocket,
       httpArtifactsVerified: Object.keys(smoke.checks[0].artifacts).length, runtimeArchiveSha256: runtimeSha },
     automation: { commit: process.env.GITHUB_SHA, run: `${process.env.GITHUB_SERVER_URL}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` },
     limitations: [
@@ -455,7 +485,7 @@ try {
   try { draftFailure = process.argv[2] === 'publish' && api(`releases/${request.draftReleaseId}`).draft === true; } catch { /* Preserve the original failure. */ }
   if (draftFailure) {
     const logs = {};
-    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log']) {
+    for (const name of ['browser-rem-sim.log', 'browser-rem-render.log', 'browser-rem-rally.log', 'packaged-tests.log', 'browser-render.log', 'browser-stats.log', 'browser-kazdel-sim.log', 'browser-upstream-render.log', 'browser-upstream-ui.log', 'browser-rhine-operators.log', 'browser-six-seat.log', 'browser-plugins.log']) {
       const file = path.join(root, name);
       if (fs.existsSync(file)) logs[name] = fs.readFileSync(file, 'utf8').slice(-48000);
     }

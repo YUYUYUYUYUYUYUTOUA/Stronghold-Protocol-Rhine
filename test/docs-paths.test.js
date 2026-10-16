@@ -12,6 +12,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { designText, DESIGN_DIRS } from './helpers/designDocs.js';
+import { PLAYER_MARKDOWN, rewritePlayerDoc, selectTracked, trackedFiles } from '../tools/package.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Each document with the least number of paths it names (a guard against an extraction that finds nothing). */
@@ -21,7 +22,7 @@ const TOP = /^(?:server|shared|public|data|tools|test|docs|types|scripts|\.githu
 /** … or is one of these root files (README.md is left out: a bare `README.md` often means a folder's own). */
 const ROOT_FILES = new Set(['package.json', 'eslint.config.js', 'jsconfig.json', 'CHANGELOG.md', 'CONTRIBUTING.md']);
 /** Git-ignored or made at install time. */
-const EXEMPT = ['public/assets/', 'public/vendor/', 'data/local-assets.json'];
+const EXEMPT = ['public/assets/', 'public/fonts/', 'public/vendor/', 'data/local-assets.json'];
 
 /** Repository paths named in a Markdown text (inline code and fenced blocks), without duplicates. */
 function namedPaths(md) {
@@ -86,6 +87,10 @@ test('the path extraction: placeholders, globs, directories and the exemptions',
   assert.deepEqual(namedPaths(md).sort(), ['data/*.json', 'public/assets/', 'server/sim/content/kits/ops/op-<codename>.js', 'test/golden.test.js', 'tools/golden.mjs'].sort());
   assert.deepEqual(fixedPart('server/sim/content/kits/ops/op-<codename>.js'), { path: 'server/sim/content/kits/ops/', dir: true });
   assert.equal(missing('public/assets/'), null);
+  for (const path of ['public/fonts', 'public/fonts/', 'public/fonts/fonts.css', 'public/fonts/*.woff2']) {
+    assert.equal(missing(path), null, `${path} is downloaded, not required in a checkout`);
+  }
+  assert.equal(missing('public/fonts-missing/'), 'public/fonts-missing/: not found');
   assert.equal(missing('server/no-such-file.js'), 'server/no-such-file.js: not found');
   assert.equal(missing('server/index.js/'), 'server/index.js/: not a directory');
 });
@@ -140,4 +145,29 @@ test('DESIGN: every "DESIGN §N" cited in the repository (code comments, tests, 
   }
   assert.ok(cited >= 700, `only ${cited} citations found — is the scan broken?`);
   assert.deepEqual(bad, [], 'citations of a section or subsection with no heading');
+});
+
+test('shipped markdown: a source link exists or is releases/latest, and the packaged copy only links to shipped files', () => {
+  const shipped = new Set(selectTracked(trackedFiles(ROOT)).keep);
+  const version = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+  assert.ok(PLAYER_MARKDOWN.length >= 6, PLAYER_MARKDOWN.join(' '));
+  for (const rel of PLAYER_MARKDOWN) {
+    const md = readFileSync(join(ROOT, rel), 'utf8');
+    for (const m of md.matchAll(/\]\(([^)\s]+)\)/g)) {
+      const href = m[1];
+      if (/^(?:[a-z]+:|#)/i.test(href)) continue;
+      const raw = href.replace(/#.*$/, '');
+      const norm = normalize(join(dirname(rel), raw)).split('\\').join('/');
+      if (norm.startsWith('..')) assert.match(norm, /^(?:\.\.\/)+releases\/latest$/, `${rel} → ${href}`);
+      else assert.ok(existsSync(join(ROOT, norm)), `${rel} → ${href}`);
+    }
+    const next = rewritePlayerDoc(md, rel, shipped, version);
+    for (const m of next.matchAll(/\]\(([^)\s]+)\)/g)) {
+      const href = m[1];
+      if (/^(?:[a-z][a-z0-9+.-]*:|#)/i.test(href)) continue;
+      const raw = href.replace(/#.*$/, '');
+      const norm = normalize(join(dirname(rel), raw)).split('\\').join('/');
+      assert.ok(shipped.has(norm), `${rel} packaged link ${href} (${norm}) is not in the zip`);
+    }
+  }
 });

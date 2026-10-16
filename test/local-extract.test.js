@@ -36,6 +36,8 @@ describe('extract.py helpers (no UnityPy needed)', { skip: !PY && 'no python3' }
     assert.deepEqual(mesh.map((j) => j.bundle), [
       'arts/maps/map_autochess/bkg_mesh.ab', 'arts/maps/common/meshes/s_background_common.ab',
       'arts/maps/common/meshes/s_common_box_01.ab', 'arts/maps/common/meshes/s_wind_device.ab',
+      // the official 射击台 model (round 40, DESIGN §32.14.10): only trap_1106_achplat of the 卫戍协议 device bundle
+      'arts/maps/common/trap/trap_110.ab',
     ]);
     for (const j of mesh) assert.deepEqual(j.kinds, ['GameObject', 'Material', 'Mesh', 'Texture2D']);
     assert.equal(new Set(jobs.map((j) => j.sub)).size, jobs.length, 'one output dir per job');
@@ -210,6 +212,52 @@ print(json.dumps(e.prefab_node(go)))`);
     const raw = spawnSync(PY, ['-c', `import sys; sys.path.insert(0, ${JSON.stringify(TOOL)}); import extract as e, json; print(json.dumps(e.vec(type('V', (), {'x': -0.0, 'y': float('inf'), 'z': 1e-9})())))`], { encoding: 'utf8', env: ENV });
     assert.equal(raw.stdout.trim(), '[0.0, 0, 0.0]');
   });
+
+  test('guide pages (host bandwidth layer 0): --webp writes a WebP copy of every page PNG (lossy q90 by default, lossless on request), the manifest lists it, the PNG stays',
+    { skip: spawnSync(PY, ['-c', "import sys; from PIL import features; sys.exit(0 if features.check('webp') else 1)"], { env: ENV }).status !== 0 && 'no Pillow with WebP' }, () => {
+      const jobs = JSON.parse(spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV }).stdout);
+      assert.deepEqual(jobs.guideWebp.sub, 'guide');
+      assert.equal(jobs.guideWebp.mode, 'lossy', 'quality 90, the maintainer\'s choice of 2026-10-12');
+      assert.ok(!jobs.webp.some((w) => w.sub === 'guide'), 'the board texture table is unchanged');
+      const out = py(`
+import tempfile, pathlib
+from PIL import Image
+root = pathlib.Path(tempfile.mkdtemp())
+sub = root / 'guide'
+sub.mkdir()
+for i, name in enumerate(['autochess_home_1', 'autochess_shop_2']):
+    img = Image.new('RGBA', (48, 32), (10, 20, 30, 255))
+    for x in range(48):
+        for y in range(32): img.putpixel((x, y), ((x * 5 + i * 40) % 256, (y * 7) % 256, (x * y) % 256, 255 if x % 7 else 254))
+    img.save(sub / f'{name}.png')
+groups = {'guide': {n: {'path': f'/assets/local/guide/{n}.png', 'w': 48, 'h': 32, 'kind': 'Sprite'} for n in ['autochess_home_1', 'autochess_shop_2']},
+          'ui/battle': {'x': {'path': '/assets/local/ui/battle/x.png', 'w': 2, 'h': 2, 'kind': 'Sprite'}}}
+groups['guide']['autochess_handbook_9'] = {'path': '/assets/local/guide/autochess_handbook_9.png', 'kind': 'Sprite'}  # no PNG on disk
+mf = root / 'local-assets.json'
+mf.write_text(json.dumps({'version': 1, 'source': 'local-client', 'count': 4, 'groups': groups}))
+code = e.webp_only(root, mf, lambda *a: None)
+doc = json.loads(mf.read_text())
+g = doc['groups']['guide']
+modes = {k: v.get('webp') for k, v in g.items()}
+px = lambda p: list(Image.open(p).convert('RGBA').getdata())
+e.GUIDE_WEBP_MODE = 'lossless'
+again = e.run_webp(root, 'guide', doc['groups'], lambda *a: None)
+print(json.dumps({'code': code, 'paths': {k: v['path'] for k, v in g.items()}, 'modes': modes,
+                  'relisted': {k: v.get('webp') for k, v in g.items()},
+                  'other': doc['groups']['ui/battle']['x']['path'],
+                  'same': all(px(sub / f'{n}.png') == px(sub / f'{n}.webp') for n in ['autochess_home_1', 'autochess_shop_2']),
+                  'png': all((sub / f'{n}.png').exists() for n in ['autochess_home_1', 'autochess_shop_2']),
+                  'again': again}))`);
+      assert.equal(out.code, 0);
+      const at = (n, ext) => `/assets/local/guide/${n}.${ext}`;
+      assert.deepEqual(out.paths, { autochess_home_1: at('autochess_home_1', 'webp'), autochess_shop_2: at('autochess_shop_2', 'webp'), autochess_handbook_9: at('autochess_handbook_9', 'png') });
+      assert.deepEqual(out.modes, { autochess_home_1: 'lossy', autochess_shop_2: 'lossy', autochess_handbook_9: null });
+      assert.equal(out.other, '/assets/local/ui/battle/x.png', 'other groups keep their PNGs');
+      assert.ok(out.png, 'the PNG stays beside the copy');
+      assert.equal(out.again, 2, 'a second run (another GUIDE_WEBP_MODE) rewrites the copies the manifest already lists');
+      assert.deepEqual(out.relisted, { autochess_home_1: 'lossless', autochess_shop_2: 'lossless', autochess_handbook_9: null });
+      assert.ok(out.same, 'lossless: the same pixels, alpha included');
+    });
 });
 
 describe('extracted board-scene files (when a local client was extracted)', { skip: !manifest && 'no data/local-assets.json' }, () => {
@@ -235,7 +283,8 @@ describe('extracted board-scene files (when a local client was extracted)', { sk
 
   test('mesh/*: OBJ files with their vertex counts and a prefab.json each', { skip: !Object.keys(manifest?.groups || {}).some((k) => k.startsWith('mesh/')) && 'not extracted' }, () => {
     const groups = Object.entries(manifest.groups).filter(([k]) => k.startsWith('mesh/'));
-    assert.deepEqual(groups.map(([k]) => k).sort(), ['mesh/map_autochess_bkg', 'mesh/s_background_common', 'mesh/s_common_box_01', 'mesh/s_wind_device']);
+    // mesh/trap_110 (the 射击台 model, round 40) is there once the local art was extracted with 0.3.0's extract.py
+    assert.deepEqual(groups.map(([k]) => k).filter((k) => k !== 'mesh/trap_110').sort(), ['mesh/map_autochess_bkg', 'mesh/s_background_common', 'mesh/s_common_box_01', 'mesh/s_wind_device']);
     for (const [name, g] of groups) {
       assert.equal(g.prefab?.kind, 'Prefab', name);
       const meshes = Object.values(g).filter((x) => x.kind === 'Mesh');

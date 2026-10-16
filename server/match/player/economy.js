@@ -4,7 +4,7 @@
 // Installed on PlayerState.prototype by server/match/PlayerState.js (a method container: never instantiated; `this` is
 // the player state).
 
-import { ERR, layerGainRoom } from '../../../shared/constants.js';
+import { ERR, PHASE, layerGainRoom } from '../../../shared/constants.js';
 import { freeSlot } from '../board.js';
 import { OK, fail } from './common.js';
 
@@ -47,6 +47,10 @@ export class PlayerEconomy {
     if (add <= 0) return 0;
     this.layers[bondId] = before + add;
     this.recompute();
+    // A live prep gain, not a view delta: reconnects and combat-result backfill must not replay the cue.
+    if ([PHASE.ROUND_START, PHASE.SP_DRAFT, PHASE.PREP].includes(this.m.phase)) {
+      this.m.sendTo(this.playerId, { t: 'm.layer', playerId: this.playerId, bondId, add });
+    }
     this.m.dispatch(this, 'onLayers', { bondId, from: before, to: before + add, reason });
     return add;
   }
@@ -109,7 +113,7 @@ export class PlayerEconomy {
     if (nChess <= layout.chess && nItem <= layout.item) return;
     const chess = old.slice(0, layout.chess);
     const items = old.slice(layout.chess);
-    while (chess.length < nChess) chess.push(null);
+    while (chess.length < nChess) chess.push(null); // loop-cap: shopSlots chess max 8
     while (items.length < nItem) items.push(null);
     this.shop.slots = [...chess, ...items];
     this.shop.layout = { chess: chess.length, item: items.length };
@@ -141,21 +145,21 @@ export class PlayerEconomy {
       const rec = this.gd.chess(slot.id);
       // a DIY slot sells only as this player's own 自选 piece (a slotted slot's record carries `diyFor`)
       if (!rec || (rec.isDiy && !rec.diyFor)) return fail(ERR.BAD_TARGET);
-      const base = this.gd.baseIdOf(slot.id);
-      const need = rec.isGolden ? this.gd.goldenCopies : 1;
-      const pool = this.poolOf(base);
-      if (pool.has(base) && pool.left(base) < need) return fail(ERR.SOLD_OUT);
+      // Already displayed operators stay purchasable after stock runs out (#498; 路标月报#2,
+      // BV1eLXXBqEgF 2:50–2:57: nine owned + four shop offers => thirteen owned).
+      // acquireChess records every copy, including the deficit; future rolls still exclude empty stock.
       if (handFull) return fail(ERR.HAND_FULL);
       this.spend(price);
       slot.sold = true;
       piece = this.acquireChess(slot.id, { source: 'buy' });
     } else {
       if (!this.gd.item(slot.id)) return fail(ERR.BAD_TARGET);
-      if (!this.m.itemPool.canGain(slot.id)) return fail(ERR.SOLD_OUT);
+      // Already displayed equipment stays purchasable after stock runs out (#624, maintainer 2026-10-14).
+      // acquireItem records the debt. Future rolls still exclude empty stock. SOLD_OUT is only this slot, already sold.
       if (handFull) return fail(ERR.HAND_FULL);
       this.spend(price);
       slot.sold = true;
-      piece = this.acquireItem(slot.id, { source: 'buy' });
+      piece = this.acquireItem(slot.id, { source: 'buy', displayed: true });
     }
     this.stats.buys++;
     this.round.buys++;
@@ -172,6 +176,9 @@ export class PlayerEconomy {
     if (!free && this.funds < price) return fail(ERR.NO_FUNDS);
     if (free) this.shop.freeRefreshes--;
     else this.spend(price);
+    // A manual refresh cancels the freeze: the new cards are not frozen (official, the owner's play of 2026-10-14;
+    // GitHub #584, DESIGN §32.14.7). A refresh that fails (funds, phase) returns above and leaves the freeze on.
+    this.shop.frozen = false;
     this.rollShop({ keepFrozen: false });
     this.stats.refreshes++;
     this.round.refreshes++;
@@ -211,16 +218,10 @@ export class PlayerEconomy {
     if (!loc) return fail(ERR.BAD_TARGET);
     if (loc.piece.kind !== 'chess') return fail(ERR.BAD_TARGET, loc.piece.kind === 'item' ? 'items cannot be sold' : 'tokens cannot be sold');
     const piece = loc.piece;
-    // its equipment returns to the hand (overflow temp): refuse rather than destroy it when there is no room
-    // Removing the owner's summon stacks frees one slot per stack, regardless of its summon count.
-    const freed = (x) => x == null || (x.kind === 'token' && x.ownerUid === piece.uid);
-    const room = this.hand.filter(freed).length + this.temp.filter(freed).length + (loc.area === 'hand' || loc.area === 'temp' ? 1 : 0);
-    if ((piece.items || []).length > room) return fail(ERR.HAND_FULL, 'no room for the equipment');
+    // Returned equipment can always wait in the overflow queue, even when all fifteen visible slots are occupied.
     this._detach(loc);
     this.removeTokensOf(piece.uid);
-    for (const it of piece.items || []) {
-      if (!this.stow(it, { allowTemp: true })) this.m.log.warn?.(`[match ${this.m.roomCode}] ${this.playerId}: item ${it.id} lost on sell (no space)`);
-    }
+    for (const it of piece.items || []) this.stow(it, { allowTemp: true });
     piece.items = [];
     this.returnCopies(piece);
     const ev = { piece, gain: this.gd.sellPrice(piece.id) };

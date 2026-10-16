@@ -19,9 +19,12 @@ function exercise(b) {
   }
   for (let n = 0; n < 45 * 30; n++) {
     b.step();
-    if (n % 30 === 0) frames.push(b.allyUnits.filter(u=>u.remType).map(u=>[u.id,u.ownerId,u.remType,u.remSource,u.tileR,u.tileC,u.x,u.y,u.hp,u.s.atk,u.s.def,u.s.res,u.s.aspd,u.blocking.map(e=>e.id)]));
+    if (n % 30 === 0) frames.push({
+      reinforcements:b.allyUnits.filter(u=>u.remType).map(u=>[u.id,u.ownerId,u.remType,u.remSource,u.tileR,u.tileC,u.x,u.y,u.hp,u.s.atk,u.s.def,u.s.res,u.s.aspd,u.blocking.map(e=>e.id)]),
+      operators:b.allyUnits.filter(u=>u.kind==='op').map(u=>[u.id,u.ownerId,u.hp,u.s.maxHp,u.s.atk,u.findBuff('rem:appearance')?.mods.atkPct??0]),
+    });
   }
-  const states = [...b.remState.values()].map(s=>({ owner:s.ps.playerId, stage:s.stage, gate:s.gate, rally:s.rally, queue:s.queue, layers:s.ps.bonds.remShip.layers }));
+  const states = [...b.remState.values()].map(s=>({ owner:s.ps.playerId, stage:s.stage, gate:s.gate, rally:s.rally, queue:s.queue, appeared:s.appeared, layers:s.ps.bonds.remShip.layers }));
   const beforeEnd = b.allyUnits.filter(u=>u.remType&&u.alive&&u.deployed).length;
   b.forceEnd();
   return { spawned, frames, states, beforeEnd, afterEnd:b.allyUnits.filter(u=>u.remType&&u.alive&&u.deployed&&!u.removed).length, errors:b.errors, result:b.result() };
@@ -49,11 +52,13 @@ test('stage-nine Rem pools, owner traits, marching and cleanup match Node/Chromi
             {uid:2+10*seat,chessId:'chess_rem_thumpy_a',row:11,col:7,moduleId:'none'},
             {uid:3+10*seat,chessId:'chess_rem_glider_b',row:12,col:7,moduleId:'none'}] })), spawns:[] });
       const node = exercise(createBattleFromSpec(spec,ds));
-      const web = await page.evaluate(async ({spec,body})=>{
+      const battle = await page.evaluateHandle(async spec=>{
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec:S, ds } = await loadBrowserSim();
-        return (0,eval)(`(${body})`)(S.createBattleFromSpec(spec,ds));
-      },{spec,body:exercise.toString()});
+        return S.createBattleFromSpec(spec,ds);
+      }, spec);
+      const web = await page.evaluate(exercise, battle);
+      await battle.dispose();
       assert.deepEqual(web,JSON.parse(JSON.stringify(node)),`${kind} full deterministic trace`);
       assert.deepEqual(node.errors,[],kind);
       assert.ok(node.spawned.some(x=>x[3]==='p1'),`${kind}: first owner summons`);

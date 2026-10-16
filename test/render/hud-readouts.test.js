@@ -1,8 +1,10 @@
 // test/render/hud-readouts.test.js — the HP-bar readouts, client side (R22-HUD; PR #303 and #378 by @IceCodeNew, PR #383
 // by @Convey123, folded into one change): render/interp.js carries b.snap `ammo` [[id, left, magazine]], `wolves`
-// [[id, left, max]] and `neg` [[id, fill]] beside the unit tuples and samples them from the older snapshot; render/units.js
-// draws the ammo skill's segmented yellow bar in place of the SP bar, 伺夜's 狼影 as a row of diamonds and the 我执 pool
-// as the red bar over the drained HP bar; an ammo skill has no standing aura (headless fake PIXI, test/render/fakepixi.js).
+// [[id, left, max]], `coins` [[id, balance, cap]] and `energy` [[id, stored, cap]] beside the unit tuples and samples them
+// from the older snapshot; render/units.js draws the ammo skill's segmented yellow bar in place of the SP bar, 伺夜's 狼影
+// as a row of diamonds and the 我执 pool as the red bar over the drained HP bar, the purse's coin and a 秘术师's stored
+// energies as a count under them; an ammo skill has no standing aura (headless fake PIXI, test/render/fakepixi.js).
+// 设置「弹药数量」 (PR #552 by @IceCodeNew, off by default) adds the magazine's count under the ammo bar.
 // The server side is test/sim/hud-readouts.test.js and test/content/op_hsgma2.test.js.
 // Run: node --test test/render/hud-readouts.test.js
 
@@ -57,6 +59,71 @@ test('the coin HUD shows balance/cap and does not leave a stale label when its s
     v.sync(sample({ coins: [0, 10] }), 0); v.update(0.02, cam(), 0);
     assert.equal(v.coinHud?.text.text, '0/10'); assert.equal(v.coinHud.root.visible, true);
     v.sync(sample(), 1); v.update(0.02, cam(), 1); assert.equal(v.coinHud.root.visible, false);
+  } finally { v.destroy(); }
+});
+
+test('stored energies are snapshot-owned too: zero preserved, malformed rows dropped, cleared when absent', () => {
+  const first = normalizeSnapshot({
+    t: 0, units: [tuple(1), tuple(2)],
+    energy: [[1, 0, 3], [2, 2, 3], [1, -1, 3], [1, 4, 3], [1, 1.5, 3], [9, 1, 3], null, [2, 3]],
+  });
+  assert.deepEqual([...first.energy], [[1, [0, 3]], [2, [2, 3]]]);
+  const none = normalizeSnapshot({ t: 0, units: [tuple(1)] });
+  assert.equal(none.energy, null);
+  const b = new SnapshotBuffer();
+  b.push({ t: 0, units: [tuple(1)], energy: [[1, 3, 3]] });
+  b.push({ t: 1, units: [tuple(1)] });
+  assert.deepEqual(b.sample(0).get(1).energy, [3, 3]);
+  assert.equal(b.sample(1).get(1).energy, null);
+});
+
+const energyOn = (info = {}) => view(info, { settings: { damageNumbers: true, quality: 'high', mysticEnergy: true } });
+
+test('the energy HUD counts stored/cap in its own violet orb and hides when its snapshot entry disappears', () => {
+  const v = energyOn();
+  try {
+    v.sync(sample({ energy: [0, 3] }), 0); v.update(0.02, cam(), 0);
+    assert.equal(v.energyHud?.text.text, '0/3');
+    assert.equal(v.energyHud.root.visible, true);
+    assert.equal(v.energyHud.root.children[0].tint, COLORS.energy, 'the orb is tinted: no other HUD state is violet');
+    v.sync(sample({ energy: [3, 3] }), 1); v.update(0.02, cam(), 1);
+    assert.equal(v.energyHud.text.text, '3/3');
+    v.sync(sample(), 2); v.update(0.02, cam(), 2);
+    assert.equal(v.energyHud.root.visible, false);
+  } finally { v.destroy(); }
+});
+
+test('the rows stack: the energy count sits under the purse and pushes the element gauge down', () => {
+  const v = energyOn();
+  try {
+    const el = { el: 'burn', elFill: 0.5, elUntil: 0, elDur: 0 };
+    v.sync(sample({ coins: [2, 10], ...el }), 0); v.update(0.02, cam(), 0);
+    const first = v._elBar.bg.position.y;
+    v.sync(sample({ coins: [2, 10], energy: [1, 3], ...el }), 1); v.update(0.02, cam(), 1);
+    assert.equal(v.coinHud.root.visible, true, 'the purse keeps its row');
+    assert.equal(v.energyHud.root.visible, true);
+    assert.ok(v._elBar.bg.position.y > first, 'the gauge moves down by the energy row\'s height');
+  } finally { v.destroy(); }
+});
+
+// 设置「秘术师能量」 (PR #636, GitHub #633) is off by default: the official HUD shows the stored energies as an effect on
+// the operator, not a number (the maintainer's decision of 2026-10-15)
+test('the energy count is an option, off by default: no row and no gap until 设置「秘术师能量」 turns it on, live', () => {
+  const v = view();
+  try {
+    const el = { el: 'burn', elFill: 0.5, elUntil: 0, elDur: 0 };
+    v.sync(sample({ ...el }), 0); v.update(0.02, cam(), 0);
+    const bare = v._elBar.bg.position.y;
+    v.sync(sample({ energy: [2, 3], ...el }), 1); v.update(0.02, cam(), 1);
+    assert.ok(!v.energyHud || v.energyHud.root.visible === false, 'off by default');
+    assert.equal(v._elBar.bg.position.y, bare, 'the gauge keeps its place');
+    v.ctx.settings.mysticEnergy = true;
+    v.update(0.02, cam(), 1);
+    assert.equal(v.energyHud?.text.text, '2/3');
+    assert.ok(v._elBar.bg.position.y > bare);
+    v.ctx.settings.mysticEnergy = false;
+    v.update(0.02, cam(), 1);
+    assert.equal(v.energyHud.root.visible, false);
   } finally { v.destroy(); }
 });
 const frames = (v, n = 2) => { for (let i = 0; i < n; i++) v.update(1 / 60, cam(), i / 60); };
@@ -163,6 +230,92 @@ describe('UnitView: the ammo skill\'s segmented bar', () => {
     assert.equal(v.spFill.visible, false);
     assert.equal(v.ammoCuts.filter((c) => c.visible).length, 0);
     v.destroy();
+  });
+});
+
+// 设置「弹药数量」 (PR #552 by @IceCodeNew, DESIGN §31.9): the official HUD has no number under the ammo bar, so the count is an
+// option, off by default (the maintainer's decision of 2026-10-13); the settings side is test/ui/ammo-count.test.js
+describe('UnitView: the optional ammo count under the bar (设置「弹药数量」)', () => {
+  const counting = (on = true) => view({}, { settings: { damageNumbers: true, quality: 'high', ammoCount: on } });
+  const coinY = (v) => v.coinHud.root.position.y;
+
+  test('off (the default): nothing is drawn under the magazine, and the rows below stay where they were', () => {
+    const v = view();
+    const w = counting(false);
+    try {
+      for (const u of [v, w]) { u.sync(sample({ flags: UF.SKILL, ammo: [13, 14], coins: [3, 10] })); frames(u); }
+      assert.equal(v.ammoText, null, 'never built without the setting');
+      assert.equal(w.ammoText, null, 'nor with it off');
+      assert.equal(v.hud.children.some((c) => c instanceof fake.P.Text && /\d+\/14/.test(c.text)), false);
+      const plain = view();
+      plain.sync(sample({ coins: [3, 10] }));
+      frames(plain);
+      assert.equal(coinY(v), coinY(w));
+      assert.ok(coinY(v) > coinY(plain), 'the magazine row (thicker than the SP bar) is all that sits above the purse');
+      plain.destroy();
+    } finally { v.destroy(); w.destroy(); }
+  });
+
+  test('on: the exact count through spending, refills and capacity changes, also where the cells are too narrow for cuts', () => {
+    const v = counting();
+    try {
+      for (const [left, max] of [[13, 14], [12, 14], [137, 240], [136, 240], [260, 260], [0, 260]]) {
+        v.sync(sample({ flags: UF.SKILL, ammo: [left, max] }));
+        frames(v);
+        assert.equal(v.ammoText?.text, `${left}/${max}`);
+        assert.equal(v.ammoText.visible, true);
+        if (max >= 240) assert.equal(v.ammoCuts.filter((c) => c.visible).length, 0, 'a dense magazine draws no cuts, the count still reads');
+      }
+      const bw = barWidth(v);
+      assert.ok(Math.abs(v.ammoText.position.x - (v.spFill.position.x + bw / 2)) < 1e-9, 'centred under the bar');
+      assert.ok(v.ammoText.position.y > v.spFill.position.y, 'below the magazine');
+      assert.equal(v.ammoText.anchor.x, 0.5);
+      assert.equal(v.ammoText.style.fill, COLORS.ammo, 'in the bar\'s yellow');
+    } finally { v.destroy(); }
+  });
+
+  test('on: hidden when the skill ends, without the snapshot row, in the prep view, after death and for enemies; the rows below make room', () => {
+    const v = counting();
+    try {
+      v.sync(sample({ flags: UF.SKILL, ammo: [5, 14], coins: [3, 10] }));
+      frames(v);
+      const withCount = coinY(v);
+      v.sync(sample({ sp: 6, spMax: 24, coins: [3, 10] }));   // the magazine is spent: the SP bar again
+      frames(v);
+      assert.equal(v.ammoText.visible, false, 'no stale number after the skill');
+      assert.ok(withCount > coinY(v), 'the purse row moved down by the count\'s height while it showed');
+      v.sync(sample({ flags: UF.SKILL, ammo: [5, 14] }));
+      v.prep = true;
+      frames(v);
+      assert.equal(v.ammoText.visible, false, 'the prep view draws no bars');
+      v.prep = false;
+      frames(v);
+      assert.equal(v.ammoText.visible, true);
+      v.die();
+      frames(v);
+      assert.equal(v.ammoText.visible, false, 'a dead unit has no bars');
+    } finally { v.destroy(); }
+    const e = view({ id: 2, side: 'enemy', kind: 'enemy', defId: 'enemy_x' }, { settings: { damageNumbers: true, quality: 'high', ammoCount: true } });
+    try {
+      e.sync(sample({ hp: 500, flags: UF.SKILL, ammo: [3, 4] }));
+      frames(e);
+      assert.equal(e.ammoText, null, 'enemies have no magazine, so no count');
+    } finally { e.destroy(); }
+  });
+
+  test('turning the setting off takes the count away at once (the field view shares its settings object with the units)', () => {
+    const v = counting();
+    try {
+      v.sync(sample({ flags: UF.SKILL, ammo: [9, 14] }));
+      frames(v);
+      assert.equal(v.ammoText.visible, true);
+      v.ctx.settings.ammoCount = false;
+      frames(v);
+      assert.equal(v.ammoText.visible, false);
+      v.ctx.settings.ammoCount = true;
+      frames(v);
+      assert.equal(v.ammoText.visible, true);
+    } finally { v.destroy(); }
   });
 });
 

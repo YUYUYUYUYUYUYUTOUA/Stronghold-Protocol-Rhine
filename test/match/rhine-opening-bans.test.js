@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OPENING_BANS, applyOpeningBans, openingBanCounts } from '../../shared/openingBans.js';
 import { GameData } from '../../server/match/gamedata.js';
-import { drawDisabledBonds, SharedPool } from '../../server/match/pool.js';
+import { drawDisabledBonds, SharedPool, openingTierCounts } from '../../server/match/pool.js';
 import { createRng } from '../../server/sim/rng.js';
 import { DATA, makeMatch } from './harness.js';
 
@@ -16,20 +16,21 @@ test('Rhine opening overlay is idempotent, preserves the subset rule and leaves 
   applyOpeningBans(config);
   assert.deepEqual(config, once, 'running the overlay twice never adds another slot');
   assert.equal(config.bans.rule, 'all bonds must be off');
-  assert.deepEqual(config.bans.NORMAL, { core: 4, addon: 4 });
-  assert.deepEqual(config.bans.FUNNY, { core: 1, addon: 1 });
+  assert.deepEqual(config.bans.NORMAL, { core: 5, addon: 4 });
+  assert.deepEqual(config.bans.FUNNY, { core: 2, addon: 1 });
   assert.deepEqual(config.bans.TRAINING, { core: 0, addon: 0 });
   for (const difficulty of Object.keys(OPENING_BANS)) {
-    assert.deepEqual(DATA.config.bans[difficulty], { ...OPENING_BANS[difficulty], core: OPENING_BANS[difficulty].core + (difficulty === 'TRAINING' ? 0 : 1) }, difficulty);
+    assert.deepEqual(DATA.config.bans[difficulty], OPENING_BANS[difficulty], difficulty);
   }
-  assert.deepEqual(new GameData({}, 'unknown').bans('NORMAL'), { core: 4, addon: 4 }, 'partial-data fallback agrees');
+  assert.deepEqual(new GameData({}, 'unknown').bans('NORMAL'), { core: 6, addon: 6 }, 'partial-data fallback agrees');
 });
 
-test('five starting seats reduce core draws by one, six by two; other seats and training retain their base counts', () => {
+test('small starting rosters add one core and two add-on draws; five/six-seat reductions and training stay fixed', () => {
   for (const [difficulty, base] of Object.entries(OPENING_BANS)) {
     for (let count = 1; count <= 6; count++) {
       const reduction = difficulty === 'TRAINING' ? 0 : count === 6 ? 2 : count === 5 ? 1 : 0;
-      const expected = { core: Math.max(0, base.core - reduction), addon: base.addon };
+      const small = count <= 4 && difficulty !== 'TRAINING';
+      const expected = { core: Math.max(0, base.core - reduction + (small ? 1 : 0)), addon: base.addon + (small ? 2 : 0) };
       assert.deepEqual(openingBanCounts(difficulty, count), expected, `${difficulty}, ${count} seats`);
       assert.deepEqual(new GameData({}, `mode_multi_${difficulty.toLowerCase()}`, count).bans(difficulty), expected,
         `${difficulty}, ${count} seats: partial-data defaults`);
@@ -40,7 +41,7 @@ test('five starting seats reduce core draws by one, six by two; other seats and 
   assert.deepEqual(openingBanCounts('NORMAL', 5, configured), { core: 1, addon: 7 });
   assert.deepEqual(openingBanCounts('NORMAL', 6, configured), { core: 0, addon: 7 });
   assert.deepEqual(openingBanCounts('FUNNY', 6, configured), { core: 0, addon: 1 }, 'core counts never become negative');
-  assert.deepEqual(openingBanCounts('HARD', 6, { HARD: { core: -1, addon: '4' } }), { core: 2, addon: 4 }, 'invalid values use base defaults');
+  assert.deepEqual(openingBanCounts('HARD', 6, { HARD: { core: -1, addon: '4' } }), { core: 3, addon: 4 }, 'invalid values use base defaults');
   assert.deepEqual(configured, before, 'effective counts never mutate configuration');
 });
 
@@ -56,7 +57,7 @@ test('actual matches count occupied human and AI seats and publish the effective
     try {
       const m = h.m, pub = m.publicView();
       const reduction = count === 6 ? 2 : count === 5 ? 1 : 0;
-      const expected = { core: Math.max(0, DATA.config.bans[difficulty].core - reduction), addon: OPENING_BANS[difficulty].addon };
+      const expected = openingBanCounts(difficulty, count, DATA.config.bans);
       assert.equal(pub.startingPlayerCount, count);
       assert.deepEqual(pub.openingBans, expected, `${difficulty}, ${count} seats including ${roster.bots || 0} AI`);
       assert.deepEqual(m.gd.bans(difficulty), expected);
@@ -65,7 +66,7 @@ test('actual matches count occupied human and AI seats and publish the effective
       const drawn = new Set(pub.drawnDisabledBonds), off = new Set(pub.disabledBonds);
       const coreRosters = m.gd.bondIds.filter(id => m.gd.bond(id).isCore && m.gd.bond(id).weight > 0 && !m.gd.modeInactiveBonds.has(id));
       assert.equal(coreRosters.filter(id => !drawn.has(id)).length, coreRosters.length - expected.core, 'enough undrawn core rosters remain');
-      if (difficulty !== 'FUNNY') assert.equal(coreRosters.filter(id => !drawn.has(id)).length, 6 + reduction,
+      if (difficulty !== 'FUNNY') assert.equal(coreRosters.filter(id => !drawn.has(id)).length, 6 + reduction - (count <= 4 ? 1 : 0),
         'six seats retain one more core roster than five seats');
       assert.deepEqual([...pub.bannedChess].sort(), [...m.pool.banned].sort());
       for (const id of m.gd.visibleChess) {
@@ -122,10 +123,10 @@ test('guided training still draws no core or add-on bonds in the actual match', 
   } finally { h.m.dispose(); }
 });
 
-test('every rotating mode retains six undrawn core bonds; new operators obey the existing all-bonds ban rule', () => {
+test('small-roster rotations retain eight shared operators per tier and use the all-bonds ban rule', () => {
   for (const [modeId, mode] of modes) {
     const gd = new GameData(DATA, modeId);
-    const expected = DATA.config.bans[mode.difficulty];
+    const expected = gd.bans(mode.difficulty);
     for (let seed = 1; seed <= 100; seed++) {
       const bans = drawDisabledBonds(gd, createRng(seed));
       const drawn = new Set(bans.drawn), off = new Set([...bans.drawn, ...bans.staticOff]);
@@ -133,7 +134,7 @@ test('every rotating mode retains six undrawn core bonds; new operators obey the
       assert.equal(cores.filter(id => drawn.has(id)).length, expected.core, `${modeId}: core draws`);
       assert.equal(bans.drawn.length, expected.core + expected.addon, `${modeId}: total slots`);
       if (mode.difficulty === 'TRAINING') assert.deepEqual(bans.banned, []);
-      else assert.equal(cores.filter(id => !drawn.has(id)).length, 6, `${modeId}: six full core rosters`);
+      else assert.ok(openingTierCounts(gd, off).every(n => n >= 8), `${modeId}: per-tier floor`);
       const pool = new SharedPool(gd, { banned: bans.banned });
       for (const id of NEW_CHESS) {
         const chess = gd.chess(id);
@@ -150,43 +151,10 @@ test('every rotating mode retains six undrawn core bonds; new operators obey the
   }
 });
 
-function averagePool(data, modeId, seeds = 1000) {
-  const gd = new GameData(data, modeId), sums = { total: 0, tiers: Array(7).fill(0) };
-  for (let seed = 1; seed <= seeds; seed++) {
-    const bans = drawDisabledBonds(gd, createRng(seed));
-    const pool = new SharedPool(gd, { banned: bans.banned });
-    sums.total += pool.entries.size;
-    for (const entry of pool.entries.values()) sums.tiers[entry.tier]++;
-  }
-  return { total: sums.total / seeds, tiers: sums.tiers.map(n => n / seeds) };
-}
-
-test('the extra rotating slot keeps mean per-tier roster depth close to the previous Rhine release', () => {
-  const previous = { ...DATA, chess: structuredClone(DATA.chess), bonds: { ...DATA.bonds }, config: structuredClone(DATA.config) };
-  delete previous.bonds.kazdelShip;
-  for (const [id, c] of Object.entries(previous.chess)) {
-    if (id.startsWith('chess_kazdel_')) { delete previous.chess[id]; continue; }
-    c.bonds = c.bonds.filter(b => b !== 'kazdelShip');
-    if (id.startsWith('chess_char_1_05_')) { c.visible = false; c.isHidden = true; }
-    if (id.startsWith('chess_char_2_19_')) c.bonds = ['investShip', 'swiftShip'];
-  }
-  previous.config.bans.FUNNY = { core: 1, addon: 1 };
-  for (const difficulty of ['NORMAL', 'HARD', 'ABYSS']) previous.config.bans[difficulty] = { core: 4, addon: 4 };
-  for (const modeId of ['mode_multi_normal', 'mode_multi_funny']) {
-    const before = averagePool(previous, modeId), after = averagePool(DATA, modeId);
-    assert.ok(after.total <= before.total * 1.05, `${modeId}: seven new shop entries keep mean pool growth below 5%`);
-    assert.ok(Math.abs(after.total - before.total) < 5, `${modeId}: comparable total depth ${before.total} -> ${after.total}`);
-    for (let tier = 1; tier <= 6; tier++) {
-      assert.ok(Math.abs(after.tiers[tier] - before.tiers[tier]) < 1.5,
-        `${modeId}: tier ${tier} depth ${before.tiers[tier]} -> ${after.tiers[tier]}`);
-    }
-  }
-});
-
 test('the match publishes the extra slot and its banned list agrees with the shared pool', () => {
   for (const difficulty of ['FUNNY', 'NORMAL', 'HARD', 'ABYSS']) {
     const h = makeMatch({ mode: 'coop', difficulty, humans: 1, seed: 31 }).start();
-    const pub = h.m.publicView(), expected = DATA.config.bans[difficulty];
+    const pub = h.m.publicView(), expected = h.m.gd.bans(difficulty);
     assert.equal(pub.drawnDisabledBonds.length, expected.core + expected.addon);
     assert.deepEqual([...pub.bannedChess].sort(), [...h.m.pool.banned].sort());
     assert.equal(h.m.pool.entries.size + pub.bannedChess.length, 134);
@@ -194,39 +162,22 @@ test('the match publishes the extra slot and its banned list agrees with the sha
   }
 });
 
-function combinations(ids, count) {
-  const result = [];
-  function add(start, selected) {
-    if (selected.length === count) { result.push(selected.slice()); return; }
-    for (let i = start; i <= ids.length - (count - selected.length); i++) {
-      selected.push(ids[i]); add(i + 1, selected); selected.pop();
-    }
-  }
-  add(0, []);
-  return result;
-}
+test('a repeated invalid draw reaches a finite valid fallback without weakening BAN counts', () => {
+  const gd = new GameData(DATA, 'mode_multi_normal');
+  const invalid = new Set(['yanShip', 'sargonShip', 'victoriaShip', 'kjeragShip', 'egirShip', 'remShip',
+    'preciShip', 'skillfulShip', 'arcaneShip', 'steadShip', 'deputShip', 'raidShip']);
+  assert.equal(openingTierCounts(gd, invalid)[0], 7);
+  let shuffles = 0;
+  const rng = Object.assign(() => 0, { shuffle(a) { shuffles++; return a.sort((a, b) => Number(invalid.has(b)) - Number(invalid.has(a))); } });
+  const bans = drawDisabledBonds(gd, rng);
+  assert.equal(shuffles, 128, '64 bounded attempts, each with one shuffle per group');
+  assert.equal(bans.drawn.length, 12);
+  assert.ok(openingTierCounts(gd, [...bans.drawn, ...bans.staticOff]).every(n => n >= 8));
+});
 
-test('every possible base or five/six-seat rotation preserves at least eight operators at every tier', () => {
-  // NORMAL/HARD/ABYSS share a rotation table; the two FUNNY modes share their static exclusions.
-  for (const [modeId, count, cases] of [
-    ['mode_multi_normal', 1, 152460], ['mode_multi_funny', 1, 168],
-    ['mode_multi_normal', 5, 108900], ['mode_multi_normal', 6, 54450], ['mode_multi_funny', 6, 6],
-  ]) {
-    const gd = new GameData(DATA, modeId, count), counts = gd.bans(gd.difficulty);
-    const eligible = gd.bondIds.filter(b => gd.bond(b).weight > 0 && !gd.modeInactiveBonds.has(b));
-    const cores = combinations(eligible.filter(b => gd.bond(b).isCore), counts.core);
-    const addons = combinations(eligible.filter(b => !gd.bond(b).isCore), counts.addon);
-    assert.equal(cores.length * addons.length, cases, `${modeId}: complete enumeration`);
-    const minima = Array(7).fill(Infinity);
-    for (const core of cores) for (const addon of addons) {
-      const off = new Set([...core, ...addon, ...gd.modeInactiveBonds]);
-      const byTier = Array(7).fill(0);
-      for (const id of gd.visibleChess) {
-        const chess = gd.chess(id);
-        if (!chess.bonds.length || !chess.bonds.every(b => off.has(b))) byTier[chess.tier]++;
-      }
-      for (let tier = 1; tier <= 6; tier++) minima[tier] = Math.min(minima[tier], byTier[tier]);
-    }
-    for (let tier = 1; tier <= 6; tier++) assert.ok(minima[tier] >= 8, `${modeId}: tier ${tier} minimum ${minima[tier]}`);
-  }
+test('an impossible custom shared roster fails promptly instead of rerolling forever', () => {
+  const chess = Object.fromEntries(Object.entries(DATA.chess).filter(([, c]) => c.tier !== 1));
+  const gd = new GameData({ ...DATA, chess }, 'mode_multi_normal');
+  const rng = Object.assign(() => { throw new Error('must not draw'); }, { shuffle() { throw new Error('must not draw'); } });
+  assert.throws(() => drawDisabledBonds(gd, rng), /base shared pool has fewer than eight/);
 });

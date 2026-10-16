@@ -6,7 +6,10 @@
 //     (config.economy.poolCopies[tier], measured identity overrides; co-op shared stock doubled). `left` is the
 //     signed capacity minus occupation; the public left() and shop sampling clamp a deficit to zero.
 //   * Owning a piece takes copies: a normal piece holds 1, an elite holds 3 (merge of 3 normals). Shop displays
-//     do NOT reserve copies; buying fails (SOLD_OUT) when left = 0.
+//     do NOT reserve copies. An operator or equipment card already shown in the shop, or a reward already shown, can
+//     still be taken and overdraws (chess: a negative raw left; equipment: SharedItemPool's debt — GitHub #498, and
+//     the maintainer's decision of 2026-10-14 for equipment, #624). A slot that is already sold still fails SOLD_OUT.
+//     Future rolls exclude empty stock. 整备 and grants that are not an already-shown card stay stock-limited.
 //   * Pieces remember how many copies they hold (`piece.poolCopies`), so selling / elimination / temp wipes return
 //     exactly what was taken — chess granted by effects while the pool is empty (or hidden/banned chess) hold 0.
 //   * Invariant: raw left ≤ cap and raw left + Σ held copies == cap. Mimic can exceed stock, but its copies still occupy it.
@@ -14,10 +17,35 @@
 // Rolls: each chess slot draws ONE copy uniformly from all remaining copies of eligible chess with tier ≤ shop level
 // ("copy-weighted"; duplicates within a roll allowed). The item slot picks a tier with the same tier shares, then a
 // uniform shop-eligible item of that tier (falling back to lower tiers). A roll may add entries outside the pool
-// (`extra`, after its own): one player's 自选 stock (0.2.0, player/diy.js diyRollEntries) — weighted by its copies like
-// any chess, drawn by that player's shop only.
+// (`extra`, after its own): one player's 自选 stock — the ordinary shop passes diyRollEntries (the shopLevel gate);
+// the promotion reward and random grants pass diyStockEntries (the roll's own tier, DESIGN §30.23). Weighted by its
+// copies like any chess, drawn by that player only.
 
-import { isMilestoneBeacon } from './beaconSupply.js';
+import { sharedItemCopies } from './systemSupply.js';
+
+export const OPENING_TIER_FLOOR = 8;
+const OPENING_RANDOM_ATTEMPTS = 64;
+const OPENING_SEARCH_LIMIT = 250_000;
+
+/** Shared-shop roster only: a private DIY slot never counts toward the whole team's tier guarantee. */
+export function isOpeningShopChess(gd, id) {
+  const rec = gd.chess(id);
+  return !!rec && rec.visible && !rec.isGolden && !rec.isDiy && !rec.isHidden &&
+    Number.isInteger(rec.tier) && rec.tier >= 1 && rec.tier <= 6 && gd.poolCopies(id) > 0;
+}
+
+export function openingTierCounts(gd, disabledBonds) {
+  const off = new Set(disabledBonds);
+  const counts = [0, 0, 0, 0, 0, 0];
+  for (const id of gd.visibleChess) {
+    if (!isOpeningShopChess(gd, id)) continue;
+    const rec = gd.chess(id);
+    const bonds = Array.isArray(rec.bonds) ? rec.bonds : [];
+    if (bonds.length && bonds.every((b) => off.has(b))) continue;
+    counts[rec.tier - 1]++;
+  }
+  return counts;
+}
 
 /**
  * Per-match disabled bond set D and banned chess (research 01 A2): D = uniform sample of `core` core bonds and `addon`
@@ -36,7 +64,37 @@ export function drawDisabledBonds(gd, rng) {
   });
   const core = eligible.filter((b) => gd.bond(b).isCore);
   const addon = eligible.filter((b) => !gd.bond(b).isCore);
-  const drawn = [...sample(core, nCore, rng), ...sample(addon, nAddon, rng)].sort();
+  const coreCount = Math.max(0, Math.min(nCore, core.length));
+  const addonCount = Math.max(0, Math.min(nAddon, addon.length));
+  // The extra rotation for small starting rosters must retain eight different shared-shop operators in every tier.
+  // Keep the requested counts exact; bounded failures reject setup rather than weaken this guarantee or loop forever.
+  const guarded = gd.startingPlayerCount <= 4 && gd.difficulty !== 'TRAINING' && coreCount + addonCount > 0;
+  const valid = (drawn) => !guarded || openingTierCounts(gd, [...staticOff, ...drawn]).every((n) => n >= OPENING_TIER_FLOOR);
+  if (!valid([])) throw new Error('Opening BAN tier guarantee unavailable: the base shared pool has fewer than eight operators in a tier');
+  let drawn = null;
+  for (let attempt = 0; attempt < (guarded ? OPENING_RANDOM_ATTEMPTS : 1); attempt++) {
+    const candidate = [...sample(core, coreCount, rng), ...sample(addon, addonCount, rng)].sort();
+    if (valid(candidate)) { drawn = candidate; break; }
+  }
+  if (!drawn) {
+    let visited = 0;
+    const groups = [[core, coreCount], [addon, addonCount]];
+    const search = (group, from, left, picked) => {
+      if (++visited > OPENING_SEARCH_LIMIT) return null;
+      if (!valid(picked)) return null; // disabling further bonds can only remove shop operators
+      if (!left) return group === 1 ? picked.slice().sort() : search(1, 0, addonCount, picked);
+      const list = groups[group][0];
+      for (let i = from; i <= list.length - left && visited <= OPENING_SEARCH_LIMIT; i++) {
+        picked.push(list[i]);
+        const found = search(group, i + 1, left - 1, picked);
+        picked.pop();
+        if (found) return found;
+      }
+      return null;
+    };
+    drawn = search(0, 0, coreCount, []);
+    if (!drawn) throw new Error(`Opening BAN tier guarantee unavailable within ${OPENING_SEARCH_LIMIT} search steps (${coreCount} core, ${addonCount} add-on)`);
+  }
   const off = new Set([...drawn, ...staticOff]);
   const banned = [];
   for (const id of gd.visibleChess) {
@@ -185,11 +243,21 @@ export class SharedPool {
 }
 
 /** Shared equipment stock, derived from actual ownership. Merges, equips and returns cannot lose a reservation:
- * normal equipment occupies one, upgraded equipment two. Shop/choice displays reserve nothing. Source: the original
- * experiment BV1eLXXBqEgF, 1:30 and 2:30. [ASSUMED] An item that is consumed/destroyed or removed by elimination no
- * longer occupies stock, consistently with the video's ownership model; this is not a per-match purchase limit. */
+ * normal equipment occupies one, upgraded equipment two. Shop and reward displays reserve nothing. An already
+ * displayed shop card or item reward may be taken after `left` hits 0; `owe` records those copies and `repay`
+ * clears them first when a copy actually leaves the match (destroy, consume, elimination, a temp wipe). Rolls and
+ * `canGain` keep using the clamped `left`, so an empty item does not appear again until the debt is repaid and a
+ * copy is free. 整备 and ordinary grants stay limited. Fixed gift families may exceed the cap without a debt entry.
+ * Source: the original experiment BV1eLXXBqEgF, 1:30 and 2:30, extended to equipment by the maintainer on
+ * 2026-10-14 (#624). [ASSUMED] An item that is consumed, destroyed or removed by elimination no longer occupies
+ * stock, consistently with the video's ownership model; this is not a per-match purchase limit. */
 export class SharedItemPool {
-  constructor(gd, players) { this.gd = gd; this.players = players; }
+  constructor(gd, players) {
+    this.gd = gd;
+    this.players = players;
+    /** @type {Map<string, number>} base id → copies taken past the cap by an already-displayed card */
+    this.debt = new Map();
+  }
   cap(id) { return this.gd.itemPoolCopies(id); }
   need(id) { return this.gd.isGolden(id) ? 2 : 1; }
   held(id) {
@@ -197,8 +265,8 @@ export class SharedItemPool {
     let count = 0;
     const see = p => {
       if (!p) return;
-      if (p.kind === 'item' && !isMilestoneBeacon(p) && this.gd.baseIdOf(p.id) === base) count += this.need(p.id);
-      for (const item of p.items || []) if (!isMilestoneBeacon(item) && this.gd.baseIdOf(item.id) === base) count += this.need(item.id);
+      if (p.kind === 'item' && this.gd.baseIdOf(p.id) === base) count += sharedItemCopies(this.gd, p);
+      for (const item of p.items || []) if (this.gd.baseIdOf(item.id) === base) count += sharedItemCopies(this.gd, item);
     };
     for (const ps of this.players()) {
       for (const p of ps.hand) see(p);
@@ -207,8 +275,30 @@ export class SharedItemPool {
     }
     return count;
   }
-  left(id) { const cap = this.cap(id); return cap == null ? Infinity : Math.max(0, cap - this.held(id)); }
+  /** Signed cap − held. Infinity when the item has no shop cap. */
+  rawLeft(id) { const cap = this.cap(id); return cap == null ? Infinity : cap - this.held(id); }
+  left(id) { const raw = this.rawLeft(id); return raw === Infinity ? Infinity : Math.max(0, raw); }
   canGain(id) { return this.left(id) >= this.need(id); }
+  debtOf(id) { return this.debt.get(this.gd.baseIdOf(id)) || 0; }
+  /** Record `copies` of debt on the base item. Uncapped items and non-positive counts record nothing. */
+  owe(id, copies) {
+    const n = Math.floor(Number(copies));
+    const base = this.gd.baseIdOf(id);
+    if (!(n > 0) || this.cap(base) == null) return 0;
+    this.debt.set(base, (this.debt.get(base) || 0) + n);
+    return n;
+  }
+  /** Repay up to `copies` of debt. Returns how many were repaid (0 when nothing is owed). */
+  repay(id, copies) {
+    const n = Math.floor(Number(copies));
+    const base = this.gd.baseIdOf(id);
+    const cur = this.debt.get(base) || 0;
+    if (!(n > 0) || cur <= 0) return 0;
+    const k = Math.min(cur, n);
+    if (cur === k) this.debt.delete(base);
+    else this.debt.set(base, cur - k);
+    return k;
+  }
   /** Stock gates eligibility, not probability: retain the existing uniform item draw or explicit data weights.
    * The measured stock table alone does not establish shop probabilities. */
   pick(rng, ids, weights = null) {

@@ -3,7 +3,8 @@
 //
 //   * Merged LP: teamLp = Σ LP of the alive players at the start of the Final Assault (no cap); the Hidden Core
 //     continues with what is left.
-//   * Pairing: alive players by seat → (1,2), (3,4), (5); an odd player is alone on its own field with the `_s` template
+//   * Pairing: shuffled once per match before Final Assault prep; Hidden Core keeps those pairs. If players leave,
+//     intact pairs stay together and the remaining single players pair up. An odd player uses the `_s` template
 //     (solo modes always use `_s`). Field ids 'b1', 'b2', 'b3'. In a pair the first player is the LEFT side, the second the
 //     RIGHT side (the sim mirrors the right side: board col c → field col 20 − c with the piece direction RIGHT ↔
 //     LEFT, UP / DOWN unchanged (DESIGN §3, research 09 §1.2 ConvertChessPositionInfoToBossMap); board rows 9–12 →
@@ -32,7 +33,8 @@
 //     (player report after 0.1.0: "隐藏boss还没打就出了造成50%伤害播报").
 //   * Hidden Core eligibility (after an R14 win): difficulty in hiddenCore.difficulties, the mode has a hidden round,
 //     Σ activated layers of the alive players measured at the end of the boss round's prep > threshold (solo 350 /
-//     co-op 1200) and team LP > minTeamLpExclusive (1).
+//     co-op 1200) and team LP > minTeamLpExclusive (1, so at least 2 left: PRTS's user-contributed 「剩余生命值 > 1」,
+//     which the community's measurement 路标月报#2 matches — GitHub #645).
 
 import { BOSS_ROW_OFFSET, COLS, BOSS_POOL_MIN_HP } from '../sim/constants.js';
 import { mirrorDir, normDir } from '../sim/dir.js';
@@ -56,11 +58,22 @@ export function bossFieldPlacement(side, row, col, dir = 'RIGHT') {
   return side === 'R' ? { row: r, col: COLS - 1 - col, dir: mirrorDir(d) } : { row: r, col, dir: d };
 }
 
-/** Pair alive players by seat, keeping an odd final player: [[a, b], [c, d], [e]]. */
-export function pairPlayers(alive) {
+/** Seeded initial pairing; `previous` carries player-id pairs through prep, combat and Hidden Core. */
+export function pairPlayers(alive, rng, previous = null) {
   const sorted = alive.slice().sort((a, b) => a.seat - b.seat);
   const groups = [];
-  for (let i = 0; i < sorted.length; i += 2) groups.push(sorted.slice(i, i + 2));
+  let singles;
+  if (Array.isArray(previous)) {
+    const remaining = new Map(sorted.map(p => [p.playerId, p]));
+    singles = [];
+    for (const ids of previous) {
+      const group = [];
+      for (const id of ids) if (remaining.has(id)) { group.push(remaining.get(id)); remaining.delete(id); }
+      if (group.length === 2) groups.push(group); else singles.push(...group);
+    }
+    singles.push(...remaining.values());
+  } else singles = sorted.length > 1 && rng ? rng.shuffle(sorted) : sorted;
+  for (let i = 0; i < singles.length; i += 2) groups.push(singles.slice(i, i + 2));
   return groups;
 }
 

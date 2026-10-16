@@ -20,7 +20,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const BUNDLE_NAME = 'Stronghold-Protocol-Rhine';
 export const MANIFEST_NAME = 'bundle-manifest.json';
 const LOCAL_DIRS = ['public/assets', 'public/fonts', 'public/vendor', 'node_modules'];
-const LOCAL_FILES = ['data/local-assets.json'];
+const LOCAL_FILES = ['data/local-assets.json', 'data/local-fx.json'];
 
 function git(root, args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
@@ -42,11 +42,16 @@ function portablePath(relative) {
 // Applied even to tracked files and to files nested under otherwise permitted resource directories.
 // A package's ordinary source directory named "cache" remains valid; actual local caches use .cache etc.
 export function excludedFromBundle(relative) {
-  const parts = relative.toLowerCase().split('/');
+  const lower = relative.toLowerCase();
+  const parts = lower.split('/');
   const name = parts.at(-1);
   if (parts.some(part => ['.git', '.cache', '.rhine-updates', '.npm', '.yarn', '__pycache__', 'logs', '.idea', '.vscode', '.claude'].includes(part))) return true;
   if (name === '.env' || name.startsWith('.env.') || ['.npmrc', '.netrc', '.pypirc', '.ds_store', 'thumbs.db', 'desktop.ini'].includes(name)) return true;
   if (/\.(?:log|pyc|pyo|swp)$/i.test(name) || /(?:^|[-_.])verification(?:[-_.].*)?\.json$/i.test(name)) return true;
+  // Studio keys, server policy, installed plugins and author drafts belong to this installation.
+  // Only the upstream-owned guide and templates are release payloads, even if private files were tracked.
+  if (lower.startsWith('plugins/') && lower !== 'plugins/readme.md' && lower !== 'plugins/agents.md'
+      && !lower.startsWith('plugins/_template/')) return true;
   return ['scripts/service.env.cmd', 'tools/deploy-rhine-update.ps1'].includes(relative.toLowerCase())
     || relative.toLowerCase().startsWith('test/e2e/out/');
 }

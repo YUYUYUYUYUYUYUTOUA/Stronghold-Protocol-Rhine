@@ -142,12 +142,15 @@ export function uniteBattleOpts(m, plan, timeLimit) {
       }
       // HP ratio and SP only: a skill still running at the end is not carried (unitsEnd `skillActive` stays unused —
       // community report #34, GitHub #82)
-      carry.set(u.uid, { hpPct: Number.isFinite(u.hpPct) ? Math.max(0.01, Math.min(1, u.hpPct)) : 1, sp });
+      carry.set(u.uid, { hpPct: Number.isFinite(u.hpPct) ? Math.max(0, Math.min(1, u.hpPct)) : 1, sp });
     }
     // 2 helpers: the first one meets the enemies first on the right-hand field (escaped_multi enters at col 18)
     const colOffset = plan.helpers.length > 1 && i === 0 ? 8 : 0;
     // the layers its own combat reached (bondsView, the round's pending gains; PRTS "以其阵地当前的状态") — see header
     const input = ps.battleInput({ side: 'L', colOffset, carry, reached: true });
+    if (Number.isInteger(r?.remAppearances) && r.remAppearances > 0 && r.remAppearances <= 1e9) {
+      input.remAppearances = r.remAppearances;
+    }
     const ev = { input, kind: 'unite', round: m.round, spawns: wave.spawns };
     m.dispatch(ps, 'onBattleStart', ev);
     return ev.input && typeof ev.input === 'object' ? ev.input : input;

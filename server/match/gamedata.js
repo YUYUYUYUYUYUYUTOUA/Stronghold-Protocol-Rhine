@@ -13,7 +13,9 @@
 import { getConfig, getMode } from '../data.js';
 import { isShopItem } from '../sim/simdata.js';
 import { OPENING_BANS, openingBanCounts } from '../../shared/openingBans.js';
+import { mergeData } from '../../shared/plugins/dataUtils.js';
 import { standInRecord } from '../../shared/standIn.js';
+import { MAX_OFFER_SLOTS } from './player/common.js';
 
 const own = (map, id) => (map && typeof map === 'object' && typeof id === 'string' && Object.hasOwn(map, id) && map[id] && typeof map[id] === 'object' ? map[id] : null);
 const numOr = (v, d) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -98,10 +100,17 @@ export class GameData {
     this.modeId = modeId;
     this.mode = getMode(modeId, this.raw) || {};
     this.startingPlayerCount = startingPlayerCount;
+    // Mode-level globals inherit field by field; the vanilla mode never changes its config object.
+    const overrides = Object.fromEntries(Object.keys(this.config).filter(k => k !== 'modes' && Object.hasOwn(this.mode, k)).map(k => [k, this.mode[k]]));
+    if (Object.keys(overrides).length) this.config = mergeData(this.config, overrides);
     this.economy = this.config.economy && typeof this.config.economy === 'object' ? this.config.economy : {};
     const chess = this.raw.chess && typeof this.raw.chess === 'object' ? this.raw.chess : {};
     this._chess = chess;
     this._items = this.raw.items && typeof this.raw.items === 'object' ? this.raw.items : {};
+    // Fixed operator gifts are unlimited outputs, but every produced normal/advanced item still occupies 1/2 copies
+    // (card-pool experiment BV1eLXXBqEgF, maintainer-confirmed 2026-10-11). Random subset gifts are not exempt.
+    this._fixedGiftItems = new Set(Object.values(this.raw.garrisons || {})
+      .filter(g => g.effectKey === 'SERVER_GAIN_EQUIP').map(g => g.bbStr?.chess).filter(id => this._items[id]));
     this._bonds = this.raw.bonds && typeof this.raw.bonds === 'object' ? this.raw.bonds : {};
     /** visible, shop-eligible base (normal) chess ids */
     this.visibleChess = Object.keys(chess).filter((id) => {
@@ -110,8 +119,9 @@ export class GameData {
     }).sort();
     /**
      * Shop item ids by tier (sim/simdata.js isShopItem: normal EQUIP, not hidden, not effect-only — the special
-     * 维式重锤 and 突变细胞 are never sold). Every "shop item" draw uses it: the shop item slot (pool.js), the 道具补给 /
-     * 机密商店 cards (choices.js) and the shop-eligible item pools (Match.rollItemId).
+     * 维式重锤 and 突变细胞 are never sold). Every shop-item draw uses it: the shop item slot (pool.js), the 道具补给 /
+     * 机密商店 cards (choices.js) and the shop-eligible item pools (Match.rollItemId). A pool's `also` list
+     * (pool_equip_kathe: 突变细胞, #631) is appended there and is not in this table, so the shop slot still never sells it.
      */
     this.shopItemsByTier = {};
     for (const [id, it] of Object.entries(this._items)) {
@@ -255,6 +265,8 @@ export class GameData {
 
   chessPrice(id) {
     const c = this.chess(id);
+    const override = this.mode.economy?.chessPrice?.[this.tierOf(id)]?.[c?.isGolden ? 'golden' : 'normal'];
+    if (Number.isFinite(override) && override >= 0) return override;
     if (c && Number.isFinite(c.price) && c.price >= 0) return c.price;
     const tier = this.tierOf(id);
     const row = this.economy.chessPrice && this.economy.chessPrice[tier];
@@ -265,6 +277,8 @@ export class GameData {
 
   sellPrice(id) {
     const c = this.chess(id);
+    const override = this.mode.economy?.chessSell?.[this.tierOf(id)]?.[c?.isGolden ? 'golden' : 'normal'];
+    if (Number.isFinite(override) && override >= 0) return override;
     if (c && Number.isFinite(c.sellPrice) && c.sellPrice >= 0) return c.sellPrice;
     const tier = this.tierOf(id);
     const row = this.economy.chessSell && this.economy.chessSell[tier];
@@ -285,29 +299,39 @@ export class GameData {
   get maxArtsPerRound() { return posIntOr(this.economy.maxArtsPerRound, DEFAULTS.maxArtsPerRound); }
   get goldenCopies() { return posIntOr(this.economy.goldenCopies, DEFAULTS.goldenCopies); }
   get itemMergeCount() { return posIntOr(this.economy.itemMergeCount, DEFAULTS.itemMergeCount); }
-  get leftoverKeptBands() { return Array.isArray(this.economy.leftoverFundsKeptByBands) ? this.economy.leftoverFundsKeptByBands : DEFAULTS.leftoverFundsKeptByBands; }
+  get leftoverKeptBands() {
+    const ids = Array.isArray(this.economy.leftoverFundsKeptByBands) ? this.economy.leftoverFundsKeptByBands : DEFAULTS.leftoverFundsKeptByBands;
+    const extra = Object.values(this.raw.bands || {}).filter(b => b.effectRef && ids.includes(b.effectRef)).map(b => b.bandId);
+    return extra.length ? [...ids, ...extra] : ids;
+  }
   get defaultBandId() { return typeof this.economy.defaultBandId === 'string' ? this.economy.defaultBandId : DEFAULTS.defaultBandId; }
   get defaultStartLp() { return posIntOr(this.economy.defaultStartLp, DEFAULTS.defaultStartLp); }
 
   rewardOffer() {
     const r = this.economy.rewardOffer && typeof this.economy.rewardOffer === 'object' ? this.economy.rewardOffer : {};
     return {
-      count: posIntOr(r.count, DEFAULTS.rewardOffer.count),
+      // (an offer shows at most MAX_OFFER_SLOTS: a larger count — a data plugin's — only rolled for slots nobody sees)
+      count: Math.min(MAX_OFFER_SLOTS, posIntOr(r.count, DEFAULTS.rewardOffer.count)),
       tierOffset: Number.isInteger(r.tierOffset) ? r.tierOffset : DEFAULTS.rewardOffer.tierOffset,
       maxTier: posIntOr(r.maxTier, DEFAULTS.rewardOffer.maxTier),
       price: Math.max(0, numOr(r.price, 0)),
     };
   }
 
-  /** Copies of a base chess in the shared pool. */
+  /**
+   * Copies of a base chess in the shared pool — and, for a DIY slot, of a slotted 自选 piece in its player's own stock
+   * (player/diy.js buildDiyStock).
+   */
   poolCopies(baseId) {
     const ov = this.economy.poolCopiesOverrides;
     const tier = this.tierOf(baseId);
     const pc = this.economy.poolCopies;
     const v = ov && Number.isInteger(ov[baseId]) && ov[baseId] >= 0 ? ov[baseId] : pc?.[tier];
     const base = Number.isInteger(v) && v >= 0 ? v : (DEFAULTS.poolCopies[tier] ?? 10);
-    // The measured doubled pool is shared by the whole co-op team, independent of team size. DIY is private stock.
-    const multiplier = this.isSolo || this.chess(baseId)?.isDiy ? 1 : posIntOr(this.economy.coopPoolMultiplier, 1);
+    // Co-op doubles the single-player counts: the measured shared pool (shared by the whole team, independent of team
+    // size) and each player's private 自选 stock alike — the maintainer's decision of 2026-10-15 (GitHub #650): with
+    // the shared pool doubled and the 自选 stock not, a 自选 operator was diluted in the copy-weighted rolls.
+    const multiplier = this.isSolo ? 1 : posIntOr(this.economy.coopPoolMultiplier, 1);
     return base * multiplier;
   }
 
@@ -318,6 +342,9 @@ export class GameData {
     const count = this.economy.itemPoolCopiesOverrides?.[base] ?? this.economy.itemPoolCopies?.[rec.tier];
     return Number.isInteger(count) && count >= 0 ? count : null;
   }
+
+  /** Whether a fixed trait gift may be produced beyond stock (including the advanced version of that item). */
+  isUnlimitedGiftItem(id) { return this._fixedGiftItems.has(this.baseIdOf(id)); }
 
   /** Copies needed to merge (0 = never merges: golden chess). */
   mergeCount(id) {
@@ -363,10 +390,10 @@ export class GameData {
   shopSlots(level) {
     const s = this.mode.shopSlots && this.mode.shopSlots[String(level)];
     const d = DEFAULTS.shopSlots[level] || DEFAULTS.shopSlots[6];
-    if (!s || typeof s !== 'object') return { ...d };
-    const chess = Number.isInteger(s.chess) && s.chess >= 0 ? s.chess : d.chess;
-    const item = Number.isInteger(s.item) && s.item >= 0 ? s.item : d.item;
-    return { chess: Math.min(chess, 8), item: Math.min(item, 4) };
+    const chess = Number.isInteger(s?.chess) && s.chess >= 0 ? s.chess : d.chess;
+    const item = Number.isInteger(s?.item) && s.item >= 0 ? s.item : d.item;
+    const extra = !this.isSolo && this.startingPlayerCount >= 5 && this.startingPlayerCount <= 6 ? 1 : 0;
+    return { chess: Math.min(chess + extra, 8), item: Math.min(item, 4) };
   }
 
   /** Real-second prep timer for round r (null = untimed). */

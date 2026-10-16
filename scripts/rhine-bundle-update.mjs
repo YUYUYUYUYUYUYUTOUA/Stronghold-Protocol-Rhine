@@ -19,11 +19,14 @@ function portable(relative) {
   return relative;
 }
 function protectedPath(relative) {
-  const parts = relative.toLowerCase().split('/');
+  const lower = relative.toLowerCase();
+  const parts = lower.split('/');
   const name = parts.at(-1);
   return parts.some(p => ['.git', '.cache', BACKUPS, 'logs', '.npm', '.yarn', '.idea', '.vscode', '.claude', '__pycache__'].includes(p))
     || name === '.env' || name.startsWith('.env.') || ['.npmrc', '.netrc', '.pypirc'].includes(name)
-    || /\.log$/i.test(name) || relative.toLowerCase() === 'scripts/service.env.cmd';
+    || /\.log$/i.test(name) || lower === 'scripts/service.env.cmd'
+    || (lower.startsWith('plugins/') && lower !== 'plugins/readme.md' && lower !== 'plugins/agents.md'
+      && !lower.startsWith('plugins/_template/'));
 }
 function linked(file, stat) {
   if (stat.isSymbolicLink()) return true;

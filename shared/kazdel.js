@@ -44,7 +44,7 @@ export function kazdelStage(bond) {
   return bond?.active ? KAZDEL_BALANCE.thresholds.filter(n => Number(bond.count) >= n).length : 0;
 }
 
-/** Kazdel adds one core rotation slot; the Rhine-only baseline and seat reductions stay intact. */
+/** Idempotent whole-fork baseline, matching shared/openingBans.js and generated config. */
 export function applyKazdelOpeningBans(config) {
   config.bans ||= {};
   for (const [mode, core] of Object.entries({ FUNNY: 2, NORMAL: 5, HARD: 5, ABYSS: 5, TRAINING: 0 })) {

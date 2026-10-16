@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { makeBattle, enemyRec, chessRec, checkInvariants } from '../helpers/battleHarness.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { ELEMENT_GAUGE_MAX, PROJECTILE_SPEEDS, BOOMERANG_RETURN_SPEED } from '../../server/sim/constants.js';
-import { sortEnemyTargets } from '../../server/sim/targeting.js';
+import { sortEnemyTargets, canTargetEnemy } from '../../server/sim/targeting.js';
+import { DRONE_TAG as ROCKROCK_DRONE } from '../../server/sim/content/kits/ops/chess_char_2_10-rockr.js';
 
 const ds = getDefaultSource();
 const raw = (id) => ds.rawChess(id);
@@ -957,6 +958,40 @@ test('2_11 风丸: 纸艺·双影 −50 % HP, ATK +atk, summons the <替身> who
   done(h2);
 });
 
+test('2_11 风丸: the trait\'s <替身> hits air units, her 本体 and S2\'s summoned <替身> do not (PRTS 特性备注 「<替身>状态下可对空，由技能产生的召唤物不可对空」)', () => {
+  const id = 'chess_char_2_11_a';
+  // the flyer hovers in front of her, inside her range; a lethal hit (from the flyer, so no ground enemy competes for
+  // her single target afterwards) forces the substitution
+  const h = run({
+    defs: { enemies: { f: dummy('f', { motion: 'FLY' }) } },
+    units: [{ chessId: id, row: 9, col: 5 }], enemies: [{ key: 'f', pos: [9, 6] }],
+  });
+  const u = h.unit(id);
+  h.run(3);
+  const fl = h.enemies().find((e) => e.isFlying);   // (the enemy object exists once the battle has stepped)
+  assert.ok(fl, 'the flyer is on the field');
+  assert.equal(dealt(h, u, (c) => c.target === fl).length, 0, '本体: no air target');
+  h.b.dealDamage(fl, u, { amount: u.s.maxHp * 10, type: 'true' });
+  h.runUntil(() => u.findBuff('trait:substitute'), 20);
+  assert.ok(u.trait.doll, 'substituted');
+  h.run(4);
+  assert.ok(dealt(h, u, (c) => c.target === fl && !(c.dmg.tags || []).includes('talent')).length > 0, '<替身>: normal attacks hit the flyer');
+  done(h);
+  // S2's summoned <替身> (a token with its own profile) never targets a flyer (a ground enemy in front sets S2 off)
+  const h2 = run({
+    defs: { enemies: { e: dummy('e'), f: dummy('f', { motion: 'FLY' }) } },
+    units: [{ chessId: id, row: 9, col: 5, carryState: READY }], enemies: [{ key: 'e', pos: [9, 6] }, { key: 'f', pos: [9, 6] }],
+  });
+  h2.step();
+  const doll = h2.b.allyUnits.find((x) => x.kind === 'token');
+  assert.ok(doll && doll.alive, 'the <替身> was summoned');
+  const fl2 = h2.enemies().find((e) => e.isFlying);
+  assert.ok(fl2, 'the flyer is on the field');
+  assert.equal(canTargetEnemy(doll, fl2, doll.profile), false, 'summoned <替身>: no air target');
+  assert.equal(canTargetEnemy(h2.unit(id), fl2, h2.unit(id).profile), false, '本体: no air target either');
+  done(h2);
+});
+
 test('2_12 砾: 鼠群 barrier hp_ratio × max HP decaying over `duration` s; 快速部署 cost −1; elite 小个子支援 DEF aura', () => {
   const id = 'chess_char_2_12_a', bb = bbOf(id), t = tal(id);
   const h = run({ units: [{ chessId: id, row: 9, col: 5 }] });
@@ -1341,7 +1376,9 @@ test('2_10 洛洛: 自负此轭 drones stay locked on their target while the ski
   const t0 = h.b.time;
   h.run(4);
   const atks = h.hooksOf('attack').filter((c) => c.attacker === u && c.t > t0);
-  assert.ok(atks.length > 0 && atks.every((c) => c.targets.length === 1 && c.targets[0] === first), 'locked');
+  assert.ok(atks.length > 0 && atks.every((c) => c.targets.length === 1 && c.targets[0] === other), 'body keeps normal targeting');
+  const drones = h.hooksOf('damaged').filter((c) => c.source === u && c.t > t0 && c.dmg.tags?.includes(ROCKROCK_DRONE));
+  assert.ok(drones.length > 0 && drones.every((c) => c.target === first && c.dmg.isSkill && !c.dmg.isAttack), 'drone stays locked');
   done(h);
 });
 

@@ -16,7 +16,8 @@ jobs:
   test:
     name: test (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    # v0.3.0 adds full-match rehearsal and plugin/Studio suites; retain every seed on Windows too.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

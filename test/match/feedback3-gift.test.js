@@ -69,7 +69,8 @@ test('信标 on an elite: the teammate receives that elite with its 3 pool copie
 test('信标 on a normal operator still sends the normal card', () => {
   const { h, m, equip } = setup({ seed: 35 });
   const p0 = h.ps('p_0'), p1 = h.ps('p_1');
-  const cid = plain((c) => c.tier === 2 && c.bonds.length)[0];
+  const cid = plain((c) => c.tier === 2 && c.bonds.length).find(id => m.pool.has(id) && m.pool.left(id) > 0);
+  assert.ok(cid, 'the normal gift uses an available operator from this match\'s unbanned shared pool');
   assert.deepEqual(equip(giveItem(m, p0, BEACON), give(m, p0, cid, 'hand')), OK);
   h.toPrep(2);
   assert.deepEqual(ofBase(m, p1, cid).map((p) => [p.id, p.poolCopies]), [[cid, 1]]);

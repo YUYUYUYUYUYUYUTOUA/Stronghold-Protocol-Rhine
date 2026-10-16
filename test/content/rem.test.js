@@ -348,9 +348,7 @@ test('a full starter-map formation keeps collision queues stable and clears them
   const h = fixture(9, { stageId: 'act2autochess_m01' });
   h.run(120);
   const s = state(h);
-  const vehicles = live(s).filter(u => u.remType === 'food' || u.remType === 'bus');
-  assert.ok(vehicles.length, 'vehicles have entered the occupied corridor');
-  const positions = new Map(vehicles.map(u => [u.id, [u.tileR, u.tileC]]));
+  assert.ok(s.units.some(u => u.remType === 'food' || u.remType === 'bus'), 'vehicles have entered the corridor');
   for (let second = 0; second < 50; second++) {
     h.run(1);
     assert.deepEqual(h.b.errors, []);
@@ -362,9 +360,8 @@ test('a full starter-map formation keeps collision queues stable and clears them
     assert.ok(s.queue.filter(q => q.regular).length <= Math.max(0, 16 - live(s).filter(u => u.remCounted).length),
       'blocked regular requests do not accumulate beyond their admission capacity');
   }
-  assert.ok(vehicles.some(u => u.alive && u.deployed && !u.removed
-    && u.tileR === positions.get(u.id)[0] && u.tileC === positions.get(u.id)[1]),
-  'retained collision can keep a ground vehicle waiting behind the settled formation');
+  assert.ok(s.units.some(u => ['remRouteEnd', 'remPassengersOut'].includes(u.removeReason)),
+    'patrolling troops leave finite vehicle routes usable');
   h.b.forceEnd();
   assert.equal(live(s).length, 0);
   assert.equal(s.queue.length, 0);
@@ -470,7 +467,7 @@ test('a transit unit commits its newly vacated destination before settling', () 
   s.rally=[10,4];
   // This is now the only available rendezvous tile; the retained gate anchor is not a rally candidate.
   for(const c of [5,6])h.b.grid.setObstacle(10,c,true);
-  h.run(1.05);
+  h.runUntil(() => !marcher.remTransitAnchor, 1.05);
   assert.equal(marcher.remTransitAnchor,undefined);
   assert.equal(h.b._occ[10*21+4],marcher);
   assert.equal(h.b._occ[10*21+3],null);

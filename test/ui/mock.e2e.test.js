@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { aimedDrag, groundAnchor, anchorPoint, cameraSettled } from '../e2e/client.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'test/e2e/out');
@@ -62,7 +63,7 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     const problems = [];
     page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
     page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-    page.on('requestfailed', (r) => problems.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`));
+    page.on('requestfailed', (r) => { if (!/fonts\.(googleapis|gstatic)/.test(r.url())) problems.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`); });
     page.on('response', (r) => { if (r.status() >= 400) problems.push(`http ${r.status()}: ${r.url()}`); });
     await page.goto(`${base}/dev/game-mock.html?shot=1&render=${render}&${query}`, { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => !!document.querySelector('.screen:not(.gload)'), { timeout: 15000 });
@@ -294,41 +295,51 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     } finally { await page.close(); }
   });
 
-  test('prep: Q retreats and X sells only the selected operator', async () => {
+  // Q / X act on the HOVERED operator (PR #629, DESIGN §32.14.22): no click needed, a selection alone does nothing
+  test('prep: Q retreats and X sells only the hovered operator', async () => {
     const { page, problems } = await open('phase=PREP', { render: 'fallback' });
     const initial = await mockState(page);
+    await page.mouse.move(5, 5);
     await page.keyboard.press('KeyQ');
     await page.keyboard.press('KeyX');
-    assert.deepEqual(await mockState(page), initial, 'no selection means no action');
+    assert.deepEqual(await mockState(page), initial, 'nothing hovered means no action');
     const unit = initial.board.find((piece) => piece.kind === 'chess' && !piece.golden);
-    await page.click(`.ff-piece[data-uid="${unit.uid}"]`);
-    await page.waitForSelector('.uframe__btn--retreat');
+    // as test/ui/hover-hotkeys.e2e.test.js: the piece's current screen rect, then wait for the live hit test to see it
+    const hover = async (uid) => {
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const point = await page.evaluate((u) => {
+        const r = globalThis.__SP_VIEW__.pieceScreenRect(u);
+        return r && { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }, uid);
+      assert.ok(point, `piece ${uid} has a screen position`);
+      await page.mouse.move(point.x, point.y);
+      await page.waitForFunction((u, x, y) => globalThis.__SP_VIEW__.pieceAtClientPoint(x, y) === u, {}, uid, point.x, point.y);
+    };
     await page.evaluate(() => {
       const input = document.createElement('input');
       input.id = 'shortcut-test-input';
       document.body.append(input);
       input.focus();
     });
+    await hover(unit.uid);
     await page.keyboard.press('KeyQ');
     await page.keyboard.press('KeyX');
     assert.deepEqual(await mockState(page), initial, 'typing must not retreat or sell');
     await page.evaluate(() => document.getElementById('shortcut-test-input').remove());
+    await hover(unit.uid);
     await page.keyboard.press('KeyQ');
     await page.waitForFunction((uid) => globalThis.__MOCK__.S().priv.hand.some((piece) => piece?.uid === uid), {}, unit.uid);
     const retreated = await mockState(page);
     assert.ok(!retreated.board.some((piece) => piece.uid === unit.uid));
     assert.equal(retreated.funds, initial.funds, 'retreat does not sell');
-    await page.click(`.ff-piece[data-uid="${unit.uid}"]`);
-    await page.waitForSelector('.uframe__btn--sell');
-    assert.equal(await page.$('.uframe__btn--retreat'), null, 'bench operator cannot retreat');
+    await hover(unit.uid);
     await page.keyboard.press('KeyQ');
     assert.deepEqual(await mockState(page), retreated, 'Q on the bench does nothing');
     await page.keyboard.press('KeyX');
     await page.waitForFunction((uid) => !globalThis.__MOCK__.S().priv.hand.some((piece) => piece?.uid === uid), {}, unit.uid);
-    assert.ok((await mockState(page)).funds > retreated.funds, 'X sells the selected operator');
+    assert.ok((await mockState(page)).funds > retreated.funds, 'X sells the hovered operator');
     const item = (await mockState(page)).hand.find((piece) => piece?.kind === 'item');
-    await page.click(`.ff-piece[data-uid="${item.uid}"]`);
-    await page.waitForSelector('.uframe__btn--destroy');
+    await hover(item.uid);
     await page.keyboard.press('KeyX');
     assert.ok((await mockState(page)).hand.some((piece) => piece?.uid === item.uid), 'X must not destroy an item');
     assert.equal(await page.$('.modal'), null, 'no destroy confirmation');
@@ -390,18 +401,14 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     const { page, problems } = await open('phase=PREP');
     await sleep(1500); // spine models
     const rect = (uid) => page.evaluate((u) => { const r = globalThis.__SP_VIEW__?.pieceScreenRect(u); return r && { x: r.left + r.width / 2, y: r.top + r.height * 0.65 }; }, uid);
-    const drag = async (from, to) => {
-      await page.mouse.move(from.x, from.y);
-      await page.mouse.down();
-      for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + ((to.x - from.x) * i) / 12, from.y + ((to.y - from.y) * i) / 12); await sleep(16); }
-      await sleep(100);
-      await page.mouse.up();
-      await sleep(600);
-    };
+    // (aimed after the pickup: the deploy fold zooms the board as a piece is picked up — GitHub #602, e2e/client.mjs)
+    const drag = async (from, to, o = {}) => { await aimedDrag(page, from, to, { steps: 12, pause: 16, settle: 100, ...o }); await sleep(600); };
+    const centre = (sel) => page.$eval(sel, (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }).catch(() => null);
     let s = await mockState(page);
     const unit = s.board.find((x) => x.kind === 'chess' && !x.golden && !(x.items || []).length);
-    const bar = await page.$eval('.shopbar__cards', (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
-    await drag(await rect(unit.uid), bar);
+    const bar = await centre('.shopbar__cards');
+    // the shop bar folds away while a piece is carried (GitHub #602): released over its tab — DOM UI — the piece goes back
+    await drag(await rect(unit.uid), bar, { retarget: () => centre('.shopbar-tab') });
     assert.equal((await mockState(page)).board.length, s.board.length, 'no drag-to-sell');
     const pt = await rect(unit.uid);
     await page.mouse.click(pt.x, pt.y);
@@ -422,10 +429,13 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     assert.equal(s.hand.find((x) => x && x.uid === target.uid).dir, undefined, 'bench pieces carry no direction');
     // re-orient in place: drop the unit on its own tile → wheel → UP (no duplicate piece)
     const here = await rect(hc.uid);
+    const home = await groundAnchor(page, here);
     await page.mouse.move(here.x, here.y);
     await page.mouse.down();
     for (let i = 1; i <= 8; i++) { await page.mouse.move(here.x + i * 12, here.y - i * 6); await sleep(16); } // off the tile…
-    for (let i = 7; i >= 0; i--) { await page.mouse.move(here.x + i * 12, here.y - i * 6); await sleep(16); } // …and back onto it
+    await cameraSettled(page); // (the deploy fold's zoom, GitHub #602)
+    const back = (await anchorPoint(page, home)) || here;
+    for (let i = 1; i <= 8; i++) { await page.mouse.move(here.x + 96 + ((back.x - here.x - 96) * i) / 8, here.y - 48 + ((back.y - here.y + 48) * i) / 8); await sleep(16); } // …and back onto it
     await sleep(100);
     await page.mouse.up();
     await sleep(600);
@@ -754,10 +764,8 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
         const tt = v.tileScreen(row, col);
         return { uid: piece.uid, row, col, from: { x: r.left + r.width / 2, y: r.top + r.height * 0.6 }, to: { x: tt.x, y: tt.y } };
       });
-      const m = page.mouse;
-      await m.move(plan.from.x, plan.from.y); await m.down();
-      for (let i = 1; i <= 14; i++) { await m.move(plan.from.x + ((plan.to.x - plan.from.x) * i) / 14, plan.from.y + ((plan.to.y - plan.from.y) * i) / 14); await sleep(16); }
-      await sleep(120); await m.up();
+      // (aimed after the pickup: the deploy fold zooms the boss-field half as a piece is picked up — GitHub #602)
+      await aimedDrag(page, plan.from, plan.to, { steps: 14, pause: 16, settle: 120 });
       await swipeWheel(page, 'RIGHT');
       await page.waitForFunction((uid) => globalThis.__MOCK__.S().priv.board.some((b) => b.uid === uid), { timeout: 4000 }, plan.uid);
       const sent = await page.evaluate(() => globalThis.__MOCK__.S().requests.filter((r) => r[0] === 'g.move').pop()[1]);
@@ -910,6 +918,50 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     });
   }
 
+  test('session replacement: recovery action stays clickable above the AI away overlay', async () => {
+    const { page, problems } = await open('phase=PREP', { render: 'fallback' });
+    await page.click('.gtop__exit');
+    await page.waitForSelector('.modal');
+    const buttons = await page.$$('.modal__actions .btn');
+    await buttons[1].click(); // 暂离
+    await page.waitForSelector('.awayov[aria-label="AI 托管中"]', { visible: true });
+    await page.evaluate(async () => {
+      const { net } = await import('/js/net.js');
+      globalThis.__RECOVERY_CONNECTS__ = 0;
+      net.connect = () => { globalThis.__RECOVERY_CONNECTS__++; };
+      globalThis.__MOCK__.store.set({ connection: { status: 'closed', ping: 0, attempt: 0, retryAt: 0, lastError: { code: 'REPLACED' }, everOnline: true } });
+    });
+    await page.waitForSelector('.conn-banner .btn', { visible: true });
+    await sleep(300);
+    assert.deepEqual(await page.evaluate(() => {
+      const conn = globalThis.__MOCK__.store.get().connection;
+      return [conn.status, conn.lastError.code];
+    }), ['closed', 'REPLACED']);
+    assert.ok(await page.$('.awayov'), 'the away overlay remains during recovery');
+    assert.match(await page.$eval('.conn-banner', (el) => el.textContent), /该身份已在其他页面登录/);
+    assert.equal(await page.$eval('.conn-banner .btn', (el) => el.textContent.trim()), '在此页面继续');
+    const center = await page.$eval('.conn-banner .btn', (btn) => {
+      const r = btn.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      return { x, y, hit: btn.contains(document.elementFromPoint(x, y)) };
+    });
+    assert.ok(center.hit, 'the recovery button receives pointer input above the away overlay');
+    await page.screenshot({ path: path.join(OUT, 'ui-recovery-above-away.png') });
+    await page.evaluate(async () => {
+      const { confirmDialog } = await import('/js/ui/components.js');
+      void confirmDialog({ title: 'Recovery layering check', text: 'Global dialog stays above connection recovery.' });
+    });
+    await page.waitForSelector('.modal');
+    assert.equal(await page.$eval('.conn-banner .btn', btn => {
+      const r = btn.getBoundingClientRect(); return btn.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+    }), false, 'the connection banner does not steal input from a global modal');
+    await page.keyboard.press('Escape'); await page.waitForSelector('.modal', { hidden: true });
+    await page.mouse.click(center.x, center.y);
+    assert.equal(await page.evaluate(() => globalThis.__RECOVERY_CONNECTS__), 1, 'the pointer click invokes the recovery action');
+    assert.deepEqual(problems.filter((p) => p.startsWith('pageerror:')), []);
+    await page.close();
+  });
+
   test('watch: the other pair of the Final Assault is refused and the eye stays put', async () => {
     const { page, problems } = await open('phase=FINAL_ASSAULT');
     const rows = await page.$$('.team__row');
@@ -1023,14 +1075,8 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
     await sleep(1500); // spine models
     const at = (uid, fy) => page.evaluate((u, f) => { const r = globalThis.__SP_VIEW__?.pieceScreenRect(u); return r && { x: r.left + r.width / 2, y: r.top + r.height * f }; }, uid, fy);
     const tileAt = (row, col) => page.evaluate((r, c) => { const x = globalThis.__SP_VIEW__?.raw?.tileScreen?.(r, c); return x && { x: x.x, y: x.y }; }, row, col);
-    const drag = async (from, to) => {
-      await page.mouse.move(from.x, from.y);
-      await page.mouse.down();
-      for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + ((to.x - from.x) * i) / 12, from.y + ((to.y - from.y) * i) / 12); await sleep(16); }
-      await sleep(120);
-      await page.mouse.up();
-      await sleep(600);
-    };
+    // (aimed after the pickup: the deploy fold zooms the board as a piece is picked up — GitHub #602, e2e/client.mjs)
+    const drag = async (from, to) => { await aimedDrag(page, from, to, { steps: 12, pause: 16, settle: 120 }); await sleep(600); };
     let s = await mockState(page);
     const targets = s.board.filter((x) => x.kind === 'chess' && !(x.items || []).length).sort((a, b) => a.row - b.row);
     const items = s.hand.filter((x) => x && x.kind === 'item');
@@ -1076,11 +1122,8 @@ describe('in-match UI (mock harness, headless Chrome)', { skip: !ENABLED && 'set
         }
         assert.ok(to, 'found an empty board tile on screen');
       }
-      await page.mouse.move(from.x, from.y);
-      await page.mouse.down();
-      for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + ((to.x - from.x) * i) / 12, from.y + ((to.y - from.y) * i) / 12); await sleep(16); }
-      await sleep(120);
-      await page.mouse.up();
+      // (aimed after the pickup on the engine: the deploy fold zooms the board — GitHub #602, e2e/client.mjs)
+      await aimedDrag(page, from, to, { steps: 12, pause: 16, settle: 120 });
       await sleep(500);
       const toastText = await page.$eval('.toast', (el) => el.textContent).catch(() => null);
       assert.match(String(toastText), /已达到部署上限|无法部署在该位置|近战单位只能部署在地面/, `${render}: toast explains the refusal`);

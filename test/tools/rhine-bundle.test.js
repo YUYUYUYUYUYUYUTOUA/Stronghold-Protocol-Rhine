@@ -26,18 +26,22 @@ function fixture(t) {
   const source = path.join(temp, 'source');
   const runtimeDir = path.join(temp, 'official-node');
   fs.mkdirSync(source);
-  const tracked = ['README.md', 'LICENSE', 'NOTICE.md', 'package.json', 'server/index.js', 'scripts/launch.mjs', 'public/art/rhine/device.png'];
+  const tracked = ['README.md', 'LICENSE', 'NOTICE.md', 'package.json', 'server/index.js', 'scripts/launch.mjs', 'public/art/rhine/device.png',
+    'plugins/README.md', 'plugins/AGENTS.md', 'plugins/_template/script/sim/index.js', 'schemas/plugin.schema.json'];
   for (const relative of tracked) put(source, relative);
-  put(source, '.gitignore', 'public/assets/\npublic/fonts/\npublic/vendor/\nnode_modules/\ndata/local-assets.json\n.cache/\n');
+  put(source, '.gitignore', 'public/assets/\npublic/fonts/\npublic/vendor/\nnode_modules/\ndata/local-assets.json\ndata/local-fx.json\n.cache/\n');
   // Deliberately track forbidden paths too: Git membership alone must not bypass bundle exclusions.
   const forbidden = ['.env', '.env.production', '.cache/private.txt', '.rhine-updates/last/files/server/index.js', 'logs/session.txt', 'server.log', 'rhine-public-verification.json',
-    'tools/deploy-rhine-update.ps1', 'scripts/service.env.cmd', 'test/e2e/out/screenshot.png', '.npmrc'];
+    'tools/deploy-rhine-update.ps1', 'scripts/service.env.cmd', 'test/e2e/out/screenshot.png', '.npmrc',
+    'plugins/config.json', 'plugins/.studio-key', 'plugins/mine/plugin.json', 'plugins/_dist/mine.zip', 'plugins/mine/.studio.json'];
   for (const relative of forbidden) put(source, relative, 'do not publish');
   git(source, ['init', '-q']);
   git(source, ['add', '-f', '.']);
   git(source, ['-c', 'user.name=Bundle test', '-c', 'user.email=bundle-test@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture']);
   const resources = ['public/assets/portrait.png', 'public/fonts/font.woff2', 'public/vendor/preact.module.js', 'node_modules/ws/index.js',
-    'node_modules/ws/LICENSE', 'node_modules/example/lib/cache/index.js', 'data/local-assets.json'];
+    'node_modules/ws/LICENSE', 'node_modules/example/lib/cache/index.js', 'node_modules/ses/dist/ses.umd.js',
+    'node_modules/acorn/dist/acorn.mjs', 'public/vendor/ses.umd.js', 'public/vendor/acorn.mjs',
+    'data/local-assets.json', 'data/local-fx.json'];
   for (const relative of resources) put(source, relative);
   for (const relative of ['public/assets/.cache/download.bin', 'node_modules/.cache/build.bin', 'public/assets/secret.log', 'public/assets/.env',
     'node_modules/package/logs/run.txt', 'public/assets/rhine-test-verification.json']) put(source, relative, 'do not publish');

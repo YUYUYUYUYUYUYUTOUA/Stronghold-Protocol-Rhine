@@ -1,11 +1,12 @@
 // test/diag.test.js — the client's error log and bug-report diagnostics (public/js/diag.js; 设置 → 问题反馈): what an
 // entry keeps (message, a short stack without the page's host), repeats counted on one entry, the cap, the report's
-// lines, the battle attached as a replayable b.start, and the player names / room code / token never in the text.
+// lines, the battle attached as a replayable b.start, the player names / room code / token never in the text, and the
+// content line (DESIGN §32: the room's content set, else the server's vanilla content hash).
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   recordError, errorLog, errorCount, clearErrorLog, messageOf, stackOf, stripHosts, redact, redactValues, secretsOf, buildDiagnostics,
-  setBattleSource, currentBattle, LOG_MAX, STACK_LINES,
+  setBattleSource, currentBattle, contentLine, LOG_MAX, STACK_LINES, recordResourceEntry, trafficSummary, trafficLine, clearTraffic, installTrafficMeter,
 } from '../public/js/diag.js';
 import { APP_VERSION } from '../shared/constants.js';
 
@@ -92,7 +93,8 @@ describe('the report', () => {
     assert.equal(lines[0], '```text');
     assert.equal(lines[1], 'Stronghold-Protocol diagnostics');
     assert.equal(lines[2], `version: ${APP_VERSION}`);
-    assert.equal(lines[3], 'time: 2026-10-08T12:01:00.000Z | page open 12m 30s');
+    assert.equal(lines[3], 'content: unknown', 'no welcome.content, no room.state.content in this state');
+    assert.equal(lines[4], 'time: 2026-10-08T12:01:00.000Z | page open 12m 30s');
     assert.ok(lines.includes('browser: Mozilla/5.0 Test'));
     assert.ok(lines.includes('gpu: ANGLE (Test GPU)'));
     assert.ok(lines.includes('device: 844x390 | @2x | touch | 8 threads | lang zh-CN | ui zh'));
@@ -165,8 +167,38 @@ describe('the report', () => {
     assert.deepEqual(json, { t: 'b.start', battleId: spec.battleId, fieldId: 'u', kind: 'unite', spec });
   });
 
+  test('the content line: the room\'s content set, else the server\'s vanilla hash; MODDED with its plugins (DESIGN §32)', () => {
+    const cs = 'ab'.repeat(32);
+    const other = 'cd'.repeat(32);
+    assert.equal(contentLine({}), 'unknown');
+    assert.equal(contentLine({ content: { vanilla: 'short' } }), 'unknown', 'only a full hash');
+    assert.equal(contentLine({ content: { vanilla: cs } }), `vanilla cs=${cs}`, 'the lobby or the title: welcome.content');
+    assert.equal(contentLine({ content: { vanilla: other }, room: { content: { cs, vanilla: true, plugins: [] } } }), `vanilla cs=${cs}`,
+      'in a room: room.state.content wins');
+    assert.equal(contentLine({ room: { content: { cs: other, vanilla: false, plugins: [{ id: 'marathon', version: '0.1.0', hash: 'deadbeef00' }, { id: 'texas-recolor', version: '1.0.0' }] } } }),
+      `MODDED cs=${other} plugins=marathon@0.1.0(deadbeef),texas-recolor@1.0.0`);
+    const many = Array.from({ length: 40 }, (_, i) => ({ id: `p${i}`, version: '1.0.0' }));
+    assert.match(contentLine({ room: { content: { cs, vanilla: false, plugins: many } } }), /,p31@1\.0\.0 \+8$/);
+    const text = buildDiagnostics({ state: { content: { vanilla: cs } }, now: 0, pageStart: 0 });
+    assert.equal(text.split('\n')[3], `content: vanilla cs=${cs}`, 'the line under the version');
+  });
+
+  test('the content line with cosmetic plugins (P1a): still vanilla — the cs and the art\'s vs and plugins; the player\'s own after them', () => {
+    const cs = 'ab'.repeat(32);
+    const vs = 'ef'.repeat(32);
+    const cosmetic = { cs, vanilla: true, vs, plugins: [{ id: 'texas-red', version: '1.0.0', class: 'cosmetic', hash: '0123456789abcdef' }], warnings: [], bytes: 10 };
+    assert.equal(contentLine({ room: { content: cosmetic } }), `vanilla cs=${cs} cosmetic vs=${vs} plugins=texas-red@1.0.0(01234567)`,
+      'art never changes a battle: the battles are the vanilla ones');
+    assert.equal(contentLine({ content: { vanilla: cs } }, [{ id: 'mine' }, { id: 'zed' }]), `vanilla cs=${cs} personal=mine,zed`);
+    assert.equal(contentLine({ room: { content: cosmetic } }, [{ id: 'mine' }]), `vanilla cs=${cs} cosmetic vs=${vs} plugins=texas-red@1.0.0(01234567) personal=mine`);
+    assert.equal(contentLine({ room: { content: { cs, vanilla: true, plugins: [] } } }, []), `vanilla cs=${cs}`, 'nothing: the line of P0');
+    const text = buildDiagnostics({ state: { room: { content: cosmetic } }, personal: [{ id: 'mine' }], now: 0, pageStart: 0 });
+    assert.equal(text.split('\n')[3], `content: vanilla cs=${cs} cosmetic vs=${vs} plugins=texas-red@1.0.0(01234567) personal=mine`);
+  });
+
   test('an empty page: the title screen, nothing recorded, unknown fields left out', () => {
     const text = buildDiagnostics({ state: {}, now: 0, pageStart: 0 });
+    assert.match(text, /\ncontent: unknown\n/);
     assert.match(text, /\nwhere: title\n/);
     assert.match(text, /\nconnection: unknown\n/);
     assert.match(text, /\ndevice: unknown\n/);
@@ -182,5 +214,55 @@ describe('the report', () => {
     setBattleSource(() => { throw new Error('gone'); });
     assert.equal(currentBattle(), null);
     setBattleSource(null);
+  });
+});
+
+describe('the page\'s traffic (host bandwidth layer 0)', () => {
+  beforeEach(() => clearTraffic());
+  const ORIGIN = 'http://192.168.1.5:3000';
+
+  test('Resource Timing entries sum by category: bytes on the wire, a cache hit counted as cached, other sites apart', () => {
+    recordResourceEntry({ name: `${ORIGIN}/assets/~0123456789abcdef/spine/op/x/front/x.skel`, transferSize: 120000, decodedBodySize: 400000 }, ORIGIN);
+    recordResourceEntry({ name: `${ORIGIN}/assets/char/avatar/a.png`, transferSize: 0, decodedBodySize: 50000 }, ORIGIN);
+    recordResourceEntry({ name: `${ORIGIN}/media/~0123456789abcdef/bgm/m_bat`, transferSize: 2000000, decodedBodySize: 2000000 }, ORIGIN);
+    recordResourceEntry({ name: `${ORIGIN}/js/main.js`, transferSize: 9000, decodedBodySize: 30000 }, ORIGIN);
+    recordResourceEntry({ name: `${ORIGIN}/data/assets.json`, transferSize: 300, decodedBodySize: 1300000 }, ORIGIN);
+    recordResourceEntry({ name: 'https://fonts.gstatic.com/s/x.woff2', transferSize: 50000 }, ORIGIN);
+    recordResourceEntry({ name: 'data:image/png;base64,AAAA', transferSize: 0 }, ORIGIN);
+    recordResourceEntry({ name: 'blob:http://192.168.1.5:3000/1234', transferSize: 0 }, ORIGIN);
+    recordResourceEntry(null, ORIGIN);
+    const t = trafficSummary();
+    assert.deepEqual(t.assets, { requests: 2, bytes: 120000, cached: 1 });
+    assert.deepEqual(t.audio, { requests: 1, bytes: 2000000, cached: 0 });
+    assert.deepEqual(t.code, { requests: 1, bytes: 9000, cached: 0 });
+    assert.deepEqual(t.data, { requests: 1, bytes: 300, cached: 0 }, 'a 304 costs its headers only');
+    assert.deepEqual(t.external, { requests: 1, bytes: 50000, cached: 0 });
+    assert.deepEqual(t.total, { requests: 5, bytes: 2129300, cached: 1 }, 'the host total leaves other sites out');
+    assert.deepEqual(Object.keys(t), ['assets', 'audio', 'code', 'data', 'external', 'total']);
+    assert.equal(trafficLine(t), 'assets 120 KB (2, 1 cached) | audio 2.0 MB (1) | code 9 KB (1) | data 300 B (1) | external 50 KB (1) | host total 2.1 MB (5)');
+  });
+
+  test('the report carries the traffic line; nothing recorded → no line', () => {
+    recordResourceEntry({ name: `${ORIGIN}/js/main.js`, transferSize: 1500 }, ORIGIN);
+    const text = buildDiagnostics({ state: {}, now: 0, pageStart: 0, traffic: trafficSummary() });
+    assert.match(text, /\ntraffic: code 2 KB \(1\) \| host total 2 KB \(1\)\n/);
+    clearTraffic();
+    assert.ok(!/traffic:/.test(buildDiagnostics({ state: {}, now: 0, pageStart: 0, traffic: trafficSummary() })));
+    assert.ok(!/traffic:/.test(buildDiagnostics({ state: {}, now: 0, pageStart: 0 })));
+  });
+
+  test('installTrafficMeter reads the navigation entry and observes the resources (buffered), once; false without the API', () => {
+    let observed = null;
+    class PO {
+      constructor(fn) { this.fn = fn; }
+      observe(o) { observed = o; this.fn({ getEntries: () => [{ name: `${ORIGIN}/vendor/pixi.min.js`, transferSize: 140000 }] }); }
+    }
+    const win = { PerformanceObserver: PO, location: { origin: ORIGIN }, performance: { getEntriesByType: (t) => (t === 'navigation' ? [{ name: `${ORIGIN}/`, transferSize: 7000 }] : []) } };
+    assert.equal(installTrafficMeter({}), false);
+    assert.equal(installTrafficMeter(win), true);
+    assert.deepEqual(observed, { type: 'resource', buffered: true });
+    assert.deepEqual(trafficSummary().code, { requests: 2, bytes: 147000, cached: 0 });
+    assert.equal(installTrafficMeter(win), true, 'already installed');
+    assert.equal(trafficSummary().code.requests, 2, 'not twice');
   });
 });

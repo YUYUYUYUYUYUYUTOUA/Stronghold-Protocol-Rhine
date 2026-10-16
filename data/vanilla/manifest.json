@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "profile": "vanilla",
-  "upstreamVersion": "0.2.4",
-  "source": "bc50cac01ff447eff3ab6c35f69d934bbc23b48f",
+  "upstreamVersion": "0.3.0",
+  "source": "c24e17eec3af1e6dedfa9935a6d15245cf2f4586",
   "files": [
     {
       "path": "assets.json",
-      "size": 1305633,
-      "sha256": "5228ead07960c923ee609ee3bfe5f1e7cd1ff94f32f8c85d01655e3214511dc8"
+      "size": 1673010,
+      "sha256": "34e427ff8304ea063f6bbc4eb2d6755b1baa43641c15a67f9c60a59ded4113c6"
     },
     {
       "path": "backups.json",
@@ -36,8 +36,8 @@
     },
     {
       "path": "choices.json",
-      "size": 124363,
-      "sha256": "995a9d2a5e3aaf7bbf00df017a2796dcee12f27b1d8c04c33d637e4130eeae35"
+      "size": 124495,
+      "sha256": "ed4572cac6905a56a14faebfd1f69ab4e2e5710573a27e486bd8e9be4f2b7100"
     },
     {
       "path": "config.json",
@@ -71,8 +71,8 @@
     },
     {
       "path": "i18n/en.json",
-      "size": 2494503,
-      "sha256": "fe2c0b869de83c2433a791ccf61735815ddab58978c92e10ceced5e2afb9b8fa"
+      "size": 2494535,
+      "sha256": "3359e632a6ca9412c0fcfcde32f437fd6d8d557fe91c01be85108cbb171391ed"
     },
     {
       "path": "i18n/ja.json",

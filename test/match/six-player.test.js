@@ -10,9 +10,10 @@ import { GameData } from '../../server/match/gamedata.js';
 import { buildResult } from '../../server/match/results.js';
 import { DATA, makeMatch, checkInvariants, give, legalTileFor, chessOfTier } from './harness.js';
 import { FakeBattle } from './fakeBattle.js';
+import { createRng, deriveSeed } from '../../server/sim/rng.js';
 
 const ids = ['p_0', 'p_1', 'p_2', 'p_3', 'p_4', 'p_5'];
-const pairs = [['p_0', 'p_1'], ['p_2', 'p_3'], ['p_4', 'p_5']];
+const sequentialPairs = [['p_0', 'p_1'], ['p_2', 'p_3'], ['p_4', 'p_5']];
 const finishFake = (m, f) => {
   const b = createBattleFromSpec(f.spec, m.ds, { BattleClass: FakeBattle });
   while (!b.finished) b.step();
@@ -152,6 +153,7 @@ for (const clientCombat of [false, true]) {
     }).start();
     try {
       const m = h.m;
+      const pairs = pairPlayers(m.order, createRng(deriveSeed(m.seed, 'boss-pairs'))).map(g => g.map(p => p.playerId));
       h.toPrep(14);
       ids.forEach((pid, i) => { h.ps(pid).lp = 10 * (i + 1); });
       assert.deepEqual(m.bossWaves.map((w) => w.players), pairs);
@@ -165,9 +167,9 @@ for (const clientCombat of [false, true]) {
       assert.equal(m.bossPool.maxHp, bossPoolHp(m.gd, m.bossId, 6));
       assert.ok(opts.every((o) => o.flags.layerGainsEnabled === false));
       if (clientCombat) {
-        assert.deepEqual(m.fields.map((f) => f.authority), ['p_0', 'p_2', 'p_4']);
-        assert.equal(h.lastTo('p_5', 'b.start').fieldId, 'b3');
-        assert.equal(h.lastTo('p_5', 'b.start').authoritative, false, 'sixth player is the paired display replica');
+        assert.deepEqual(m.fields.map((f) => f.authority), pairs.map(g => [...g].sort()[0]));
+        assert.equal(h.lastTo('p_5', 'b.start').fieldId, `b${pairs.findIndex(g => g.includes('p_5')) + 1}`);
+        assert.equal(h.lastTo('p_5', 'b.start').authoritative, pairs.find(g => g.includes('p_5')).every(id => id >= 'p_5'), 'authority follows the lowest connected seat in its shuffled pair');
       }
       const result = h.runToEnd();
       assert.equal(result.victory, true);
@@ -195,6 +197,7 @@ for (const clientCombat of [false, true]) {
     }).start();
     try {
       const m = h.m;
+      const pairs = pairPlayers(m.order, createRng(deriveSeed(m.seed, 'boss-pairs'))).map(g => g.map(p => p.playerId));
       h.toPrep(14);
       ids.forEach((pid, i) => { const p = h.ps(pid); p.bondCountBonus.yanShip = 3; p.layers.yanShip = i === 5 ? 1 : 240; p.recompute(); });
       h.drive(() => m.phase === PHASE.FINAL_ASSAULT);
@@ -207,7 +210,7 @@ for (const clientCombat of [false, true]) {
       assert.deepEqual(m.fields.map((f) => f.players), pairs);
       assert.equal(m.teamLp, teamLp);
       assert.equal(m.bossPool.maxHp, 2 * bossPoolHp(new GameData(DATA, m.modeId, 4), m.hiddenBossId, 4));
-      if (clientCombat) assert.equal(h.lastTo('p_5', 'b.start').fieldId, 'b3');
+      if (clientCombat) assert.equal(h.lastTo('p_5', 'b.start').fieldId, `b${pairs.findIndex(g => g.includes('p_5')) + 1}`);
       const result = h.runToEnd();
       assert.equal(result.hiddenCleared, true);
       assert.equal(result.roundsPassed, 15);
@@ -250,6 +253,6 @@ test('sixth-player report keeps its own eliminated round, lineup and stats along
 
 test('six-player pairing sorts seats; a departed teammate leaves the sixth survivor in a singleton field', () => {
   const alive = ids.map((playerId, seat) => ({ playerId, seat })).reverse();
-  assert.deepEqual(pairPlayers(alive).map((g) => g.map((p) => p.playerId)), pairs);
+  assert.deepEqual(pairPlayers(alive).map((g) => g.map((p) => p.playerId)), sequentialPairs);
   assert.deepEqual(pairPlayers(alive.filter((p) => p.playerId !== 'p_1')).map((g) => g.map((p) => p.playerId)), [['p_0', 'p_2'], ['p_3', 'p_4'], ['p_5']]);
 });

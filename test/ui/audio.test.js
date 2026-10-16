@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bgmKeyFor, resolveBgm, SfxLimiter, AudioManager, normalAttackSfx, installAudio, audio, combatTrackFor, COMBAT_TRACK_SWITCH_ROUND, VoiceGate, resultSpeaker, resultVoiceSlot, VOICE_PRIORITY, VOICE_COOLDOWN_MS, voiceLine } from '../../public/js/audio.js';
+import { bgmKeyFor, resolveBgm, SfxLimiter, AudioManager, normalAttackSfx, installAudio, audio, combatTrackFor, COMBAT_TRACK_SWITCH_ROUND, VoiceGate, resultSpeaker, resultVoiceSlot, VOICE_PRIORITY, VOICE_COOLDOWN_MS, voiceLine, VOICE_TREES } from '../../public/js/audio.js';
 import { mediaUrl } from '../../public/js/media.js';
 import { PHASE } from '../../shared/constants.js';
 import { makeBattle, chessRec } from '../helpers/battleHarness.js';
@@ -364,11 +364,62 @@ describe('operator battle voice', () => {
       assert.match(a.voiceNode?.url ?? '', /^\/a\/voice\/cn\/char_a\/cn_02[12]\.mp3$/, '中文 again');
       a._stopVoice();
       a.setVoiceLang('kr');
-      assert.equal(a.voiceLang, 'cn', 'no other dub: anything but jp is 中文');
+      assert.equal(a.voiceLang, 'kr', '한국어 is a dub');
+      a.setVoiceLang('xx');
+      assert.equal(a.voiceLang, 'cn', 'an unknown value stays 中文');
       // the settings store hands the choice over (installAudio and ui/settings.js)
       const settings = readFileSync(path.join(ROOT, 'public/js/ui/settings.js'), 'utf8');
       assert.match(settings, /audio\.setVoiceLang\(s\.voiceLang, s\.voiceOverrides\)/);
       assert.match(settings, /t\('语音语言'\)/);
+      assert.match(settings, /audio\.setVoiceNative\(s\.voiceNative\)/);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test('English, Korean and the own-language dub use the same fallback as 日本語; 试听 skips the gate', async () => {
+    assert.deepEqual(VOICE_TREES, { jp: 'voiceJp', en: 'voiceEn', kr: 'voiceKr', native: 'voiceNative' });
+    const id = 'char_102_texas';
+    const audioM = {
+      voice: { [id]: { select: '/a/voice/cn/char_a/cn_021.mp3', place: '/a/voice/cn/char_a/cn_023.mp3' } },
+      voiceEn: { [id]: { select: '/a/voice/en/char_a/cn_021.mp3' } },
+      voiceKr: { [id]: { place: '/a/voice/kr/char_a/cn_023.mp3' } },
+      voiceNative: { [id]: { select: '/a/voice/native/char_a_ita/cn_021.mp3' } },
+    };
+    assert.deepEqual(voiceLine(audioM, id, 'select', 'en'), { url: '/a/voice/en/char_a/cn_021.mp3', fallback: '/a/voice/cn/char_a/cn_021.mp3' });
+    assert.deepEqual(voiceLine(audioM, id, 'place', 'kr'), { url: '/a/voice/kr/char_a/cn_023.mp3', fallback: '/a/voice/cn/char_a/cn_023.mp3' });
+    assert.deepEqual(voiceLine(audioM, id, 'select', 'native'), { url: '/a/voice/native/char_a_ita/cn_021.mp3', fallback: '/a/voice/cn/char_a/cn_021.mp3' });
+    assert.deepEqual(voiceLine(audioM, id, 'place', 'en'), { url: '/a/voice/cn/char_a/cn_023.mp3', fallback: null }, 'a slot the EN tree lacks: the Chinese line');
+    assert.deepEqual(voiceLine(audioM, id, 'place', 'native'), { url: '/a/voice/cn/char_a/cn_023.mp3', fallback: null });
+
+    const fw = fakeWindow();
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) });
+    const tick = () => new Promise((r) => setTimeout(r, 10));
+    try {
+      const a = new AudioManager({ win: fw.win, getManifest: () => ({ audio: { sfx: { ui: {}, battle: {}, units: {} }, ...audioM } }) });
+      a.voiceGate = new VoiceGate({ gapMs: 60_000 });
+      a.install();
+      fw.fire('pointerdown');
+      await tick();
+      assert.equal(a.voice(id, 'place', { unitKey: 1 }), true);
+      await tick();
+      assert.equal(a.voice(id, 'place', { unitKey: 1 }), false, 'the battle line is on cooldown');
+      assert.equal(a.previewVoice(id, 'en'), true, '试听 takes the channel and skips the cooldown');
+      await tick();
+      assert.equal(a.voiceNode?.url, '/a/voice/en/char_a/cn_021.mp3');
+      a.setVoiceLang('cn', { [id]: 'native' });
+      a.setVoiceNative(false);
+      assert.equal(a.previewVoice(id), true, 'no lang: the operator\'s own choice');
+      await tick();
+      assert.equal(a.voiceNode?.url, '/a/voice/native/char_a_ita/cn_021.mp3');
+      a.setVoiceLang('kr', {});
+      a.setVoiceNative(true);
+      assert.equal(a.voice(id, 'select'), true, '本土语言 wins over the global KR dub');
+      await tick();
+      assert.equal(a.voiceNode?.url, '/a/voice/native/char_a_ita/cn_021.mp3');
+      a.volumes.muted = true;
+      assert.equal(a.previewVoice(id, 'en'), false, 'muted stays silent');
     } finally {
       globalThis.fetch = origFetch;
     }
@@ -577,6 +628,63 @@ describe('AudioManager', () => {
       globalThis.fetch = origFetch;
     }
   });
+  test('BGM is not downloaded while the music is muted or at volume 0; the wanted track starts once it is audible', async () => {
+    const fw = fakeWindow();
+    const origFetch = globalThis.fetch;
+    const urls = [];
+    globalThis.fetch = async (u) => { urls.push(u); return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; };
+    const tick = () => new Promise((r) => setTimeout(r, 10));
+    const lobby = manifest.audio.bgm.lobby.loop;
+    const prep = manifest.audio.bgm.prep.loop;
+    assert.notEqual(lobby, prep, 'premise: two different loops');
+    try {
+      const a = new AudioManager({ win: fw.win, getManifest: () => manifest });
+      a.setVolumes({ muted: true });
+      a.install();
+      a.playBgm('lobby');
+      fw.fire('pointerdown');
+      await tick();
+      assert.equal(a.unlocked, true);
+      assert.equal(a.bgmSilent, true);
+      assert.ok(!asked(urls, lobby) && !asked(urls, manifest.audio.bgm.lobby.intro), 'muted: nothing fetched at unlock');
+      a.playBgm('prep');
+      await tick();
+      assert.ok(!asked(urls, prep), 'muted: a phase change fetches nothing');
+      assert.equal(a.wantBgm, 'prep', 'the wanted track is remembered');
+      a.setVolumes({ muted: false });
+      await tick();
+      assert.ok(asked(urls, prep), 'unmuted: the track the screen wants now is fetched');
+      assert.ok(!asked(urls, lobby), 'never the track wanted before');
+      assert.equal(a.bgm?.loopUrl, prep);
+
+      // BGM volume 0 is silent too: another track stops and is not fetched; SFX keep playing
+      a.setVolumes({ bgm: 0 });
+      a.playBgm('lobby');
+      await tick();
+      assert.ok(!asked(urls, lobby), 'BGM volume 0: no download');
+      assert.equal(a.bgm, null, 'the other track stopped');
+      a.sfx('buy');
+      await tick();
+      assert.ok(asked(urls, manifest.audio.sfx.ui.buy), 'SFX are not gated by the BGM volume');
+      a.setVolumes({ bgm: 0.5 });
+      await tick();
+      assert.ok(asked(urls, lobby), 'audible again: fetched');
+      assert.equal(a.bgm?.loopUrl, lobby);
+
+      // the loop that already plays keeps playing through a silent phase change, and is not fetched again
+      a.setVolumes({ muted: true });
+      const n = urls.length;
+      const started = fw.made.started;
+      a.playBgm('lobby');
+      a.setVolumes({ muted: false });
+      await tick();
+      assert.equal(a.bgm?.loopUrl, lobby);
+      assert.equal(urls.length, n, 'no new request');
+      assert.equal(fw.made.started, started, 'no restart');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
   test('fetch failures are swallowed', async () => {
     const fw = fakeWindow();
     const origFetch = globalThis.fetch;
@@ -596,6 +704,27 @@ describe('AudioManager', () => {
     } finally {
       globalThis.fetch = origFetch;
       console.warn = origWarn;
+    }
+  });
+  test('a served manifest\'s content-hashed audio URL is fetched as /media/~<hash>/…, falling back to the hashed .mp3 URL', async () => {
+    const H = '0123456789abcdef';
+    const raw = manifest.audio.bgm.prep.loop.replace(/^\/assets\//, `/assets/~${H}/`);
+    const served = { ...manifest, audio: { ...manifest.audio, bgm: { ...manifest.audio.bgm, prep: { loop: raw } } } };
+    const fw = fakeWindow();
+    const urls = [];
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async (u) => { urls.push(u); return u.startsWith('/media/') ? { ok: false, status: 404 } : { ok: true, arrayBuffer: async () => new ArrayBuffer(8) }; };
+    try {
+      const a = new AudioManager({ win: fw.win, getManifest: () => served });
+      a.install();
+      fw.fire('pointerdown');
+      a.playBgm('prep');
+      await new Promise((r) => setTimeout(r, 20));
+      assert.deepEqual(urls, [raw.replace(/^\/assets\/(~[0-9a-f]{16})\/audio\/(.+)\.mp3$/, '/media/$1/$2'), raw]);
+      assert.match(urls[0], new RegExp(`^/media/~${H}/bgm/`));
+      assert.equal(a.bgm?.loopUrl, raw);
+    } finally {
+      globalThis.fetch = origFetch;
     }
   });
   test('音频先走无扩展名的 /media/ 路由；只有它 404 才回退到带扩展名的原地址', async () => {

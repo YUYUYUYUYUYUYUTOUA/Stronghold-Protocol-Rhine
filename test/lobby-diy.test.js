@@ -133,7 +133,7 @@ describe('room.diy (lobby + real match)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    // This storage test needs Victoria eligible; seed 910 keeps Siege outside the opening BAN set.
+    // This fixed opening bans Victoria under the expanded rotation; the pick stays stored while its stock is unavailable.
     srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, seedFn: () => 910 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
@@ -148,7 +148,7 @@ describe('room.diy (lobby + real match)', () => {
     await a.waitFor('m.public', (p) => p.phase === PHASE.INFO_CHECK, 5000);
     const priv = await a.waitFor('m.private', (p) => p.diy && typeof p.diy === 'object', 3000);
     assert.deepEqual(priv.diy, { [T5A]: SIEGE, [T6A]: SHARP_FULL });
-    assert.deepEqual(priv.diyBanned, []);
+    assert.deepEqual(priv.diyBanned, [T5A], 'opening bans affect private stock eligibility without discarding the stored pick');
     await err(a, { t: 'room.diy', picks: {} }, ERR.ROOM_STARTED);
     await ok(a, { t: 'g.infoReady' });
     await a.waitFor('m.public', (p) => p.phase === PHASE.BAND_DRAFT, 3000);

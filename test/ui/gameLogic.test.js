@@ -15,7 +15,6 @@ import {
   rangeGridBox, shortcutFor, sanitizeSettings, DEFAULT_SETTINGS, normalizeResult, cycleField, fieldLabel, homeFieldId,
   activeBubbles, sortedPlayers, tileKey, prepCapsuleLabel, prepCamera, dropFailureReason, terrainInfo,
 } from '../../public/js/ui/gameLogic.js';
-import { pairPlayers } from '../../server/match/finalAssault.js';
 import { PHASE, GEO } from '../../shared/constants.js';
 import { setLang, setMessages } from '../../shared/i18n.js';
 
@@ -739,14 +738,28 @@ describe('keyboard & settings', () => {
   test('sanitizeSettings', () => {
     assert.deepEqual(sanitizeSettings(null), { ...DEFAULT_SETTINGS });
     assert.deepEqual(sanitizeSettings({ bgm: 3, sfx: -1, voice: 2, muted: 'yes', damageNumbers: false, quality: 'ultra' }),
-      { bgm: 1, sfx: 0, voice: 1, voiceLang: 'cn', voiceOverrides: {}, muted: false, damageNumbers: false, quality: 'high', textSize: 'sm', keys: { ...DEFAULT_SETTINGS.keys } },
+      { bgm: 1, sfx: 0, voice: 1, voiceLang: 'cn', voiceNative: false, voiceOverrides: {}, muted: false, damageNumbers: false, officialDamageNumbers: false, ammoCount: false, combatMetrics: false, mysticEnergy: false, quality: 'high', officialFx: 'auto', textSize: 'sm', keys: { ...DEFAULT_SETTINGS.keys } },
       'a saved profile without `keys` (before 0.2.0) gets the default key map (test/ui/feedback5-hotkeys.test.js)');
     assert.equal(sanitizeSettings({ bgm: 0.5 }).voice, DEFAULT_SETTINGS.voice, 'a saved profile without `voice` gets the default');
-    // 语音语言 (0.2.2): 中文 by default — a profile saved before it, or any other value, plays the Chinese dub
+    // 语音语言: 中文 by default. en / kr are dubs (0.3.0); anything else, including the per-operator 'native', stays 中文.
     assert.equal(DEFAULT_SETTINGS.voiceLang, 'cn');
+    assert.equal(DEFAULT_SETTINGS.voiceNative, false);
     assert.equal(sanitizeSettings({ bgm: 0.5 }).voiceLang, 'cn');
+    assert.equal(sanitizeSettings({ bgm: 0.5 }).voiceNative, false, 'a profile saved before the switch stays off');
+    assert.equal(DEFAULT_SETTINGS.combatMetrics, false);
+    assert.equal(sanitizeSettings({ bgm: 0.5 }).combatMetrics, false, 'a profile saved before 作战统计 stays off');
+    assert.equal(sanitizeSettings({ combatMetrics: true }).combatMetrics, true);
+    // 官方特效 (0.3.0): 'auto' by default (完整 on a desktop, 精简 on a touch device); unknown values fall back to it
+    assert.equal(DEFAULT_SETTINGS.officialFx, 'auto');
+    assert.equal(sanitizeSettings({ bgm: 0.5 }).officialFx, 'auto', 'a profile saved before 官方特效 gets the default');
+    for (const v of ['off', 'lite', 'full', 'auto']) assert.equal(sanitizeSettings({ officialFx: v }).officialFx, v);
+    assert.equal(sanitizeSettings({ officialFx: 'ultra' }).officialFx, 'auto');
+    assert.equal(sanitizeSettings({ combatMetrics: 'yes' }).combatMetrics, false, 'a non-boolean stays off');
     assert.equal(sanitizeSettings({ voiceLang: 'jp' }).voiceLang, 'jp');
-    for (const bad of ['en', 'kr', 'JP', 'ja', 1, null]) assert.equal(sanitizeSettings({ voiceLang: bad }).voiceLang, 'cn', String(bad));
+    assert.equal(sanitizeSettings({ voiceLang: 'en' }).voiceLang, 'en');
+    assert.equal(sanitizeSettings({ voiceLang: 'kr' }).voiceLang, 'kr');
+    assert.equal(sanitizeSettings({ voiceNative: true }).voiceNative, true);
+    for (const bad of ['native', 'JP', 'ja', 1, null]) assert.equal(sanitizeSettings({ voiceLang: bad }).voiceLang, 'cn', String(bad));
     assert.equal(sanitizeSettings({ bgm: 0.333 }).bgm, 0.33);
     assert.equal(sanitizeSettings({ quality: 'low' }).quality, 'low');
   });
@@ -778,16 +791,16 @@ describe('prepCamera (research 09 §1.2: the Final Assault prep on the own half 
     assert.equal(prepCamera(null, 'a').kind, 'prep');
     assert.equal(prepCamera({ round: 14, bossRound: null, hiddenRound: null, players: [] }, 'a').kind, 'prep');
   });
-  test('boss / hidden round prep: bossPrep on the side of the server pairing (alive players by seat, two by two)', () => {
+  test('older servers without bossPairs keep the legacy seat-order prep camera fallback', () => {
     const players = [pl('d', 3), pl('a', 0), pl('c', 2), pl('b', 1)];
     for (const round of [14, 15]) {
       const sides = Object.fromEntries(players.map((p) => [p.playerId, prepCamera(pub(round, players), p.playerId)]));
       assert.deepEqual(Object.fromEntries(Object.entries(sides).map(([k, v]) => [k, `${v.kind}:${v.opts.side}`])),
         { a: 'bossPrep:L', b: 'bossPrep:R', c: 'bossPrep:L', d: 'bossPrep:R' });
     }
-    // somebody left (eliminated): the pairs close up exactly like the server's (Match._quit re-plans the boss waves)
+    // Legacy servers closed the ordered pairs up when somebody left; new servers publish bossPairs explicitly.
     const left = [pl('a', 0), pl('b', 1, false), pl('c', 2), pl('d', 3)];
-    const groups = pairPlayers(left.filter((p) => p.alive).map((p) => ({ ...p })));
+    const groups = [[left[0], left[2]], [left[3]]];
     for (const g of groups) g.forEach((p, j) => assert.equal(prepCamera(pub(14, left), p.playerId).opts.side, j === 1 ? 'R' : 'L', p.playerId));
     assert.equal(prepCamera(pub(14, left), 'c').opts.side, 'R', 'c moves up to the right half');
     assert.equal(prepCamera(pub(14, left), 'b').kind, 'prep', 'an eliminated player has no half');

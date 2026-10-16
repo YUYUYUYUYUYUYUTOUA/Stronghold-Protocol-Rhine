@@ -545,13 +545,14 @@ test('战术决策 E2E (co-op 3): team cards reach every teammate (AI included),
   for (const c of view) assert.equal(c.team, DATA.choices.cards.tactic.find((x) => x.effectId === c.id).team, `${c.id} team flag`);
   const all = [...m.players.values()];
   const before = new Map(all.map((ps) => [ps.playerId, { funds: ps.funds, free: ps.shop.freeRefreshes, yan: ps.layers.yanShip || 0, invest: ps.layers.investShip || 0,
-    items: new Set(ownedItems(ps).map((p) => p.uid)), chess: [...ps.hand, ...ps.temp].filter((p) => p && p.kind === 'chess').length }]));
+    items: new Set(ownedItems(ps).filter(p => DATA.items[p.id].tier === 1).map((p) => p.uid)), chess: [...ps.hand, ...ps.temp].filter((p) => p && p.kind === 'chess').length }]));
   // the humans take 列装 (team) and 整备 (personal); the AI picks what it likes
   draftPicks(h, { p_0: 'allybuff_select_1', p_1: 'allybuff_select_5' });
   const aiIdx = sp.picks.ai_0;
   const aiCard = aiIdx != null ? sp.cards[aiIdx].id : null;
   assert.ok(aiCard && !['allybuff_select_1', 'allybuff_select_5'].includes(aiCard), 'the AI took one of the other cards');
-  const itemsOf = ownedItems;
+  // R3 prep also grants an independent tier-II communicator; this card grants tier-I equipment only.
+  const itemsOf = ps => ownedItems(ps).filter(p => DATA.items[p.id].tier === 1);
   // 列装: 2 random tier-I items for everyone (pool_equip_shop_1)
   for (const ps of all) {
     const had = before.get(ps.playerId).items;

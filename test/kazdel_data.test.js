@@ -142,11 +142,11 @@ test('Kazdel data: Wisadel native shadows resolve all owner skills and module-fr
 test('Kazdel data: one additional core BAN preserves addon counts and 5/6-player reductions', () => {
   for (const difficulty of ['FUNNY', 'NORMAL', 'HARD', 'ABYSS', 'TRAINING']) {
     const base = OPENING_BANS[difficulty], configured = files.config.bans[difficulty];
-    assert.equal(configured.core, base.core + (difficulty === 'TRAINING' ? 0 : 1));
+    assert.equal(configured.core, base.core);
     assert.equal(configured.addon, base.addon);
     for (const seats of [1, 4, 5, 6]) {
       const reduction = difficulty === 'TRAINING' ? 0 : seats === 6 ? 2 : seats === 5 ? 1 : 0;
-      assert.deepEqual(openingBanCounts(difficulty, seats, files.config.bans), { core: Math.max(0, configured.core - reduction), addon: base.addon });
+      assert.deepEqual(openingBanCounts(difficulty, seats, files.config.bans), { core: Math.max(0, configured.core - reduction) + (difficulty !== 'TRAINING' && seats <= 4 ? 1 : 0), addon: base.addon + (difficulty !== 'TRAINING' && seats <= 4 ? 2 : 0) });
     }
   }
   for (const mode of Object.values(files.config.modes)) assert.ok(mode.activeBondIds.includes(KAZDEL_BOND));

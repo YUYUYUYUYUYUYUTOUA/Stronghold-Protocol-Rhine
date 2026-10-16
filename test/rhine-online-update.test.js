@@ -388,7 +388,11 @@ test('download-only modes never install or overwrite private files', async t => 
 test('online update skips intermediate versions through the manifest updater and preserves local settings', async t => {
   const f = fixture(t);
   put(f.target, 'data/tuning.json', 'local custom tuning');
-  const preserved = ['.env', 'scripts/service.env.cmd', 'logs/private.log', '.cache/player.json', 'my-own-file.json', 'data/tuning.json'];
+  const pluginPrivate = { 'plugins/config.json': '{"scripts":"off"}', 'plugins/.studio-key': 'synthetic-private-key',
+    'plugins/mine/plugin.json': '{"name":"private"}' };
+  for (const [relative, contents] of Object.entries(pluginPrivate)) put(f.target, relative, contents);
+  const preserved = ['.env', 'scripts/service.env.cmd', 'logs/private.log', '.cache/player.json', 'my-own-file.json', 'data/tuning.json',
+    ...Object.keys(pluginPrivate)];
   const before = Object.fromEntries(preserved.map(relative => [relative, fs.readFileSync(path.join(f.target, relative), 'utf8')]));
   const result = await runOnlineUpdate(f.options);
   assert.equal(result.status, 'updated');

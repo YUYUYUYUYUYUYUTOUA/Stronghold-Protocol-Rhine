@@ -23,6 +23,16 @@ describe('mediaUrl: 音频地址去掉扩展名（躲开下载器嗅探）', () 
     assert.equal(mediaUrl('/assets/audio/x/A.MP3', ORIGIN), '/media/x/A', '大小写不敏感');
   });
 
+  test('服务器下发的清单带内容哈希段（/assets/~<hash>/audio/…）：改写后保留这一段', () => {
+    const H = '0123456789abcdef';
+    assert.equal(mediaUrl(`/assets/~${H}/audio/bgm/m_sys_act1autochess_loop.mp3`, ORIGIN), `/media/~${H}/bgm/m_sys_act1autochess_loop`);
+    assert.equal(mediaUrl(`${ORIGIN}/assets/~${H}/audio/sfx/a.mp3`, ORIGIN), `/media/~${H}/sfx/a`);
+    assert.doesNotMatch(mediaUrl(`/assets/~${H}/audio/bgm/a.mp3`, ORIGIN), /\.(mp3|m4a|aac|ogg|oga|opus|wav)(\?|$)/i);
+    // 不是合法的哈希段（大写、长度不对）就不是我们的音频地址，原样返回
+    assert.equal(mediaUrl(`/assets/~${H.toUpperCase()}/audio/a.mp3`, ORIGIN), `/assets/~${H.toUpperCase()}/audio/a.mp3`);
+    assert.equal(mediaUrl(`/assets/~${H}/char/a.png`, ORIGIN), `/assets/~${H}/char/a.png`, '图片不改写');
+  });
+
   test('改写后的地址里不再有任何媒体扩展名（下载器就是按这个嗅探的）', () => {
     const out = mediaUrl('/assets/audio/bgm/m_bat_vtlionk_loop.mp3', ORIGIN);
     assert.equal(out.startsWith(MEDIA_PREFIX), true);
@@ -44,6 +54,20 @@ describe('mediaUrl: 音频地址去掉扩展名（躲开下载器嗅探）', () 
     assert.equal(mediaUrl('/assets/audio/.hidden.mp3', ORIGIN), '/assets/audio/.hidden.mp3');
     // URL 解析本来就会把 .. 归一化，改写跟着归一化后的路径走（服务端仍是同一道校验）
     assert.equal(mediaUrl('/assets/audio/bgm/../x.mp3', ORIGIN), '/media/x');
+  });
+
+  test('外观插件的音频（/p/<id>/<hash8>/…）同样去掉扩展名，留在插件自己的路由上（DESIGN §32 P1a）', () => {
+    assert.equal(mediaUrl('/p/my-skin/0123abcd/voice/s1.mp3', ORIGIN), '/p/my-skin/0123abcd/voice/s1');
+    assert.equal(mediaUrl('/p/my-skin/0123abcd/bgm/loop.ogg', ORIGIN), '/p/my-skin/0123abcd/bgm/loop');
+    assert.equal(mediaUrl(`${ORIGIN}/p/my-skin/0123abcd/v/a%20b.mp3`, ORIGIN), '/p/my-skin/0123abcd/v/a%20b', '编码过的路径段原样保留');
+    assert.doesNotMatch(mediaUrl('/p/my-skin/0123abcd/voice/s1.mp3', ORIGIN), /\.(mp3|ogg)(\?|$)/i);
+    // 不改写：图片、去掉扩展名后仍像带扩展名的文件、别的源、不是插件地址的形状
+    assert.equal(mediaUrl('/p/my-skin/0123abcd/art/a.png', ORIGIN), '/p/my-skin/0123abcd/art/a.png');
+    assert.equal(mediaUrl('/p/my-skin/0123abcd/v/a.b.mp3', ORIGIN), '/p/my-skin/0123abcd/v/a.b.mp3');
+    assert.equal(mediaUrl('https://cdn.example.com/p/my-skin/0123abcd/v/a.mp3', ORIGIN), 'https://cdn.example.com/p/my-skin/0123abcd/v/a.mp3');
+    assert.equal(mediaUrl('/p/my-skin/0123/v/a.mp3', ORIGIN), '/p/my-skin/0123/v/a.mp3', '哈希段不是 8 位十六进制');
+    assert.equal(mediaUrl('/p/My-Skin/0123abcd/v/a.mp3', ORIGIN), '/p/My-Skin/0123abcd/v/a.mp3', '不是插件 id');
+    assert.equal(mediaUrl('/p/my-skin/0123abcd/v/A.MP3', ORIGIN), '/p/my-skin/0123abcd/v/A.MP3', '大写扩展名不去掉（服务端按小写的 .mp3 / .ogg 找，去掉只会先多一次 404）');
   });
 
   test('没有 location 时（测试环境）用传入的 origin 判断同源', () => {

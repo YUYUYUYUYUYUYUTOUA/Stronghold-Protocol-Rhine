@@ -54,7 +54,12 @@ export class MatchReports {
     const f = this._fieldByBattle(msg.battleId);
     if (!f || f.done || f.heldResult || f.verifyJob || f.mode !== 'client' || f.authority !== ps.playerId) return OK;
     const bossLike = f.kind === 'boss' || f.kind === 'hidden';
-    const v = validateClientResult(f.spec, msg.result, { gd: this.gd });
+    // a room with gameplay plugins (opts.requireCs, DESIGN §32.6): the result must name the content set the battle runs
+    // on — one without `cs`, or with another, came from a page that did not run this content: refused like an
+    // implausible result (the server simulates the battle)
+    const v = this.requireCs && msg.cs !== this.cs
+      ? { ok: false, reason: `its content ${typeof msg.cs === 'string' ? msg.cs.slice(0, 8) : 'is not named'} is not the room's ${this.cs.slice(0, 8)}` }
+      : validateClientResult(f.spec, msg.result, { gd: this.gd });
     if (!v.ok) {
       this.verifyStats.rejected++;
       this.log.warn?.(`[match ${this.roomCode}] ${f.fieldId}: rejected client result from ${ps.playerId} (${v.reason}) — server re-simulation`);
@@ -119,8 +124,11 @@ export class MatchReports {
    * 'sample' accepts immediately and only logs differences for ~1 battle in 8, even after the field's phase ends.
    */
   _verifyResult(f, result, accept) {
-    if (this.verifyMode === 'off') { accept(result); return; }
-    const required = this.verifyMode === 'all';
+    // A normal field's appearance count changes the helper's stats in the same round's unite battle. Accept that
+    // carried state only after deterministic server verification, including when diagnostic SP_VERIFY is off.
+    const carriesAppearances = f.kind === 'normal' && Object.values(result.perPlayer || {}).some(p => p.remAppearances > 0);
+    if (this.verifyMode === 'off' && !carriesAppearances) { accept(result); return; }
+    const required = this.verifyMode === 'all' || carriesAppearances;
     const start = () => {
       const job = new HeadlessJob(this._specBattle(f.spec), { players: f.players, onError: (e) => this.reportError('verify', e) });
       if (required) {

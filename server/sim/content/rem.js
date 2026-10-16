@@ -2,6 +2,7 @@
 import { REM_BOND, REM_LIMITS, REM_INTERVALS, REM_BATCHES, REM_OPENING, remStage, remPick } from '../../../shared/rem.js';
 import { COLS } from '../constants.js';
 import { hypot } from '../detmath.js';
+import { isMember } from './support/index.js';
 
 const present = u => u.alive && u.deployed && !u.removed;
 const key = (r, c) => r * COLS + c;
@@ -22,10 +23,10 @@ function free(b, r, c, u = null, fly = false) {
   return !occ || occ === u || !present(occ);
 }
 /** Four-neighbour BFS avoids clipping corners. Occupied destinations are never used. */
-export function remPath(b, start, goals, unit = null, fly = false, ignoreOccupancy = false, passAllies = false) {
-  const pass = (r, c) => ignoreOccupancy ? b.grid.groundPassable(r, c)
+export function remPath(b, start, goals, unit = null, fly = false, ignoreOccupancy = false, passAllies = false, within = null) {
+  const pass = (r, c) => (!within || within(r, c)) && (ignoreOccupancy ? b.grid.groundPassable(r, c)
     : passAllies ? b.grid.groundPassable(r, c) && !b.downOn(r, c) && (!b._occ[key(r,c)] || b._occ[key(r,c)].side === 'ally')
-      : free(b, r, c, unit, fly);
+      : free(b, r, c, unit, fly));
   const ends = new Set(goals.filter(([r, c]) => pass(r, c) && (ignoreOccupancy || free(b,r,c,unit,fly))).map(([r, c]) => key(r, c)));
   if (!ends.size) return null;
   const queue = [start], prev = new Map([[key(...start), null]]);
@@ -43,13 +44,23 @@ export function remPath(b, start, goals, unit = null, fly = false, ignoreOccupan
   }
   return null;
 }
-function nearby(b, point) {
+function nearby(b, point, radius = 2) {
   const out = [];
-  for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
+  for (let dr = -radius; dr <= radius; dr++) for (let dc = -radius; dc <= radius; dc++) {
     const p = [point[0] + dr, point[1] + dc];
     if (b.grid.groundPassable(...p)) out.push(p);
   }
   return out.sort((a, c) => distance(a, point) - distance(c, point) || a[0] - c[0] || a[1] - c[1]);
+}
+// Count successful creations, including vehicles, bosses and bypass sources; deaths never subtract appearances.
+function refreshAppearance(b, s) {
+  if (s.stage < 2) return;
+  const pct = s.stage >= 3 ? Math.min(300, s.appeared * 8) / 100 : Math.min(200, s.appeared * 4) / 100;
+  for (const u of s.ps.units) {
+    if (u.kind !== 'op' || !isMember(b, u, REM_BOND)) continue;
+    if (u.findBuff('rem:appearance')?.mods?.atkPct === pct) continue;
+    b.addBuff(u, { key: 'rem:appearance', mods: { atkPct: pct, hpPct: pct }, persist: true, allowDead: true });
+  }
 }
 function record(type, S) {
   const miner = type === 'miner' || type === 'combined';
@@ -71,6 +82,8 @@ function spawn(b, s, type, source, point = s.gate) {
   if (type === 'boss') { u.x = s.gate[1]; u.y = s.gate[0]; u.mem.remAirIndex = 0; u.mem.remAirDirection = 1; u.ground = false; b.addBuff(u, { key: 'rem:flight', persist: true, flags: { liftoff: true, noBlock: true } }); }
   if (type === 'food' || type === 'bus') b.addBuff(u, { key: 'rem:vehicle', persist: true, flags: { noBlock: true } });
   s.units.push(u);
+  s.appeared++;
+  refreshAppearance(b, s);
   b.emit('remSpawned', { unit: u, type, ownerId: s.ps.playerId, source });
   return u;
 }
@@ -153,6 +166,39 @@ function move(b, s, u, dt) {
   if (!vehicle && b.enemiesInKeys(u.rangeKeys, u, u.profile).length) return;
   if (u.mem.remLeg) { advanceMarch(b,u,dt); return; }
   if ((u.mem.remPlanAt || 0) > b.time + 1e-9) return;
+  const at = [u.tileR, u.tileC];
+  const inRally = (r, c) => Math.max(Math.abs(r - s.rally[0]), Math.abs(c - s.rally[1])) <= 1;
+  // Tour the rendezvous's eight neighbours; the centre is a legal transit tile.
+  // A fixed rotating order keeps the simulation deterministic and patrol paths inside the 3x3 area.
+  if (!vehicle && u.mem.remSettled && !inRally(...at)) u.mem.remSettled = false;
+  if (!vehicle && inRally(...at) && free(b, ...at, u) && !u.remTransitAnchor) u.mem.remSettled = true;
+  if (!vehicle && u.mem.remSettled) {
+    const ring = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]];
+    const start = u.mem.remPatrolIndex ?? u.id % ring.length;
+    for (let i = 0; i < ring.length; i++) {
+      const index = (start + i) % ring.length, [dr, dc] = ring[index];
+      const goal = [s.rally[0] + dr, s.rally[1] + dc];
+      if ((goal[0] === at[0] && goal[1] === at[1]) || !free(b, ...goal, u)) continue;
+      const path = remPath(b, at, [goal], u, false, false, true, inRally);
+      if (path?.length > 1) {
+        u.mem.remPatrolIndex = (index + 1) % ring.length;
+        u.mem.remLeg = { from: at, to: path[1] };
+        advanceMarch(b, u, dt);
+        return;
+      }
+    }
+    if (u.remTransitAnchor) {
+      const path = remPath(b, at, [u.remTransitAnchor], u, false, false, true, inRally);
+      if (path?.length > 1) {
+        u.mem.remLeg = { from: at, to: path[1] };
+        advanceMarch(b, u, dt);
+        return;
+      }
+      if (path?.length === 1) b.relocate(u, ...at);
+    }
+    u.mem.remPlanAt = b.time + 1;
+    return;
+  }
   let goals;
   if (type === 'food' || fly) {
     const end = u.mem.remReturn ? s.gate : s.exit;
@@ -162,7 +208,7 @@ function move(b, s, u, dt) {
   else {
     // Fill deepest reachable route positions first, not the first radius tile encountered.
     // Manhattan distance gives the wrong order on winding single-lane maps.
-    const candidates = nearby(b, s.rally).filter(p => distance(p, s.gate) > 0 && free(b, ...p, u))
+    const candidates = nearby(b, s.rally, 1).filter(p => distance(p, s.gate) > 0 && free(b, ...p, u))
       .sort((a, c) => (s.depth.get(key(...c)) ?? 0) - (s.depth.get(key(...a)) ?? 0) || distance(a, s.rally) - distance(c, s.rally) || a[0] - c[0] || a[1] - c[1]);
     goals = [];
     for (const candidate of candidates) if (remPath(b, [u.tileR, u.tileC], [candidate], u, false, false, true)) { goals = [candidate]; break; }
@@ -172,7 +218,6 @@ function move(b, s, u, dt) {
   // If the rally filled while this unit was crossing, return to its still-reserved free tile.
   const returningToAnchor = !goals.length && !!u.remTransitAnchor;
   if (returningToAnchor) goals = [u.remTransitAnchor];
-  const at = [u.tileR, u.tileC];
   if (goals.some(p => p[0] === at[0] && p[1] === at[1])) {
     // An ally can leave during transit: commit the now-free landing tile before settling/unloading.
     if (u.remTransitAnchor && !b.relocate(u,...at)) return;
@@ -249,10 +294,13 @@ export function install(b) {
     const airRoute = remPath(b, gate, [exit], null, false, true) ?? [gate, exit];
     const depth = new Map();
     for (const p of nearby(b, rally)) { const path = remPath(b, gate, [p], null, false, true); if (path) depth.set(key(...p), path.length); }
-    return { airRoute, depth, ps, stage: remStage(ps.bonds[REM_BOND]), gate, rally, exit, units: [], queue: [], regular: 0, food: -10, bus: 0, boss: 0, aura: 0 };
+    const carry = b.kind === 'unite' && Number.isInteger(ps.input.remAppearances) && ps.input.remAppearances > 0
+      && ps.input.remAppearances <= 1e9 ? ps.input.remAppearances : 0;
+    return { airRoute, depth, ps, stage: remStage(ps.bonds[REM_BOND]), gate, rally, exit, units: [], queue: [], appeared: carry, regular: 0, food: -10, bus: 0, boss: 0, aura: 0 };
   });
   b.remState = new Map(states.map(s => [s.ps.playerId, s]));
   b.remSummon = (owner, count, opts) => { const s = b.remState.get(owner); return s ? request(b, s, count, opts) : 0; };
+  b.on('deploy', ({ unit }) => { const s = b.remState.get(unit.ownerId); if (s) refreshAppearance(b, s); });
   b.on('battleStart', () => {
     for (const s of states) if (s.stage) {
       request(b, s, REM_OPENING[s.stage - 1], { source: 'regular', capMode: 'regular' });

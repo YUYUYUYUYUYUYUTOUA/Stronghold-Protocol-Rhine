@@ -15,14 +15,14 @@ const SIEGE = 'char_112_siege'; // 推进之王 (维多利亚)
 const PICK = { charId: SIEGE, skillIndex: 2, uniEquipId: 'uniequip_002_siege' };
 
 /** A co-op match: p_0 slots 推进之王 at T5A, p_1 slots nothing; first prep. */
-function prep(seed = 910) {
+function prep(seed = 912) {
   const seats = [
     { seat: 0, playerId: 'p_0', name: 'P0', isBot: false, connected: true, diy: { [T5A]: PICK } },
     { seat: 1, playerId: 'p_1', name: 'P1', isBot: false, connected: true },
   ];
   const h = makeMatch({ mode: 'coop', difficulty: 'NORMAL', seats, seed }).start();
   h.toPrep(1);
-  assert.equal(h.ps('p_0').diyStock.left(T5A), 8, 'fixture requires Victoria/Siege outside the opening BAN set');
+  assert.equal(h.ps('p_0').diyStock.left(T5A), 16, 'fixture requires Victoria/Siege outside the opening BAN set and the v0.3.0 co-op stock multiplier');
   return { h, m: h.m, p0: h.ps('p_0'), p1: h.ps('p_1') };
 }
 /** Take every shared-pool copy of the chess `pred` admits (the draw then sees only what is left); m.restore() gives them back. */
@@ -34,7 +34,7 @@ function drain(m, pred) {
 
 test('#9 effect rolls (ctx.rollChess, any tier / bond filter) draw the player\'s 自选 stock — its own player only', () => {
   const { m, p0, p1 } = prep();
-  assert.equal(p0.diyStock.left(T5A), 8);
+  assert.equal(p0.diyStock.left(T5A), 16, 'co-op: twice the single-player 8 (#650)');
   drain(m, (id, e) => e.tier === 5);
   const c0 = makeCtx(m, p0, { key: 'test' }, 'onTest');
   const c1 = makeCtx(m, p1, { key: 'test' }, 'onTest');
@@ -48,14 +48,14 @@ test('#9 effect rolls (ctx.rollChess, any tier / bond filter) draw the player\'s
   assert.equal(c0.rollChess({ bond: 'yanShip', tier: 5 }), null, 'not a 炎 operator');
   // granting it takes one copy of her own stock
   assert.ok(c0.grantChess(T5A));
-  assert.equal(p0.diyStock.left(T5A), 7);
+  assert.equal(p0.diyStock.left(T5A), 15);
   m.restore();
   checkInvariants(m);
   m.dispose();
 });
 
 test('#9 reward pools (ctx.rollPool: a shared-pool chess pool) and the 维多利亚驰援 card draw it too', () => {
-  const { m, p0, p1 } = prep(910);
+  const { m, p0, p1 } = prep();
   drain(m, (id, e) => e.tier === 5);
   const c0 = makeCtx(m, p0, { key: 'test' }, 'onTest');
   const c1 = makeCtx(m, p1, { key: 'test' }, 'onTest');

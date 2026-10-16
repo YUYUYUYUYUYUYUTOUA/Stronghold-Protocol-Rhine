@@ -1,10 +1,11 @@
 // Rem protocol traits. Only fixed chess garrison identities opt in; native DIY kits are unchanged.
-import { garrisonRecord, gainLayers } from './support/index.js';
+import { garrisonRecord, gainLayers, isMember } from './support/index.js';
 import { bodyInKeys } from '../body.js';
+import { roundHalfEven } from '../detmath.js';
 
 const BOND = 'remShip';
 const up = u => !!u?.alive && u.deployed && !u.removed && !u.hidden;
-const adjacent = (a, b) => Math.abs(Math.round(a.x) - Math.round(b.x)) <= 1 && Math.abs(Math.round(a.y) - Math.round(b.y)) <= 1;
+const adjacent = (a, b) => Math.abs(roundHalfEven(a.x) - roundHalfEven(b.x)) <= 1 && Math.abs(roundHalfEven(a.y) - roundHalfEven(b.y)) <= 1;
 const rank = u => u.def?.golden ? 2 : 1;
 function traits(u) {
   if (u.kind !== 'op' || u.kazdelSoul) return [];
@@ -25,17 +26,19 @@ export function install(battle) {
   const strongest = (pid, key) => owned(pid, key).sort((a, b) => rank(b.unit) - rank(a.unit))[0]?.unit;
   const reinforcements = new Set();
   const rayProfiles = new WeakMap();
-  const regen = new Map(), appeared = new Set(), savage = new Map(), asbestos = new Map();
+  const regen = new Map(), appeared = new Set(), savageDeaths = new Set(), asbestos = new Map();
+  const savageBudget = new Map();
+  const savageUnits = entries.filter(e => e.key === 'REM_SAVAGE').map(e => e.unit);
+  // The local aura determines each gain; the best Savage deployed this battle determines the shared budget.
+  // A later elite deployment can expand it, and losing that elite never takes the budget back.
+  const rememberSavage = unit => {
+    if (up(unit)) savageBudget.set(unit.ownerId, Math.max(savageBudget.get(unit.ownerId) ?? 0, rank(unit)));
+  };
+  for (const unit of savageUnits) rememberSavage(unit);
+  battle.on('deploy', ({ unit }) => { if (savageUnits.includes(unit)) rememberSavage(unit); });
   const sandTimers = new Map(entries.filter(e => e.key === 'REM_SANDRECKONER').map(e => [e.unit, 0]));
   const touch = unit => {
     if (!up(unit)) return;
-    for (const { unit: op } of owned(unit.ownerId, 'REM_SAVAGE')) {
-      let seen = savage.get(op);
-      if (!seen) { seen = new Set(); savage.set(op, seen); }
-      if (!adjacent(op, unit) || seen.has(unit)) continue;
-      seen.add(unit);
-      buff(battle, op, 'rem:savage', { atkPct: Math.min(30, seen.size) * .01 * rank(op) });
-    }
     const armor = strongest(unit.ownerId, 'REM_ASBESTOS');
     // A stronger copy elsewhere must not suppress a weaker copy the reinforcement actually passes.
     const passed = owned(unit.ownerId, 'REM_ASBESTOS').filter(e => adjacent(e.unit, unit));
@@ -65,7 +68,24 @@ export function install(battle) {
     if (!up(unit) || !entries.some(e => e.unit === unit && e.key === 'REM_JACINTA')) return;
     battle.remSummon?.(unit.ownerId, rank(unit), { poolStage: 1, source: 'jacinta', capMode: 'extra' });
   });
+  // `kill` may revive its victim. Only final enemy removal awards layers, once per enemy.
+  battle.on('death', ({ unit, reason, killer }) => {
+    if (!unit || unit.side !== 'enemy' || reason !== 'killed' || unit.removeReason !== 'killed' || unit.alive || unit.hp > 0 ||
+      battle.unitById(unit.id) !== unit || savageDeaths.has(unit.id)) return;
+    savageDeaths.add(unit.id);
+    if (!killer || killer.side !== 'ally') return;
+    const reinforcement = killer.kind === 'token' && killer.remType && reinforcements.has(killer);
+    if (!(killer.kind === 'op' && !killer.kazdelSoul && isMember(battle, killer, BOND)) && !reinforcement) return;
+    if (battle.unitById(killer.id) !== killer) return;
+    const source = owned(killer.ownerId, 'REM_SAVAGE').filter(e => adjacent(e.unit, killer))
+      .sort((a, b) => rank(b.unit) - rank(a.unit))[0]?.unit;
+    if (!source) return;
+    for (const { unit: op } of owned(killer.ownerId, 'REM_SAVAGE')) rememberSavage(op);
+    gainLayers(battle, { playerId: killer.ownerId, bonds: BOND, n: 2 * rank(source), source,
+      reason: 'garrison', cap: 24 * savageBudget.get(killer.ownerId), capKey: `rem:savage:${killer.ownerId}` });
+  }, { priority: -100 });
   battle.on('tick', ({ dt }) => {
+    for (const unit of savageUnits) rememberSavage(unit);
     for (const [op, elapsed] of sandTimers) {
       if (!up(op)) continue;
       const time = elapsed + dt, interval = 12 / rank(op);

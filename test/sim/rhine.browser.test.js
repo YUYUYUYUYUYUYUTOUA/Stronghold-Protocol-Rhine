@@ -46,11 +46,13 @@ test('fixed Magallan native drones, layers and ownership agree in Chromium and N
             { uid: 2, kind: 'token', tokenId: 'token_10005_mgllan_drone3', ownerUid: 1, row: 10 + seat, col: 6 }],
         })), flags: { autoFinish: false, dpInit: 99, dpPerSec: 0 }, spawns: [] });
       const node = exercise(createBattleFromSpec(spec, ds));
-      const web = await page.evaluate(async ({ spec, body }) => {
+      const battle = await page.evaluateHandle(async spec => {
         const { loadBrowserSim } = await import('/js/battle/runner.js');
         const { spec: S, ds } = await loadBrowserSim();
-        return (0, eval)(`(${body})`)(S.createBattleFromSpec(spec, ds));
-      }, { spec, body: exercise.toString() });
+        return S.createBattleFromSpec(spec, ds);
+      }, spec);
+      const web = await page.evaluate(exercise, battle);
+      await battle.dispose();
       assert.deepEqual(node.opening, [{ alive: true, owner: 'p1', bonus: 100 }, { alive: true, owner: 'p2', bonus: 200 }]);
       assert.ok(node.active.every(u => u.alive && u.native > 0));
       assert.deepEqual(node.changed, [200, 200]);

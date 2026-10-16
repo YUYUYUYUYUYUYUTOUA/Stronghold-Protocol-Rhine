@@ -1,0 +1,51 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { fixture, bondPatch } from '../helpers/contentFixtures.js';
+import { ROOT, getData } from '../../server/data.js';
+import { createContentSets } from '../../server/plugins/contentSets.js';
+import { createRoomSets } from '../../server/plugins/roomSets.js';
+import { contentHashOf } from '../../shared/plugins/identity.js';
+
+test('content compositions and memoization keep original and expansion profiles isolated', t => {
+  const f = fixture(t);
+  f.put('data-demo', { data: ['patch.json'] }, { 'patch.json': bondPatch() });
+  const contents = createContentSets({ registry: f.registry, vanillaData: getData(), vanillaDir: path.join(ROOT, 'data/vanilla') });
+  t.after(() => contents.close());
+  const rhine = contents.resolve(['data-demo']);
+  const original = contents.resolve(['data-demo'], { rhineEnabled: false });
+  assert.ok(rhine.ok, JSON.stringify(rhine));
+  assert.ok(original.ok, JSON.stringify(original));
+  assert.notEqual(rhine.set.cs, original.set.cs);
+  assert.ok(rhine.set.data.bonds.remShip);
+  assert.equal(original.set.data.bonds.remShip, undefined);
+  assert.equal(original.set.data.bonds.rhineShip, undefined);
+  assert.equal(rhine.set.data.bonds.deputShip.bb.base_def, 0.3);
+  assert.equal(original.set.data.bonds.deputShip.bb.base_def, 0.3);
+  assert.equal(contents.resolve(['data-demo']).set, rhine.set);
+  assert.equal(contents.resolve(['data-demo'], { rhineEnabled: false }).set, original.set);
+  assert.equal(contentHashOf(original.set.hashInput), original.set.cs);
+  const index = JSON.parse(contents.file(original.set.cs.slice(0, 16), 'index.json').body);
+  assert.match(index.data.chess.url, /^\/data\/vanilla\/chess\.json\?v=/);
+  assert.match(index.data.bonds.url, /^\/cs\//, 'patched table is served from this composition');
+  assert.ok(contents.dataBytes(original.set.cs).chess);
+});
+
+test('an original room without third-party plugins has a servable distinct content identity', t => {
+  const f = fixture(t);
+  const contents = createContentSets({ registry: f.registry, vanillaData: getData(), vanillaDir: path.join(ROOT, 'data/vanilla') });
+  t.after(() => contents.close());
+  const rooms = createRoomSets({ registry: f.registry, contents, visual: null, policy: null });
+  const result = rooms.resolve([], { rhineEnabled: false });
+  assert.ok(result.ok, JSON.stringify(result));
+  assert.deepEqual(result.set.plugins, []);
+  assert.equal(rooms.dataOf(result.set.cs).bonds.remShip, undefined);
+  const index = JSON.parse(contents.file(result.set.cs.slice(0, 16), 'index.json').body);
+  assert.match(index.data.chess.url, /^\/data\/vanilla\//);
+  assert.equal(index.vanilla, false, 'browser content-set verification requires a nondefault identity');
+  assert.equal(contentHashOf(contents.get(result.set.cs).hashInput), result.set.cs);
+  rooms.holdContent(result.set.cs);
+  assert.equal(rooms.contentInUse(), 1);
+  rooms.releaseContent(result.set.cs);
+  assert.equal(rooms.contentInUse(), 0);
+});

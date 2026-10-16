@@ -11,7 +11,7 @@ function fixture(specs, { round = 1, layers = 0 } = {}) {
   for (const [i, spec] of specs.entries()) {
     const [key, elite = false] = spec;
     const id = `test_rem_${i}_a`;
-    chess[id] = chessRec({ id, golden: elite, rangeGrid: [[0,0],[0,1],[0,2],[1,0],[-1,0]], stats: { atk: 100, maxHp: 1000, blockCnt: 0 } });
+    chess[id] = chessRec({ id, golden: elite, bonds: names[key] ? ['remShip'] : [], rangeGrid: [[0,0],[0,1],[0,2],[1,0],[-1,0]], stats: { atk: 100, maxHp: 1000, blockCnt: 0 } });
     chess[id].garrisonIds = names[key] ? [`garrison_rem_${names[key]}_${elite ? 'b' : 'a'}`] : [];
     units.push({ chessId: id, uid: String(i), row: 10, col: 4 + i, dir: 'RIGHT' });
     kits[id] = () => ({ trait: { noAttack: true }, skill: null });
@@ -42,16 +42,118 @@ test('Rem Mulberry strongest copy regenerates every five seconds from entry, wit
   h.run(5); assert.equal(unit.hp, 700);
   assert.deepEqual(h.b.errors, []);
 });
-test('Rem passage counts a distinct unit once; armor upgrades to strongest and persists outside adjacency', () => {
+test('Rem armor upgrades to strongest on passage and persists; Savage passage no longer grants attack', () => {
   const { h, spawn, u } = fixture([['SAVAGE'], ['ASBESTOS', true], ['NONE']]);
   const unit = u(2); unit.tileC = unit.x = 5; spawn(unit);
-  assert.equal(u(0).s.atk, 101);
+  assert.equal(u(0).s.atk, 100);
   assert.equal(unit.s.def, unit.base.def + 40);
   assert.equal(unit.s.res, unit.base.res + 6);
-  h.run(.2); assert.equal(u(0).s.atk, 101);
+  h.run(.2); assert.equal(u(0).s.atk, 100);
   unit.tileC = unit.x = 9; h.run(.2); assert.equal(unit.s.def, unit.base.def + 40);
-  unit.tileC = unit.x = 5; h.run(.2); assert.equal(u(0).s.atk, 101);
+  unit.tileC = unit.x = 5; h.run(.2); assert.equal(u(0).s.atk, 100);
   assert.deepEqual(h.b.errors, []);
+});
+test('Rem Savage shares its 24/48 layer budget across copies, counts self kills once and resets next round', () => {
+  for (const elite of [false, true]) {
+    const increment = elite ? 4 : 2, cap = elite ? 48 : 24;
+    let layers = 0;
+    for (const round of [1, 2]) {
+      const { h, u } = fixture([['SAVAGE'], ['SAVAGE', elite]], { round, layers });
+      const total = () => h.b.getPlayer('p1').bonds.remShip.layers;
+      for (let i = 0; i < 14; i++) {
+        const killer = u(i % 2), enemy = h.spawn('dummy', { pos: [10, 8] });
+        h.b.kill(enemy, killer);
+        h.b.kill(enemy, killer);
+        h.b.emit('death', { unit: enemy, reason: 'killed', killer });
+        h.b.emit('death', { unit: { ...enemy }, reason: 'killed', killer });
+        assert.equal(total(), layers + Math.min(cap, (i + 1) * increment));
+      }
+      layers = total(); assert.deepEqual(h.b.errors, []);
+    }
+  }
+});
+test('Rem Savage includes adjacent owned Rem operators and every reinforcement type, including vehicles', () => {
+  const { h, u, spawn } = fixture([['SAVAGE', true], ['CLICK'], ['NONE']]);
+  const total = () => h.b.getPlayer('p1').bonds.remShip.layers;
+  const kill = killer => h.b.kill(h.spawn('dummy', { pos: [10, 8] }), killer);
+  kill(u(1)); assert.equal(total(), 4, 'an owned Rem operator in the surrounding eight tiles');
+  kill(u(2)); assert.equal(total(), 4, 'an unrelated operator never qualifies');
+  for (const type of ['child', 'miner', 'combined', 'chef', 'enthusiast', 'food', 'bus', 'boss']) {
+    const unit = h.b.spawnToken('p1', `token_rem_${type}`, 11, 4,
+      { def: { stats: { maxHp: 1000, atk: 0, blockCnt: 0 } }, kit: { trait: { noAttack: true } } });
+    assert.ok(unit); unit.remType = type; spawn(unit, type);
+    const before = total(); kill(unit); assert.equal(total(), before + 4, type);
+    h.b.retreat(unit, { permanent: true });
+  }
+  const foreign = h.b.spawnToken('p1', 'token_rem_miner', 11, 4,
+    { def: { stats: { maxHp: 1000, atk: 0, blockCnt: 0 } }, kit: {} });
+  foreign.remType = 'miner'; spawn(foreign); foreign.ownerId = 'p2';
+  const before = total(); kill(foreign); assert.equal(total(), before, 'teammate kills never benefit this player');
+  assert.deepEqual(h.b.errors, []);
+});
+test('Rem Savage excludes distant kills, revives, non-kill removals and source-less deaths', () => {
+  const { h, u } = fixture([['SAVAGE'], ['CLICK']]);
+  const total = () => h.b.getPlayer('p1').bonds.remShip.layers;
+  const revived = h.spawn('dummy', { pos: [10, 8] });
+  const hook = h.b.on('kill', ({ victim }) => { if (victim === revived) victim.hp = 1; });
+  h.b.kill(revived, u(0)); assert.ok(revived.alive); assert.equal(total(), 0);
+  h.b.off(hook); h.b.kill(revived, u(0)); assert.equal(total(), 2);
+  u(1).x = u(1).tileC = 6;
+  const distant = h.spawn('dummy', { pos: [10, 8] });
+  h.b.kill(distant, u(1)); assert.equal(total(), 2, 'two tiles away');
+  u(1).x = u(1).tileC = 5;
+  h.b.emit('death', { unit: distant, reason: 'killed', killer: u(1) });
+  assert.equal(total(), 2, 'a later replay cannot change the original kill proximity');
+  h.b.kill(h.spawn('dummy', { pos: [10, 8] })); assert.equal(total(), 2);
+  const escaped = h.spawn('dummy', { pos: [10, 8] }); h.b.leak(escaped);
+  h.b.emit('death', { unit: escaped, reason: 'leak', killer: u(0) }); assert.equal(total(), 2);
+  h.b.kill(u(1), u(0)); assert.equal(total(), 2, 'allied deaths never qualify');
+  assert.deepEqual(h.b.errors, []);
+});
+function separatedSavages({ lateElite = false } = {}) {
+  const chess = {};
+  for (const [id, elite] of [['normal', false], ['elite', true], ['helper', false]]) {
+    chess[id] = chessRec({ id, golden: elite, bonds: ['remShip'], skill: null, stats: { cost: 0, blockCnt: 0 } });
+    chess[id].garrisonIds = id === 'helper' ? [] : [`garrison_rem_savage_${elite ? 'b' : 'a'}`];
+  }
+  const h = makeBattle({ content: 'none', autoFinish: false, defs: { chess,
+    enemies: { dummy: enemyRec({ key: 'dummy', hp: 100000, speed: 0 }) } },
+  players: [{ playerId: 'p1', coords: 'field', bonds: { remShip: { active: true, count: 3, layers: 0 } },
+    units: [{ uid: 1, chessId: 'normal', row: 10, col: 4 }, { uid: 2, chessId: 'elite', row: 10, col: 9 },
+      { uid: 3, chessId: 'helper', row: 10, col: 6 }] },
+  { playerId: 'p2', coords: 'field', bonds: { remShip: { active: true, count: 3, layers: 0 } },
+    units: [{ uid: 4, chessId: 'normal', row: 11, col: 4 }] }],
+  });
+  const normal = h.unit(1), elite = h.unit(2), helper = h.unit(3), other = h.unit(4);
+  if (lateElite) elite.deferDeploy = true;
+  install(h.b); h.b.start();
+  const kill = (source, n = 1) => { for (let i = 0; i < n; i++) h.b.kill(h.spawn('dummy', { pos: [10, 8] }), source); };
+  const total = (pid = 'p1') => h.b.getPlayer(pid).bonds.remShip.layers;
+  return { h, normal, elite, helper, other, kill, total };
+}
+test('Rem Savage separated normal/elite auras share 48 layers, retain the budget after elite death and isolate owners', () => {
+  const { h, normal, elite, helper, other, kill, total } = separatedSavages();
+  kill(elite, 10); assert.equal(total(), 40);
+  kill(helper); assert.equal(total(), 40, 'a distant elite raises the budget without extending its aura');
+  h.b.kill(elite);
+  kill(normal); assert.equal(total(), 42, 'the local normal aura adds two inside the shared elite budget');
+  kill(normal, 4); assert.equal(total(), 48, 'elite death never shrinks the budget');
+  kill(other, 14); assert.equal(total('p2'), 24, 'another owner never borrows the elite budget');
+  assert.equal(total(), 48); assert.deepEqual(h.b.errors, []);
+});
+test('Rem Savage ordinary budget expands only after a real elite deployment and resets in a fresh battle', () => {
+  for (let battle = 0; battle < 2; battle++) {
+    const { h, normal, elite, helper, other, kill, total } = separatedSavages({ lateElite: true });
+    assert.equal(elite.deployed, false);
+    kill(normal, 14); assert.equal(total(), 24, 'an undeployed elite provides no budget');
+    assert.ok(h.b.redeploy(elite));
+    kill(helper); assert.equal(total(), 24, 'expanded budget still requires a nearby aura');
+    kill(normal); assert.equal(total(), 26);
+    kill(elite); assert.equal(total(), 30, 'the elite local aura adds four');
+    h.b.kill(elite); kill(normal, 10); assert.equal(total(), 48);
+    kill(other, 14); assert.equal(total('p2'), 24);
+    assert.deepEqual(h.b.errors, []);
+  }
 });
 test('Rem Warmy counts each successful reinforcement, caps at 16/32 and resets next round', () => {
   for (const elite of [false, true]) {
@@ -157,7 +259,7 @@ test('Rem actual normal and elite garrison records retain literal trait numbers 
     jcinta: [{ count: 1 }, { count: 2 }], glider: [{ interval: 5, heal_ratio: .05 }, { interval: 5, heal_ratio: .1 }],
     warmy: [{ layer: 1, max_layer: 16 }, { layer: 2, max_layer: 32 }],
     tmslot: [{ attack_speed: 10 }, { attack_speed: 20 }],
-    savage: [{ atk: .01, max_atk: .3 }, { atk: .02, max_atk: .6 }],
+    savage: [{ layer: 2, max_layer: 24 }, { layer: 4, max_layer: 48 }],
     asbest: [{ def: 20, res: 3 }, { def: 40, res: 6 }],
     thumpy: [{ interval: 12, count: 2 }, { interval: 6, count: 2 }], ray: [{ atk_scale: .5 }, { atk_scale: .7 }],
   };
