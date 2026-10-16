@@ -19,6 +19,19 @@ function setFor(t, { operators = [guard()], entries = [], patch = bondPatch() } 
   const set = buildContentSet({ registry: f.registry, ids: ['data-demo'] }); assert.deepEqual(set.problems, []);
   setGameData(set.data); t.after(() => setGameData(null)); return { ...f, set };
 }
+test('browser fixture excludes the Node loader for native and Windows-separated copy paths', () => {
+  const windowsSource = path.win32.join('C:\\fixture', 'server', 'sim', 'nodeData.js');
+  assert.equal(windowsSource, 'C:\\fixture\\server\\sim\\nodeData.js');
+  assert.equal(!windowsSource.endsWith('/nodeData.js'), true,
+    'the old slash-only filter incorrectly copies the real Windows-form source path');
+  assert.equal(path.win32.basename(windowsSource) !== 'nodeData.js', false,
+    'Windows basename rejects that same source path');
+  const nativeSource = path.join('fixture', 'server', 'sim', 'nodeData.js');
+  assert.equal(path.basename(nativeSource) !== 'nodeData.js', false);
+  assert.equal(path.basename(path.join('fixture', 'server', 'sim', 'simdata.js')) !== 'nodeData.js', true,
+    'the browser data module must still be copied');
+});
+
 test('kitRef normal and elite use official behavior with plugin blackboards', t => {
   const { set } = setFor(t);
   for (const suffix of ['a','b']) {
@@ -70,7 +83,9 @@ test('merged data reaches every support lookup and a real battle, through Node a
   }
   assert.equal(gameData(), set.data);
   const runtime = path.join(dir, 'runtime'); fs.mkdirSync(path.join(runtime, 'server'), { recursive: true });
-  fs.cpSync('server/sim', path.join(runtime,'server/sim'), { recursive: true, filter: src => !src.endsWith('/nodeData.js') });
+  fs.cpSync('server/sim', path.join(runtime,'server/sim'), { recursive: true, filter: src => path.basename(src) !== 'nodeData.js' });
+  assert.equal(fs.existsSync(path.join(runtime, 'server/sim/nodeData.js')), false,
+    'browser fixture must omit nodeData.js before importing DATA_SHIM to avoid a top-level-await cycle');
   fs.cpSync('shared', path.join(runtime,'shared'), { recursive: true });
   fs.writeFileSync(path.join(runtime,'package.json'), '{"type":"module"}');
   fs.writeFileSync(path.join(runtime,'server/data.js'), DATA_SHIM_JS);
