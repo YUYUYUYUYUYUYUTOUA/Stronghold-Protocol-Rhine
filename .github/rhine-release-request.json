@@ -1,19 +1,19 @@
 {
-  "tag": "v0.2.4-rhine.6",
-  "sourceCommit": "f146f38f38937ff8cba6e036aed30621c0f85a50",
-  "previousTag": "v0.2.4-rhine.5",
-  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.5-Windows-x64.zip",
-  "previousArchiveSha256": "a06eae3e7b8fb8793b67c3c4ae54b23a147c14a408991caa5324b2e2e6191938",
+  "tag": "v0.3.0-rhine.1",
+  "sourceCommit": "650bdffce70f810d9370e2a9fc672441cae937b5",
+  "previousTag": "v0.2.4-rhine.6",
+  "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
+  "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.2.4-rhine.6 · 温米叠层与援军行军修复",
-  "releaseNotes": "本次补丁保留此前已发布功能，集中修复温米叠层、援军移动与集合点窗口。\n\n- 温米：本玩家每实际成功生成一个援军，普通／精锐增加1／2层；同种重复生成也计数，每回合共享上限16／32。失败尝试、待落地请求、同一援军重复事件和队友援军不计数，下回合重置。\n- 援军：模拟端逐tick连续移动，保持每游戏秒一格速度，正常播放行走动画并转向。保留蓝门入场、集合点附近两格、穿越友军、独占落点、敌军阻挡及不主动追击规则。\n- 集合点窗口：支持拖动、收起／展开、键盘移动、缩放边界恢复；修复取消选点、地图／玩家切换及棋盘事件穿透。\n\n首次安装下载 Windows x64 ZIP，解压到新目录运行「启动莱茵科研版.bat」。已有安装请结束对局并关闭服务，在原目录运行「联网更新.bat」。保留私人配置；源码冲突会停止更新。未部署用户服务器，未加入尚未回填的描述改写。\n\n包内使用官方 Node24.21.0。发行门槛包含原生 Windows 包内回归、Edge 浏览器、HTTP/WebSocket、从上一正式版v0.2.4-rhine.5升级、私人配置保留、重复更新、回滚及上传附件校验；结果见 RELEASE-VALIDATION.json。此前 Windows Node22 全量CI存在更新测试进程错误3221226505，不能以Linux检查替代Windows验收；本轮CI具体结果以对应运行记录为准。未进行真人完整多人对局平衡试玩或人工BAT点击验收。\n\n非官方、非商业扩展，不代表上游作者或《明日方舟》官方；素材与第三方声明随包保留。",
+  "releaseName": "v0.3.0-rhine.1 · 阵营拓展与雷姆平衡",
+  "releaseNotes": "基于正式主线 v0.2.4-rhine.6，固定适配上游 v0.3.0（c24e17ee），保留莱茵、卡兹戴尔、雷姆与原版开关。继续完整拓展版分发，未迁移为插件。\n\n- 雷姆 6／9 档：每成功生成一个本玩家援军，己方雷姆干员攻血 +4%／+8%，每回合最多 +200%／+300%；死亡不扣已出现数，普通战斗到同轮联防延续。\n- 暴行：自身与周围八格的本玩家雷姆干员和援军（含车辆）真实击杀敌人时 +2／4 层，同玩家每回合共享 24／48 上限，死亡去重；混品质使用共享预算。替换旧经过加攻，保留原生技能。\n- 普通援军抵达后在集合点周围八格可通行地块持续徘徊，接敌停下、脱战继续；车辆和老板原路线。石棉仅移除坚守副盟约。\n- 5–6 人局普通干员商店 +1 格，装备格不变。每位存活玩家在 R3、R7 准备阶段各获一个普通简易通讯机，采用独立系统补给，不占用或拖欠装备库存；抽取干员仍遵共享池／本玩家自选私库。\n- 1–4 人局在当前 BAN 上增加 1 核心＋2 附加，扩展普通以上为 6+6；每阶至少保留 8 种共享可刷干员，有界抽取防止卡死。最终数据精确枚举 213,444 组合，212,999 合格，445 个不足八种的组合排除。合作自选私库容量按上游 .3 翻倍，旧概率估计作废。\n- 适配 .3 的插件／Studio、官方特效、攻击提交、格子判定和已展示装备透支。原版切换与独立内容集／Worker 保持一致。Windows 包安装 .3 锁定依赖，包含 SES、Acorn 和 local-fx。\n- 项目对外展示名称改为“阵营拓展”，README 重点补充雷姆必拓的援军、集合点与平衡机制，保留莱茵和卡兹戴尔介绍。仓库地址、安装目录、启动文件与升级渠道不变。整体游戏内阵营描述重写、变形同构体无限库存均未加入；未部署用户服务器。\n\n首次安装下载 Windows x64 ZIP，完整解压后运行「启动莱茵科研版.bat」。已有 .6 玩家结束对局并关闭服务后，在原目录运行「联网更新.bat」。原生 Windows 验收包含实际 .6 包升级、私人配置／插件配置／Studio 钥匙保留、重复更新、回滚和附件重新下载哈希校验；仅全部发行门槛通过后公开，实际结果见 RELEASE-VALIDATION.json。\n\n未做真人完整多人平衡试玩或人工 BAT 点击验收。Linux 无完整美术环境下的浏览器流程核心机制通过，但资源检查报 404，不将其标作整套通过；包内 Windows／Edge 使用完整素材另行验收。官方原始数据全量生成缓存未齐，固定 .3 原版快照与三个扩展叠加的逐表重建已验证。非官方、非商业同人扩展；素材权属与第三方声明随包保留。",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
-    "tag": "v0.2.4",
-    "commit": "bc50cac01ff447eff3ab6c35f69d934bbc23b48f",
-    "archiveName": "Stronghold-Protocol-v0.2.4.zip",
-    "sha256": "0ec5781b8ac04e9134d07c82b03911eefbfc3f840dd090e92a115b5a89d39f72"
+    "tag": "v0.3.0",
+    "commit": "c24e17eec3af1e6dedfa9935a6d15245cf2f4586",
+    "archiveName": "Stronghold-Protocol-v0.3.0.zip",
+    "sha256": "5bf3cf3797902e8441aca211706630254c7ebb9636fa0baf301e6c179efcd5b7"
   },
   "approvedArt": {
     "public/art/kazdel/bond.png": "89f121f7b472917ac8da7b46c55011426a0343be4ac0824a288302a8e1a4d201",
@@ -29,47 +29,59 @@
     "sourceCommit": "13df9cfd5f607a07ce4b1fa766439c3b012657cb"
   },
   "sourceValidation": {
-    "targeted": {
-      "pass": 86,
-      "fail": 0,
-      "skipped": 0
-    },
-    "nodeChromiumParity": {
-      "pass": 1,
-      "fail": 0,
-      "skipped": 0
-    },
+    "upstreamPin": "c24e17eec3af1e6dedfa9935a6d15245cf2f4586",
+    "formalBaseline": "45d962f7d10f6d81cc000e2d49f145d131545529",
     "golden": {
-      "matched": 287,
+      "matched": 288,
       "changed": 0,
       "regenerated": true
     },
     "i18n": {
       "packs": 4,
-      "messagesPerPack": 1280,
+      "messagesPerPack": 1858,
       "missing": 0,
       "errors": 0
     },
     "limitations": [
-      "No human full-match playtest or manual BAT clicking.",
-      "Full offline official data build unavailable due to missing cache; maintained Rem generator used and scope checked.",
-      "Prior Windows Node22 CI updater process crash3221226505 is tracked separately; native packaged Node24 validation required."
+      "No human full-match balance playtest or manual BAT clicking.",
+      "Original official source-table cache absent; pinned v0.3.0 vanilla snapshot and complete extension-overlay rebuild verified.",
+      "Local Linux browser mechanism assertions passed but full resource console checks failed without fonts/audio/art; native packaged Windows/Edge acceptance is mandatory.",
+      "Repository About PATCH was refused by the API channel (Forbidden) and remains unchanged; README updated.",
+      "Two strict Unix grandson ESRCH checks remain failed in the non-reaping Linux container; exact isolated PIDs were Z/PPID1 with no live group members. Do not describe local full CI as all-green."
     ],
     "localFullCi": {
-      "tests": 6877,
-      "pass": 6824,
-      "fail": 0,
-      "skipped": 53,
-      "allStaticStages": "passed",
-      "platform": "Linux Node24",
-      "testDurationSeconds": 1013
+      "platform": "Linux Node24.19.0",
+      "tests": 8513,
+      "pass": 8400,
+      "fail": 25,
+      "skipped": 88,
+      "durationSeconds": 1523.031,
+      "staticStages": "all passed",
+      "note": "Initial complete run during adaptation. Final 19 affected functional files rerun: 220 pass/0 fail/0 skip. Two Unix ESRCH checks still fail on unreaped zombies in this container; no live descendants in isolated exact-PID witness."
     },
-    "releaseToolTests": {
-      "tests": 72,
-      "pass": 68,
+    "fixedFailureRegression": {
+      "files": 19,
+      "tests": 220,
+      "pass": 220,
       "fail": 0,
-      "skipped": 4,
-      "note": "Windows-only checks skipped on Linux; native package pipeline must run them."
-    }
+      "skipped": 0
+    },
+    "fullMatchSoak": {
+      "seeds": 180,
+      "errors": 0
+    },
+    "unixCleanupWitness": {
+      "failedChecks": 2,
+      "closePid": 30607,
+      "timeoutPid": 30657,
+      "finalState": "Z",
+      "parentPid": 1,
+      "sameStartTicks": true,
+      "liveProcessGroupMembers": 0,
+      "leadersGone": true,
+      "assertionsUnmodified": true
+    },
+    "sourceRegressionRecord": "docs/RHINE-030-VALIDATION.md",
+    "firstSourceCiUrl": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38855266392"
   }
 }
