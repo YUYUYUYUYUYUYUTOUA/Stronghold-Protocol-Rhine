@@ -19,6 +19,11 @@ const CHROME_ARGS = ['--no-sandbox', '--no-first-run', '--autoplay-policy=no-use
 /** The CDP protocol timeout of every Client's browser: one DevTools call that takes longer fails (a hung page fails fast). */
 export const PROTOCOL_TIMEOUT_MS = 90000;
 
+/** Launch the same real browser for an owned Client or an explicitly shared mechanism-fixture pool. */
+export function launchClientBrowser(puppeteer, { browserArgs = [] } = {}) {
+  return puppeteer.launch({ executablePath: CHROME, headless: true, args: [...CHROME_ARGS, ...browserArgs], protocolTimeout: PROTOCOL_TIMEOUT_MS });
+}
+
 /**
  * `page.waitForFunction` for a wait that may outlast PROTOCOL_TIMEOUT_MS. Puppeteer awaits the whole poll inside ONE
  * `Runtime.callFunctionOn`, so a predicate that is still false when the protocol timeout strikes rejects the wait with the
@@ -210,19 +215,26 @@ export async function startRealServer(opts = {}) {
 }
 
 /**
- * One player: its own Chrome process with a single, always visible tab (two tabs of one browser would leave one
- * hidden — no animation frames, so the Pixi view and visibility checks stall).
+ * One player: its own Chrome process by default. A mechanism fixture may instead pass its owned sharedBrowser:
+ * every Client then owns a separate BrowserContext, with isolated storage; the caller owns the browser's lifetime.
+ * Those fixtures also observe the real visibility and animation frames of every document.
  */
 export class Client {
-  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop', browserArgs = [] } = {}) {
-    Object.assign(this, { puppeteer, base, label, w, h, prefix, browserArgs, problems: [], log: [], shots: [] });
+  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop', browserArgs = [], sharedBrowser = null } = {}) {
+    Object.assign(this, { puppeteer, base, label, w, h, prefix, browserArgs, sharedBrowser, problems: [], log: [], shots: [] });
   }
 
   async open(query = '') {
     mkdirSync(OUT, { recursive: true });
-    this.browser = await this.puppeteer.launch({ executablePath: CHROME, headless: true, args: [...CHROME_ARGS, ...this.browserArgs], protocolTimeout: PROTOCOL_TIMEOUT_MS });
-    const [first] = await this.browser.pages();
-    const page = first || await this.browser.newPage();
+    this.browser = this.sharedBrowser || await launchClientBrowser(this.puppeteer, { browserArgs: this.browserArgs });
+    let page;
+    if (this.sharedBrowser) {
+      this.browserContext = await this.browser.createBrowserContext();
+      page = await this.browserContext.newPage();
+    } else {
+      const [first] = await this.browser.pages();
+      page = first || await this.browser.newPage();
+    }
     this.page = page;
     await page.setViewport({ width: this.w, height: this.h });
     page.on('console', (m) => {
@@ -281,6 +293,11 @@ export class Client {
   }
 
   async close() {
+    if (this.sharedBrowser) {
+      await this.browserContext?.close().catch(() => {});
+      this.browserContext = null;
+      return;
+    }
     const child = this.browser?.process();
     await this.browser?.close().catch(() => {});
     // Chrome's crash/update helpers can inherit stderr after the launched browser exits. Release only our

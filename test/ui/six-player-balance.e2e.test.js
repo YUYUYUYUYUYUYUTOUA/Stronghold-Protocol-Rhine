@@ -8,6 +8,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { getPriority, setPriority } from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, cameraSettled, hasChrome, sleep, startRealServer, problemsOf } from '../e2e/client.mjs';
+import { createMechanismBrowserPool, observeMechanismVisibility, assertMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
 import { getDataProfile } from '../../server/data.js';
 import { GameData } from '../../server/match/gamedata.js';
 import { bossPoolHp } from '../../server/match/finalAssault.js';
@@ -33,6 +34,7 @@ const inventory = c => c.page.evaluate(() => {
 
 async function openClient(client, query) {
   await client.open(query);
+  await observeMechanismVisibility(client);
   client.fieldWarnings = [];
   client.page.on('console', message => {
     if (message.type() === 'warn' && message.text().startsWith('[field]')) client.fieldWarnings.push(message.text());
@@ -102,53 +104,13 @@ async function lowQuality(client) {
 
 async function warmClient(client, enabled) {
   // Finish each room's real module/content lookup before six boards render
-  // simultaneously. A gameplay profile still creates its real isolated Worker at battle start.
+  // simultaneously. Production preparation owns the real isolated Worker lifecycle.
   await client.page.waitForFunction(enabled => globalThis.__SP__.store.get().ui.dataReady
     && globalThis.__SP__.data.profileId === (enabled ? 'rhine' : 'vanilla'), { timeout: 30000 }, enabled);
   await client.page.evaluate(enabled => {
     const cs = globalThis.__SP__.store.get().room?.content?.cs ?? null;
     return globalThis.__SP_RUNNER__.ensureSim(cs, enabled).then(() => true);
   }, enabled);
-}
-
-async function warmWorkerCache(client, enabled) {
-  const observed = await client.page.evaluate(async enabled => {
-    const state = globalThis.__SP__.store.get(), phase = state.match.public?.phase ?? null;
-    if (!state.room || state.room.inMatch !== false || (phase && phase !== 'LOBBY')) {
-      throw new Error('simulation cache warmup must run in the initial room lobby, before any battle');
-    }
-    const cs = state.room.content?.cs ?? null;
-    const sim = await globalThis.__SP_RUNNER__.ensureSim(cs, enabled);
-    // The in-page Rhine path already imports its engine/data in ensureSim. A
-    // checked content-set descriptor alone has not loaded a real Worker yet.
-    if (!sim.remote) return { phase, remote: false, attempted: false };
-    if (sim.cs !== cs || !sim.content) throw new Error('the cache warmup requires this room\'s actual checked content');
-    const { WorkerSimHost } = await import('/js/battle/simHost.js');
-    const host = new WorkerSimHost(); // unchanged production 15 s load / 2 s RPC defaults
-    let report;
-    try {
-      const at = performance.now();
-      await host.load(sim.cs, sim.content);
-      if (host.spec !== undefined || host.packet !== undefined) throw new Error('cache warmup must not start or construct a Battle');
-      report = { phase, remote: true, attempted: true, cs: host.cs, durationMs: performance.now() - at, loadTimeoutMs: host.loadTimeoutMs,
-        specUnset: host.spec === undefined, packetUnset: host.packet === undefined };
-    } finally {
-      // Warm only this browser's HTTP/module cache. Never retain the host or
-      // replace the runner's fresh battle Worker, its load/start or its timers.
-      host.stop();
-    }
-    return { ...report, stopped: host.stopped, pending: host.pending.size };
-  }, enabled);
-  console.log(`${client.label}: actual lobby Worker cache warmup ${JSON.stringify(observed)}`);
-  if (observed.remote) {
-    assert.equal(observed.attempted, true);
-    assert.equal(observed.specUnset, true);
-    assert.equal(observed.packetUnset, true);
-    assert.equal(observed.stopped, true);
-    assert.equal(observed.pending, 0);
-    assert.ok(observed.durationMs <= observed.loadTimeoutMs, 'the actual warm load stays within the unchanged production load timeout');
-  }
-  // This mechanism fixture covers a warmed cache, not pure cold-start latency.
 }
 
 async function createSixHumanRoom(clients, rhineEnabled) {
@@ -175,7 +137,6 @@ async function createSixHumanRoom(clients, rhineEnabled) {
       && globalThis.__SP__.data.profileId === 'vanilla' && globalThis.__SP__.store.get().ui.dataReady);
   }
   await warmClient(host, rhineEnabled);
-  await warmWorkerCache(host, rhineEnabled);
   for (const [i, client] of clients.slice(1).entries()) {
     await openClient(client, `?room=${room.code}`);
     await client.enter(`六人验收${i + 2}`);
@@ -184,7 +145,6 @@ async function createSixHumanRoom(clients, rhineEnabled) {
     // Auto-join replaces the lobby screen; configure its settings only after that
     // transition, so it cannot unmount an open dialog between the two real clicks.
     await lowQuality(client);
-    await warmWorkerCache(client, rhineEnabled);
   }
   for (const client of clients.slice(1)) await client.click('.room-bar__right button', '准备就绪');
   await host.click('.room-bar__right button', '开始模拟');
@@ -535,10 +495,17 @@ for (const rhineEnabled of [true, false]) {
     { skip: !ENABLED && 'set SP_E2E=1 and CHROME_PATH to run Chrome', timeout: 300000 }, async () => {
       const srv = await startRealServer({ fast: { timerScale: 1, combatSpeed: 16, startRound: 14, chess: KIT, autoPlace: true } });
       const puppeteer = (await import('puppeteer-core')).default;
-      const clients = Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
-        { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}`, browserArgs: BROWSER_ARGS }));
+      const clients = [];
+      let browserPool;
       try {
+        browserPool = await createMechanismBrowserPool(puppeteer, { browserArgs: BROWSER_ARGS });
+        clients.push(...Array.from({ length: 6 }, (_, i) => new Client(puppeteer, srv.base, `${profile}-${i + 1}`,
+          { w: i === 0 ? 1280 : 640, h: i === 0 ? 720 : 360, prefix: `six-balance-${profile}-p${i + 1}`,
+            sharedBrowser: browserPool.browser })));
         await createSixHumanRoom(clients, rhineEnabled);
+        const contextIds = clients.map(client => client.browserContext?.id);
+        assert.ok(contextIds.every(Boolean), 'each real player owns a separate browser context');
+        assert.equal(new Set(contextIds).size, 6, 'six isolated browser contexts remain distinct');
         const rewards = await Promise.all(clients.map(inventory));
         for (const [i, pieces] of rewards.entries()) {
           const awarded = pieces.filter(p => p.kind === 'item' && p.id === BEACON);
@@ -555,7 +522,7 @@ for (const rhineEnabled of [true, false]) {
         assert.equal((await last.st()).me, lastId);
         assert.deepEqual((await inventory(last)).filter(p => p.id === BEACON).map(p => p.uid), [lastBeacon], 'refresh does not duplicate the award');
         // Restore the refreshed page's exact checked profile/content before 16x
-        // combat. A Worker profile still boots its own engine at the real battle start.
+        // combat. The production runner owns pre-battle Worker loading.
         await warmClient(last, rhineEnabled);
         await last.shot('prep-compact');
         await useAwardedBeacon(clients);
@@ -611,6 +578,7 @@ for (const rhineEnabled of [true, false]) {
         }
         assert.equal(authoritativeUploads, 3, 'all three pair fields uploaded and replayed');
         await last.shot('result-compact');
+        for (const client of clients) await assertMechanismVisibility(client);
         assert.deepEqual(problemsOf(clients), [], 'no page, console or resource errors');
         assert.deepEqual(srv.logs.filter(line => /verify mismatch|meta handler error|\[sim\].*(?:error|failed)/i.test(line)), []);
       } catch (error) {
@@ -620,8 +588,11 @@ for (const rhineEnabled of [true, false]) {
         throw error;
       } finally {
         if (problemsOf(clients).length) console.log(problemsOf(clients).slice(0, 20).join('\n'));
-        await Promise.all(clients.map(client => client.close()));
-        await srv.stop();
+        try { await Promise.all(clients.map(client => client.close())); }
+        finally {
+          try { await browserPool?.close(); }
+          finally { await srv.stop(); }
+        }
       }
     });
 }

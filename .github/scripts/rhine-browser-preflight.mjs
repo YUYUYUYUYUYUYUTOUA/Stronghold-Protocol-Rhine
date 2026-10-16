@@ -16,7 +16,8 @@ const pluginFiles = ['test/ui/plugins-content.e2e.test.js', 'test/ui/plugins-san
 const sixFiles = ['test/ui/six-player-balance.e2e.test.js'];
 const files = [...pluginFiles, ...sixFiles];
 const vanillaPattern = '^vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool$';
-const supportFiles = ['test/e2e/mechanismGraphics.mjs'];
+const supportFiles = ['test/e2e/mechanismGraphics.mjs', 'test/e2e/client.mjs',
+  'public/js/battle/runner.js', 'public/js/battle/workerWarmup.js'];
 const quiet = { encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 };
 const request = JSON.parse(fs.readFileSync(path.join(source, '.github/rhine-release-request.json'), 'utf8'));
 const root = path.join(process.env.RUNNER_TEMP || path.dirname(source), 'rhine-native-browser-preflight-resources');
@@ -69,6 +70,18 @@ function normalizeOwnedPriority() {
   return { pid: process.pid, before, requested, after, scope: 'owned diagnostic helper; inherited runtime priority checked separately',
     system: { type: os.type(), release: os.release(), version: os.version(), cpuCount: cpus.length,
       availableParallelism: os.availableParallelism(), cpuModels: [...new Set(cpus.map(cpu => cpu.model))] } };
+}
+
+function systemSnapshot(phase) {
+  const cpus = os.cpus();
+  return { phase, at: new Date().toISOString(), scope: 'this VM at one instant; CPU times are cumulative, memory is not a peak',
+    system: { type: os.type(), release: os.release(), version: os.version(), arch: os.arch(),
+      cpuCount: cpus.length, availableParallelism: os.availableParallelism(),
+      memoryBytes: { total: os.totalmem(), free: os.freemem() },
+      cpus: cpus.map((cpu, index) => ({ index, model: cpu.model, speedMHz: cpu.speed, timesMs: cpu.times })) },
+    helper: { pid: process.pid, version: process.version, versions: process.versions,
+      priority: os.getPriority(process.pid), uptimeSeconds: process.uptime(),
+      memoryBytes: process.memoryUsage(), cpuMicroseconds: process.cpuUsage() } };
 }
 
 function extract(archive, destination) {
@@ -156,7 +169,7 @@ async function officialRuntime(downloads) {
   const runtime = path.join(root, 'official-runtime', `node-${runtimeVersion}-win-x64`);
   const node = path.join(runtime, 'node.exe');
   const identity = JSON.parse(command(node, ['-p',
-    "JSON.stringify({platform:process.platform,arch:process.arch,version:process.version,pid:process.pid,priority:require('node:os').getPriority(process.pid)})"]));
+    "JSON.stringify({platform:process.platform,arch:process.arch,version:process.version,versions:process.versions,pid:process.pid,priority:require('node:os').getPriority(process.pid),memoryBytes:process.memoryUsage(),cpuMicroseconds:process.cpuUsage()})"]));
   assert.deepEqual({ platform: identity.platform, arch: identity.arch, version: identity.version },
     { platform: 'win32', arch: 'x64', version: runtimeVersion });
   assert.equal(identity.priority, 0, 'The actual official Windows runtime child must inherit NORMAL priority.');
@@ -223,7 +236,9 @@ async function main() {
   const commit = command('git', ['rev-parse', 'HEAD']).trim();
   const tracked = command('git', ['status', '--porcelain', '--untracked-files=no']);
   assert.equal(tracked, '', 'Diagnostic checkout must start clean.');
+  const systemSnapshots = [systemSnapshot('before-resource-setup')];
   console.log(JSON.stringify({ ...plan, commit, platform: process.platform, arch: process.arch, node: process.version, scheduling,
+    systemSnapshot: systemSnapshots[0],
     archiveHelperSha256: await sha(archiveHelper),
     files: await Promise.all(files.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))),
     supportFiles: await Promise.all(supportFiles.map(async file => ({ path: file, sha256: await sha(path.join(source, file)) }))) }));
@@ -235,6 +250,8 @@ async function main() {
   const outcomes = [], failures = [];
   for (const group of plan.groups) {
     assert.equal(os.getPriority(process.pid), 0, 'Each diagnostic group must start from the NORMAL-priority helper.');
+    const before = systemSnapshot(`before-${group.name}`); systemSnapshots.push(before);
+    progress(`System snapshot: ${JSON.stringify(before)}`);
     progress(`Running diagnostic group ${group.name}; original case deadlines/assertions remain unchanged.`);
     const args = group.testNamePattern ? [`--test-name-pattern=${group.testNamePattern}`] : [];
     const result = spawnSync(runtime.node, ['--test', '--test-reporter=spec', '--test-concurrency=1', ...args, ...group.files], {
@@ -243,6 +260,8 @@ async function main() {
         SP_STUDIO: group.SP_STUDIO ?? plan.flags.SP_STUDIO,
         ...(group.SP_E2E_SWIFTSHADER ? { SP_E2E_SWIFTSHADER: group.SP_E2E_SWIFTSHADER } : {}) },
     });
+    const after = systemSnapshot(`after-${group.name}`); systemSnapshots.push(after);
+    progress(`System snapshot: ${JSON.stringify(after)}`);
     const output = (result.stdout || '') + (result.stderr || '');
     fs.writeFileSync(path.join(root, `browser-${group.name}-preflight.log`), output); console.log(output);
     const outcome = { name: group.name, exitStatus: result.status, signal: result.signal, totals: {} };
@@ -262,7 +281,7 @@ async function main() {
       failures.push({ name: group.name, error: outcome.error });
     }
   }
-  const summary = { diagnosticOnly: true, commit, scheduling, runtimeIdentity: runtime.identity, outcomes, failures };
+  const summary = { diagnosticOnly: true, commit, scheduling, systemSnapshots, runtimeIdentity: runtime.identity, outcomes, failures };
   fs.writeFileSync(path.join(root, 'native-browser-preflight-results.json'), JSON.stringify(summary, null, 2) + '\n');
   console.log(JSON.stringify(summary));
   assert.equal(command('git', ['status', '--porcelain', '--untracked-files=no']), tracked, 'Diagnostic tests changed tracked source.');

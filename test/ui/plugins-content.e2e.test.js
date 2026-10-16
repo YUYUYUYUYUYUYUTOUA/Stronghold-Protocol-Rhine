@@ -19,7 +19,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { Client, ROOT, hasChrome, sleep, problemsOf } from '../e2e/client.mjs';
 import { configureMechanismGraphics, observeMechanismBrowser, mechanismResourceSnapshot,
-  readMechanismBrowser, startMechanismServerDiagnostics } from '../e2e/mechanismGraphics.mjs';
+  readMechanismBrowser, startMechanismServerDiagnostics, createMechanismBrowserPool,
+  assertMechanismVisibility } from '../e2e/mechanismGraphics.mjs';
 import { writePlugin } from '../helpers/pluginFixtures.js';
 
 const ENABLED = process.env.SP_E2E === '1' && hasChrome();
@@ -46,10 +47,9 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       await sleep(150);
     }
     const P = (await import('puppeteer-core')).default;
-    const host = new Client(P, srv.url, 'host', { prefix: 'plugins-content', w: 1600, h: 900 });
-    const guest = new Client(P, srv.url, 'guest', { prefix: 'plugins-content', w: 1600, h: 900 });
+    let pool, host, guest;
     let observing = true, observation = null, code, match;
-    const serverDiagnostics = startMechanismServerDiagnostics();
+    const serverDiagnostics = startMechanismServerDiagnostics(srv.server);
     const readClient = async promise => {
       let timer;
       try {
@@ -58,6 +58,9 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       finally { clearTimeout(timer); }
     };
     try {
+      pool = await createMechanismBrowserPool(P);
+      host = new Client(P, srv.url, 'host', { prefix: 'plugins-content', w: 1600, h: 900, sharedBrowser: pool.browser });
+      guest = new Client(P, srv.url, 'guest', { prefix: 'plugins-content', w: 1600, h: 900, sharedBrowser: pool.browser });
       await host.open();
       await observeMechanismBrowser(host);
       await host.enter('凯尔希');
@@ -215,6 +218,8 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       assert.deepEqual(hostEntry, { authoritative: true, delivery: 'delivered', cs });
       assert.ok(guestEntry === null || (guestEntry.authoritative === false && guestEntry.delivery === null), 'the forged-content guest sent no result');
 
+      for (const client of [host, guest]) await assertMechanismVisibility(client);
+
       console.log('Content mechanism diagnostics:', JSON.stringify({ parent: serverDiagnostics.snapshot(),
         clients: await Promise.all([host, guest].map(async c => ({ label: c.label,
           resources: mechanismResourceSnapshot(c), browser: await readClient(readMechanismBrowser(c)) }))) }));
@@ -229,7 +234,7 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       // the lobby has ended a failed match; its ready flag cannot identify why the real match host stopped.
       console.log('Content failure:', String(error.stack || error));
       console.log('Content server failure:', JSON.stringify({ serverLog, parent: serverDiagnostics.snapshot(),
-        browserObservations: [host, guest].map(c => ({ label: c.label, resources: mechanismResourceSnapshot(c) })),
+        browserObservations: [host, guest].filter(Boolean).map(c => ({ label: c.label, resources: mechanismResourceSnapshot(c) })),
         room: room && { code, liveMatch: !!room.match,
         sameMatch: room.match === match, lastSummary: room.lastSummary }, match: match && {
         hosted: match.hosted, started: match.started, ended: match.ended, disposed: match.disposed,
@@ -239,7 +244,7 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
           exitCode: worker.child.exitCode, signalCode: worker.child.signalCode } } }));
       console.log('Content early-failure diagnostics:', JSON.stringify({
         server: match && await readClient(match.diag()),
-        clients: await Promise.all([host, guest].map(async c => ({ label: c.label, problems: c.problems,
+        clients: await Promise.all([host, guest].filter(Boolean).map(async c => ({ label: c.label, problems: c.problems,
           snapshot: c.page && await readClient(c.page.evaluate(async () => {
             const { errorLog, trafficSummary } = await import('/js/diag.js');
             const s = globalThis.__SP__?.store.get(), pub = s?.match.public, priv = s?.match.private;
@@ -261,9 +266,11 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
       observing = false;
       serverDiagnostics.stop();
       // Closing the contexts releases the retained handles, including if a page can no longer answer CDP reads.
-      await host.close();
-      await guest.close();
-      await srv.close();
+      try {
+        await host?.close();
+        await guest?.close();
+        await pool?.close();
+      } finally { await srv.close(); }
       await observation;
       fs.rmSync(tmp, { recursive: true, force: true });
     }

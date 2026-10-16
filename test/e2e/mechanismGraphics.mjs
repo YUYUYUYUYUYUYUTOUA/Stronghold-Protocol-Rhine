@@ -4,8 +4,108 @@
 import assert from 'node:assert/strict';
 import { constants as osConstants, getPriority, setPriority } from 'node:os';
 import { performance } from 'node:perf_hooks';
+import { launchClientBrowser } from './client.mjs';
 
 const WORKER_EVENT = '[mechanism-worker] ';
+const VISIBILITY_EVENT = '[mechanism-visibility] ';
+
+/** One browser/GPU; each Client still creates its own isolated BrowserContext. Only this caller closes the browser. */
+export async function createMechanismBrowserPool(puppeteer, { browserArgs = [] } = {}) {
+  const browser = await launchClientBrowser(puppeteer, { browserArgs });
+  let closed = false;
+  const diagnostics = async () => {
+    const cdp = await browser.target().createCDPSession();
+    try {
+      const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
+      const browserPid = browser.process()?.pid;
+      assert.ok(processInfo.some(info => info.type.toLowerCase() === 'browser' && info.id === browserPid));
+      return { browserPid, version: await browser.version(), userAgent: await browser.userAgent(),
+        owned: processInfo.filter(info => /^(?:browser|renderer|gpu)$/i.test(info.type)),
+        gpuCount: processInfo.filter(info => /^gpu$/i.test(info.type)).length,
+        contextIds: browser.browserContexts().map(context => context.id).filter(Boolean) };
+    } finally { await cdp.detach(); }
+  };
+  try { console.log('Mechanism browser pool:', JSON.stringify(await diagnostics())); }
+  catch (error) { await browser.close(); throw error; }
+  return { browser, diagnostics, async close() {
+    if (closed) return;
+    closed = true;
+    const child = browser.process();
+    await browser.close();
+    if (child && (child.exitCode != null || child.signalCode != null)) for (const stream of child.stdio) stream?.destroy?.();
+  } };
+}
+
+function installVisibilityObserver(prefix) {
+  if (globalThis.__SP_MECHANISM_VISIBILITY__) return globalThis.__SP_MECHANISM_VISIBILITY__.snapshot();
+  const state = { documentId: String(performance.timeOrigin), frames: 0, hiddenFrames: 0, maxRafGapMs: 0 };
+  const snapshot = () => ({ ...state, at: performance.now(), visibilityState: document.visibilityState, hidden: document.hidden });
+  const report = type => { try { console.log(prefix + JSON.stringify({ type, ...snapshot() })); } catch { /* Passive only. */ } };
+  globalThis.__SP_MECHANISM_VISIBILITY__ = { snapshot };
+  document.addEventListener('visibilitychange', () => report('visibilitychange'));
+  let previous = performance.now();
+  const frame = now => {
+    state.frames++;
+    if (document.hidden) state.hiddenFrames++;
+    state.maxRafGapMs = Math.max(state.maxRafGapMs, now - previous);
+    previous = now;
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  setInterval(() => report('pulse'), 1000);
+  report('start');
+  return snapshot();
+}
+
+function rememberVisibility(client, observation) {
+  const trace = client.mechanismVisibility;
+  const entry = { ...observation, receivedAt: Date.now() };
+  trace.latest = entry;
+  trace.everHidden ||= entry.hidden || entry.hiddenFrames > 0;
+  trace.documents.set(entry.documentId, entry);
+  if (trace.documents.size > 20) trace.documents.delete(trace.documents.keys().next().value);
+  if (entry.type !== 'pulse') {
+    trace.events.push(entry);
+    if (trace.events.length > 40) trace.events.shift();
+  }
+}
+
+/** Persists across reloads; all state is read from real visibility/RAF APIs, without changing their behavior. */
+export async function observeMechanismVisibility(client) {
+  if (client.mechanismVisibility) return;
+  client.mechanismVisibility = { documents: new Map(), events: [], latest: null, everHidden: false };
+  client.page.on('console', message => {
+    if (!message.text().startsWith(VISIBILITY_EVENT)) return;
+    try { rememberVisibility(client, JSON.parse(message.text().slice(VISIBILITY_EVENT.length))); }
+    catch { /* Diagnostic transport must not affect the page. */ }
+  });
+  await client.page.evaluateOnNewDocument(installVisibilityObserver, VISIBILITY_EVENT);
+  const actual = await client.page.evaluate(installVisibilityObserver, VISIBILITY_EVENT);
+  rememberVisibility(client, { type: 'initial-read', ...actual });
+  assert.equal(actual.visibilityState, 'visible', `${client.label}: initial document is visible`);
+  assert.equal(actual.hidden, false, `${client.label}: initial document is not hidden`);
+  console.log('Mechanism page initial:', JSON.stringify({ client: client.label, contextId: client.browserContext?.id ?? null, ...actual }));
+}
+
+export function readMechanismVisibility(client) {
+  const trace = client.mechanismVisibility;
+  return trace && { contextId: client.browserContext?.id ?? null, latest: trace.latest, everHidden: trace.everHidden,
+    documents: [...trace.documents.values()], events: trace.events.slice() };
+}
+
+/** A final true read, retaining the earlier documents' hidden history when a test reloaded its page. */
+export async function assertMechanismVisibility(client) {
+  assert.ok(client.mechanismVisibility, `${client.label}: visibility observation started`);
+  const actual = await client.page.evaluate(() => globalThis.__SP_MECHANISM_VISIBILITY__?.snapshot());
+  assert.ok(actual, `${client.label}: current document has a real visibility/RAF observer`);
+  rememberVisibility(client, { type: 'final-read', ...actual });
+  console.log('Mechanism page final:', JSON.stringify({ client: client.label, ...readMechanismVisibility(client) }));
+  assert.equal(actual.visibilityState, 'visible', `${client.label}: final document is visible`);
+  assert.equal(actual.hidden, false, `${client.label}: final document is not hidden`);
+  assert.ok(actual.frames > 0, `${client.label}: requestAnimationFrame actually ran`);
+  assert.equal(client.mechanismVisibility.everHidden, false, `${client.label}: no observed document became hidden, including before reload`);
+  return actual;
+}
 
 async function alignWindowsOwnedGpu(client) {
   if (process.platform !== 'win32') return;
@@ -72,6 +172,7 @@ export async function configureMechanismGraphics(client) {
 }
 
 export async function observeMechanismBrowser(client) {
+  await observeMechanismVisibility(client);
   const pending = new Map(), counts = {}, workerEvents = [];
   const category = url => {
     const pathname = new URL(url).pathname;
@@ -144,7 +245,7 @@ export async function observeMechanismBrowser(client) {
 
 export function mechanismResourceSnapshot(client) {
   const resources = client.mechanismResources;
-  return resources && { counts: resources.counts, workerEvents: resources.workerEvents,
+  return resources && { counts: resources.counts, workerEvents: resources.workerEvents, visibility: readMechanismVisibility(client),
     pending: [...resources.pending.values()].map(({ at, ...entry }) => ({ ...entry, ageMs: Date.now() - at })) };
 }
 
@@ -160,8 +261,37 @@ export function readMechanismBrowser(client) {
   });
 }
 
-export function startMechanismServerDiagnostics() {
+export function startMechanismServerDiagnostics(server = null) {
   const samples = [];
+  const pending = new Map(), recent = [], slowest = [];
+  let received = 0, finished = 0, closed = 0;
+  const request = (req, res) => {
+    const pathname = String(req.url || '').split('?')[0];
+    if (!/^\/(?:sim|js|shared)\//.test(pathname) && pathname !== '/data.js') return;
+    const at = performance.now(), entry = { path: pathname, method: req.method, receivedAt: Date.now() };
+    pending.set(res, entry); received++;
+    const record = kind => {
+      if (!pending.delete(res)) return;
+      if (kind === 'finish') finished++; else closed++;
+      // writeHead(status, headers) bypasses getHeader(); read only these two fields of Node's generated header.
+      const header = name => {
+        const direct = res.getHeader(name);
+        if (direct != null) return String(direct);
+        return typeof res._header === 'string' ? res._header.match(new RegExp(`^${name}:\\s*([^\\r\\n]*)`, 'im'))?.[1] ?? null : null;
+      };
+      const result = { ...entry, kind, status: res.statusCode, durationMs: performance.now() - at,
+        contentLength: header('content-length'), contentEncoding: header('content-encoding') };
+      recent.push(result);
+      if (recent.length > 50) recent.shift();
+      slowest.push(result);
+      slowest.sort((a, b) => b.durationMs - a.durationMs);
+      if (slowest.length > 20) slowest.pop();
+    };
+    res.once('finish', () => record('finish'));
+    res.once('close', () => record('close'));
+  };
+  // Prepend to record actual HTTP receipt before the production handler begins, without changing its response.
+  server?.prependListener('request', request);
   let previousAt = performance.now(), previousCpu = process.cpuUsage(), maxLagMs = 0, maxLagSample = null;
   const timer = setInterval(() => {
     const now = performance.now(), cpu = process.cpuUsage(), elapsedMs = now - previousAt;
@@ -174,5 +304,9 @@ export function startMechanismServerDiagnostics() {
     previousAt = now; previousCpu = cpu;
   }, 1000);
   timer.unref();
-  return { stop() { clearInterval(timer); }, snapshot() { return { scope: 'test-and-http-parent-only', maxLagMs, maxLagSample, samples }; } };
+  return { stop() { clearInterval(timer); server?.off('request', request); },
+    snapshot() { return { scope: 'test-and-http-parent-only', maxLagMs, maxLagSample, samples,
+      httpModules: { scope: 'actual-server-receipt-to-response-finish-or-close', received, finished, closed,
+        pending: [...pending.values()].slice(0, 50).map(entry => ({ ...entry, ageMs: Date.now() - entry.receivedAt })),
+        recent: recent.slice(), slowest: slowest.slice() } }; } };
 }

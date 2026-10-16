@@ -5,7 +5,8 @@ import {Client,hasChrome,sleep,problemsOf} from '../e2e/client.mjs';
 import {scriptFixture} from '../helpers/scriptFixtures.js';
 import {startServer} from '../../server/index.js';
 import {configureMechanismGraphics,observeMechanismBrowser,mechanismResourceSnapshot,
- readMechanismBrowser,startMechanismServerDiagnostics} from '../e2e/mechanismGraphics.mjs';
+ readMechanismBrowser,startMechanismServerDiagnostics,createMechanismBrowserPool,
+ assertMechanismVisibility} from '../e2e/mechanismGraphics.mjs';
 const enabled=process.env.SP_E2E==='1' && hasChrome();
 test('two sandbox-script players start without consent and Worker battles verify under site CSP', {skip:!enabled,timeout:300000},async t=>{
  const f=scriptFixture(t,{mode:'sandbox'});f.put('training',`export default sp => sp.content.register({install(b){b.on('battleStart',()=>{for(const u of b.allyUnits)b.addBuff(u,{key:'training',mods:{atkFlat:2}});});}});`);
@@ -19,16 +20,17 @@ test('two sandbox-script players start without consent and Worker battles verify
  // Exercise the production 2x battle clock. Artificial 16x needs 480 Worker ticks/s and shortened the unchanged
  // timeLimit/speed + 15s result deadline below this full-renderer/SES fixture's measured cold-load + simulation time.
  const srv=await startServer({port:0,host:'127.0.0.1',quiet:true,log,pluginsDir:f.pluginsDir,assetIndex:false,matchHost:{matchOptions:{verify:'all',timerScale:0.1,combatSpeed:2,botRehearsal:0}}});
- t.after(()=>srv.close());
+ let pool,host,guest;
+ const serverDiagnostics=startMechanismServerDiagnostics(srv.server);
+ t.after(async()=>{
+  serverDiagnostics.stop();
+  try{await host?.close();await guest?.close();await pool?.close();}
+  finally{await srv.close();}
+ });
  const policy=(await fetch(srv.url)).headers.get('content-security-policy');
  assert.match(policy,/connect-src 'self';/);assert.ok(!/script-src[^;]*(?:data:|blob:|unsafe-eval)/.test(policy));
  const P=(await import('puppeteer-core')).default;
- const host=new Client(P,srv.url,'host',{prefix:'plugins-sandbox',w:1600,h:900}), guest=new Client(P,srv.url,'guest',{prefix:'plugins-sandbox',w:1600,h:900});
- // Browser context destruction releases the retained entry handles even if a diagnostic CDP read has stalled.
- t.after(async()=>{await host.close();await guest.close();});
  let code,match;
- const serverDiagnostics=startMechanismServerDiagnostics();
- t.after(()=>serverDiagnostics.stop());
  const readDiagnostic=async promise=>{
   let timer;
   try{return await Promise.race([promise,new Promise(resolve=>{timer=setTimeout(()=>resolve({diagnosticTimeoutMs:5000}),5000);})]);}
@@ -36,6 +38,9 @@ test('two sandbox-script players start without consent and Worker battles verify
   finally{clearTimeout(timer);}
  };
  try{
+ pool=await createMechanismBrowserPool(P);
+ host=new Client(P,srv.url,'host',{prefix:'plugins-sandbox',w:1600,h:900,sharedBrowser:pool.browser});
+ guest=new Client(P,srv.url,'guest',{prefix:'plugins-sandbox',w:1600,h:900,sharedBrowser:pool.browser});
  await host.open();await observeMechanismBrowser(host);await host.enter('凯尔希');await configureMechanismGraphics(host);
  await host.click('.mode-card','同盟模拟');await host.click('.diff-card','标准模拟');await host.click('.create-box button','创建同盟');
  code=(await host.waitFor(s=>!!s.room?.code,'room created')).room.code;
@@ -122,6 +127,7 @@ test('two sandbox-script players start without consent and Worker battles verify
  assert.deepEqual(battleIds.map(id=>finished.get(id)?.resultSource),['client','client'],'both captured battles were accepted from their real clients');
  assert.ok(last.verifyStats.checked>=2,'both real client results were re-simulated');
  assert.equal(last.verifyStats.rejected,0);assert.equal(last.verifyStats.mismatches,0);
+ for(const c of [host,guest])await assertMechanismVisibility(c);
  console.log('Sandbox mechanism diagnostics:',JSON.stringify({parent:serverDiagnostics.snapshot(),
   clients:await Promise.all([host,guest].map(async c=>({label:c.label,resources:mechanismResourceSnapshot(c),
    browser:await readDiagnostic(readMechanismBrowser(c))})))}));
@@ -132,13 +138,13 @@ test('two sandbox-script players start without consent and Worker battles verify
   // Always retain the actual child-host failure, even before the first b.start. Print it before optional CDP/IPC.
   console.log('Sandbox failure:',String(error.stack||error));
   console.log('Sandbox server failure:',JSON.stringify({serverLog,parent:serverDiagnostics.snapshot(),
-   browserObservations:[host,guest].map(c=>({label:c.label,resources:mechanismResourceSnapshot(c)})),room:room&&{code,liveMatch:!!room.match,
+   browserObservations:[host,guest].filter(Boolean).map(c=>({label:c.label,resources:mechanismResourceSnapshot(c)})),room:room&&{code,liveMatch:!!room.match,
    sameMatch:room.match===match,lastSummary:room.lastSummary},match:match&&{hosted:match.hosted,started:match.started,
     ended:match.ended,disposed:match.disposed,pending:match.pending?.size},host:worker&&{ready:worker.ready,dead:worker.dead,
      lastBeat:worker.lastBeat,heartbeatAgeMs:Date.now()-worker.lastBeat,stderr:worker.stderr,
      child:worker.child&&{pid:worker.child.pid,connected:worker.child.connected,exitCode:worker.child.exitCode,signalCode:worker.child.signalCode}}}));
   console.log('Sandbox early-failure diagnostics:',JSON.stringify({server:match&&await readDiagnostic(match.diag()),
-   clients:await Promise.all([host,guest].map(async c=>({label:c.label,problems:c.problems,
+   clients:await Promise.all([host,guest].filter(Boolean).map(async c=>({label:c.label,problems:c.problems,
     snapshot:c.page&&await readDiagnostic(c.page.evaluate(async()=>{
      const {errorLog,trafficSummary}=await import('/js/diag.js');
      const s=globalThis.__SP__?.store.get(),pub=s?.match.public,priv=s?.match.private;
