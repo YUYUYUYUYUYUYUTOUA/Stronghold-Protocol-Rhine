@@ -1,0 +1,52 @@
+name: Rhine Windows Browser Diagnostic 10
+
+on:
+  push:
+    branches: [codex/rhine-030-browser-diagnostic10]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rhine-browser-diagnostic10
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/codex/rhine-030-browser-diagnostic10'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RHINE_DIAGNOSTIC_SOURCE: ${{ github.workspace }}/source
+      RHINE_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/rhine-browser-diagnostic10/evidence
+    steps:
+      - name: Preserve fixed source bytes
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+        with:
+          path: automation
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: c2bcb246d407e8f4c014d39c480c85358e79fdeb
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.21.0
+      - name: Validate diagnostic scope without running a case
+        run: node automation/.github/scripts/rhine-browser-diagnostic10.mjs --validate-only
+      - name: Verify complete resources and run original cases with passive diagnostics
+        run: node automation/.github/scripts/rhine-browser-diagnostic10.mjs
+      - name: Preserve logs and diagnostics on success or failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rhine-browser-diagnostic10-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/rhine-browser-diagnostic10/evidence
+            ${{ github.workspace }}/source/test/e2e/out
+          if-no-files-found: error
+          retention-days: 14

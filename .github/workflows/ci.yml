@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches-ignore: [codex/rhine-030-browser-diagnostic10]
+    tags: ['**']
   pull_request:
   workflow_dispatch:
 
