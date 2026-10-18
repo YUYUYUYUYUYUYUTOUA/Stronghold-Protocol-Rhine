@@ -20,7 +20,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RHINE_DIAGNOSTIC_SOURCE: ${{ github.workspace }}/source
-      RHINE_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/rhine-browser-diagnostic10/evidence
+      RHINE_DIAGNOSTIC_OUTPUT: ${{ github.workspace }}/rhine-browser-diagnostic10/evidence
     steps:
       - name: Preserve fixed source bytes
         run: git config --global core.autocrlf false
@@ -46,7 +46,7 @@ jobs:
         with:
           name: rhine-browser-diagnostic10-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/rhine-browser-diagnostic10/evidence
+            ${{ github.workspace }}/rhine-browser-diagnostic10/evidence
             ${{ github.workspace }}/source/test/e2e/out
           if-no-files-found: error
           retention-days: 14
