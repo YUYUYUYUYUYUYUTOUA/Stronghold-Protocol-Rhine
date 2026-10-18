@@ -7,7 +7,7 @@
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
   "releaseName": "v0.3.0-rhine.10 · 阵营拓展",
-  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0** 固定发布标签，保留莱茵、卡兹戴尔、雷姆扩展。本版按正式版渠道发行，以 `latest` 提供联网更新，实际结果见公开页面和 `RELEASE-VALIDATION.json`。\n\n### 雷姆更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 本候选修复与失败边界\n\n虚拟时间比赛宿主使用既有8毫秒无界面预算，在完整主时钟 tick 之间让出执行，保留战场、事件和共享血池处理顺序；直接使用虚拟调度器的同步默认行为及真实时间节奏不变。1秒心跳、10秒看门狗、100秒比赛等待和120秒原用例期限保持不变。该预算不能中断单次构造、插件回调或一个完整 tick。\n\n新增有限预算回归覆盖停止、强制结束、硬上限、错误隔离、事件、结果摘要和真实宿主选项。真实插件比赛失败时报告实际结束摘要，全部原断言保留。默认模组回归测试调整离线生成器加载顺序以兼容 Node 22，保留原10项用例，不改生产注册表。\n\n`.9` 未公开，原不可变标签及失败草稿保留：Windows 包内1003项中1000通过、1失败、2条件跳过；失败为插件 all-bot 比赛结束摘要缺少布尔胜负。后续 Windows 源码隔离单例通过，不能覆盖原批次失败，也未证明原失败的具体宿主终止原因。`.10` 仅在本候选全部公开门槛通过后公开；源码CI与包内结果分别记录，不以隔离通过替代整套验收。\n\n本轮 Linux 定向回归54项通过，新增8项有限预算永久回归在 Node 22 也全部通过；独立旧／新 FieldRunner 的4个合成场景逐项顺序、共享血池、错误、结果与摘要相同，真实子进程 training 对局单例完成隐藏战且错误为零。官方 Node 22.23.3 的原默认模组测试两次复现启动失败，调整加载顺序后的原10项在 Node 22 和 Node 24 各两次通过；不据此推断具体 Node 内部错误。288个 golden 本轮全部匹配、零变更。这些本地结果不替代 Windows 实包或新的源码矩阵结果。\n\n本轮完整本地 Linux Node 24.19 源码 CI 实际为8624项、8555通过、2失败、67条件跳过、0取消，总计1226.526秒，未称全绿。仅 `test/studio/review.test.js:144` 的 close／timeout 两项严格 ESRCH 断言失败；本轮被动观察器捕获0个已验证probe，不能把历史僵尸PID证据归于本轮，也未据此确认这两项的具体原因。setup、smoke、lint、imports和typecheck通过；lint为0错误／151警告，imports为3项nonstrict违规及3项允许说明。波次63.3／最坏161.6微秒每tick、老板best300.8微秒每tick通过原0.5毫秒门槛；真实SES沙箱比赛和脚本／meta比赛在这同一次完整CI中分别42.464／41.148秒通过。另行严格检查4个语言包，每包1850条、0缺失、0错误。\n\n截至本次发布请求准备时，新的GitHub源码矩阵尚未启动，Windows实包仍待独立验收；这些本地结果不作Windows通过结论。实际后续状态见各自GitHub运行及发行验证报告。\n\n### 下载与升级\n\n下载 `Stronghold-Protocol-Rhine-v0.3.0-rhine.10-Windows-x64.zip`，完整解压后双击 `启动莱茵科研版.bat`，包内自带 Windows x64 Node。已有玩家请先关闭服务，再使用 `联网更新.bat` 或独立更新工具；保留自己的私有配置。完整验证与附件散列见 `RELEASE-VALIDATION.json`、`SHA256SUMS.txt` 和 `UPDATE-TOOL-SHA256.txt`。\n\n公开门槛保留全部旧81个原生测试文件并加入8项有限预算回归，同批文件并发仍为3；浏览器验收12组、47项实际执行，另列两项旧3D专项未跑。门槛还包括真实 Windows 包内 Node、跨端模拟、2D界面、同步／重连／动画、HTTP／WebSocket、实际公开旧正式 `.6` 安装包升级、六份私有配置逐字保留、重复升级／回退、五附件上传及重新下载。未独立完成旧 `.8` 完整安装包到 `.10` 的实包升级，不据 `.6` 路径宣称该项已跑。手动双击BAT及人工完整平衡对局未运行。\n\n默认3D在软件渲染、多页面刷新专项中的初始化问题未宣称修复。维护者不再要求旧3D专项；仅精确排除两项3D资源恢复叶用例，其他2D恢复、机制、同步、重连、动画及Studio原断言保留。若遇到旧初始化问题，可使用 `/?board=2d`。\n\n本次在 Linux 环境的源码检查结果见验证报告；Windows 实包门槛通过后由流水线写入实际结果。\n",
+  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0** 固定发布标签，保留莱茵、卡兹戴尔、雷姆扩展。本版按正式版渠道发行，以 `latest` 提供联网更新，实际结果见公开页面和 `RELEASE-VALIDATION.json`。\n\n### 雷姆更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 本候选修复与失败边界\n\n虚拟时间比赛宿主使用既有8毫秒无界面预算，在完整主时钟 tick 之间让出执行，保留战场、事件和共享血池处理顺序；直接使用虚拟调度器的同步默认行为及真实时间节奏不变。1秒心跳、10秒看门狗、100秒比赛等待和120秒原用例期限保持不变。该预算不能中断单次构造、插件回调或一个完整 tick。\n\n新增有限预算回归覆盖停止、强制结束、硬上限、错误隔离、事件、结果摘要和真实宿主选项。真实插件比赛失败时报告实际结束摘要，全部原断言保留。默认模组回归测试调整离线生成器加载顺序以兼容 Node 22，保留原10项用例，不改生产注册表。\n\n`.9` 未公开，原不可变标签及失败草稿保留：Windows 包内1003项中1000通过、1失败、2条件跳过；失败为插件 all-bot 比赛结束摘要缺少布尔胜负。后续 Windows 源码隔离单例通过，不能覆盖原批次失败，也未证明原失败的具体宿主终止原因。`.10` 仅在本候选全部 Windows 公开门槛通过后公开；源码 CI 的实际失败与包内结果分别记录，不以隔离通过替代整套验收。\n\n本轮 Linux 定向回归54项通过，新增8项有限预算永久回归在 Node 22 也全部通过；独立旧／新 FieldRunner 的4个合成场景逐项顺序、共享血池、错误、结果与摘要相同，真实子进程 training 对局单例完成隐藏战且错误为零。官方 Node 22.23.3 的原默认模组测试两次复现启动失败，调整加载顺序后的原10项在 Node 22 和 Node 24 各两次通过；不据此推断具体 Node 内部错误。288个 golden 本轮全部匹配、零变更。这些本地结果不替代 Windows 实包或新的源码矩阵结果。\n\n本轮完整本地 Linux Node 24.19 源码 CI 实际为8624项、8555通过、2失败、67条件跳过、0取消，总计1226.526秒，未称全绿。仅 `test/studio/review.test.js:144` 的 close／timeout 两项严格 ESRCH 断言失败；本轮被动观察器捕获0个已验证probe，不能把历史僵尸PID证据归于本轮，也未据此确认这两项的具体原因。setup、smoke、lint、imports和typecheck通过；lint为0错误／151警告，imports为3项nonstrict违规及3项允许说明。波次63.3／最坏161.6微秒每tick分别通过原0.5毫秒门槛，老板best300.8微秒每tick通过原1毫秒CI门槛；真实SES沙箱比赛和脚本／meta比赛在这同一次完整CI中分别42.464／41.148秒通过。另行严格检查4个语言包，每包1850条、0缺失、0错误。\n\n### 已执行的源码与 Windows 结果\n\n冻结源码 `c2bcb246d407e8f4c014d39c480c85358e79fdeb` 不变。[原正式主线元数据 M1 CI](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782) 和 [精确 .10 标签源码 CI](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953) 均已终态失败，不能称源码矩阵全绿。两者 Windows Node24 均实际为8578项、8492通过、0失败、86条件跳过，且 smoke 通过；各自 tooling 通过。M1 Windows22 为8487通过／5失败／86跳过，标签 Windows22 为8488通过／4失败／86跳过；四个 Ubuntu22／24 job 各为8481通过／1失败／96跳过。各环境实际总数均8578，未用本地8624替代。\n\nWindows22 两个矩阵都有三个 plugin-host 普通2000毫秒回复等待超时及一项 Forge 脚本注册预检超过5000毫秒；现有栈没有定位前者具体调用，不能只按测试标题断言看门狗、OOM或结果校验阶段已执行。M1 还实际触发最坏场景性能失败：0.51866258毫秒每tick，高于原0.5毫秒门槛；标签同项通过不覆盖该失败。M1 两个 Ubuntu job 为 SP_VERIFY 用例的普通回复等待超时；标签 Ubuntu22 同类等待超时，标签 Ubuntu24 为 OOM 标题用例的普通等待超时，未直接证实真正 OOM 刺激或处理阶段。完整逐项错误、运行链接与日志散列列入验证报告。\n\n[Windows .10 首轮整包验收](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787780) 的82文件回归实际1011项、1009通过、0失败、2条件跳过；新增8项有限切片、原脚本 all-bot 比赛通过。作者27项、宿主9项通过。但12组浏览器47项为45通过／2失败：显式2D原版房间在 R2 重连后 renderer 初始化超时、进入 fallback，无真实 Canvas；原版六人第二页面打开时 `fieldHost.js` 出现 `net::ERR_NO_BUFFER_SPACE` 并初始化等待超时。其后的 HTTP／WebSocket、ZIP、实际旧6升级及私配、上传重下和公开均未执行。首轮失败保持失败，原始日志 SHA256 为 `4cb26e260436b3099fe1a9543cd2f6e24282f40a97f8bb3e1156dd4248486c25`。\n\n随后 Linux 使用原源码和原断言单独运行这三个用例，实际3通过／0失败／0跳过。[隔离 Windows 诊断](https://github.com/YUYUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39097408114) 也实际3通过／0失败／0跳过，显式2D profile 的真实 renderer／Canvas 门槛通过；原测试、300秒单项和600秒外层期限均保留。该诊断使用校验过的完整 `.8` 资源、固定 `.10` 测试与依赖，并在独立 renderer 副本加入被动阶段追踪，不能当作完整 `.10` 包、无干扰性能实验或47项全通过。\n\n诊断中两种六人局的末席刷新仍各观测到13.3286／16.0835秒的 `P.Application` 同步区间，之后 factory aborted／catch；尚未定位具体内部子调用，取消的发起来源也未采到，不能归为正常卸载或12秒初始化超时。该机制用例允许这些非主席进入 fallback：主席实际 engine 几何、三位原始权威上传和 Node 重放门槛通过，不能据此宣称六席 renderer 全部初始化成功。两条追踪均为 `want3d=true`，但该 Application 是共享渲染路径，不能据此确定唯一3D原因。47次系统采样无采集错误，资源准备阶段另有约75.040秒未连续采样；数值不是全程峰值。新诊断未复现 ENOBUFS，不能断言原资源故障已修复。\n\n以下为发行请求 M2 准备时的记录：本次只更新验证元数据，源码、标签、全部原门槛与固定散列不变。M2 自身的新 CI 在本次请求准备时尚未触发，不能覆盖上述已完成的源码 CI 失败。原失败 Windows job 的一次 API 重跑请求返回404 NOT_FOUND。04:46:24 UTC 回读原任务仍为 completed／failure／attempt1，正式分支运行集合未观察到新的发布执行；`.10` 仍为草稿，latest 仍为 `.6`。该404未说明权限原因，不能写成 Actions 权限被拒绝；同一接口不再重试。随后通过既有的正式发行请求流程，对同一源码执行一次完整原门禁复验；完整包是否通过和公开，以对应运行及 `RELEASE-VALIDATION.json` 的实际结果为准。\n\n### 下载与升级\n\n下载 `Stronghold-Protocol-Rhine-v0.3.0-rhine.10-Windows-x64.zip`，完整解压后双击 `启动莱茵科研版.bat`，包内自带 Windows x64 Node。已有玩家请先关闭服务，再使用 `联网更新.bat` 或独立更新工具；保留自己的私有配置。完整验证与附件散列见 `RELEASE-VALIDATION.json`、`SHA256SUMS.txt` 和 `UPDATE-TOOL-SHA256.txt`。\n\n公开门槛保留全部旧81个原生测试文件并加入8项有限预算回归，同批文件并发仍为3；浏览器验收12组、47项实际执行，另列两项旧3D专项未跑。门槛还包括真实 Windows 包内 Node、跨端模拟、2D界面、同步／重连／动画、HTTP／WebSocket、实际公开旧正式 `.6` 安装包升级、六份私有配置逐字保留、重复升级／回退、五附件上传及重新下载。未独立完成旧 `.8` 完整安装包到 `.10` 的实包升级，不据 `.6` 路径宣称该项已跑。手动双击BAT及人工完整平衡对局未运行。\n\n默认3D在软件渲染、多页面刷新专项中的初始化问题未宣称修复。维护者不再要求旧3D专项；仅精确排除两项3D资源恢复叶用例，其他2D恢复、机制、同步、重连、动画及Studio原断言保留。若遇到旧初始化问题，可使用 `/?board=2d`。\n\n本次在 Linux 环境的源码检查结果见验证报告；Windows 实包门槛通过后由流水线写入实际结果。\n",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -4623,16 +4623,19 @@
     },
     "formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
     "limitations": [
-      "Complete local source CI failed:8624total/8555pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Verified PID ancestry was not captured, so this exact run has no established cleanup-failure cause. All original Windows Studio assertions must pass independently.",
-      "Fresh exact-source GitHub CI and native Windows were not run at source freeze. Later actual results must be reported separately, not inferred from isolated tests.",
-      "Only the two approved legacy3D recovery leaves are excluded and separately notRun; default3D initialization is not claimed fixed. All47 other planned browser leaves remain mandatory.",
-      "Actual full public stable6-to10 upgrade/6private/repeat/rollback are mandatory Windows gates. Independent full-package8-to10 upgrade is not run.",
-      "Manual BAT/browser click and human complete balance playtest are not run. Synthetic scenarios and Linux selected-case evidence do not replace Windows full acceptance.",
-      "8ms is a soft budget and cannot interrupt a constructor, plugin callback or one complete master tick. All heartbeat/watchdog/deadline/concurrency settings are retained.",
-      "Original Windows9 failure remains failed; actual end reason was not captured. Re-reading its isolated Windows summary is not a new Windows execution or a controlled performance comparison. Old full64-character content identity was not logged.",
-      "Official raw-table cache is absent; raw-table conditional skips are not passes. Pinned0.3snapshot and extension data are separately tested.",
-      "Lint has0errors151warnings. Imports exit0 with3non-strict violations and3allowed notes. Existing typecheck covers shared/sim, not new match files.",
-      "Old /tmp local evidence was not restored. Historical references remain history; only current durable evidence was rehashed. No user-server deployment."
+      "Frozen source S10 and original M1 main/tag CI are both terminal failure. Main Windows24 and tag Windows24 each passed8492/8578 with86conditional skips; other failed jobs remain failed and are listed individually. New M2 metadata CI was not triggered at this preparation time.",
+      "Main Windows22 worst-case benchmark actually failed at0.5186625833333338ms/tick against0.5ms. Tag Windows22 performance passed but does not overwrite the main failure. Wave/worst bars remain0.5ms/tick and boss best-of-three CI bar remains1ms/tick.",
+      "Source-host failures report ordinary2000ms reply waits without caller localization; logs do not prove watchdog/OOM/verification behavioral assertions were reached. Forge setup really exceeded5000ms before later talent assertions; neither cause is established.",
+      "Complete local CI remains8624total/8555pass/2strictStudioESRCHfail/67skip/0cancel; no verified PID ancestry for this exact local run. Later source/native passes do not rewrite these failures.",
+      "Original Windows10 attempt1 failed47-browser acceptance:45pass/2fail. Its full native1011/1009pass/0fail/2skip, source-author27 and hosts9 passed. HTTP/ZIP/actual6upgrade/private/repeat/rollback/normal5assets/public/anonymous tail did not run.",
+      "Original Windows profile failed after vanilla R2 reconnect in explicit2d due createFieldView timeout/fallback; Vanilla six-seat failed second-page initialization with observed fieldHost.js ERR_NO_BUFFER_SPACE. Root causes remain unresolved.",
+      "Fresh Linux original3cases and isolated Windows diagnostic3cases passed. Diagnostic renderer logging/CDP overhead and verified8 resources differ from full10 assembly/order; these passes do not replace full Windows acceptance.",
+      "Diagnostic last seats rhine6/vanilla6 had13.3286/16.0835s synchronous P.Application intervals and later abort/catch; exact subcall source not localized. The six-seat test permits their fallback and does not prove six real renderers initialized successfully. The initiating cancellation source was not captured; normal unloading or the12-second guard was not established.",
+      "All47 system samples completed without errors, but the75.039801s resource-preparation gap has no interval samples; sampled ranges do not prove peaks or exclude transient ENOBUFS outside observed events.",
+      "Only two explicitly approved legacy3D leaves are notRun; other47 browser cases and original deadlines remain mandatory. No general2d/3d renderer or resource-exhaustion fix is claimed.",
+      "Actual public old6-to10 upgrade/six private configurations/repeat/rollback, all five uploaded/authenticated downloaded attachments, public stable/latest10 and independent anonymous five-file verification remain mandatory. Full8-to10 real-package upgrade was not separately run.",
+      "One parent API request to rerun failed job returned404 NOT_FOUND. Readback at04:46:24Z observed original run still completed/failure/attempt1, no newer release run in the supported formal branch collection, release10 still draft and latest6. The404 supplies no permission cause. No same-API retry or remote action was performed by this generator.",
+      "Manual BAT/browser acceptance and human complete balance playtest were not run. No user-server deployment. Historic failures and lost/tmp evidence boundaries remain recorded without invented verification."
     ],
     "historicalPublicationDecision9": {
       "channel": "stable",
@@ -5161,7 +5164,8 @@
           "bytes": 131390,
           "sha256": "5b893482cf258531b348eb1f39b34a985b4a97e832a02a16e3f4acda49b74dee"
         }
-      }
+      },
+      "scope": "Frozen-source local acceptance record. AtFreeze statuses remain historical; completed main/tag CI and Windows10 attempt1 are recorded separately in candidate10ControlledRevalidation."
     },
     "candidate10Preparation": {
       "at": "2026-10-18T03:46:04.373990+00:00",
@@ -5308,7 +5312,1591 @@
         "independent five anonymous full SHA/CRC/source/PE/latest verification"
       ],
       "noServerDeployment": true,
-      "noRemoteOperationsByGenerator": true
+      "noRemoteOperationsByGenerator": true,
+      "historicalRequestCommit": "dbad11accb9d6e22edd8842166b48022a777d14e",
+      "subsequentActualResults": "See candidate10ControlledRevalidation. Pending strings in this object describe the original M1 preparation time only, not the current source/native outcome."
+    },
+    "historicalBeforeControlled10_limitations": [
+      "Complete local source CI failed:8624total/8555pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Verified PID ancestry was not captured, so this exact run has no established cleanup-failure cause. All original Windows Studio assertions must pass independently.",
+      "Fresh exact-source GitHub CI and native Windows were not run at source freeze. Later actual results must be reported separately, not inferred from isolated tests.",
+      "Only the two approved legacy3D recovery leaves are excluded and separately notRun; default3D initialization is not claimed fixed. All47 other planned browser leaves remain mandatory.",
+      "Actual full public stable6-to10 upgrade/6private/repeat/rollback are mandatory Windows gates. Independent full-package8-to10 upgrade is not run.",
+      "Manual BAT/browser click and human complete balance playtest are not run. Synthetic scenarios and Linux selected-case evidence do not replace Windows full acceptance.",
+      "8ms is a soft budget and cannot interrupt a constructor, plugin callback or one complete master tick. All heartbeat/watchdog/deadline/concurrency settings are retained.",
+      "Original Windows9 failure remains failed; actual end reason was not captured. Re-reading its isolated Windows summary is not a new Windows execution or a controlled performance comparison. Old full64-character content identity was not logged.",
+      "Official raw-table cache is absent; raw-table conditional skips are not passes. Pinned0.3snapshot and extension data are separately tested.",
+      "Lint has0errors151warnings. Imports exit0 with3non-strict violations and3allowed notes. Existing typecheck covers shared/sim, not new match files.",
+      "Old /tmp local evidence was not restored. Historical references remain history; only current durable evidence was rehashed. No user-server deployment."
+    ],
+    "candidate10ControlledRevalidation": {
+      "schema": "rhine-candidate10-controlled-metadata/v1",
+      "preparedAt": "2026-10-18T04:48:32.040415+00:00",
+      "current": true,
+      "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+      "tag": "v0.3.0-rhine.10",
+      "baseMetadataCommit": "dbad11accb9d6e22edd8842166b48022a777d14e",
+      "changeScope": "Only sourceValidation and releaseNotes; no source/tag/gameplay/runtime/resources/flags/budgets/test selection changes. No M2 self-SHA is embedded.",
+      "sourceCi": {
+        "main": {
+          "runId": 39094787782,
+          "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782",
+          "head": "dbad11accb9d6e22edd8842166b48022a777d14e",
+          "attempt": 1,
+          "status": "completed",
+          "conclusion": "failure",
+          "matrix": [
+            {
+              "jobId": 117578854369,
+              "name": "test (windows-latest, node 22)",
+              "node": "v22.23.3",
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8487,
+                "fail": 5,
+                "cancelled": 0,
+                "skipped": 86,
+                "todo": 0,
+                "duration_ms": 2564451.781
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782/job/117578854369",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/logs/117578854369.raw.log",
+                "bytes": 4243336,
+                "sha256": "d4bc65e58dc9a07d58fada90a7fbaa557ef8da8d5207f30bfb0e57a391a95178",
+                "utf8_bom_count": 2,
+                "bom_offsets": [
+                  0,
+                  2151761
+                ],
+                "crlf_count": 55751,
+                "lf_count": 55751,
+                "lone_cr_count": 0
+              }
+            },
+            {
+              "jobId": 117578854466,
+              "name": "test (windows-latest, node 24)",
+              "node": "v24.21.0",
+              "conclusion": "success",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8492,
+                "fail": 0,
+                "cancelled": 0,
+                "skipped": 86,
+                "todo": 0,
+                "duration_ms": 2316884.9483
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782/job/117578854466",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/logs/117578854466.raw.log",
+                "bytes": 1417799,
+                "sha256": "e8ea11dba608f90bf32bbcc85549135e7336791a083553b4fd13ec3aa82bc271",
+                "utf8_bom_count": 1,
+                "bom_offsets": [
+                  0
+                ],
+                "crlf_count": 9981,
+                "lf_count": 9981,
+                "lone_cr_count": 0
+              }
+            },
+            {
+              "jobId": 117578854493,
+              "name": "test (ubuntu-latest, node 22)",
+              "node": "v22.23.3",
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8481,
+                "fail": 1,
+                "cancelled": 0,
+                "skipped": 96,
+                "todo": 0,
+                "duration_ms": 2122451.193614
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782/job/117578854493",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/logs/117578854493.raw.log",
+                "bytes": 4197618,
+                "sha256": "5d0b3a066af1f9f05ee0f9b56f4b11d13565314f9fbccb7819b14bead9781dc9",
+                "utf8_bom_count": 2,
+                "bom_offsets": [
+                  0,
+                  2124478
+                ],
+                "crlf_count": 0,
+                "lf_count": 55703,
+                "lone_cr_count": 0
+              }
+            },
+            {
+              "jobId": 117578854501,
+              "name": "test (ubuntu-latest, node 24)",
+              "node": "v24.21.0",
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8481,
+                "fail": 1,
+                "cancelled": 0,
+                "skipped": 96,
+                "todo": 0,
+                "duration_ms": 2080341.828184
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782/job/117578854501",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/logs/117578854501.raw.log",
+                "bytes": 1420655,
+                "sha256": "89e18d0b51bee544419de959091c02e10a629e73412efc5cdf7d8480e214078c",
+                "utf8_bom_count": 1,
+                "bom_offsets": [
+                  0
+                ],
+                "crlf_count": 0,
+                "lf_count": 9935,
+                "lone_cr_count": 0
+              }
+            }
+          ],
+          "tooling": {
+            "job_id": 117578854245,
+            "conclusion": "success",
+            "node": "v22.23.3",
+            "npm": "10.9.9",
+            "eslint_errors": 0,
+            "eslint_warnings": 151,
+            "warnings_potentially_fixable": 22,
+            "import_violations": [
+              {
+                "path": "server/sim/nodeData.js",
+                "line": 11,
+                "import": "node:fs",
+                "rule": "sim-node"
+              },
+              {
+                "path": "server/sim/nodeData.js",
+                "line": 12,
+                "import": "node:path",
+                "rule": "sim-node"
+              },
+              {
+                "path": "server/sim/nodeData.js",
+                "line": 13,
+                "import": "node:url",
+                "rule": "sim-node"
+              }
+            ],
+            "allowed_import_notes": 3,
+            "imports_boundary": "The executed command is node tools/check-imports.mjs without --strict; its default exit code remains 0 with listed violations. Success does not imply zero violations.",
+            "typecheck": "tsc --noEmit --checkJs -p jsconfig.json completed successfully with no printed diagnostic."
+          },
+          "failures": [
+            {
+              "job_id": 117578854369,
+              "test": "the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told",
+              "test_location": "D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:204:3",
+              "duration_ms": 2255.5939,
+              "error": "timeout waiting for any (recent: welcome, room.state:ZEAD, ok)",
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "expected": null,
+              "actual": null
+            },
+            {
+              "job_id": 117578854369,
+              "test": "a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "test_location": "D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:242:3",
+              "duration_ms": 2349.9367,
+              "error": "timeout waiting for any (recent: welcome, room.state:BRAP, ok)",
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "expected": null,
+              "actual": null
+            },
+            {
+              "job_id": 117578854369,
+              "test": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "test_location": "D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\match\\\\plugin-host.test.js:263:3",
+              "duration_ms": 2337.3553,
+              "error": "timeout waiting for any (recent: welcome, room.state:JQPF, ok, room.state:JQPF, room.state:JQPF, ok)",
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "expected": null,
+              "actual": null
+            },
+            {
+              "job_id": 117578854369,
+              "test": "the imported script plugin runs in our own sandbox: the kit's talent raises ATK by 25% (the content plugin alone does not)",
+              "test_location": "D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\plugins\\\\forgeImport.test.js:1166:1",
+              "duration_ms": 12244.8643,
+              "error": "[{\"code\":\"PLUGIN_SCRIPT_CHECK\",\"path\":\"scripts\",\"message\":\"script setup exceeded 5000 ms; child terminated (SIGKILL)\"}]\n+ actual - expected\n\n+ [\n+   {\n+     code: 'PLUGIN_SCRIPT_CHECK',\n+     message: 'script setup exceeded 5000 ms; child terminated (SIGKILL)',\n+     path: 'scripts'\n+   }\n+ ]\n- []",
+              "stack": [
+                "TestContext.<anonymous> (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/plugins/forgeImport.test.js:1189:10)",
+                "process.processTicksAndRejections (node:internal/process/task_queues:103:5)",
+                "async Test.run (node:internal/test_runner/test:1054:7)",
+                "async Test.processPendingSubtests (node:internal/test_runner/test:744:7)"
+              ],
+              "expected": [],
+              "actual": [
+                {
+                  "code": "PLUGIN_SCRIPT_CHECK",
+                  "path": "scripts",
+                  "message": "script setup exceeded 5000 ms; child terminated (SIGKILL)"
+                }
+              ]
+            },
+            {
+              "job_id": 117578854369,
+              "test": "benchmark: worst case — 70 enemies alive at once + 10 operators < 0.5 ms/tick",
+              "test_location": "D:\\\\a\\\\Stronghold-Protocol-Rhine\\\\Stronghold-Protocol-Rhine\\\\test\\\\sim\\\\perf.test.js:43:1",
+              "duration_ms": 1108.5565,
+              "error": "avg 0.5186625833333338 ms/tick",
+              "stack": [
+                "TestContext.<anonymous> (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/sim/perf.test.js:57:10)",
+                "Test.runInAsyncScope (node:async_hooks:214:14)",
+                "Test.run (node:internal/test_runner/test:1047:25)",
+                "Test.processPendingSubtests (node:internal/test_runner/test:744:18)",
+                "Test.postRun (node:internal/test_runner/test:1173:19)",
+                "Test.run (node:internal/test_runner/test:1101:12)",
+                "async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)"
+              ],
+              "expected": true,
+              "actual": false
+            },
+            {
+              "job_id": 117578854493,
+              "test": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "test_location": "/home/runner/work/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/match/plugin-host.test.js:263:3",
+              "duration_ms": 2151.982916,
+              "error": "timeout waiting for any (recent: welcome, room.state:HQTN, ok, room.state:HQTN, room.state:HQTN, ok)",
+              "stack": [
+                "Timeout._onTimeout (file:///home/runner/work/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "expected": null,
+              "actual": null
+            },
+            {
+              "job_id": 117578854501,
+              "test": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "test_location": "test/match/plugin-host.test.js:263:3",
+              "duration_ms": 2264.826087,
+              "error": "Error: timeout waiting for any (recent: welcome, room.state:WUTH, ok, room.state:WUTH, room.state:WUTH, ok)",
+              "stack": [
+                "at Timeout._onTimeout (file:///home/runner/work/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "at listOnTimeout (node:internal/timers:685:17)",
+                "at process.processTimers (node:internal/timers:618:7)"
+              ],
+              "expected": null,
+              "actual": null
+            }
+          ],
+          "failureInterpretations": {
+            "plugin_host_timeouts": {
+              "jobs": [
+                117578854369,
+                117578854493,
+                117578854501
+              ],
+              "failed_leaves": {
+                "117578854369": [
+                  "test/match/plugin-host.test.js:204:3",
+                  "test/match/plugin-host.test.js:242:3",
+                  "test/match/plugin-host.test.js:263:3"
+                ],
+                "117578854493": [
+                  "test/match/plugin-host.test.js:263:3"
+                ],
+                "117578854501": [
+                  "test/match/plugin-host.test.js:263:3"
+                ]
+              },
+              "observed": "Only timeout waiting for any is reported, with recent message types and a timer stack ending at test/helpers/wsClient.js:106:16. No expected/actual assertion mismatch or request operation/rid is printed. The exact await is unlocalized.",
+              "source_boundary": "TestClient.request uses the default 2000ms request wait unless overridden. The watchdog test configures watchdogMs=1500/heartbeatMs=100; the OOM test uses watchdogMs=4000 and child resource limits. SP_VERIFY final verification counters and content assertions are after request/setup/drive awaits; this failure does not report those values. A matching historical signature does not establish the cause or demonstrate absence of regression."
+            },
+            "forge_import": {
+              "job_id": 117578854369,
+              "leaf": "test/plugins/forgeImport.test.js:1166:1",
+              "failed_assertion": "test/plugins/forgeImport.test.js:1189:10 assert.deepEqual(built.problems, [], JSON.stringify(built.problems))",
+              "expected": [],
+              "actual": [
+                {
+                  "code": "PLUGIN_SCRIPT_CHECK",
+                  "path": "scripts",
+                  "message": "script setup exceeded 5000 ms; child terminated (SIGKILL)"
+                }
+              ],
+              "boundary": "This content-set/preflight assertion failed before the later sandbox host load/start and ATK*1.25 assertions. The reported 5000ms setup limit was not changed. The log does not establish why setup exceeded its limit."
+            },
+            "performance": {
+              "job_id": 117578854369,
+              "leaf": "test/sim/perf.test.js:43:1",
+              "failed_assertion": "test/sim/perf.test.js:57:10 assert.ok(avg < 0.5, ...)",
+              "actual_ms_per_tick": 0.5186625833333338,
+              "limit_ms_per_tick": 0.5,
+              "expected_boolean": true,
+              "actual_boolean": false,
+              "boundary": "An actual official perf failure remains failure. No threshold, warm-up, or repetition budget was changed."
+            }
+          },
+          "limits": {
+            "read_only_remote": true,
+            "only_exact_run_watched": 39094787782,
+            "only_terminal_job_logs_downloaded": true,
+            "job_logs_downloaded_once_each": true,
+            "no_rerun_cancel_push_test_execution": true,
+            "raw_encoding": "The connector returned decoded UTF-8 log strings; re-encoded verbatim with BOM and CRLF preserved. SHA/bytes describe those complete strings, not the original transport archive.",
+            "status_history_limit": "Final jobs-latest.json and initial/run-final metadata are saved. Poll outputs remain in the tool transcript; separate historical JSON snapshots for every poll were not retained.",
+            "independent_job_vms": "No shared-CPU attribution between separate job VMs is asserted."
+          }
+        },
+        "tag": {
+          "runId": 39094787953,
+          "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953",
+          "head": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+          "attempt": 1,
+          "status": "completed",
+          "conclusion": "failure",
+          "matrix": [
+            {
+              "jobId": 117578855077,
+              "name": "tooling (lint, imports, typecheck)",
+              "node": [
+                "node: v22.23.3"
+              ],
+              "conclusion": "success",
+              "counts": {},
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953/job/117578855077",
+              "smoke": null,
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/logs/117578855077.log",
+                "bytes": 58499,
+                "sha256": "4e5ada8c8150914c989732052215aac1732f688d4602817d3fb003537134c400"
+              }
+            },
+            {
+              "jobId": 117578855224,
+              "name": "test (windows-latest, node 22)",
+              "node": [
+                "node: v22.23.3"
+              ],
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8488,
+                "fail": 4,
+                "cancelled": 0,
+                "skipped": 86,
+                "todo": 0,
+                "duration_ms": 2587631.0297
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953/job/117578855224",
+              "smoke": "skipped",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/logs/117578855224.log",
+                "bytes": 4242952,
+                "sha256": "e3acee2a278eb3232cfd397f27a414d158908724395f16e4dcbe6d6511b2686e"
+              }
+            },
+            {
+              "jobId": 117578855233,
+              "name": "test (windows-latest, node 24)",
+              "node": [
+                "node: v24.21.0"
+              ],
+              "conclusion": "success",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8492,
+                "fail": 0,
+                "cancelled": 0,
+                "skipped": 86,
+                "todo": 0,
+                "duration_ms": 2288475.8527
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953/job/117578855233",
+              "smoke": "success",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/logs/117578855233.log",
+                "bytes": 1418756,
+                "sha256": "f83df26cd6f34484feca63b60b0ebf9936473f7c2a226e21bca0dbc53f858357"
+              }
+            },
+            {
+              "jobId": 117578855242,
+              "name": "test (ubuntu-latest, node 22)",
+              "node": [
+                "node: v22.23.3"
+              ],
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8481,
+                "fail": 1,
+                "cancelled": 0,
+                "skipped": 96,
+                "todo": 0,
+                "duration_ms": 2137519.795281
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953/job/117578855242",
+              "smoke": "skipped",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/logs/117578855242.log",
+                "bytes": 4198456,
+                "sha256": "11c1bc51e12a3afb4c2b0c0213975dbf8f0268228d9dbfb2bd4c3b429546feca"
+              }
+            },
+            {
+              "jobId": 117578855253,
+              "name": "test (ubuntu-latest, node 24)",
+              "node": [
+                "node: v24.21.0"
+              ],
+              "conclusion": "failure",
+              "counts": {
+                "tests": 8578,
+                "suites": 574,
+                "pass": 8481,
+                "fail": 1,
+                "cancelled": 0,
+                "skipped": 96,
+                "todo": 0,
+                "duration_ms": 2024132.739879
+              },
+              "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953/job/117578855253",
+              "smoke": "skipped",
+              "raw": {
+                "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/logs/117578855253.log",
+                "bytes": 1421167,
+                "sha256": "bc5b2ec8bf9cb59b77eaf453293bde6af8351540f7d5690b9fd4db28b7a88bd6"
+              }
+            }
+          ],
+          "failureInstanceCount": 6,
+          "failures": [
+            {
+              "job_id": 117578855253,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "path": "test/match/plugin-host.test.js",
+              "test_line": "242:3",
+              "duration_ms": 2260.99076,
+              "error": "timeout waiting for any (recent: welcome, room.state:XCWY, ok)",
+              "stack": [
+                "Timeout._onTimeout (test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:685:17)",
+                "process.processTimers (node:internal/timers:618:7)"
+              ],
+              "boundaries": {
+                "test_timeout_ms": 90000,
+                "request_default_ms": 2000,
+                "watchdog_ms": 4000,
+                "heartbeat_ms": 1000,
+                "transport": "process",
+                "resource_limits_mb": {
+                  "old": 160,
+                  "young": 32,
+                  "stack": 4
+                }
+              },
+              "inference_limits": [
+                "Timeout stack contains no caller frame; specific setup request cannot be identified.",
+                "Line255 allocation request errors are caught; title alone does not establish OOM stimulus was reached.",
+                "This is not the90000ms test deadline or a directly observed OOM exit.",
+                "Node24 spec suite summary is excluded from leaf count; initial/tail repeated leaf marker deduplicated."
+              ]
+            },
+            {
+              "job_id": 117578855242,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "path": "test/match/plugin-host.test.js",
+              "test_line": "263:3",
+              "duration_ms": 2424.219492,
+              "error": "timeout waiting for any (recent: welcome, room.state:YKKP, ok, room.state:YKKP, room.state:YKKP, ok)",
+              "stack": [
+                "Timeout._onTimeout (test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "boundaries": {
+                "test_timeout_ms": 150000,
+                "request_default_ms": 2000,
+                "options": {
+                  "timerScale": 0.1,
+                  "combatSpeed": 40,
+                  "verify": "all",
+                  "botRehearsal": 0
+                }
+              },
+              "inference_limits": [
+                "Timer-only stack has no calling request frame; concrete request cannot be identified.",
+                "The150000ms test deadline was not reached.",
+                "The test title does not establish result verification assertions were reached.",
+                "A shared wsClient timer frame with U24 OOM case does not prove shared root cause."
+              ]
+            },
+            {
+              "job_id": 117578855224,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "the watchdog: a worker that stops beating is terminated — the request answered INTERNAL, the room back in its lobby and told",
+              "duration_ms": 2267.5159,
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "path": "test/match/plugin-host.test.js",
+              "test_line": "204:3",
+              "error": "'timeout waiting for any (recent: welcome, room.state:TMLH, ok)'",
+              "boundaries": {
+                "test_timeout_ms": 60000,
+                "request_default_ms": 2000,
+                "watchdog_ms": 1500,
+                "heartbeat_ms": 100,
+                "hang_request_budget_ms": 15000,
+                "behavior_elapsed_assertion_ms": ">=1000 and <10000"
+              },
+              "inference_limits": [
+                "Timer-only stack does not identify the calling request or exact setup stage.",
+                "Test title does not prove the watchdog/OOM/verification behavior stage was reached.",
+                "An ordinary reply wait timed out; matching timeout signature does not establish shared root cause."
+              ]
+            },
+            {
+              "job_id": 117578855224,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "a match host that runs out of memory (a child process): the room is back in its lobby, the server lives",
+              "duration_ms": 2295.4008,
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "path": "test/match/plugin-host.test.js",
+              "test_line": "242:3",
+              "error": "'timeout waiting for any (recent: welcome, room.state:SZYD, ok)'",
+              "boundaries": {
+                "test_timeout_ms": 90000,
+                "request_default_ms": 2000,
+                "watchdog_ms": 4000,
+                "heartbeat_ms": 1000,
+                "transport": "process",
+                "resource_limits_mb": {
+                  "old": 160,
+                  "young": 32,
+                  "stack": 4
+                },
+                "allocation_request_error": "line255 errors are caught"
+              },
+              "inference_limits": [
+                "Timer-only stack does not identify the calling request or exact setup stage.",
+                "Test title does not prove the watchdog/OOM/verification behavior stage was reached.",
+                "An ordinary reply wait timed out; matching timeout signature does not establish shared root cause."
+              ]
+            },
+            {
+              "job_id": 117578855224,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "SP_VERIFY=all in its match host: a result naming the room's content is verified and accepted; one naming none is refused and run by the server",
+              "duration_ms": 2369.6375,
+              "stack": [
+                "Timeout._onTimeout (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/helpers/wsClient.js:106:16)",
+                "listOnTimeout (node:internal/timers:585:17)",
+                "process.processTimers (node:internal/timers:521:7)"
+              ],
+              "path": "test/match/plugin-host.test.js",
+              "test_line": "263:3",
+              "error": "'timeout waiting for any (recent: welcome, room.state:EXCM, ok, room.state:EXCM, room.state:EXCM, ok)'",
+              "boundaries": {
+                "test_timeout_ms": 150000,
+                "request_default_ms": 2000,
+                "options": {
+                  "timerScale": 0.1,
+                  "combatSpeed": 40,
+                  "verify": "all",
+                  "botRehearsal": 0
+                }
+              },
+              "inference_limits": [
+                "Timer-only stack does not identify the calling request or exact setup stage.",
+                "Test title does not prove the watchdog/OOM/verification behavior stage was reached.",
+                "An ordinary reply wait timed out; matching timeout signature does not establish shared root cause."
+              ]
+            },
+            {
+              "job_id": 117578855224,
+              "source_sha": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+              "test_title": "the imported script plugin runs in our own sandbox: the kit's talent raises ATK by 25% (the content plugin alone does not)",
+              "duration_ms": 12547.4091,
+              "stack": [
+                "TestContext.<anonymous> (file:///D:/a/Stronghold-Protocol-Rhine/Stronghold-Protocol-Rhine/test/plugins/forgeImport.test.js:1189:10)"
+              ],
+              "path": "test/plugins/forgeImport.test.js",
+              "test_line": "1166:1",
+              "assertion_line": "1189:10",
+              "assertion": "assert.deepEqual(built.problems, [])",
+              "actual": [
+                {
+                  "code": "PLUGIN_SCRIPT_CHECK",
+                  "path": "scripts",
+                  "message": "script setup exceeded 5000 ms; child terminated (SIGKILL)"
+                }
+              ],
+              "expected": [],
+              "boundaries": {
+                "test_timeout_ms": 120000,
+                "preflight_timeout_ms": 5000,
+                "preflight_env_override_range_ms": [
+                  500,
+                  60000
+                ],
+                "kill_signal": "SIGKILL",
+                "source": "server/plugins/scriptPreflight.js:12-13,30-40"
+              },
+              "inference_limits": [
+                "This is a synchronous SES registration preflight timeout, not the120000ms overall test deadline.",
+                "The source labels the test as a talent ATK scenario, but the script Worker/battle/talent assertions after1189 were not reached.",
+                "Logs do not explain why the preflight exceeded5000ms.",
+                "Do not merge this cause with the2000ms wsClient reply timeouts."
+              ]
+            }
+          ],
+          "limits": [
+            "Only source tag CI run39094787953 attempt1 and exact c2bcb246d407e8f4c014d39c480c85358e79fdeb checkout. No main/Publish logs read.",
+            "Observer writes only audit evidence, not repository source/docs or remote state.",
+            "No test rerun, cancel, remote write, assertion relaxation, or old3D repair claim.",
+            "Smoke: boot/healthz, index HTML, vendor pixi; doctor is non-gating (||true). Updater CI tests do not substitute for native/real-old-package upgrade acceptance."
+          ]
+        },
+        "newMetadataCandidateCi": {
+          "statusAtPreparation": "not triggered; new M2 metadata commit not created or pushed by this generator",
+          "mustNotOverrideExistingResults": "Source S and old M1 CI are already terminal failure; future metadata-only CI does not retroactively pass them."
+        },
+        "performanceLimits": {
+          "waveMsPerTick": 0.5,
+          "worstMsPerTick": 0.5,
+          "bossCiBestMsPerTick": 1.0,
+          "mainWindows22ObservedWorstMsPerTick": 0.5186625833333338,
+          "mainWindows22WorstStatus": "failed; retained",
+          "tagWindows22Performance": "passed in actual tag CI; does not override main Windows22 failure"
+        }
+      },
+      "windowsFirstAttempt": {
+        "runId": 39094787780,
+        "jobId": 117578854430,
+        "attempt": 1,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787780",
+        "source": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+        "automation": "dbad11accb9d6e22edd8842166b48022a777d14e",
+        "conclusion": "failure",
+        "raw": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/native-job.raw.log",
+          "bytes": 458402,
+          "sha256": "4cb26e260436b3099fe1a9543cd2f6e24282f40a97f8bb3e1156dd4248486c25",
+          "utf8BOM": true,
+          "crlf": 1765,
+          "retrieval": "Terminal-only connector UTF-8 decoded response, observed BOM and CRLF preserved when re-encoding; original redirect HTTP byte headers unavailable",
+          "firstRead404": true,
+          "secondReadSucceeded": true
+        },
+        "nativeFiles": 82,
+        "fileConcurrency": 3,
+        "native": {
+          "rawFirstLine": 1292,
+          "tests": 1011,
+          "suites": 0,
+          "pass": 1009,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 2,
+          "todo": 0,
+          "duration_ms": 246654.4964,
+          "rawLastLine": 1299
+        },
+        "sourceAuthor": {
+          "rawFirstLine": 1328,
+          "tests": 27,
+          "suites": 0,
+          "pass": 27,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 144729.3662,
+          "rawLastLine": 1335
+        },
+        "hosts": {
+          "rawFirstLine": 1350,
+          "tests": 9,
+          "suites": 2,
+          "pass": 9,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 100151.3063,
+          "rawLastLine": 1357
+        },
+        "browserTotals": {
+          "tests": 47,
+          "pass": 45,
+          "fail": 2,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "browserGroups": {
+          "remSimulation": {
+            "rawFirstLine": 1361,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 35406.0888,
+            "rawLastLine": 1368
+          },
+          "newSync": {
+            "rawFirstLine": 1372,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 9310.811,
+            "rawLastLine": 1379
+          },
+          "remRenderer": {
+            "rawFirstLine": 1384,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 20164.8829,
+            "rawLastLine": 1391
+          },
+          "remRally": {
+            "rawFirstLine": 1394,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 33340.3279,
+            "rawLastLine": 1401
+          },
+          "kazdelSimulation": {
+            "rawFirstLine": 1408,
+            "tests": 5,
+            "suites": 0,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 55118.2923,
+            "rawLastLine": 1415
+          },
+          "renderer": {
+            "rawFirstLine": 1436,
+            "tests": 13,
+            "suites": 3,
+            "pass": 13,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 235429.4281,
+            "rawLastLine": 1443
+          },
+          "rhineOperators": {
+            "rawFirstLine": 1449,
+            "tests": 2,
+            "suites": 1,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 37650.2541,
+            "rawLastLine": 1456
+          },
+          "upstreamRenderer": {
+            "rawFirstLine": 1465,
+            "tests": 5,
+            "suites": 1,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 39857.8875,
+            "rawLastLine": 1472
+          },
+          "upstreamUi": {
+            "rawFirstLine": 1509,
+            "tests": 8,
+            "suites": 1,
+            "pass": 7,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 169618.5704,
+            "rawLastLine": 1516
+          },
+          "sixSeatUi": {
+            "rawFirstLine": 1595,
+            "tests": 3,
+            "suites": 0,
+            "pass": 2,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 301475.8525,
+            "rawLastLine": 1602
+          },
+          "statsLandscape": {
+            "rawFirstLine": 1623,
+            "tests": 1,
+            "suites": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 8186.0752,
+            "rawLastLine": 1630
+          },
+          "upstreamPlugins": {
+            "rawFirstLine": 1669,
+            "tests": 4,
+            "suites": 1,
+            "pass": 4,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 206167.5475,
+            "rawLastLine": 1676
+          }
+        },
+        "browserFailures": [
+          {
+            "group": "upstreamUi",
+            "test": "Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fixed match profile, real simulation and vanilla reload",
+            "testFile": "test/ui/rhine-profiles.e2e.test.js",
+            "testDeclarationLine": 460,
+            "failureLine": 672,
+            "durationMs": 129782.3775,
+            "error": "TimeoutError: Waiting failed: 30000ms exceeded",
+            "predicate": "globalThis.__SP_VIEW__ && document.querySelector(.gm canvas)?.width > 0",
+            "stage": "Vanilla host PREP R2 after real reload/reconnect and profile/roster/context-isolation assertions",
+            "actualBoard": "2d",
+            "actualViewport": {
+              "width": 1280,
+              "height": 720
+            },
+            "directDiagnostics": [
+              {
+                "client": "vanilla-host",
+                "file": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/diagnostic-line-1504.json",
+                "sha256": "faf9b11b547c49993bedd3f0b7adf2d885250ed1352949c68a63daee009e09e7",
+                "rawLine": 1504,
+                "phase": "PREP",
+                "round": 2,
+                "profile": "vanilla",
+                "view": {
+                  "kind": "fallback",
+                  "app": false,
+                  "renderer": false
+                },
+                "canvases": [],
+                "fieldWarnings": [
+                  "[field] render engine unavailable, using the simplified view: createFieldView timed out"
+                ],
+                "pendingRequests": [],
+                "resourceTotal": 359
+              },
+              {
+                "client": "rhine-host",
+                "file": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/diagnostic-line-1505.json",
+                "sha256": "238796f961bd25af0c5b9bde781a44a861efb9ef7ba31c03b1751c1afce7f476",
+                "rawLine": 1505,
+                "phase": "PREP",
+                "round": 2,
+                "profile": "rhine",
+                "view": {
+                  "kind": "engine",
+                  "app": true,
+                  "renderer": true,
+                  "contextLost": false
+                },
+                "canvases": [
+                  {
+                    "width": 1280,
+                    "height": 720,
+                    "connected": true,
+                    "display": "block",
+                    "rect": {
+                      "width": 1280,
+                      "height": 720
+                    }
+                  }
+                ],
+                "fieldWarnings": [],
+                "pendingRequests": [],
+                "resourceTotal": 841
+              },
+              {
+                "client": "vanilla-guest",
+                "file": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/diagnostic-line-1506.json",
+                "sha256": "de6d76c8272531b7c67e471af8b87170d88642f7e48fa948fdc48fa0c4b9518c",
+                "rawLine": 1506,
+                "phase": "PREP",
+                "round": 2,
+                "profile": "vanilla",
+                "view": {
+                  "kind": "engine",
+                  "app": true,
+                  "renderer": true,
+                  "contextLost": false
+                },
+                "canvases": [
+                  {
+                    "width": 1280,
+                    "height": 720,
+                    "connected": true,
+                    "display": "block",
+                    "rect": {
+                      "width": 1280,
+                      "height": 720
+                    }
+                  }
+                ],
+                "fieldWarnings": [],
+                "pendingRequests": [],
+                "resourceTotal": 569
+              }
+            ],
+            "completedByControlFlow": [
+              "Three normal authority uploads were compared with real Node replay and result.errors===0 before the failing line.",
+              "All three clients reached PREP round2 and runner.errors===0 before the reload.",
+              "Vanilla mid-match reconnect, vanilla profile/roster and reload isolation assertions preceded Canvas wait."
+            ],
+            "notCompleted": [
+              "post-reload real Canvas screenshot",
+              "final visibility/RAF document count assertions",
+              "final all-client actual engine/2d checks",
+              "final console/page/resource/server zero-error assertions"
+            ],
+            "serverAccepted": "No dedicated per-battle accepted/resultSource-client/checked assertion; do not infer it from replay/phase."
+          },
+          {
+            "group": "sixSeatUi",
+            "test": "vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool",
+            "testFile": "test/ui/six-player-balance.e2e.test.js",
+            "testDeclarationLine": 526,
+            "failureLine": 538,
+            "durationMs": 37548.7669,
+            "error": "TimeoutError: Waiting failed: 30000ms exceeded",
+            "stack": [
+              "createSixHumanRoom:172",
+              "openClient:37",
+              "Client.open:256"
+            ],
+            "predicate": "globalThis.__SP__ && document.querySelector(.screen)",
+            "stage": "Second Vanilla client opening/joining; before all six clients, beacons, ready, battle, authorities or replay",
+            "observedProblems": [
+              "vanilla-2: requestfailed: http://127.0.0.1:53464/js/ui/fieldHost.js net::ERR_NO_BUFFER_SPACE",
+              "vanilla-2: console: Failed to load resource: net::ERR_NO_BUFFER_SPACE @ http://127.0.0.1:53464/js/ui/fieldHost.js"
+            ],
+            "initialHostWarmLoad": {
+              "durationMs": 1621.1000000000931,
+              "status": "done",
+              "timeoutMs": 15000
+            },
+            "nodePriority": 0,
+            "ownedGpuPriorityBefore": -7,
+            "ownedGpuPriorityAfter": 10,
+            "rhineCompanionCase": {
+              "pass": true,
+              "durationMs": 225359.3615
+            },
+            "diagnosticsFile": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/diagnostic-line-1590.json",
+            "rootCause": "Unresolved. ERR_NO_BUFFER_SPACE is observed on fieldHost.js; this does not independently establish OS socket/port/memory exhaustion or CPU/GPU cause."
+          }
+        ],
+        "notRun": [
+          "HTTP/WebSocket packaged smoke",
+          "final clean payload verifyTree",
+          "ZIP compression/extraction/all-member validation",
+          "new updater toolkit ZIP",
+          "actual old6-to10 apply/private-six-config preservation/repeat/rollback",
+          "five normal release asset uploads",
+          "five authenticated full attachment redownloads",
+          "public release PATCH/channel/latest/updater selection postchecks",
+          "independent public anonymous five-asset downloads"
+        ],
+        "failureReport": {
+          "id": 652446572,
+          "bytes": 206107,
+          "apiDigest": "sha256:d585ee1c10a7ca39bae0cd3837c0ea7a616324740e62850ccb14ac402ff1beea",
+          "downloaded": false,
+          "retrievalAttempt": "Draft browser-download URL returned connector404; no body bytes independently hashed. Full sealed job log and extracted diagnostic JSON are locally preserved."
+        },
+        "actualReleaseRead": {
+          "checkedAt": "2026-10-18T04:18:25.450Z",
+          "release": {
+            "id": 416216947,
+            "tag": "v0.3.0-rhine.10",
+            "draft": true,
+            "prerelease": false,
+            "target": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/untagged-a156252158b1c15d2401",
+            "updated_at": "2026-10-18T04:16:29Z",
+            "assets": [
+              {
+                "id": 652446572,
+                "name": "RELEASE-VALIDATION.json",
+                "size": 206107,
+                "digest": "sha256:d585ee1c10a7ca39bae0cd3837c0ea7a616324740e62850ccb14ac402ff1beea",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/652446572",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/untagged-a156252158b1c15d2401/RELEASE-VALIDATION.json"
+              }
+            ]
+          },
+          "latest": {
+            "id": 412688222,
+            "tag": "v0.2.4-rhine.6",
+            "draft": false,
+            "prerelease": false,
+            "target": "f146f38f38937ff8cba6e036aed30621c0f85a50",
+            "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/v0.2.4-rhine.6",
+            "updated_at": "2026-10-14T12:47:35Z",
+            "assets": [
+              {
+                "id": 640363258,
+                "name": "RELEASE-VALIDATION.json",
+                "size": 4679,
+                "digest": "sha256:bf06daa3eda1330c33bd532361f1099f8d701d1f7287a33e04807027b7e130f6",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363258",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/RELEASE-VALIDATION.json"
+              },
+              {
+                "id": 640363260,
+                "name": "Rhine-Update-Tool-Windows.zip",
+                "size": 41760,
+                "digest": "sha256:c587fc1fe6634d01f1b61c4c25ad40cfa59212584653cd47d68905d00c187fc6",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363260",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/Rhine-Update-Tool-Windows.zip"
+              },
+              {
+                "id": 640363267,
+                "name": "SHA256SUMS.txt",
+                "size": 123,
+                "digest": "sha256:8b6c0bda55c8c9d5fffb33878f4ef574fc422452959390940b6239d170191607",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363267",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/SHA256SUMS.txt"
+              },
+              {
+                "id": 640363262,
+                "name": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
+                "size": 620019699,
+                "digest": "sha256:492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363262",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip"
+              },
+              {
+                "id": 640363259,
+                "name": "UPDATE-TOOL-SHA256.txt",
+                "size": 96,
+                "digest": "sha256:c3596dd61aa383f19c163015badfa8a37342ebffc8b29024b4f4a3b5f27ea9bf",
+                "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363259",
+                "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/UPDATE-TOOL-SHA256.txt"
+              }
+            ]
+          },
+          "public": false,
+          "latestPromoted": false,
+          "stateProvenBy": "Fresh releases collection and latest API after terminal, not inferred from failure",
+          "metadataFile": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/post-failure-public-metadata.json"
+        },
+        "evidence": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10/windows10-acceptance-evidence.json",
+          "bytes": 24884,
+          "sha256": "1877532dcbd4180652fe97b1c28acbdc24e73e53dc7c8bc15e16bc8cb465ad3c"
+        }
+      },
+      "linuxOriginalThreeCases": {
+        "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+        "metadataHead": "dbad11accb9d6e22edd8842166b48022a777d14e",
+        "platform": "linux x64",
+        "node": "24.19.0",
+        "browser": "Chrome/151.0.7922.173",
+        "startAndExit": {
+          "startedAt": "2026-10-18T04:22:13.021880+00:00",
+          "endedAt": "2026-10-18T04:29:20.831914+00:00",
+          "exitCode": 0
+        },
+        "counts": {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "cases": [
+          {
+            "name": "Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fixed match profile, real simulation and vanilla reload",
+            "durationMs": 115289.533151
+          },
+          {
+            "name": "rhine: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool",
+            "durationMs": 153951.038125
+          },
+          {
+            "name": "vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool",
+            "durationMs": 157102.8021
+          }
+        ],
+        "log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-targeted-linux10/original-cases.log",
+          "bytes": 55826,
+          "sha256": "ef918ca991d8f65bbda8c206bd3286ca090f5526afb225b84f622ec431191e95"
+        },
+        "protectedSourceFiles": [
+          {
+            "path": "test/ui/rhine-profiles.e2e.test.js",
+            "sha256": "1b36891568bdd963eeb2a9e2e381924b229b022dc0b729893722f3866c68b7aa",
+            "exactSourceBytes": true
+          },
+          {
+            "path": "test/ui/six-player-balance.e2e.test.js",
+            "sha256": "05c389b31651a44893dcf037bfeaab1d217ea174560093bfc84ba22a038b404c",
+            "exactSourceBytes": true
+          },
+          {
+            "path": "test/e2e/client.mjs",
+            "sha256": "6f51bc92927c37cd500f95cd027fcf764e7e5f2b18c6b7dc323f43667b0368a7",
+            "exactSourceBytes": true
+          },
+          {
+            "path": "public/js/render/app.js",
+            "sha256": "b10ae2fdd2a48d8f1896157c1985a960875985aa62a27e97ff16744e0d6955aa",
+            "exactSourceBytes": true
+          }
+        ],
+        "purpose": "Targeted original three browser cases, no assertion or timeout changes; not native Windows/full release acceptance",
+        "limits": [
+          "Only three selected original cases, not all47 browser gates",
+          "Linux original source run, not Windows or packaged acceptance",
+          "Original Windows10 failures remain failures; root causes not established by this pass",
+          "No renderer diagnostic patch or observer was used for this run"
+        ],
+        "evidence": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-targeted-linux10/result.json",
+          "bytes": 2408,
+          "sha256": "895af5760de0c0d7538fca0a82bbbb56c9931d805fb665cb14e1072b0d505a88"
+        }
+      },
+      "windowsDiagnosticOriginalThreeCases": {
+        "runId": 39097408114,
+        "jobId": 117586598672,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39097408114",
+        "source": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+        "automation": "9c058145100ca29b6d7d9f4dd165c5dae902980a",
+        "status": "completed",
+        "conclusion": "success",
+        "raw": {
+          "bytes": 423872,
+          "sha256": "55506bb6c92985a6de49cb9561f894963636ad14239f053eb3eb7cd9c0ddd5e0",
+          "lines": 1151
+        },
+        "caseResults": [
+          {
+            "line": 560,
+            "status": "passed",
+            "name": "Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fixed match profile, real simulation and vanilla reload",
+            "durationMs": 106308.9179
+          },
+          {
+            "line": 822,
+            "status": "passed",
+            "name": "rhine: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool",
+            "durationMs": 161072.6206
+          },
+          {
+            "line": 1073,
+            "status": "passed",
+            "name": "vanilla: six real humans receive/use R14 beacons, retain reduced BAN and fight a doubled boss pool",
+            "durationMs": 165535.3182
+          }
+        ],
+        "groupResults": [
+          {
+            "line": 571,
+            "record": {
+              "at": "2026-10-18T04:35:16.437Z",
+              "event": "group-end",
+              "name": "profiles",
+              "pid": 9484,
+              "elapsedMs": 108129,
+              "code": 0,
+              "signal": null,
+              "totals": {
+                "tests": 1,
+                "pass": 1,
+                "fail": 0,
+                "skipped": 0,
+                "cancelled": 0
+              },
+              "failureObserved": false,
+              "deadlineExpired": false,
+              "status": "passed"
+            }
+          },
+          {
+            "line": 1084,
+            "record": {
+              "at": "2026-10-18T04:40:46.946Z",
+              "event": "group-end",
+              "name": "six-balance",
+              "pid": 5804,
+              "elapsedMs": 329409,
+              "code": 0,
+              "signal": null,
+              "totals": {
+                "tests": 2,
+                "pass": 2,
+                "fail": 0,
+                "skipped": 0,
+                "cancelled": 0
+              },
+              "failureObserved": false,
+              "deadlineExpired": false,
+              "status": "passed"
+            }
+          }
+        ],
+        "counts": {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        "sourceTestsAndHelpersByteIdentical": {
+          "test/ui/rhine-profiles.e2e.test.js": "1b36891568bdd963eeb2a9e2e381924b229b022dc0b729893722f3866c68b7aa",
+          "test/ui/six-player-balance.e2e.test.js": "05c389b31651a44893dcf037bfeaab1d217ea174560093bfc84ba22a038b404c",
+          "test/e2e/client.mjs": "6f51bc92927c37cd500f95cd027fcf764e7e5f2b18c6b7dc323f43667b0368a7",
+          "test/e2e/mechanismGraphics.mjs": "6cb8b576be6bfeae9aa26666f72cc2747c504576a26c8c6d0a9cc1510073390d",
+          "test/e2e/sixWarmupObserver.mjs": "0c6ec8156ee9ff288d7cc12650facaa8c6a6a320aa4e88fa8fdc4f922fabef65",
+          "test/e2e/fastServer.mjs": "2226eaa0d3001b8aafd091faed62362e6c2b076d79c6b8d103c72ee73f6b4e07",
+          "public/js/battle/runner.js": "2b62104f8f3698503e45ea0edef7a99d3799015847a9f444531a635cb28262ff",
+          "public/js/battle/simHost.js": "cf2f56d28c59d8ca87a4f3f555bac870300457503cf8c7f63f0b977464355ee6"
+        },
+        "rendererDiagnosticPatchOnly": {
+          "sha256": "e4d788eaa4445103a6f200f25a23e83c373e86ba4708f64a7358d9e904ef8f37",
+          "scriptSha256": "fbc52dc8de19960979dc3af3922e2deccae243eb8ffdcc984f2393055c74114f",
+          "boundary": "Passive phase instrumentation on an isolated diagnostic copy, not shipped source or an interference-free performance experiment."
+        },
+        "profileStrong2dEngineCanvasChecks": "passed original strict profile case",
+        "systemSampling": {
+          "requested": 47,
+          "completed": 47,
+          "failed": 0,
+          "fieldErrors": 0,
+          "sampledRanges": {
+            "memory.freeBytes": {
+              "observedSamples": 47,
+              "min": 8151437312,
+              "max": 14294867968
+            },
+            "memory.freeVirtualBytes": {
+              "observedSamples": 47,
+              "min": 10598297600,
+              "max": 17596964864
+            },
+            "performanceMemory.committedBytes": {
+              "observedSamples": 47,
+              "min": 2735005696,
+              "max": 9625186304
+            },
+            "performanceMemory.commitLimitBytes": {
+              "observedSamples": 47,
+              "min": 20261367808,
+              "max": 20261367808
+            },
+            "performanceMemory.poolNonpagedBytes": {
+              "observedSamples": 47,
+              "min": 180158464,
+              "max": 395702272
+            },
+            "performanceMemory.poolPagedBytes": {
+              "observedSamples": 47,
+              "min": 159088640,
+              "max": 585789440
+            }
+          },
+          "preResourceToBeforeProfilesGap": {
+            "fromPhase": "startup-before-resource-setup",
+            "toPhase": "before-profiles",
+            "from": "2026-10-18T04:32:12.1296548Z",
+            "to": "2026-10-18T04:33:27.1694560Z",
+            "seconds": 75.039802
+          },
+          "gapBoundary": "No 10-second samples cover this resource-preparation gap; 47 samples are not continuous coverage or true peaks."
+        },
+        "lastSeatRendererAbortAttempts": [
+          {
+            "nodePid": 1832,
+            "browserPid": 10228,
+            "targetId": "6B4E3C4420CDBC658C591F7F2043E5B3",
+            "timeOrigin": 1792298165616.1,
+            "attempt": 1,
+            "clientFromCleanupSnapshot": "rhine-6",
+            "firstLine": 766,
+            "lastLine": 792,
+            "eventCount": 25,
+            "want3d": true,
+            "endStage": "catch",
+            "entryToLastMs": 16277.799999999988,
+            "aborted": true,
+            "maxAdjacentStage": {
+              "from": "application-before",
+              "to": "application-after",
+              "durationMs": 13328.599999999977,
+              "fromLine": 775,
+              "toLine": 777
+            },
+            "adjacentStagesOver12000Ms": [
+              {
+                "from": "application-before",
+                "to": "application-after",
+                "durationMs": 13328.599999999977,
+                "fromLine": 775,
+                "toLine": 777
+              }
+            ],
+            "endError": {
+              "errorName": "AbortError",
+              "errorMessage": "signal is aborted without reason"
+            }
+          },
+          {
+            "nodePid": 1832,
+            "browserPid": 4224,
+            "targetId": "EB78632058753CDC92816EAA6807E214",
+            "timeOrigin": 1792298315435.3,
+            "attempt": 1,
+            "clientFromCleanupSnapshot": "vanilla-6",
+            "firstLine": 1015,
+            "lastLine": 1042,
+            "eventCount": 25,
+            "want3d": true,
+            "endStage": "catch",
+            "entryToLastMs": 20693.0,
+            "aborted": true,
+            "maxAdjacentStage": {
+              "from": "application-before",
+              "to": "application-after",
+              "durationMs": 16083.5,
+              "fromLine": 1024,
+              "toLine": 1026
+            },
+            "adjacentStagesOver12000Ms": [
+              {
+                "from": "application-before",
+                "to": "application-after",
+                "durationMs": 16083.5,
+                "fromLine": 1024,
+                "toLine": 1026
+              }
+            ],
+            "endError": {
+              "errorName": "AbortError",
+              "errorMessage": "signal is aborted without reason"
+            }
+          }
+        ],
+        "rendererBoundary": "Two final-seat reload P.Application construction intervals were 13.3286s/16.0835s; both later aborted/caught. Constructor internals/calling source remain unlocalized. Both records had want3d=true, but P.Application is a shared rendering path, so this does not identify a 3D-only cause. The six-seat mechanism case permits these non-host seats to fall back; host real-engine geometry and three original authority uploads/Node replay assertions passed. This is not proof of all-six renderer success. The initiating cancellation source was not captured; do not attribute it to normal unloading or the12-second initialization guard.",
+        "resourceFailureBoundary": "Original net::ERR_NO_BUFFER_SPACE did not recur in this run. No unique OS resource/port/memory/GPU/CPU root cause was established.",
+        "evidence": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/sealed-log-analysis.json",
+          "bytes": 15839,
+          "sha256": "a5de1c82156504e550826373348c340efa24c2f5f291825aacb7d34849f51352"
+        },
+        "rendererEvidence": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/renderer-attempts.json",
+          "bytes": 11802,
+          "sha256": "8efe19cfbe336b9164d77751aa833a535869a084a33bc59ed339f0a1bc3f1fd7"
+        },
+        "samplingEvidence": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/system-samples.json",
+          "bytes": 64773,
+          "sha256": "2789cb4cec4c8fa9dae811b576043922498c477b35c4b73749c051bb50c89789"
+        }
+      },
+      "controlledFullAcceptance": {
+        "stateAtPreparation": "Metadata request prepared after exact run/draft/latest readback observed no new execution after the404. This snapshot precedes the next push-triggered full acceptance; no complete-package pass or repair is claimed.",
+        "exactOriginalGatesPreserved": true,
+        "nativeFiles": 82,
+        "nativeConcurrency": 3,
+        "nativeBatchTimeoutMs": 900000,
+        "browserGroups": 12,
+        "browserExecutedCases": 47,
+        "exact3dExcludedCases": 2,
+        "noDiagnosticRendererPatchInFinalPayload": true,
+        "requiredTail": [
+          "source-author27",
+          "isolated-host9",
+          "Windowsx64 bundled runtime",
+          "12browser47 executed and2 exact3D notRun",
+          "HTTP/WebSocket",
+          "fullZIP/source tree",
+          "actual old6 upgrade/6private bytes",
+          "repeat/rollback",
+          "five uploads/authenticated re-download/public/latest selection",
+          "independent five anonymous full SHA/CRC/source/PE/latest verification"
+        ],
+        "notARepairClaim": true,
+        "noRetryLoop": true
+      },
+      "rerunApi": {
+        "action": "github_rerun_workflow_job",
+        "target": {
+          "runId": 39094787780,
+          "jobId": 117578854430,
+          "repository": "YUYUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine"
+        },
+        "reportedResponse": {
+          "httpStatus": 404,
+          "code": "NOT_FOUND"
+        },
+        "executionStateAtPreparation": "No new execution observed after readback: original run remains completed/failure/attempt1 and the supported branch workflow-runs collection contains no newer release run.",
+        "noSuccessClaim": true,
+        "noSameApiRetry": true,
+        "readbackAt": "2026-10-18T04:46:24Z",
+        "readback": {
+          "originalRun": {
+            "id": 39094787780,
+            "head_sha": "dbad11accb9d6e22edd8842166b48022a777d14e",
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure",
+            "updated_at": "2026-10-18T04:16:48Z"
+          },
+          "formalBranchCollectionNoNewReleaseRunObserved": true,
+          "permissionCause": "not supplied by the404 response; do not describe this as an Actions permission denial",
+          "confirmedReleaseStateAtReadback": {
+            "draftId": 416216947,
+            "draft": true,
+            "assets": "only failed validation report",
+            "latest": "v0.2.4-rhine.6"
+          }
+        },
+        "readbackCompletedNoNewExecutionObserved": true,
+        "receipt": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-rerun-api-receipt.json",
+          "bytes": 194652,
+          "sha256": "c47d61bb153d8c9877f1329be228ec29b36da62c42ff528d36cae843e4a2d50f"
+        },
+        "metadataReview": {
+          "completed": true,
+          "reviewedBy": "delegated root agent and independent evidence reviewer",
+          "scope": "metadata-only source/tag/channel/budgets and actual evidence; existing user authorization covers normal main push and publication",
+          "at": "2026-10-18T04:51:12.222916+00:00"
+        }
+      },
+      "evidenceFiles": {
+        "main10/audited-findings.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/audited-findings.json",
+          "bytes": 53385,
+          "sha256": "32dea10821103705f7fda511a187401a5d361090f8a582dc1978599a7a14d14a"
+        },
+        "main10/validation.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10/validation.json",
+          "bytes": 925,
+          "sha256": "2decf1d654c8084332514087f36010f9159f32cbdb138539debbdb9c59db8d56"
+        },
+        "tag10/summary.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/summary.json",
+          "bytes": 24749,
+          "sha256": "66002a8421c24c65e1d54f59b4cc1499f5536721d01be0e5c1bb457a447b6835"
+        },
+        "tag10/verified-failure-notes.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/verified-failure-notes.json",
+          "bytes": 7926,
+          "sha256": "247ece58e20db46fdee021f03a6fc4fe1ef29dc353dd34526d134de4f5552c36"
+        },
+        "tag10/validation.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag10/validation.json",
+          "bytes": 531,
+          "sha256": "aa903dd7e9a4605f58d99fbcb0fa295aef681fbef99584845c9eaa0607001413"
+        },
+        "browser-targeted-linux10/result.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-targeted-linux10/result.json",
+          "bytes": 2408,
+          "sha256": "895af5760de0c0d7538fca0a82bbbb56c9931d805fb665cb14e1072b0d505a88"
+        },
+        "browser-diagnostic10-run/sealed-log-analysis.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/sealed-log-analysis.json",
+          "bytes": 15839,
+          "sha256": "a5de1c82156504e550826373348c340efa24c2f5f291825aacb7d34849f51352"
+        },
+        "browser-diagnostic10-run/sealed-log-integrity.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/sealed-log-integrity.json",
+          "bytes": 167,
+          "sha256": "fff0c0337c32e9ad7af7765a6eb976dc37fe86a1db2c312b855bfa0f3205887e"
+        },
+        "browser-diagnostic10-run/renderer-attempts.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/renderer-attempts.json",
+          "bytes": 11802,
+          "sha256": "8efe19cfbe336b9164d77751aa833a535869a084a33bc59ed339f0a1bc3f1fd7"
+        },
+        "browser-diagnostic10-run/system-samples.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/browser-diagnostic10-run/system-samples.json",
+          "bytes": 64773,
+          "sha256": "2789cb4cec4c8fa9dae811b576043922498c477b35c4b73749c051bb50c89789"
+        },
+        "windows10-rerun-api-receipt.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-rerun-api-receipt.json",
+          "bytes": 194652,
+          "sha256": "c47d61bb153d8c9877f1329be228ec29b36da62c42ff528d36cae843e4a2d50f"
+        }
+      }
     }
   },
   "rendererDiagnostics": false,
