@@ -8,7 +8,7 @@
 
 [首轮 `.10` Windows](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787780) 与 [M2 完整复验](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39098665709) 均在浏览器门槛失败，均为 47 项中 45 通过、2 失败；包内 1011 项为 1009 通过、0 失败、2 条件跳过，作者 27 和宿主 9 通过。两轮都重现原版房主 R2 reload 后真正 2D Canvas 等待超时；M2 另在六人界面 1280 视口检查中观测第六行 bottom=694 大于 shop top=423.515625。M2 两个六人真实战斗用例均通过，不能覆盖独立布局失败。两轮之后的 HTTP／WebSocket、最终 ZIP、实际旧 `.6` 升级及六份私配／重复／回退、附件重下和公开没有执行。`.10` 仍是只有失败报告的草稿，latest 仍为 `.6`，不复写不可变标签。
 
-`.11` 保持全部已批准机制和数据。显式 `board=2d` 在引擎及完整 teardown 建好后立即交给宿主，可选棋盘美术后台完成；auto／3D 路径仍保留原等待。新真实浏览器回归先在旧代码实际失败（fallback 而非 engine），修正后验证同一真实 Pixi app、未丢失的 WebGL context、非零 Canvas、真实 render，以及延迟美术在销毁后不会复活资源。页面 `pagehide` 与组件卸载共用幂等 owner 清理；新四项 hook 回归在旧代码有三项失败，修复后旧五项加新四项全部通过。它们证明各自功能契约，不单独证明上述 GPU 停顿的具体原因。
+`.11` 保持全部已批准机制和数据。显式 `board=2d` 在引擎及完整 teardown 建好后立即交给宿主，可选棋盘美术后台完成；auto／3D 路径仍保留原等待。新真实浏览器回归先在旧代码实际失败（fallback 而非 engine），修正后验证同一真实 Pixi app、未丢失的 WebGL context、非零 Canvas、真实 render，以及延迟美术在销毁后不会复活资源。页面 `pagehide` 与组件卸载共用幂等 owner 清理；新四项 hook 回归在旧代码有三项失败，修复后旧五项加新四项全部通过。它们证明各自功能契约，不单独证明上述渲染器启动停顿的具体原因。
 
 六人布局在本地原样通过，未据此猜测 Windows 原失败原因。产品主题原本已用纯 CSS 视口字号；测量夹具新增目标 innerWidth／innerHeight 与该原 CSS 字号已生效的前置检查，再执行原 650 ms 等待及全部几何／可达性断言。13 个原断言 AST、三个原测量回调和 120 秒全例期限保持，不等待重叠断言变真、不修改布局数值；持久重叠仍会失败。该夹具单次 Linux 回归通过，真实 Windows 仍须重新验收。
 

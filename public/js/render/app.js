@@ -2212,6 +2212,7 @@ export async function createFieldView(host, options = {}) {
   signal?.addEventListener('abort', onAbort, { once: true });
   signal?.throwIfAborted();
   if (boardPref !== '2d') await withTimeout(artPromise, 2500, signal);
+  else artPromise.catch(() => null); // Optional background atlas updates must not create an unhandled rejection.
   if (want3d) await withTimeout(boardReady, 6000, signal);
   signal?.throwIfAborted();
   return view;
