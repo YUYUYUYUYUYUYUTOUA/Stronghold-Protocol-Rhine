@@ -1,13 +1,13 @@
 {
-  "tag": "v0.3.0-rhine.9",
-  "sourceCommit": "bec8e325d72f40ac0d1301b11f2431611b9eee4b",
+  "tag": "v0.3.0-rhine.10",
+  "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
   "previousTag": "v0.2.4-rhine.6",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.3.0-rhine.9 · 阵营拓展",
-  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0** 固定发布标签，保留莱茵、卡兹戴尔、雷姆扩展。本版发布为正式版，并作为 `latest` 提供给联网更新。\n\n### 雷姆本轮更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档改为按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 下载与升级\n\n下载 `Stronghold-Protocol-Rhine-v0.3.0-rhine.9-Windows-x64.zip`，完整解压后双击 `启动莱茵科研版.bat`，包内自带 Windows x64 Node。已有玩家请先关闭服务，再使用 `联网更新.bat` 或独立更新工具；保留自己的私有配置。完整验证与附件散列见 `RELEASE-VALIDATION.json`、`SHA256SUMS.txt` 和 `UPDATE-TOOL-SHA256.txt`。\n\n发行流程要求真实 Windows 包内回归、跨端模拟、2D界面与必要浏览器验收、HTTP／WebSocket、实际公开旧正式 `.6` 安装包升级、六份私有配置保留、重复升级／回退，以及五个附件上传后的重新下载。未独立完成旧 `.8` 完整安装包到 `.9` 的实包升级测试，不据 `.6` 路径宣称该项已实跑。手动双击BAT及人工完整平衡对局未运行；源码全套CI与包内门槛分别记录，不以其中一项替代另一项。\n\n此前默认3D在软件渲染、多页面刷新专项中的初始化问题未宣称修复。维护者要求不再运行旧3D专项，本版仅精确排除两项3D资源恢复叶用例，单列未执行；其他2D恢复、机制、同步、重连、动画及Studio原断言保留。若遇到旧初始化问题，可使用 `/?board=2d`。\n\n本地完整 Linux Node 24.19 源码 CI：8615项、8546通过、2失败、67条件跳过、0取消。两项失败均为 Studio 孙进程清理的严格 ESRCH 断言；未改断言，隔离复跑观察到退出后的僵尸PID由容器PID1持有，运行进程组成员为零，失败仍保留。180个完整单人／合作种子对局通过，288个golden重算零变更。Windows原测试、包内门槛及GitHub源码矩阵另以各自真实日志和报告为准，未称源码全套全绿。\n",
+  "releaseName": "v0.3.0-rhine.10 · 阵营拓展",
+  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0** 固定发布标签，保留莱茵、卡兹戴尔、雷姆扩展。本版按正式版渠道发行，以 `latest` 提供联网更新，实际结果见公开页面和 `RELEASE-VALIDATION.json`。\n\n### 雷姆更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 本候选修复与失败边界\n\n虚拟时间比赛宿主使用既有8毫秒无界面预算，在完整主时钟 tick 之间让出执行，保留战场、事件和共享血池处理顺序；直接使用虚拟调度器的同步默认行为及真实时间节奏不变。1秒心跳、10秒看门狗、100秒比赛等待和120秒原用例期限保持不变。该预算不能中断单次构造、插件回调或一个完整 tick。\n\n新增有限预算回归覆盖停止、强制结束、硬上限、错误隔离、事件、结果摘要和真实宿主选项。真实插件比赛失败时报告实际结束摘要，全部原断言保留。默认模组回归测试调整离线生成器加载顺序以兼容 Node 22，保留原10项用例，不改生产注册表。\n\n`.9` 未公开，原不可变标签及失败草稿保留：Windows 包内1003项中1000通过、1失败、2条件跳过；失败为插件 all-bot 比赛结束摘要缺少布尔胜负。后续 Windows 源码隔离单例通过，不能覆盖原批次失败，也未证明原失败的具体宿主终止原因。`.10` 仅在本候选全部公开门槛通过后公开；源码CI与包内结果分别记录，不以隔离通过替代整套验收。\n\n本轮 Linux 定向回归54项通过，新增8项有限预算永久回归在 Node 22 也全部通过；独立旧／新 FieldRunner 的4个合成场景逐项顺序、共享血池、错误、结果与摘要相同，真实子进程 training 对局单例完成隐藏战且错误为零。官方 Node 22.23.3 的原默认模组测试两次复现启动失败，调整加载顺序后的原10项在 Node 22 和 Node 24 各两次通过；不据此推断具体 Node 内部错误。288个 golden 本轮全部匹配、零变更。这些本地结果不替代 Windows 实包或新的源码矩阵结果。\n\n本轮完整本地 Linux Node 24.19 源码 CI 实际为8624项、8555通过、2失败、67条件跳过、0取消，总计1226.526秒，未称全绿。仅 `test/studio/review.test.js:144` 的 close／timeout 两项严格 ESRCH 断言失败；本轮被动观察器捕获0个已验证probe，不能把历史僵尸PID证据归于本轮，也未据此确认这两项的具体原因。setup、smoke、lint、imports和typecheck通过；lint为0错误／151警告，imports为3项nonstrict违规及3项允许说明。波次63.3／最坏161.6微秒每tick、老板best300.8微秒每tick通过原0.5毫秒门槛；真实SES沙箱比赛和脚本／meta比赛在这同一次完整CI中分别42.464／41.148秒通过。另行严格检查4个语言包，每包1850条、0缺失、0错误。\n\n截至本次发布请求准备时，新的GitHub源码矩阵尚未启动，Windows实包仍待独立验收；这些本地结果不作Windows通过结论。实际后续状态见各自GitHub运行及发行验证报告。\n\n### 下载与升级\n\n下载 `Stronghold-Protocol-Rhine-v0.3.0-rhine.10-Windows-x64.zip`，完整解压后双击 `启动莱茵科研版.bat`，包内自带 Windows x64 Node。已有玩家请先关闭服务，再使用 `联网更新.bat` 或独立更新工具；保留自己的私有配置。完整验证与附件散列见 `RELEASE-VALIDATION.json`、`SHA256SUMS.txt` 和 `UPDATE-TOOL-SHA256.txt`。\n\n公开门槛保留全部旧81个原生测试文件并加入8项有限预算回归，同批文件并发仍为3；浏览器验收12组、47项实际执行，另列两项旧3D专项未跑。门槛还包括真实 Windows 包内 Node、跨端模拟、2D界面、同步／重连／动画、HTTP／WebSocket、实际公开旧正式 `.6` 安装包升级、六份私有配置逐字保留、重复升级／回退、五附件上传及重新下载。未独立完成旧 `.8` 完整安装包到 `.10` 的实包升级，不据 `.6` 路径宣称该项已跑。手动双击BAT及人工完整平衡对局未运行。\n\n默认3D在软件渲染、多页面刷新专项中的初始化问题未宣称修复。维护者不再要求旧3D专项；仅精确排除两项3D资源恢复叶用例，其他2D恢复、机制、同步、重连、动画及Studio原断言保留。若遇到旧初始化问题，可使用 `/?board=2d`。\n\n本次在 Linux 环境的源码检查结果见验证报告；Windows 实包门槛通过后由流水线写入实际结果。\n",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -30,68 +30,6 @@
   },
   "sourceValidation": {
     "upstreamPin": "c24e17eec3af1e6dedfa9935a6d15245cf2f4586",
-    "formalBaseline": "b5bf816358b4e627dd114e740b6ad628930ef4c5",
-    "golden": {
-      "computed": 288,
-      "moved": []
-    },
-    "i18n": {
-      "packs": 4,
-      "perPack": 1850,
-      "strict": true,
-      "missing": 0,
-      "errors": 0
-    },
-    "limitations": [
-      "Local complete source CI is not all-green:8615total/8546pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Separate unmodified-assertion reproduction observes exited zombie grandchildren under PID1 and no running group members; failures remain failures. Windows original tests must pass independently.",
-      "Original official raw-table cache is absent; two full raw-data checks remain conditionally skipped; pinned0.3snapshot and extension generators are separately validated.",
-      "Only the two exact reviewed legacy3D resource-recovery leaves are excluded and separately notRun; default3D initialization root cause is not claimed fixed. All other configured native browser groups and assertions remain mandatory.",
-      "No human complete balance playtest or manual BAT click; controlled Node Rem topology probe is not a full Match/network result.",
-      "Actual full-package public stable6to9 upgrade/private/repeat/rollback remains mandatory. Independent full-package8to9 upgrade is not run.",
-      "Source GitHub CI and native Windows gates were not run at source freeze and must be reported from their actual fresh results; preparatory evidence is not a pass.",
-      "No user-server deployment."
-    ],
-    "localFullCi": {
-      "platform": "Linux x64",
-      "node": "24.19.0",
-      "command": "npm run ci -- --keep-going",
-      "exitCode": 1,
-      "counts": {
-        "tests": 8615,
-        "pass": 8546,
-        "fail": 2,
-        "cancelled": 0,
-        "skipped": 67,
-        "todo": 0
-      },
-      "durationMs": 1294696.140484,
-      "failures": [
-        {
-          "file": "test/studio/review.test.js",
-          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
-          "assertion": "strict ESRCH at line144",
-          "status": "failed"
-        },
-        {
-          "file": "test/studio/review.test.js",
-          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
-          "assertion": "strict ESRCH at line144",
-          "status": "failed"
-        }
-      ],
-      "otherSteps": {
-        "setup": "passed",
-        "smoke": "passed",
-        "lint": "passed with0errors151warnings",
-        "imports": "exit0,3non-strict violations+3allowed notes",
-        "typecheck": "passed"
-      },
-      "performanceUsPerTick": [
-        73.9,
-        168.7
-      ],
-      "performanceLimitMsPerTick": 0.5
-    },
     "fixedFailureRegression": {
       "files": 19,
       "tests": 220,
@@ -4326,24 +4264,11 @@
       "Native Windows final-source package/browser/HTTP/update/private/repeat/rollback/upload/public-download results are separate mandatory gates; preparation records alone do not claim them passed."
     ],
     "publicationDecision": {
-      "channel": "stable",
+      "candidate": "v0.3.0-rhine.10",
       "prerelease": false,
       "makeLatest": true,
-      "authorization": "Root reports the user approved finishing the current five changes/latest overrides and publishing the next Windows package to the formal branch. Old .8 prerelease/tag remains unchanged.",
-      "default3D": "Not repaired or a release blocker; only the two exact listed legacy 3D resource-recovery leaves are excluded.",
-      "mixedStudioScope": "Original Studio save/trial/replay/pack/UI-frame assertions remain; its genuine renderer may still touch the default 3D path.",
-      "excludedTests": [
-        {
-          "file": "test/render/recovery.browser.test.js",
-          "name": "atlas download can recover the 3D board on visibility",
-          "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
-        },
-        {
-          "file": "test/render/recovery.browser.test.js",
-          "name": "three download can recover the 3D board on visibility",
-          "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
-        }
-      ]
+      "authorization": "User-approved stable next release after all mandatory gates; no retag/rerun of failed9.",
+      "default3d": "Accepted limitation. Only the two explicitly reviewed legacy3D leaves are excluded."
     },
     "candidate9Preparation": {
       "preparedAt": "2026-10-16T18:28:41.783669+00:00",
@@ -4441,7 +4366,7 @@
       "at": "2026-10-16T19:01:23.061119+00:00",
       "sourceCommit": "bec8e325d72f40ac0d1301b11f2431611b9eee4b",
       "formalBaseline": "b5bf816358b4e627dd114e740b6ad628930ef4c5",
-      "current": true,
+      "current": false,
       "fullLocalCi": {
         "platform": "Linux x64",
         "node": "24.19.0",
@@ -4631,7 +4556,759 @@
       },
       "windowsAcceptance": "not run at source freeze; mandatory later",
       "sourceGithubCi": "not run at source freeze; inspect fresh exact-commit workflows",
-      "noServerDeployment": true
+      "noServerDeployment": true,
+      "boundary": "Historical candidate9 source/local results; no later isolated pass changes the original failures."
+    },
+    "historicalBeforeCandidate10_localFullCi": {
+      "platform": "Linux x64",
+      "node": "24.19.0",
+      "command": "npm run ci -- --keep-going",
+      "exitCode": 1,
+      "counts": {
+        "tests": 8615,
+        "pass": 8546,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 67,
+        "todo": 0
+      },
+      "durationMs": 1294696.140484,
+      "failures": [
+        {
+          "file": "test/studio/review.test.js",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+          "assertion": "strict ESRCH at line144",
+          "status": "failed"
+        },
+        {
+          "file": "test/studio/review.test.js",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+          "assertion": "strict ESRCH at line144",
+          "status": "failed"
+        }
+      ],
+      "otherSteps": {
+        "setup": "passed",
+        "smoke": "passed",
+        "lint": "passed with0errors151warnings",
+        "imports": "exit0,3non-strict violations+3allowed notes",
+        "typecheck": "passed"
+      },
+      "performanceUsPerTick": [
+        73.9,
+        168.7
+      ],
+      "performanceLimitMsPerTick": 0.5
+    },
+    "historicalBeforeCandidate10_limitations": [
+      "Local complete source CI is not all-green:8615total/8546pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Separate unmodified-assertion reproduction observes exited zombie grandchildren under PID1 and no running group members; failures remain failures. Windows original tests must pass independently.",
+      "Original official raw-table cache is absent; two full raw-data checks remain conditionally skipped; pinned0.3snapshot and extension generators are separately validated.",
+      "Only the two exact reviewed legacy3D resource-recovery leaves are excluded and separately notRun; default3D initialization root cause is not claimed fixed. All other configured native browser groups and assertions remain mandatory.",
+      "No human complete balance playtest or manual BAT click; controlled Node Rem topology probe is not a full Match/network result.",
+      "Actual full-package public stable6to9 upgrade/private/repeat/rollback remains mandatory. Independent full-package8to9 upgrade is not run.",
+      "Source GitHub CI and native Windows gates were not run at source freeze and must be reported from their actual fresh results; preparatory evidence is not a pass.",
+      "No user-server deployment."
+    ],
+    "historicalBeforeCandidate10_formalBaseline": "b5bf816358b4e627dd114e740b6ad628930ef4c5",
+    "historicalBeforeCandidate10_i18n": {
+      "packs": 4,
+      "perPack": 1850,
+      "strict": true,
+      "missing": 0,
+      "errors": 0
+    },
+    "historicalBeforeCandidate10_golden": {
+      "computed": 288,
+      "moved": []
+    },
+    "formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
+    "limitations": [
+      "Complete local source CI failed:8624total/8555pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Verified PID ancestry was not captured, so this exact run has no established cleanup-failure cause. All original Windows Studio assertions must pass independently.",
+      "Fresh exact-source GitHub CI and native Windows were not run at source freeze. Later actual results must be reported separately, not inferred from isolated tests.",
+      "Only the two approved legacy3D recovery leaves are excluded and separately notRun; default3D initialization is not claimed fixed. All47 other planned browser leaves remain mandatory.",
+      "Actual full public stable6-to10 upgrade/6private/repeat/rollback are mandatory Windows gates. Independent full-package8-to10 upgrade is not run.",
+      "Manual BAT/browser click and human complete balance playtest are not run. Synthetic scenarios and Linux selected-case evidence do not replace Windows full acceptance.",
+      "8ms is a soft budget and cannot interrupt a constructor, plugin callback or one complete master tick. All heartbeat/watchdog/deadline/concurrency settings are retained.",
+      "Original Windows9 failure remains failed; actual end reason was not captured. Re-reading its isolated Windows summary is not a new Windows execution or a controlled performance comparison. Old full64-character content identity was not logged.",
+      "Official raw-table cache is absent; raw-table conditional skips are not passes. Pinned0.3snapshot and extension data are separately tested.",
+      "Lint has0errors151warnings. Imports exit0 with3non-strict violations and3allowed notes. Existing typecheck covers shared/sim, not new match files.",
+      "Old /tmp local evidence was not restored. Historical references remain history; only current durable evidence was rehashed. No user-server deployment."
+    ],
+    "historicalPublicationDecision9": {
+      "channel": "stable",
+      "prerelease": false,
+      "makeLatest": true,
+      "authorization": "Root reports the user approved finishing the current five changes/latest overrides and publishing the next Windows package to the formal branch. Old .8 prerelease/tag remains unchanged.",
+      "default3D": "Not repaired or a release blocker; only the two exact listed legacy 3D resource-recovery leaves are excluded.",
+      "mixedStudioScope": "Original Studio save/trial/replay/pack/UI-frame assertions remain; its genuine renderer may still touch the default 3D path.",
+      "excludedTests": [
+        {
+          "file": "test/render/recovery.browser.test.js",
+          "name": "atlas download can recover the 3D board on visibility",
+          "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+        },
+        {
+          "file": "test/render/recovery.browser.test.js",
+          "name": "three download can recover the 3D board on visibility",
+          "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+        }
+      ]
+    },
+    "retiredCandidate9": {
+      "sourceCommit": "bec8e325d72f40ac0d1301b11f2431611b9eee4b",
+      "tag": "v0.3.0-rhine.9",
+      "failedDraftId": 415288863,
+      "failedPublishRun": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38951885666",
+      "failedJob": 117145032156,
+      "native": {
+        "tests": 1003,
+        "pass": 1000,
+        "fail": 1,
+        "skipped": 2,
+        "cancelled": 0
+      },
+      "failure": "script-integration.test.js:69 all-bot production-child summary.victory was undefined; actual host reason not recorded.",
+      "originalTagAndFailedDraftRetained": true,
+      "published": false,
+      "sourceCiFailuresRetained": true,
+      "isolatedWindowsDiagnostic": {
+        "run": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/38954056102",
+        "headCommit": "8c7d528db1ffbaa1e534a4f1f3b6d1ee48cd0e88",
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "caseMs": 40840.7795,
+        "originalFailureNotClosed": true
+      },
+      "availability": "Counts are previously observed task history, not a new rerun. Original /tmp locations were lost. Any logs re-fetched during recovery are recorded separately by their current /workspace paths; unavailable original files are not newly hashed.",
+      "remoteFailureAssetMetadata": {
+        "id": 648322388,
+        "name": "RELEASE-VALIDATION.json",
+        "bytes": 49726,
+        "apiDigest": "sha256:dd31914a5c58d889dd8a8eec96f5c4b9913e9204d7c930e2e5aefba72011b857",
+        "boundary": "Recovered API metadata only, not a fresh local download or byte hash check."
+      },
+      "notReached": [
+        "source-author/isolated-host/browser gates",
+        "final HTTP/WS",
+        "release ZIP",
+        "actual old6 upgrade/6private/repeat/rollback",
+        "five final asset uploads/downloads/publication/anonymous verification"
+      ]
+    },
+    "environmentRecovery20261018": {
+      "at": "2026-10-18T03:46:04.315876+00:00",
+      "historicalTmpReferences": "Existing sourceValidation /tmp references are retained as historical records. They are not present or rehashed in the recovered environment.",
+      "newEvidenceRoot": "/workspace/rhine-recovery-evidence/2026-10-18",
+      "preparationRoot": "/workspace/rhine-recovery-evidence/2026-10-18/release-prep",
+      "remoteStateReadback": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/remote-state.json",
+        "bytes": 131390,
+        "sha256": "5b893482cf258531b348eb1f39b34a985b4a97e832a02a16e3f4acda49b74dee"
+      }
+    },
+    "golden": {
+      "computed": 288,
+      "moved": [],
+      "date": "2026-10-18",
+      "evidencePath": "/workspace/rhine-recovery-evidence/2026-10-18/golden.log",
+      "sha256": "fb61e672d6c11426a6d110f68df4dbd28481a66760106196839ea548eee3712c"
+    },
+    "i18n": {
+      "packs": 4,
+      "perPack": 1850,
+      "strict": true,
+      "missing": 0,
+      "errors": 0
+    },
+    "candidate10CurrentObservedAtPreparation": {
+      "date": "2026-10-18",
+      "platform": "Linux x64",
+      "sourceNotYetFrozen": false,
+      "targeted": {
+        "tests": 54,
+        "pass": 54,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "independentScenarioCount": 4,
+      "productionCase": {
+        "command": "node --import /workspace/rhine-recovery-evidence/2026-10-18/host-independent/observe-host-preload.mjs --test --test-concurrency=3 --test-name-pattern='all-bot match completes with script content and meta effects in production child' test/plugins/script-integration.test.js",
+        "cwd": "/workspace/Stronghold-Protocol-Rhine",
+        "exitCode": 0,
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "caseDurationMs": 34071.094255,
+        "runnerDurationMs": 34752.776566,
+        "runtime": "v24.19.0",
+        "platform": "linux",
+        "arch": "x64",
+        "startedAt": "2026-10-18T03:18:53.013Z",
+        "finishedAt": "2026-10-18T03:19:27.712Z",
+        "summaryFile": "production-summary-full.json",
+        "summarySha256": "79d709bca490c40df923e2225a23e9d235db6a11cee3715dab4ed9285f36e131",
+        "summaryCore": {
+          "victory": true,
+          "reason": "victory",
+          "roundsPassed": 15,
+          "hiddenReached": true,
+          "hiddenCleared": true,
+          "teamLp": 87,
+          "seed": 7,
+          "durationMs": 148050,
+          "errors": 0
+        },
+        "diagnosticFile": "production-diag-full.json",
+        "diagnosticCore": {
+          "phase": "RESULT",
+          "round": 15,
+          "ended": true,
+          "errorCount": 0,
+          "simErrors": 0,
+          "errors": [],
+          "verifyStats": {
+            "checked": 0,
+            "mismatches": 0,
+            "rejected": 0,
+            "takeovers": 0
+          }
+        },
+        "observedInitialOptions": {
+          "heartbeatMs": 1000,
+          "matchOptions": {
+            "botRehearsal": 0
+          },
+          "matchModule": null,
+          "virtualTime": true
+        },
+        "sourceDefaults": {
+          "heartbeatMs": 1000,
+          "watchdogMs": 10000,
+          "innerRaceMs": 100000,
+          "caseTimeoutMs": 120000,
+          "virtualHeadlessSliceMs": 8,
+          "childMaxOldSpaceSizeMb": 768
+        },
+        "defaultsEvidence": "The exact init IPC contains heartbeatMs=1000, virtualTime=true and only botRehearsal:0. No headless budget override is sent. The frozen child source supplies the existing HEADLESS_SLICE_MS=8 for virtual hosts; parent watchdog and test race/case remain unchanged in frozen source.",
+        "heartbeat": {
+          "semantics": "Parent received adjacent child heartbeat IPC timestamps; not direct FieldRunner callback duration.",
+          "count": 31,
+          "maxAdjacentGapMs": 1026.0874999999996,
+          "maxGapFromMs": 11744.37535,
+          "maxGapToMs": 12770.46285,
+          "childCreationToFirstMs": 1071.358146,
+          "lastHeartbeatToEndMs": 675.0801610000053
+        },
+        "parentTimer": {
+          "intervalMs": 250,
+          "samples": 129,
+          "maxObservedDelayMs": 2304.831685,
+          "semantics": "Parent-only timer observation; not child stall time and not a performance baseline."
+        },
+        "hostError": null,
+        "hostLogs": [],
+        "hostStderr": [],
+        "hostExitEvent": null,
+        "rawIPC": "host-ipc-3841.json",
+        "teardown": "The observer exited before recording a child exit event (null). A later ps check found child 3874 defunct under PID 1, with no executing child work. No command is left running.",
+        "scope": "The original real child-process training integration case ran as one selected test in one file. --test-concurrency=3 was retained, but there are no other selected files; this does not reproduce the Windows complete native batch with concurrency 3."
+      },
+      "node22": {
+        "node22OriginalRuns": 2,
+        "node22OriginalStartupExit13Runs": 2,
+        "node22OriginalLeafCasesExecuted": 0,
+        "node22FixedRuns": 2,
+        "node22FixedEachRun": {
+          "pass": 10,
+          "fail": 0,
+          "skip": 0,
+          "cancelled": 0
+        },
+        "node24Version": "v24.19.0",
+        "node24FixedRuns": 2,
+        "node24FixedEachRun": {
+          "pass": 10,
+          "fail": 0,
+          "skip": 0,
+          "cancelled": 0
+        },
+        "productionRegistryChanged": false,
+        "cloudCiRerun": false,
+        "commitOrPush": false
+      },
+      "finiteNode22": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "durationMs": 2561.386802
+      },
+      "recordedWindowsToNewLinuxSummaryComparison": {
+        "oldRunId": 38954056102,
+        "oldJobId": 117152345171,
+        "oldLogSummaryLine": 338,
+        "topLevelFields": 15,
+        "leafCount": 596,
+        "differences": 0,
+        "excludedSummaryPaths": [],
+        "fullCsEqualityVerified": false,
+        "boundary": "Current analysis of the existing Windows isolated log versus this Linux case: full summaries match, including all4 players and virtual duration148050. No new Windows execution, full-batch pass, full64-character oldcs equality or controlled performance comparison is claimed."
+      },
+      "golden": {
+        "computed": 288,
+        "moves": 0,
+        "durationMs": 113465
+      },
+      "fullCi": {
+        "counts": {
+          "tests": 8624,
+          "pass": 8555,
+          "fail": 2,
+          "cancelled": 0,
+          "skipped": 67
+        },
+        "durationMs": 1226526.451812,
+        "boundary": "Completed local CI, two strictESRCH failures retained; final top-level localFullCi is supplied by root acceptance.",
+        "failedFile": "test/studio/review.test.js:144",
+        "failedCases": [
+          "close strictESRCH",
+          "timeout strictESRCH"
+        ],
+        "verifiedProbeObservations": 0,
+        "priorZombieWitnessDoesNotExplainThisRun": true,
+        "sameFullCiActualPassedCases": {
+          "SES child boots real Match/all-bot": 42463.729314,
+          "script content/meta production child all-bot": 41147.834991
+        }
+      },
+      "strictI18n": {
+        "packs": 4,
+        "perPack": 1850,
+        "strict": true,
+        "missing": 0,
+        "errors": 0,
+        "evidencePath": "/workspace/rhine-recovery-evidence/2026-10-18/i18n-strict.log",
+        "sha256": "ab898cbe64068d51769e5b8a67fd38b3db7c83fa33c4b4519013f3fd408953e9"
+      },
+      "evidenceFiles": {
+        "targeted": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-slices/result.json",
+          "bytes": 4290,
+          "sha256": "b690db6d49a817f21cf2779083408469dbe3dad2b83abdee1afaaf215b52831d"
+        },
+        "independent": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-independent/independent-validation-summary.json",
+          "bytes": 10484,
+          "sha256": "d461fb1941230cb5218fdeb48d6d41ae2868f9133c7b12f47ceda30030af18af"
+        },
+        "node22": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/node22/node22-recovery-evidence.json",
+          "bytes": 9721,
+          "sha256": "51b1f755984806589a9a725cbf9bf5b19a0c8e9efaf78ab0dbf777589d19a710"
+        },
+        "finiteNode22": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-slices/instant-field-slices-node22.log",
+          "bytes": 2172,
+          "sha256": "b004a9c1cb27933fcbe658b2fabfd0e826eb061ffd11484fedef15c9a53d1fc4"
+        },
+        "recordedCrossOsComparison": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-independent/old-windows-comparison/recorded-cross-os-comparison.json",
+          "bytes": 4764,
+          "sha256": "3c8ce9a816c380f6b4b825d2603ba88db463dff8f026abc71a5db8ed1c62b940"
+        },
+        "fullCi": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/full-ci.log",
+          "bytes": 1152652,
+          "sha256": "cf71b0b737d88e884d777f3d5c314854dbe4f9c9dee309677b758861c21a28b8"
+        },
+        "strictI18n": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/i18n-strict.log",
+          "bytes": 447,
+          "sha256": "ab898cbe64068d51769e5b8a67fd38b3db7c83fa33c4b4519013f3fd408953e9"
+        },
+        "golden": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/golden.log",
+          "bytes": 504,
+          "sha256": "fb61e672d6c11426a6d110f68df4dbd28481a66760106196839ea548eee3712c"
+        }
+      },
+      "boundary": "Current recovered-environment observations only; no lost /tmp evidence is treated as available or rehashed. Isolated/source tests do not close original Windows batch failures."
+    },
+    "localFullCi": {
+      "command": "npm run ci -- --keep-going",
+      "platform": "linux x64",
+      "node": "24.19.0",
+      "exitCode": 1,
+      "counts": {
+        "tests": 8624,
+        "pass": 8555,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 67,
+        "todo": 0
+      },
+      "durationMs": 1226526.451812,
+      "failures": [
+        {
+          "file": "test/studio/review.test.js:144",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+          "assertion": "strict ESRCH",
+          "durationMs": 4839.93928,
+          "status": "failed",
+          "cause": "not established for this exact run; verified PID observation missing"
+        },
+        {
+          "file": "test/studio/review.test.js:144",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+          "assertion": "strict ESRCH",
+          "durationMs": 8071.424376,
+          "status": "failed",
+          "cause": "not established for this exact run; verified PID observation missing"
+        }
+      ],
+      "otherSteps": {
+        "setup": "passed",
+        "smoke": "passed",
+        "lint": "passed;0errors151warnings",
+        "imports": "exit0;3non-strict violations+3allowed notes",
+        "typecheck": "passed existing shared/sim scope"
+      },
+      "performanceUsPerTick": {
+        "wave": 63.3,
+        "worst": 161.6,
+        "bossBest": 300.8
+      },
+      "originalPerformanceThresholdsUnchanged": true,
+      "relevantFullBatchPasses": [
+        {
+          "name": "SES real all-bot Match",
+          "durationMs": 42463.729314
+        },
+        {
+          "name": "script real all-bot production child",
+          "durationMs": 41147.834991
+        }
+      ]
+    },
+    "candidate10Acceptance": {
+      "schema": "rhine-candidate10-source-acceptance/v1",
+      "at": "2026-10-18T03:45:22.293073+00:00",
+      "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+      "formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
+      "current": true,
+      "fullLocalCi": {
+        "command": "npm run ci -- --keep-going",
+        "platform": "linux x64",
+        "node": "24.19.0",
+        "exitCode": 1,
+        "counts": {
+          "tests": 8624,
+          "pass": 8555,
+          "fail": 2,
+          "cancelled": 0,
+          "skipped": 67,
+          "todo": 0
+        },
+        "durationMs": 1226526.451812,
+        "failures": [
+          {
+            "file": "test/studio/review.test.js:144",
+            "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+            "assertion": "strict ESRCH",
+            "durationMs": 4839.93928,
+            "status": "failed",
+            "cause": "not established for this exact run; verified PID observation missing"
+          },
+          {
+            "file": "test/studio/review.test.js:144",
+            "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+            "assertion": "strict ESRCH",
+            "durationMs": 8071.424376,
+            "status": "failed",
+            "cause": "not established for this exact run; verified PID observation missing"
+          }
+        ],
+        "otherSteps": {
+          "setup": "passed",
+          "smoke": "passed",
+          "lint": "passed;0errors151warnings",
+          "imports": "exit0;3non-strict violations+3allowed notes",
+          "typecheck": "passed existing shared/sim scope"
+        },
+        "performanceUsPerTick": {
+          "wave": 63.3,
+          "worst": 161.6,
+          "bossBest": 300.8
+        },
+        "originalPerformanceThresholdsUnchanged": true,
+        "relevantFullBatchPasses": [
+          {
+            "name": "SES real all-bot Match",
+            "durationMs": 42463.729314
+          },
+          {
+            "name": "script real all-bot production child",
+            "durationMs": 41147.834991
+          }
+        ]
+      },
+      "golden": {
+        "computed": 288,
+        "movedScenarios": [],
+        "durationMs": 113465
+      },
+      "i18n": {
+        "packs": 4,
+        "perPack": 1850,
+        "strict": true,
+        "missing": 0,
+        "errors": 0
+      },
+      "finalDocs": {
+        "tests": 32,
+        "pass": 32,
+        "durationMs": 1142.401144
+      },
+      "newGithubCiAtFreeze": "not run",
+      "newWindowsAtFreeze": "not run",
+      "limitations": [
+        "Complete local source CI failed:8624total/8555pass/2strictStudioESRCHfail/67conditionalSkip/0cancel. Verified PID ancestry was not captured, so this exact run has no established cleanup-failure cause. All original Windows Studio assertions must pass independently.",
+        "Fresh exact-source GitHub CI and native Windows were not run at source freeze. Later actual results must be reported separately, not inferred from isolated tests.",
+        "Only the two approved legacy3D recovery leaves are excluded and separately notRun; default3D initialization is not claimed fixed. All47 other planned browser leaves remain mandatory.",
+        "Actual full public stable6-to10 upgrade/6private/repeat/rollback are mandatory Windows gates. Independent full-package8-to10 upgrade is not run.",
+        "Manual BAT/browser click and human complete balance playtest are not run. Synthetic scenarios and Linux selected-case evidence do not replace Windows full acceptance.",
+        "8ms is a soft budget and cannot interrupt a constructor, plugin callback or one complete master tick. All heartbeat/watchdog/deadline/concurrency settings are retained.",
+        "Original Windows9 failure remains failed; actual end reason was not captured. Re-reading its isolated Windows summary is not a new Windows execution or a controlled performance comparison. Old full64-character content identity was not logged.",
+        "Official raw-table cache is absent; raw-table conditional skips are not passes. Pinned0.3snapshot and extension data are separately tested.",
+        "Lint has0errors151warnings. Imports exit0 with3non-strict violations and3allowed notes. Existing typecheck covers shared/sim, not new match files.",
+        "Old /tmp local evidence was not restored. Historical references remain history; only current durable evidence was rehashed. No user-server deployment."
+      ],
+      "evidenceFiles": {
+        "full-ci.log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/full-ci.log",
+          "bytes": 1152652,
+          "sha256": "cf71b0b737d88e884d777f3d5c314854dbe4f9c9dee309677b758861c21a28b8"
+        },
+        "golden.log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/golden.log",
+          "bytes": 504,
+          "sha256": "fb61e672d6c11426a6d110f68df4dbd28481a66760106196839ea548eee3712c"
+        },
+        "i18n-strict.log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/i18n-strict.log",
+          "bytes": 447,
+          "sha256": "ab898cbe64068d51769e5b8a67fd38b3db7c83fa33c4b4519013f3fd408953e9"
+        },
+        "docs-final.log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/docs-final.log",
+          "bytes": 4293,
+          "sha256": "130f0e9fb8e3f43403b33dbaf14a721afb1107707f3ee884a8691699f367b96c"
+        },
+        "node22/node22-recovery-evidence.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/node22/node22-recovery-evidence.json",
+          "bytes": 9721,
+          "sha256": "51b1f755984806589a9a725cbf9bf5b19a0c8e9efaf78ab0dbf777589d19a710"
+        },
+        "host-slices/result.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-slices/result.json",
+          "bytes": 4290,
+          "sha256": "b690db6d49a817f21cf2779083408469dbe3dad2b83abdee1afaaf215b52831d"
+        },
+        "host-slices/instant-field-slices-node22.log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-slices/instant-field-slices-node22.log",
+          "bytes": 2172,
+          "sha256": "b004a9c1cb27933fcbe658b2fabfd0e826eb061ffd11484fedef15c9a53d1fc4"
+        },
+        "host-independent/independent-validation-summary.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-independent/independent-validation-summary.json",
+          "bytes": 10484,
+          "sha256": "d461fb1941230cb5218fdeb48d6d41ae2868f9133c7b12f47ceda30030af18af"
+        },
+        "host-independent/old-windows-comparison/recorded-cross-os-comparison.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/host-independent/old-windows-comparison/recorded-cross-os-comparison.json",
+          "bytes": 4764,
+          "sha256": "3c8ce9a816c380f6b4b825d2603ba88db463dff8f026abc71a5db8ed1c62b940"
+        },
+        "main9/main9-resume-evidence.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/main9/main9-resume-evidence.json",
+          "bytes": 295183,
+          "sha256": "aa5dbbc5e119b4cba91cda645cd012320085789e9368c43b6ba8c80dcdf7ba85"
+        },
+        "tag9/summary.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/tag9/summary.json",
+          "bytes": 18841,
+          "sha256": "5feb848933fe751a57262582b29242dfa926e2d8e2203b20ef759cb287f8fad9"
+        },
+        "full-ci-probe-observation-033012/outcome.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/full-ci-probe-observation-033012/outcome.json",
+          "bytes": 5956,
+          "sha256": "d0b63f023c6fc4f9891ac5a56b0c9a22dba47fc93d5fe6df50a63d236546498d"
+        },
+        "upstream-tag.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/upstream-tag.json",
+          "bytes": 394,
+          "sha256": "bd7f9c3155149085b6eb86c03af9e1ab7c4c5f1a5c1ff932fe4ed3701430a89f"
+        },
+        "remote-state.json": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/remote-state.json",
+          "bytes": 131390,
+          "sha256": "5b893482cf258531b348eb1f39b34a985b4a97e832a02a16e3f4acda49b74dee"
+        }
+      }
+    },
+    "candidate10Preparation": {
+      "at": "2026-10-18T03:46:04.373990+00:00",
+      "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+      "finalSourcePinned": true,
+      "requestPreparationTimeOnly": true,
+      "actualCandidate10WindowsAndPublicResults": "not yet executed at request preparation; report exact final run separately",
+      "native": {
+        "original81FilesRetained": [
+          "test/content/rem.test.js",
+          "test/content/rem-traits.test.js",
+          "test/content/rem-balance.test.js",
+          "test/content/rem_native_kits.test.js",
+          "test/content/rem-pizza-fx.test.js",
+          "test/rem_data.test.js",
+          "test/rem-default-modules.test.js",
+          "test/match/rem-rally.test.js",
+          "test/match/rem-price.test.js",
+          "test/match/kazdel-unite.test.js",
+          "test/content/rhine_magallan.test.js",
+          "test/tools/rem-asset-plan.test.js",
+          "test/content/community-round29.test.js",
+          "test/content/echo-counter-023.test.js",
+          "test/content/op_clemnt.test.js",
+          "test/content/new-modules-023.test.js",
+          "test/content/lemuen-wanted-023.test.js",
+          "test/content/necras-trigger-023.test.js",
+          "test/content/heal-triggers-023.test.js",
+          "test/match/shared-stock.test.js",
+          "test/match/rhine-upstream024.test.js",
+          "test/match/setup-reroll.test.js",
+          "test/match/setup-reroll-ws.test.js",
+          "test/content/kazdel.test.js",
+          "test/content/kazdel_kits.test.js",
+          "test/content/op_wisdel.test.js",
+          "test/content/kazdel_soul_skills.test.js",
+          "test/content/kazdel_equipment.test.js",
+          "test/kazdel_equipment_data.test.js",
+          "test/content/reactive-origin.test.js",
+          "test/content/rhine.test.js",
+          "test/match/rhineResearch.test.js",
+          "test/match/rhine-client-layers.test.js",
+          "test/content/garrisons_battle.test.js",
+          "test/content/rhine_device_rework.test.js",
+          "test/match/rhine-laser-field-share.test.js",
+          "test/kazdel_data.test.js",
+          "test/rhine_data.test.js",
+          "test/i18n.test.js",
+          "test/i18n-packs.test.js",
+          "test/tools/verify-rhine-release.test.js",
+          "test/rhine-bundle-update.test.js",
+          "test/rhine-online-update.test.js",
+          "test/rhine-bundle-launch.test.js",
+          "test/extension-potential.test.js",
+          "test/room-rhine-profile.test.js",
+          "test/vanilla-data.test.js",
+          "test/match/potential.test.js",
+          "test/sim/potential-battle.test.js",
+          "test/ui/inspect-range.test.js",
+          "test/match/round-communicators.test.js",
+          "test/match/rem-round-carry.test.js",
+          "test/match/rhine-opening-bans.test.js",
+          "test/match/original-profile-host.test.js",
+          "test/match/sim-host.test.js",
+          "test/match/runner.test.js",
+          "test/match/runner-profile.test.js",
+          "test/match/runner-pending.test.js",
+          "test/match/kazdel-client-layers.test.js",
+          "test/match/six-player.test.js",
+          "test/match/six-player-round-beacons.test.js",
+          "test/protocol-seats.test.js",
+          "test/rhine-update-boot.test.js",
+          "test/ui/kazdel.test.js",
+          "test/tools/rhine-bundle.test.js",
+          "test/plugins/schema.test.js",
+          "test/plugins/dsl-data.test.js",
+          "test/plugins/contentBattle.test.js",
+          "test/plugins/script-integration.test.js",
+          "test/plugins/script-sandbox-integration.test.js",
+          "test/plugins/profile-content-sets.test.js",
+          "test/plugins/rhine-shared-tokens.test.js",
+          "test/plugins/tool.test.js",
+          "test/plugins/forgeImport.test.js",
+          "test/plugins/script-review.test.js",
+          "test/plugins/csp.test.js",
+          "test/ui/profile-plugins.test.js",
+          "test/studio/trial.test.js",
+          "test/studio/room-settings.test.js",
+          "test/studio/gameplay.test.js",
+          "test/golden-diy.test.js"
+        ],
+        "additionalFile": "test/match/instant-field-slices.test.js",
+        "additionalFixture": "test/match/fixtures/virtualBudgetMatch.js",
+        "plannedFileCount": 82,
+        "additionalLeafCount": 8,
+        "priorCandidateObservedTestCount": 1003,
+        "candidate10ObservedTestCount": "pending actual execution",
+        "fileConcurrency": 3,
+        "batchTimeoutMs": 900000,
+        "originalHeartbeatMs": 1000,
+        "originalWatchdogMs": 10000,
+        "originalAllBotRaceMs": 100000,
+        "originalAllBotCaseMs": 120000
+      },
+      "browser": {
+        "excludedTests": [
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "atlas download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          },
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "three download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          }
+        ],
+        "expectedExecutedCases": 47,
+        "expectedGroups": [
+          "remSimulation",
+          "remRenderer",
+          "remRally",
+          "kazdelSimulation",
+          "renderer",
+          "rhineOperators",
+          "upstreamRenderer",
+          "upstreamUi",
+          "sixSeatUi",
+          "statsLandscape",
+          "upstreamPlugins",
+          "newSync"
+        ]
+      },
+      "unchangedTail": [
+        "source-author27",
+        "isolated-host9",
+        "Windowsx64 bundled runtime",
+        "12browser47 executed and2 exact3D notRun",
+        "HTTP/WebSocket",
+        "fullZIP/source tree",
+        "actual old6 upgrade/6private bytes",
+        "repeat/rollback",
+        "five uploads/authenticated re-download/public/latest selection",
+        "independent five anonymous full SHA/CRC/source/PE/latest verification"
+      ],
+      "noServerDeployment": true,
+      "noRemoteOperationsByGenerator": true
     }
   },
   "rendererDiagnostics": false,
