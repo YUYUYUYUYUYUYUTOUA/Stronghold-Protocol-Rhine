@@ -422,8 +422,8 @@ export async function createFieldView(host, options = {}) {
   setupCleanup.push(() => impostors.destroy());
   ctx.impostors = impostors;
   tiles.setView(bandFor('prep'), camRect(), fieldRows('prep'));
-  // the real board art of the local client (optional): wait briefly so the first frame already uses it; a late
-  // arrival swaps the atlas in place
+  // The local board art is optional and late arrivals swap the atlas in place. Explicit 2D startup must expose
+  // its complete engine without waiting for this art; 3D/auto keep their existing first-frame preparation wait.
   const artPromise = loadBoardArt(assets).then((art) => {
     if (art && !destroyed) { tiles.setArt(art); tiles.project(cam, true); }
     return art;
@@ -2205,13 +2205,13 @@ export async function createFieldView(host, options = {}) {
       pick: { pieceAt, mapCharAt, battleUnitAt, penUnitAt, groundTile },
     },
   };
-  // All teardown dependencies now exist. Aborting during either asset wait immediately releases
+  // All teardown dependencies now exist. Aborting during an asset wait immediately releases
   // the renderer, ticker and listeners; late shared asset results see destroyed and do nothing.
   setupCleanup.length = 0;
   onAbort = () => view.destroy();
   signal?.addEventListener('abort', onAbort, { once: true });
   signal?.throwIfAborted();
-  await withTimeout(artPromise, 2500, signal);
+  if (boardPref !== '2d') await withTimeout(artPromise, 2500, signal);
   if (want3d) await withTimeout(boardReady, 6000, signal);
   signal?.throwIfAborted();
   return view;

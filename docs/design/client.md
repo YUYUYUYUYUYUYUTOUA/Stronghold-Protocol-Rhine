@@ -45,6 +45,13 @@ view.resize() ; view.destroy()
 
 `createFieldView(host, { …, signal })` takes an `AbortSignal` (0.2.2, GitHub PR #302 by @siruimei07): an abort during the build — the Pixi load, the manifest, the fonts, the board art and the 3D board waits — destroys what the attempt made (the canvas, the ticker, the listeners, the observers) and rejects, a failure while it is built releases the same partial resources, and `view.destroy()` is idempotent. `ui/fieldHost.js mountFieldView(host, { signal })` aborts that signal when the engine fails, times out (12 s) or the owner unmounts, disposes a view a factory returns after that, and never clears the other children of `host` — the simplified view and a newer mount share it.
 
+The Rhine Windows follow-up exposes an explicitly requested `board=2d` engine as soon as its renderer, input and
+teardown are complete. Optional local board art continues loading and replaces the procedural atlas on arrival;
+it no longer holds that usable 2D engine behind the 2500 ms first-frame art wait. Auto/3D startup keeps its existing
+art and board waits. The 12 s host deadline and cancellation remain unchanged. The field hook releases its own
+view and pending mount on `pagehide` as well as component unmount; repeated cleanup cannot destroy another owner.
+Restoring a BFCache document still follows `main.js`'s existing reload rule.
+
 The tile atlas keeps interior drawing in the original atlas coordinates. Edge clamping runs on one reusable 256×256 canvas; only the four gutters are copied back, preserving the half-texel UVs, art composition and procedural/art cache rules. Rendering readiness, startup deadlines and cancellation stay as specified above.
 
 Asset URLs (0.2.6, host bandwidth layer 1): the client takes every art, model and audio URL from `data/assets.json` and `data/local-assets.json` and builds none itself, so the content-hash segment the server puts in front (`/assets/~<hash>/…`, docs/ASSETS.md "The committed manifest and the served manifests") needs nothing on this side: `validSpine` still sees `.skel`, pixi-spine finds the atlas and its pages under the same segment (a model shares one hash), audio is fetched as `/media/~<hash>/…`. The two URLs the client derives from another file's — the 3D board's `tiles.json` beside the atlas and the token death sound beside `charDie` — are served `no-cache` (the board) or drop the segment (`shared/assetPaths.js unhashedUrl`, the sound).

@@ -87,7 +87,7 @@ describe('field initialization in headless Chrome', { skip }, () => {
   });
   after(async () => { await browser?.close(); await srv?.close(); });
 
-  async function open(t, { holdPixi = false } = {}) {
+  async function open(t, { holdPixi = false, board = '2d' } = {}) {
     const page = await browser.newPage();
     t.after(() => page.close());
     const errors = [];
@@ -110,7 +110,7 @@ describe('field initialization in headless Chrome', { skip }, () => {
         return request.continue();
       });
     });
-    await page.goto(`http://127.0.0.1:${srv.port}/initialization-test?board=2d`);
+    await page.goto(`http://127.0.0.1:${srv.port}/initialization-test?board=${board}`);
     // Empty manifests prevent optional local art requests while preserving the real asset store.
     await page.evaluate(async () => {
       const { assets } = await import('/js/assets.js');
@@ -206,8 +206,53 @@ describe('field initialization in headless Chrome', { skip }, () => {
     assert.deepEqual(errors, []);
   });
 
-  test('timeout during board-art startup immediately releases the allocated app and permits a fresh engine', async (t) => {
+  test('a ready 2D engine does not wait for optional board art or lose its canvas to that deadline', async (t) => {
     const { page, errors } = await open(t);
+    await page.evaluate(async () => {
+      const { assets } = await import('/js/assets.js');
+      const s = window.__initialization, local = assets.local.bind(assets);
+      assets.local = () => {
+        if (!s.apps.length) return local();
+        assets.local = local;
+        s.artBlocked = true;
+        return new Promise((resolve) => {
+          s.releaseArt = async () => { s.artReleased = true; resolve(await local()); };
+        });
+      };
+    });
+    await start(page);
+    await page.waitForFunction(() => window.__initialization.artBlocked);
+    // Expire an outstanding original host deadline while the optional art is still held. A usable 2D engine
+    // must already own the view; waiting for engine here would let the old 2500 ms art timeout hide the regression.
+    await page.evaluate(() => window.__initialization.expire());
+    await page.waitForFunction(() => window.__initialization.view);
+    const ready = await page.evaluate(() => {
+      const s = window.__initialization;
+      const app = s.view.raw.debug?.app;
+      if (app) app.renderer.render(app.stage);
+      return { kind: s.view.kind, artReleased: !!s.artReleased,
+        contextLost: app?.renderer.gl.isContextLost(), canvasWidth: app?.view.width, ...s.snapshot() };
+    });
+    assert.equal(ready.kind, 'engine');
+    assert.equal(ready.artReleased, false);
+    assert.equal(ready.contextLost, false);
+    assert.ok(ready.canvasWidth > 0);
+    assert.equal(ready.canvases, 1);
+    assert.equal(ready.fallbacks, 0);
+    assert.deepEqual(ready.apps, [{ destroyed: false, ticking: true, attached: true }]);
+    const late = await page.evaluate(async () => {
+      const s = window.__initialization;
+      s.view.destroy(); s.view.destroy();
+      await s.releaseArt();
+      await new Promise(requestAnimationFrame);
+      return s.snapshot();
+    });
+    assert.deepEqual(late, { apps: [{ destroyed: true, ticking: false, attached: false }], observers: 0, listeners: [], canvases: 0, fallbacks: 0 });
+    assert.deepEqual(errors, []);
+  });
+
+  test('timeout during 3D board-art startup immediately releases the allocated app and permits a fresh engine', async (t) => {
+    const { page, errors } = await open(t, { board: '3d' });
     await page.evaluate(async () => {
       const { assets } = await import('/js/assets.js');
       const s = window.__initialization, local = assets.local.bind(assets);
@@ -236,6 +281,8 @@ describe('field initialization in headless Chrome', { skip }, () => {
       await s.releaseArt();
       s.view.destroy();
       s.view = null;
+      // The timed-out attempt exercises the existing 3D wait; its replacement uses the original 2D engine path.
+      history.replaceState(null, '', '?board=2d');
     });
     await page.waitForFunction(() => window.__initialization.settled === 1);
     await start(page);
