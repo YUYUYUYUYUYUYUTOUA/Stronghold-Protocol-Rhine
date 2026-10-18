@@ -8,6 +8,16 @@ import { Client, ROOT, hasChrome, sleep, startRealServer, problemsOf } from '../
 
 const ENABLED = process.env.SP_E2E === '1' && hasChrome() && existsSync(path.join(ROOT, 'public/assets'));
 
+async function resizeForMeasurement(page, viewport) {
+  await page.setViewport(viewport);
+  // Measure the requested viewport after theme.css's existing layout-root clamp has applied.
+  await page.waitForFunction(({ width, height }) => {
+    const expectedRem = Math.min(240, Math.max(40, Math.min(width / 19.2, height / 10.8)));
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return innerWidth === width && innerHeight === height && Math.abs(rem - expectedRem) < 0.01;
+  }, { timeout: 15000 }, viewport);
+}
+
 test('six actual room cards fit narrow screens and six prep teammates stay above the shop',
   { skip: !ENABLED, timeout: 120000 }, async () => {
     const srv = await startRealServer({ fast: { timerScale: 1, kit: 4, autoPlace: true } });
@@ -27,7 +37,7 @@ test('six actual room cards fit narrow screens and six prep teammates stay above
         await host.page.waitForFunction(n => document.querySelectorAll('.seat.is-bot').length === n, {}, n);
       }
       for (const { width, height } of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }, { width: 640, height: 360 }]) {
-        await host.page.setViewport({ width, height });
+        await resizeForMeasurement(host.page, { width, height });
         await sleep(650);
         const roomLayout = await host.page.evaluate(() => {
           const rect = el => el.getBoundingClientRect();
@@ -69,7 +79,7 @@ test('six actual room cards fit narrow screens and six prep teammates stay above
       await host.page.waitForFunction(() => document.querySelectorAll('.seat.is-bot').length === 4);
       await host.page.locator('.seat--empty button').setTimeout(15000).click();
       await host.page.waitForFunction(() => document.querySelectorAll('.seat.is-bot').length === 5);
-      await host.page.setViewport({ width: 1920, height: 1080 });
+      await resizeForMeasurement(host.page, { width: 1920, height: 1080 });
       await host.click('.room-bar__right button', '开始模拟');
       await host.waitFor(s => s.phase === 'INFO_CHECK', 'briefing');
       await host.click('.brief__foot .btn--primary', '准备就绪');
@@ -85,7 +95,7 @@ test('six actual room cards fit narrow screens and six prep teammates stay above
       await host.waitFor(s => s.phase === 'PREP', 'six-member prep');
       await host.page.waitForFunction(() => document.querySelectorAll('.team__row').length === 6);
       for (const { width, height } of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
-        await host.page.setViewport({ width, height });
+        await resizeForMeasurement(host.page, { width, height });
         await sleep(650);
         const prepLayout = await host.page.evaluate(() => {
           const rows = [...document.querySelectorAll('.team__row')];
