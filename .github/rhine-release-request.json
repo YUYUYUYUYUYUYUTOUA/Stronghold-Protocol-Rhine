@@ -1,13 +1,13 @@
 {
-  "tag": "v0.3.0-rhine.10",
-  "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+  "tag": "v0.3.0-rhine.11",
+  "sourceCommit": "8f6b98c2979b66ee636dbbfcf04ae6dad5b65904",
   "previousTag": "v0.2.4-rhine.6",
   "previousArchiveName": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
   "previousArchiveSha256": "492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
   "runtimeVersion": "v24.21.0",
   "prepareOnly": false,
-  "releaseName": "v0.3.0-rhine.10 · 阵营拓展",
-  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0** 固定发布标签，保留莱茵、卡兹戴尔、雷姆扩展。本版按正式版渠道发行，以 `latest` 提供联网更新，实际结果见公开页面和 `RELEASE-VALIDATION.json`。\n\n### 雷姆更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 本候选修复与失败边界\n\n虚拟时间比赛宿主使用既有8毫秒无界面预算，在完整主时钟 tick 之间让出执行，保留战场、事件和共享血池处理顺序；直接使用虚拟调度器的同步默认行为及真实时间节奏不变。1秒心跳、10秒看门狗、100秒比赛等待和120秒原用例期限保持不变。该预算不能中断单次构造、插件回调或一个完整 tick。\n\n新增有限预算回归覆盖停止、强制结束、硬上限、错误隔离、事件、结果摘要和真实宿主选项。真实插件比赛失败时报告实际结束摘要，全部原断言保留。默认模组回归测试调整离线生成器加载顺序以兼容 Node 22，保留原10项用例，不改生产注册表。\n\n`.9` 未公开，原不可变标签及失败草稿保留：Windows 包内1003项中1000通过、1失败、2条件跳过；失败为插件 all-bot 比赛结束摘要缺少布尔胜负。后续 Windows 源码隔离单例通过，不能覆盖原批次失败，也未证明原失败的具体宿主终止原因。`.10` 仅在本候选全部 Windows 公开门槛通过后公开；源码 CI 的实际失败与包内结果分别记录，不以隔离通过替代整套验收。\n\n本轮 Linux 定向回归54项通过，新增8项有限预算永久回归在 Node 22 也全部通过；独立旧／新 FieldRunner 的4个合成场景逐项顺序、共享血池、错误、结果与摘要相同，真实子进程 training 对局单例完成隐藏战且错误为零。官方 Node 22.23.3 的原默认模组测试两次复现启动失败，调整加载顺序后的原10项在 Node 22 和 Node 24 各两次通过；不据此推断具体 Node 内部错误。288个 golden 本轮全部匹配、零变更。这些本地结果不替代 Windows 实包或新的源码矩阵结果。\n\n本轮完整本地 Linux Node 24.19 源码 CI 实际为8624项、8555通过、2失败、67条件跳过、0取消，总计1226.526秒，未称全绿。仅 `test/studio/review.test.js:144` 的 close／timeout 两项严格 ESRCH 断言失败；本轮被动观察器捕获0个已验证probe，不能把历史僵尸PID证据归于本轮，也未据此确认这两项的具体原因。setup、smoke、lint、imports和typecheck通过；lint为0错误／151警告，imports为3项nonstrict违规及3项允许说明。波次63.3／最坏161.6微秒每tick分别通过原0.5毫秒门槛，老板best300.8微秒每tick通过原1毫秒CI门槛；真实SES沙箱比赛和脚本／meta比赛在这同一次完整CI中分别42.464／41.148秒通过。另行严格检查4个语言包，每包1850条、0缺失、0错误。\n\n### 已执行的源码与 Windows 结果\n\n冻结源码 `c2bcb246d407e8f4c014d39c480c85358e79fdeb` 不变。[原正式主线元数据 M1 CI](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782) 和 [精确 .10 标签源码 CI](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953) 均已终态失败，不能称源码矩阵全绿。两者 Windows Node24 均实际为8578项、8492通过、0失败、86条件跳过，且 smoke 通过；各自 tooling 通过。M1 Windows22 为8487通过／5失败／86跳过，标签 Windows22 为8488通过／4失败／86跳过；四个 Ubuntu22／24 job 各为8481通过／1失败／96跳过。各环境实际总数均8578，未用本地8624替代。\n\nWindows22 两个矩阵都有三个 plugin-host 普通2000毫秒回复等待超时及一项 Forge 脚本注册预检超过5000毫秒；现有栈没有定位前者具体调用，不能只按测试标题断言看门狗、OOM或结果校验阶段已执行。M1 还实际触发最坏场景性能失败：0.51866258毫秒每tick，高于原0.5毫秒门槛；标签同项通过不覆盖该失败。M1 两个 Ubuntu job 为 SP_VERIFY 用例的普通回复等待超时；标签 Ubuntu22 同类等待超时，标签 Ubuntu24 为 OOM 标题用例的普通等待超时，未直接证实真正 OOM 刺激或处理阶段。完整逐项错误、运行链接与日志散列列入验证报告。\n\n[Windows .10 首轮整包验收](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787780) 的82文件回归实际1011项、1009通过、0失败、2条件跳过；新增8项有限切片、原脚本 all-bot 比赛通过。作者27项、宿主9项通过。但12组浏览器47项为45通过／2失败：显式2D原版房间在 R2 重连后 renderer 初始化超时、进入 fallback，无真实 Canvas；原版六人第二页面打开时 `fieldHost.js` 出现 `net::ERR_NO_BUFFER_SPACE` 并初始化等待超时。其后的 HTTP／WebSocket、ZIP、实际旧6升级及私配、上传重下和公开均未执行。首轮失败保持失败，原始日志 SHA256 为 `4cb26e260436b3099fe1a9543cd2f6e24282f40a97f8bb3e1156dd4248486c25`。\n\n随后 Linux 使用原源码和原断言单独运行这三个用例，实际3通过／0失败／0跳过。[隔离 Windows 诊断](https://github.com/YUYUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39097408114) 也实际3通过／0失败／0跳过，显式2D profile 的真实 renderer／Canvas 门槛通过；原测试、300秒单项和600秒外层期限均保留。该诊断使用校验过的完整 `.8` 资源、固定 `.10` 测试与依赖，并在独立 renderer 副本加入被动阶段追踪，不能当作完整 `.10` 包、无干扰性能实验或47项全通过。\n\n诊断中两种六人局的末席刷新仍各观测到13.3286／16.0835秒的 `P.Application` 同步区间，之后 factory aborted／catch；尚未定位具体内部子调用，取消的发起来源也未采到，不能归为正常卸载或12秒初始化超时。该机制用例允许这些非主席进入 fallback：主席实际 engine 几何、三位原始权威上传和 Node 重放门槛通过，不能据此宣称六席 renderer 全部初始化成功。两条追踪均为 `want3d=true`，但该 Application 是共享渲染路径，不能据此确定唯一3D原因。47次系统采样无采集错误，资源准备阶段另有约75.040秒未连续采样；数值不是全程峰值。新诊断未复现 ENOBUFS，不能断言原资源故障已修复。\n\n以下为发行请求 M2 准备时的记录：本次只更新验证元数据，源码、标签、全部原门槛与固定散列不变。M2 自身的新 CI 在本次请求准备时尚未触发，不能覆盖上述已完成的源码 CI 失败。原失败 Windows job 的一次 API 重跑请求返回404 NOT_FOUND。04:46:24 UTC 回读原任务仍为 completed／failure／attempt1，正式分支运行集合未观察到新的发布执行；`.10` 仍为草稿，latest 仍为 `.6`。该404未说明权限原因，不能写成 Actions 权限被拒绝；同一接口不再重试。随后通过既有的正式发行请求流程，对同一源码执行一次完整原门禁复验；完整包是否通过和公开，以对应运行及 `RELEASE-VALIDATION.json` 的实际结果为准。\n\n### 下载与升级\n\n下载 `Stronghold-Protocol-Rhine-v0.3.0-rhine.10-Windows-x64.zip`，完整解压后双击 `启动莱茵科研版.bat`，包内自带 Windows x64 Node。已有玩家请先关闭服务，再使用 `联网更新.bat` 或独立更新工具；保留自己的私有配置。完整验证与附件散列见 `RELEASE-VALIDATION.json`、`SHA256SUMS.txt` 和 `UPDATE-TOOL-SHA256.txt`。\n\n公开门槛保留全部旧81个原生测试文件并加入8项有限预算回归，同批文件并发仍为3；浏览器验收12组、47项实际执行，另列两项旧3D专项未跑。门槛还包括真实 Windows 包内 Node、跨端模拟、2D界面、同步／重连／动画、HTTP／WebSocket、实际公开旧正式 `.6` 安装包升级、六份私有配置逐字保留、重复升级／回退、五附件上传及重新下载。未独立完成旧 `.8` 完整安装包到 `.10` 的实包升级，不据 `.6` 路径宣称该项已跑。手动双击BAT及人工完整平衡对局未运行。\n\n默认3D在软件渲染、多页面刷新专项中的初始化问题未宣称修复。维护者不再要求旧3D专项；仅精确排除两项3D资源恢复叶用例，其他2D恢复、机制、同步、重连、动画及Studio原断言保留。若遇到旧初始化问题，可使用 `/?board=2d`。\n\n本次在 Linux 环境的源码检查结果见验证报告；Windows 实包门槛通过后由流水线写入实际结果。\n",
+  "releaseName": "v0.3.0-rhine.11 · 阵营拓展",
+  "releaseNotes": "基于上游 sganggs/Stronghold-Protocol **v0.3.0**，保留莱茵、卡兹戴尔、雷姆扩展。发行源码 `8f6b98c2979b66ee636dbbfcf04ae6dad5b65904`；以下本地回归结果为源码冻结时记录。Windows 实包实际结果见 `RELEASE-VALIDATION.json`，远端源码 CI 终态见对应 Actions 记录。旧 `.10` 标签及失败草稿保留。\n\n### 雷姆更新\n\n- 普通援军只主动寻找同战场友方攻击干员火力覆盖内、可攻击且可达的敌人；目标失效后重选。无目标时在覆盖内四向徘徊，无覆盖时让开蓝门待机。援军彼此可重叠，车辆与老板保留原路线。\n- 6／9 档按实际在场存活时间累计：每援军·秒使所属玩家雷姆干员攻击与生命 +1%／+2%，每回合最多 +200%／+300%。死亡、撤退不扣已获收益，待落地队列不计时；同回合联防继承，新回合清零。车辆和老板贡献时间，但不获得只给干员的成长。\n- 好心肠老板攻击 `1000+2S`，披萨造成 200% 攻击力的物理伤害；保持每游戏秒一枚、1秒延迟、0.45半径、不对空和最多两名。\n- 修正九名扩展精锐的普通默认模组；已保存的技能、明确选择不带模组及莱伊其他模组保留。石棉增加独行副盟约，不恢复坚守。\n\n保留此前批准的暴行真实击杀共享产层、原生技能、5–6人普通干员商店加一格、R3／R7各一次独立通讯机补给、1–4人全局BAN增三并逐阶至少保留八种可刷干员。新卡池已重新精确枚举；不足八种的组合被排除。没有并入变形同构体无限库存，没有部署用户服务器。\n\n### 本版渲染与生命周期范围\n\n本版游戏机制保持不变。发行源码已实现：显式2D模式下，可选棋盘美术不再阻塞 renderer ready；页面 pagehide 时清理旧场景及其持有资源。显式2D背景美术更新产生的返回Promise另有拒绝观察，避免回调异常成为无人观察的拒绝；auto／3D原有等待路径不变。这些变更不证明此前 renderer startup stall 的唯一根因，不宣称默认3D冷启动已修复。\n\n六人布局采用 viewport 与 root-font measurement coherence 的夹具修正：实际视口与根字号测量保持一致，保留原13项断言、650ms等待与120秒期限。这不是生产CSS修复；原Windows布局失败原因没有得到复现或唯一归因。不得以隔离通过替代真实几何断言，不降低原版与扩展六人、三初始权威出站上传、精确 Node 重放、同步／重连／2D动画门槛；六人用例没有逐场服务器accepted／checked专门断言。\n\n当前针对性实测：相同最终2D初始化夹具在旧source10上实际1失败，新集成初始化7通过；最终catch后的同7项实际全过（10.053秒）。pagehide生命周期9项与相邻native／文档67项通过。原完整profile在前一候选c487实际1通过（118.613秒）；8b仅增加显式2D拒绝观察及术语更正，源码冻结前未在本地Linux重复该完整profile，不能将其称作8b本地复测通过；后续Windows实际结果另见报告。拒绝观察probe在补丁前后均未记录DOM unhandledrejection事件（均0）；旧probe“应为1”断言失败。补充catch的必要性由Promise归属静态审阅确认，不能写成probe复现并消除了DOM事件。\n\nc487全量CI曾因上述新审阅must-fix安全中断，封存部分4356项／3696通过／0失败／652取消／8跳过；不是完整通过，该被中断轮次的golden与i18n没有启动。最终源码本地完整回归与静态检查：生产实现8b的完整本地CI为8628项／8558通过／3失败／67条件跳过／0取消；setup、smoke、lint、imports和typecheck均退出零。两项strict ESRCH仍失败且原因未确认，另一项为过时的dev-hook静态源码定位，不能当作运行时泄漏。该同名夹具已更新为owner清理契约，随后相关UI／生命周期16项通过，文档32项通过，定向lint通过。最终源码仅较8b增加该夹具与两份事实记录，生产文件逐字节不变；未重复本地完整集合，原3失败保留，完整新源码覆盖交由后续正式主线／标签CI。8b后续golden非更新运行288个场景全匹配；四语言包各1850条、零缺失／错误。源码工作区在这三阶段完成时与启动前一致。正式源码提交：8f6b98c2979b66ee636dbbfcf04ae6dad5b65904。源码冻结时，后续GitHub矩阵与Windows全包验收尚未执行；正式发行的Windows实际终态见报告，随后源码CI终态见对应Actions记录，不以预期数冒充实测。\n\n### 保留的宿主修复与历史失败\n\n虚拟比赛宿主使用既有8毫秒无界面预算，只在完整主时钟tick之间让出执行，保留战场、事件和共享血池处理顺序；直接虚拟调度器的同步默认和真实时间节奏不变。预算不能中断一个构造、插件回调或完整tick。1秒心跳、10秒看门狗、100秒比赛等待、120秒原宿主用例期限以及文件并发3均不放宽。新增有限切片永久回归仍保留。\n\n`.9` 未公开：原Windows1003项为1000通过、1失败、2跳过，插件all-bot摘要缺少布尔胜负；隔离单例通过不覆盖原批次失败。`.10` 也未公开，保留不可变标签、两次完整验收失败及原始日志，不创建重复发行覆盖它。\n\nsource10 原 [M1正式主线CI](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787782) 和 [精确标签CI](https://github.com/YUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787953) 均曾失败；普通2000毫秒回复等待的具体调用没有定位，Forge预检确实超过5000毫秒。M1 Windows22最坏性能实际0.51866258毫秒每tick高于原0.5门槛，标签同项通过不能覆盖该失败。原本地source10全CI为8624项、8555通过、2条strict ESRCH失败、67跳过、0取消；该轮未取得已验证probe身份，不能套用旧僵尸PID结论。波次／最坏门槛为0.5毫秒每tick，老板CI best-of-three门槛为1毫秒，均保留。\n\n随后相同source10仅更新请求元数据的 [M2源码CI](https://github.com/YUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39098665720) 四矩阵实际全部通过：Windows Node22／24各8578项、8492通过、0失败、86条件跳过；Ubuntu Node22／24各8578项、8482通过、0失败、96跳过；各job为0取消，smoke和tooling通过。lint为0错误／151警告，imports沿用nonstrict检查，3项违规和3项允许说明仍明确保留。这是source10的真实新执行，不把原M1／tag失败改判，更不当作source11通过。\n\n[Windows10首轮](https://github.com/YUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39094787780) 包内1011项为1009通过、0失败、2跳过，作者27及宿主9通过；浏览器47项为45通过／2失败：显式2D原版R2重连后Canvas初始化超时，原版六人第二页面加载fieldHost.js报ENOBUFS。其 [隔离三用例诊断](https://github.com/YUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39097408114) 与Linux原三用例通过，只是有限证据；两个末席Application同步区间13.3286／16.0835秒后取消，内部子调用和取消发起来源未定位。允许非主席fallback的机制用例不证明六席renderer都成功。47次系统采样无错误，但资源准备有约75秒未连续采样，新诊断未复现ENOBUFS不等于问题已修复。\n\n[Windows10 M2完整复验](https://github.com/YUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39098665709) 再次实际失败：native1011项仍1009通过／2跳过／0失败，作者27及宿主9通过；12组浏览器47项为45通过／2失败。两种六人战斗用例均通过，但显式2D原版R2重连后的Canvas门槛再次超时；六人布局1280宽下第六行bottom694高于商店top423.515625，原真实几何断言失败。这些失败不能写成已修复或全包通过。\n\n两轮`.10`均在浏览器门禁结束，未执行专用包内HTTP／WebSocket尾段、ZIP、真实旧6升级与六私配、repeat／rollback、五附件上传重下或公开。`.10`没有可用的新ZIP，latest仍应以真实API查询为准，不用草稿代替下载交付。\n\n### Windows验收门槛与下载升级边界\n\n保留旧82个native文件，新增 `test/ui/fieldHost-lifecycle.test.js` 的9个叶用例，验收共83文件，预期1020项、要求1018通过与2条件跳过、0失败。旧47个浏览器叶用例全部保留，完整加入 `test/render/initialization.browser.test.js` 的7项，仍12组、要求执行54项且全部通过；仅原两个精确legacy3D资源恢复叶用例另列未跑，不伪造runner跳过数。以上为必须满足的门槛，实际计数以终态报告为准。\n\nRuntime固定Windows x64 Node v24.21.0；原3并发、native900秒外层、renderer12秒、各30秒等待、300秒单项及600秒浏览器组预算保留。新增断言不能以缺失字段当0或fallback冒充真实engine。最终所有实际计数与未跑项以冻结源码、终态日志及 `RELEASE-VALIDATION.json` 为准。\n\n发行附件为 `Stronghold-Protocol-Rhine-v0.3.0-rhine.11-Windows-x64.zip`、`Rhine-Update-Tool-Windows.zip`、`RELEASE-VALIDATION.json`、`SHA256SUMS.txt`、`UPDATE-TOOL-SHA256.txt`。只有全部原门槛与新增生命周期／初始化门槛、HTTP／WS、完整ZIP及源码对应、真实公开旧 `.6` 升级、六私有配置逐字保留、重复升级／回退、五附件上传与完整重下载均通过后，才可公开为stable／latest，再独立匿名完整下载验真。\n\n不另外宣称已实包验证 `.8` 到 `.11` 整包升级；不部署用户服务器。手动双击BAT和人工完整平衡对局尚未执行。默认3D限制仍保留；仅两个已授权旧3D专项不跑。建议 `/?board=2d`，不将该建议当作所有2D初始化故障已消除的证明。\n\n本次在 Linux 环境的源码检查结果见验证报告；Windows 实包门槛通过后由流水线写入实际结果。\n",
   "upstreamResources": {
     "repository": "sganggs/Stronghold-Protocol",
     "tag": "v0.3.0",
@@ -4264,11 +4264,10 @@
       "Native Windows final-source package/browser/HTTP/update/private/repeat/rollback/upload/public-download results are separate mandatory gates; preparation records alone do not claim them passed."
     ],
     "publicationDecision": {
-      "candidate": "v0.3.0-rhine.10",
+      "candidate": "v0.3.0-rhine.11",
       "prerelease": false,
       "makeLatest": true,
-      "authorization": "User-approved stable next release after all mandatory gates; no retag/rerun of failed9.",
-      "default3d": "Accepted limitation. Only the two explicitly reviewed legacy3D leaves are excluded."
+      "authorization": "User-authorized next stable/latest release after mandatory acceptance. Failed10 tag/draft retained; no old-tag rebuild or user-server deployment."
     },
     "candidate9Preparation": {
       "preparedAt": "2026-10-16T18:28:41.783669+00:00",
@@ -4621,22 +4620,6 @@
       "computed": 288,
       "moved": []
     },
-    "formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
-    "limitations": [
-      "Frozen source S10 and original M1 main/tag CI are both terminal failure. Main Windows24 and tag Windows24 each passed8492/8578 with86conditional skips; other failed jobs remain failed and are listed individually. New M2 metadata CI was not triggered at this preparation time.",
-      "Main Windows22 worst-case benchmark actually failed at0.5186625833333338ms/tick against0.5ms. Tag Windows22 performance passed but does not overwrite the main failure. Wave/worst bars remain0.5ms/tick and boss best-of-three CI bar remains1ms/tick.",
-      "Source-host failures report ordinary2000ms reply waits without caller localization; logs do not prove watchdog/OOM/verification behavioral assertions were reached. Forge setup really exceeded5000ms before later talent assertions; neither cause is established.",
-      "Complete local CI remains8624total/8555pass/2strictStudioESRCHfail/67skip/0cancel; no verified PID ancestry for this exact local run. Later source/native passes do not rewrite these failures.",
-      "Original Windows10 attempt1 failed47-browser acceptance:45pass/2fail. Its full native1011/1009pass/0fail/2skip, source-author27 and hosts9 passed. HTTP/ZIP/actual6upgrade/private/repeat/rollback/normal5assets/public/anonymous tail did not run.",
-      "Original Windows profile failed after vanilla R2 reconnect in explicit2d due createFieldView timeout/fallback; Vanilla six-seat failed second-page initialization with observed fieldHost.js ERR_NO_BUFFER_SPACE. Root causes remain unresolved.",
-      "Fresh Linux original3cases and isolated Windows diagnostic3cases passed. Diagnostic renderer logging/CDP overhead and verified8 resources differ from full10 assembly/order; these passes do not replace full Windows acceptance.",
-      "Diagnostic last seats rhine6/vanilla6 had13.3286/16.0835s synchronous P.Application intervals and later abort/catch; exact subcall source not localized. The six-seat test permits their fallback and does not prove six real renderers initialized successfully. The initiating cancellation source was not captured; normal unloading or the12-second guard was not established.",
-      "All47 system samples completed without errors, but the75.039801s resource-preparation gap has no interval samples; sampled ranges do not prove peaks or exclude transient ENOBUFS outside observed events.",
-      "Only two explicitly approved legacy3D leaves are notRun; other47 browser cases and original deadlines remain mandatory. No general2d/3d renderer or resource-exhaustion fix is claimed.",
-      "Actual public old6-to10 upgrade/six private configurations/repeat/rollback, all five uploaded/authenticated downloaded attachments, public stable/latest10 and independent anonymous five-file verification remain mandatory. Full8-to10 real-package upgrade was not separately run.",
-      "One parent API request to rerun failed job returned404 NOT_FOUND. Readback at04:46:24Z observed original run still completed/failure/attempt1, no newer release run in the supported formal branch collection, release10 still draft and latest6. The404 supplies no permission cause. No same-API retry or remote action was performed by this generator.",
-      "Manual BAT/browser acceptance and human complete balance playtest were not run. No user-server deployment. Historic failures and lost/tmp evidence boundaries remain recorded without invented verification."
-    ],
     "historicalPublicationDecision9": {
       "channel": "stable",
       "prerelease": false,
@@ -4711,20 +4694,6 @@
         "bytes": 131390,
         "sha256": "5b893482cf258531b348eb1f39b34a985b4a97e832a02a16e3f4acda49b74dee"
       }
-    },
-    "golden": {
-      "computed": 288,
-      "moved": [],
-      "date": "2026-10-18",
-      "evidencePath": "/workspace/rhine-recovery-evidence/2026-10-18/golden.log",
-      "sha256": "fb61e672d6c11426a6d110f68df4dbd28481a66760106196839ea548eee3712c"
-    },
-    "i18n": {
-      "packs": 4,
-      "perPack": 1850,
-      "strict": true,
-      "missing": 0,
-      "errors": 0
     },
     "candidate10CurrentObservedAtPreparation": {
       "date": "2026-10-18",
@@ -4944,68 +4913,12 @@
       },
       "boundary": "Current recovered-environment observations only; no lost /tmp evidence is treated as available or rehashed. Isolated/source tests do not close original Windows batch failures."
     },
-    "localFullCi": {
-      "command": "npm run ci -- --keep-going",
-      "platform": "linux x64",
-      "node": "24.19.0",
-      "exitCode": 1,
-      "counts": {
-        "tests": 8624,
-        "pass": 8555,
-        "fail": 2,
-        "cancelled": 0,
-        "skipped": 67,
-        "todo": 0
-      },
-      "durationMs": 1226526.451812,
-      "failures": [
-        {
-          "file": "test/studio/review.test.js:144",
-          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
-          "assertion": "strict ESRCH",
-          "durationMs": 4839.93928,
-          "status": "failed",
-          "cause": "not established for this exact run; verified PID observation missing"
-        },
-        {
-          "file": "test/studio/review.test.js:144",
-          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
-          "assertion": "strict ESRCH",
-          "durationMs": 8071.424376,
-          "status": "failed",
-          "cause": "not established for this exact run; verified PID observation missing"
-        }
-      ],
-      "otherSteps": {
-        "setup": "passed",
-        "smoke": "passed",
-        "lint": "passed;0errors151warnings",
-        "imports": "exit0;3non-strict violations+3allowed notes",
-        "typecheck": "passed existing shared/sim scope"
-      },
-      "performanceUsPerTick": {
-        "wave": 63.3,
-        "worst": 161.6,
-        "bossBest": 300.8
-      },
-      "originalPerformanceThresholdsUnchanged": true,
-      "relevantFullBatchPasses": [
-        {
-          "name": "SES real all-bot Match",
-          "durationMs": 42463.729314
-        },
-        {
-          "name": "script real all-bot production child",
-          "durationMs": 41147.834991
-        }
-      ]
-    },
     "candidate10Acceptance": {
       "schema": "rhine-candidate10-source-acceptance/v1",
       "at": "2026-10-18T03:45:22.293073+00:00",
       "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
       "formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
-      "current": true,
+      "current": false,
       "fullLocalCi": {
         "command": "npm run ci -- --keep-going",
         "platform": "linux x64",
@@ -5331,7 +5244,7 @@
     "candidate10ControlledRevalidation": {
       "schema": "rhine-candidate10-controlled-metadata/v1",
       "preparedAt": "2026-10-18T04:48:32.040415+00:00",
-      "current": true,
+      "current": false,
       "sourceCommit": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
       "tag": "v0.3.0-rhine.10",
       "baseMetadataCommit": "dbad11accb9d6e22edd8842166b48022a777d14e",
@@ -6897,7 +6810,2169 @@
           "sha256": "c47d61bb153d8c9877f1329be228ec29b36da62c42ff528d36cae843e4a2d50f"
         }
       }
-    }
+    },
+    "historicalBeforeCandidate11_localFullCi": {
+      "command": "npm run ci -- --keep-going",
+      "platform": "linux x64",
+      "node": "24.19.0",
+      "exitCode": 1,
+      "counts": {
+        "tests": 8624,
+        "pass": 8555,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 67,
+        "todo": 0
+      },
+      "durationMs": 1226526.451812,
+      "failures": [
+        {
+          "file": "test/studio/review.test.js:144",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+          "assertion": "strict ESRCH",
+          "durationMs": 4839.93928,
+          "status": "failed",
+          "cause": "not established for this exact run; verified PID observation missing"
+        },
+        {
+          "file": "test/studio/review.test.js:144",
+          "name": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+          "assertion": "strict ESRCH",
+          "durationMs": 8071.424376,
+          "status": "failed",
+          "cause": "not established for this exact run; verified PID observation missing"
+        }
+      ],
+      "otherSteps": {
+        "setup": "passed",
+        "smoke": "passed",
+        "lint": "passed;0errors151warnings",
+        "imports": "exit0;3non-strict violations+3allowed notes",
+        "typecheck": "passed existing shared/sim scope"
+      },
+      "performanceUsPerTick": {
+        "wave": 63.3,
+        "worst": 161.6,
+        "bossBest": 300.8
+      },
+      "originalPerformanceThresholdsUnchanged": true,
+      "relevantFullBatchPasses": [
+        {
+          "name": "SES real all-bot Match",
+          "durationMs": 42463.729314
+        },
+        {
+          "name": "script real all-bot production child",
+          "durationMs": 41147.834991
+        }
+      ]
+    },
+    "historicalBeforeCandidate11_golden": {
+      "computed": 288,
+      "moved": [],
+      "date": "2026-10-18",
+      "evidencePath": "/workspace/rhine-recovery-evidence/2026-10-18/golden.log",
+      "sha256": "fb61e672d6c11426a6d110f68df4dbd28481a66760106196839ea548eee3712c"
+    },
+    "historicalBeforeCandidate11_i18n": {
+      "packs": 4,
+      "perPack": 1850,
+      "strict": true,
+      "missing": 0,
+      "errors": 0
+    },
+    "historicalBeforeCandidate11_limitations": [
+      "Frozen source S10 and original M1 main/tag CI are both terminal failure. Main Windows24 and tag Windows24 each passed8492/8578 with86conditional skips; other failed jobs remain failed and are listed individually. New M2 metadata CI was not triggered at this preparation time.",
+      "Main Windows22 worst-case benchmark actually failed at0.5186625833333338ms/tick against0.5ms. Tag Windows22 performance passed but does not overwrite the main failure. Wave/worst bars remain0.5ms/tick and boss best-of-three CI bar remains1ms/tick.",
+      "Source-host failures report ordinary2000ms reply waits without caller localization; logs do not prove watchdog/OOM/verification behavioral assertions were reached. Forge setup really exceeded5000ms before later talent assertions; neither cause is established.",
+      "Complete local CI remains8624total/8555pass/2strictStudioESRCHfail/67skip/0cancel; no verified PID ancestry for this exact local run. Later source/native passes do not rewrite these failures.",
+      "Original Windows10 attempt1 failed47-browser acceptance:45pass/2fail. Its full native1011/1009pass/0fail/2skip, source-author27 and hosts9 passed. HTTP/ZIP/actual6upgrade/private/repeat/rollback/normal5assets/public/anonymous tail did not run.",
+      "Original Windows profile failed after vanilla R2 reconnect in explicit2d due createFieldView timeout/fallback; Vanilla six-seat failed second-page initialization with observed fieldHost.js ERR_NO_BUFFER_SPACE. Root causes remain unresolved.",
+      "Fresh Linux original3cases and isolated Windows diagnostic3cases passed. Diagnostic renderer logging/CDP overhead and verified8 resources differ from full10 assembly/order; these passes do not replace full Windows acceptance.",
+      "Diagnostic last seats rhine6/vanilla6 had13.3286/16.0835s synchronous P.Application intervals and later abort/catch; exact subcall source not localized. The six-seat test permits their fallback and does not prove six real renderers initialized successfully. The initiating cancellation source was not captured; normal unloading or the12-second guard was not established.",
+      "All47 system samples completed without errors, but the75.039801s resource-preparation gap has no interval samples; sampled ranges do not prove peaks or exclude transient ENOBUFS outside observed events.",
+      "Only two explicitly approved legacy3D leaves are notRun; other47 browser cases and original deadlines remain mandatory. No general2d/3d renderer or resource-exhaustion fix is claimed.",
+      "Actual public old6-to10 upgrade/six private configurations/repeat/rollback, all five uploaded/authenticated downloaded attachments, public stable/latest10 and independent anonymous five-file verification remain mandatory. Full8-to10 real-package upgrade was not separately run.",
+      "One parent API request to rerun failed job returned404 NOT_FOUND. Readback at04:46:24Z observed original run still completed/failure/attempt1, no newer release run in the supported formal branch collection, release10 still draft and latest6. The404 supplies no permission cause. No same-API retry or remote action was performed by this generator.",
+      "Manual BAT/browser acceptance and human complete balance playtest were not run. No user-server deployment. Historic failures and lost/tmp evidence boundaries remain recorded without invented verification."
+    ],
+    "historicalBeforeCandidate11_formalBaseline": "2e08376b6098d4007d90b3e79b051be61d7c1d08",
+    "historicalPublicationDecision10": {
+      "candidate": "v0.3.0-rhine.10",
+      "prerelease": false,
+      "makeLatest": true,
+      "authorization": "User-approved stable next release after all mandatory gates; no retag/rerun of failed9.",
+      "default3d": "Accepted limitation. Only the two explicitly reviewed legacy3D leaves are excluded."
+    },
+    "retiredCandidate10M2ActualCi": {
+      "runId": 39098665720,
+      "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39098665720",
+      "head": "8a9fbd78430292c7a6ccec8726b95df4efca3196",
+      "source": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+      "conclusion": "success",
+      "matrix": [
+        {
+          "id": 117590242051,
+          "name": "test (windows-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8578,
+            "suites": 574,
+            "pass": 8492,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 86,
+            "todo": 0,
+            "duration_ms": 2282433.0638
+          },
+          "raw": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10-m2/windows-tooling/logs/117590242051.raw.log",
+            "bytes": 1417809,
+            "sha256": "bc41d249576e268f951875ef79d4ec49b9d22346f145b88247025a26a565806d",
+            "utf8_bom_count": 1,
+            "bom_offsets": [
+              0
+            ],
+            "crlf_count": 9980,
+            "lf_count": 9980,
+            "lone_cr_count": 0
+          }
+        },
+        {
+          "id": 117590242131,
+          "name": "test (windows-latest, node 22)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8578,
+            "suites": 574,
+            "pass": 8492,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 86,
+            "todo": 0,
+            "duration_ms": 1364012.7273
+          },
+          "raw": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10-m2/windows-tooling/logs/117590242131.raw.log",
+            "bytes": 4242065,
+            "sha256": "b6d67a2100dde478353ce3175a1e4a7307ab73b1f01be0419aec6aac7dabb85e",
+            "utf8_bom_count": 2,
+            "bom_offsets": [
+              0,
+              2151774
+            ],
+            "crlf_count": 55744,
+            "lf_count": 55744,
+            "lone_cr_count": 0
+          }
+        },
+        {
+          "id": 117590242017,
+          "name": "test (ubuntu-latest, node 22)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8578,
+            "suites": 574,
+            "pass": 8482,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 96,
+            "todo": 0,
+            "duration_ms": 1829276.157826
+          },
+          "raw": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10-m2/ubuntu/logs/117590242017.log",
+            "bytes": 4201458,
+            "sha256": "615b3f8e35b839a9fa6e84d74ff974e447814518368e643c9b780002e8dae505",
+            "utf8_bom": true,
+            "utf8_bom_count": 2,
+            "crlf_count": 0,
+            "lf_count": 55751,
+            "lone_cr_count": 0,
+            "replacement_character_count": 0
+          }
+        },
+        {
+          "id": 117590242069,
+          "name": "test (ubuntu-latest, node 24)",
+          "conclusion": "success",
+          "counts": {
+            "tests": 8578,
+            "suites": 574,
+            "pass": 8482,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 96,
+            "todo": 0,
+            "duration_ms": 1529181.933643
+          },
+          "raw": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/main10-m2/ubuntu/logs/117590242069.log",
+            "bytes": 1424245,
+            "sha256": "bc0e5945736d84079effdb8764f31ead97f05d97a6e2649931aa6f2298ce208c",
+            "utf8_bom": true,
+            "utf8_bom_count": 1,
+            "crlf_count": 0,
+            "lf_count": 9985,
+            "lone_cr_count": 0,
+            "replacement_character_count": 0
+          }
+        }
+      ],
+      "tooling": {
+        "job_id": 117590241875,
+        "conclusion": "success",
+        "node": "v22.23.3",
+        "npm": "10.9.9",
+        "job_duration_seconds": 42,
+        "eslint_errors": 0,
+        "eslint_warnings": 151,
+        "potentially_fixable_warnings": 22,
+        "import_violations": 3,
+        "import_violation_details": [
+          "server/sim/nodeData.js:11 node:fs [sim-node]",
+          "server/sim/nodeData.js:12 node:path [sim-node]",
+          "server/sim/nodeData.js:13 node:url [sim-node]"
+        ],
+        "allowed_notes": 3,
+        "boundary": "The executed import command has no --strict, so listed violations do not make its default exit code fail. Typecheck tsc --noEmit --checkJs succeeded without diagnostics."
+      },
+      "boundary": "Actual metadata-M2 CI on source10; does not overwrite original M1/tag failures, local2 ESRCH failures or either failed Windows package run, and does not validate future source11."
+    },
+    "retiredCandidate10M2Windows": {
+      "run": {
+        "id": 39098665709,
+        "url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/actions/runs/39098665709",
+        "jobId": 117590242118,
+        "attempt": 1,
+        "head": "8a9fbd78430292c7a6ccec8726b95df4efca3196",
+        "source": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+        "tag": "v0.3.0-rhine.10",
+        "jobStartedAt": "2026-10-18T04:53:41Z",
+        "jobCompletedAt": "2026-10-18T05:26:58Z",
+        "conclusion": "failure"
+      },
+      "raw": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/native-job.raw.log",
+        "bytes": 483446,
+        "sha256": "2f8c78343d6025fd075a65fe7c95c3e25e506a382bb8b85e5416eed2bc83dfb1",
+        "BOM": true,
+        "CRLF": 1785,
+        "lineCount": 1785,
+        "boundary": "Terminal-only connector decoded UTF8, observed BOM/CRLF preserved when re-encoding; no original HTTP byte headers available."
+      },
+      "counting": {
+        "sourceReleasePolicy": {
+          "rawFirstLine": 159,
+          "tests": 22,
+          "suites": 0,
+          "pass": 22,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 375.3005,
+          "rawLastLine": 166
+        },
+        "nativeFiles": 82,
+        "nativeFileConcurrency": 3,
+        "acceptanceGroups15": {
+          "native": {
+            "rawFirstLine": 1292,
+            "tests": 1011,
+            "suites": 0,
+            "pass": 1009,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 2,
+            "todo": 0,
+            "duration_ms": 257781.9767,
+            "rawLastLine": 1299
+          },
+          "sourceAuthor": {
+            "rawFirstLine": 1328,
+            "tests": 27,
+            "suites": 0,
+            "pass": 27,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 121907.4617,
+            "rawLastLine": 1335
+          },
+          "host": {
+            "rawFirstLine": 1350,
+            "tests": 9,
+            "suites": 2,
+            "pass": 9,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 95864.9681,
+            "rawLastLine": 1357
+          },
+          "remSimulation": {
+            "rawFirstLine": 1361,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 24269.3334,
+            "rawLastLine": 1368
+          },
+          "newSync": {
+            "rawFirstLine": 1372,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 6162.7365,
+            "rawLastLine": 1379
+          },
+          "remRenderer": {
+            "rawFirstLine": 1384,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 20512.5408,
+            "rawLastLine": 1391
+          },
+          "remRally": {
+            "rawFirstLine": 1394,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 27299.5043,
+            "rawLastLine": 1401
+          },
+          "kazdelSimulation": {
+            "rawFirstLine": 1408,
+            "tests": 5,
+            "suites": 0,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 64591.7444,
+            "rawLastLine": 1415
+          },
+          "renderer": {
+            "rawFirstLine": 1436,
+            "tests": 13,
+            "suites": 3,
+            "pass": 13,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 239002.1497,
+            "rawLastLine": 1443
+          },
+          "rhineOperators": {
+            "rawFirstLine": 1449,
+            "tests": 2,
+            "suites": 1,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 40942.2048,
+            "rawLastLine": 1456
+          },
+          "upstreamRenderer": {
+            "rawFirstLine": 1465,
+            "tests": 5,
+            "suites": 1,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 40557.1336,
+            "rawLastLine": 1472
+          },
+          "upstreamUi": {
+            "rawFirstLine": 1509,
+            "tests": 8,
+            "suites": 1,
+            "pass": 7,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 176495.3433,
+            "rawLastLine": 1516
+          },
+          "sixSeatUi": {
+            "rawFirstLine": 1615,
+            "tests": 3,
+            "suites": 0,
+            "pass": 2,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 482458.124,
+            "rawLastLine": 1622
+          },
+          "statsLandscape": {
+            "rawFirstLine": 1643,
+            "tests": 1,
+            "suites": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 6932.5014,
+            "rawLastLine": 1650
+          },
+          "upstreamPlugins": {
+            "rawFirstLine": 1689,
+            "tests": 4,
+            "suites": 1,
+            "pass": 4,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 202225.4885,
+            "rawLastLine": 1696
+          }
+        },
+        "browserGroups12": {
+          "remSimulation": {
+            "rawFirstLine": 1361,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 24269.3334,
+            "rawLastLine": 1368
+          },
+          "newSync": {
+            "rawFirstLine": 1372,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 6162.7365,
+            "rawLastLine": 1379
+          },
+          "remRenderer": {
+            "rawFirstLine": 1384,
+            "tests": 2,
+            "suites": 0,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 20512.5408,
+            "rawLastLine": 1391
+          },
+          "remRally": {
+            "rawFirstLine": 1394,
+            "tests": 1,
+            "suites": 0,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 27299.5043,
+            "rawLastLine": 1401
+          },
+          "kazdelSimulation": {
+            "rawFirstLine": 1408,
+            "tests": 5,
+            "suites": 0,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 64591.7444,
+            "rawLastLine": 1415
+          },
+          "renderer": {
+            "rawFirstLine": 1436,
+            "tests": 13,
+            "suites": 3,
+            "pass": 13,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 239002.1497,
+            "rawLastLine": 1443
+          },
+          "rhineOperators": {
+            "rawFirstLine": 1449,
+            "tests": 2,
+            "suites": 1,
+            "pass": 2,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 40942.2048,
+            "rawLastLine": 1456
+          },
+          "upstreamRenderer": {
+            "rawFirstLine": 1465,
+            "tests": 5,
+            "suites": 1,
+            "pass": 5,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 40557.1336,
+            "rawLastLine": 1472
+          },
+          "upstreamUi": {
+            "rawFirstLine": 1509,
+            "tests": 8,
+            "suites": 1,
+            "pass": 7,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 176495.3433,
+            "rawLastLine": 1516
+          },
+          "sixSeatUi": {
+            "rawFirstLine": 1615,
+            "tests": 3,
+            "suites": 0,
+            "pass": 2,
+            "fail": 1,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 482458.124,
+            "rawLastLine": 1622
+          },
+          "statsLandscape": {
+            "rawFirstLine": 1643,
+            "tests": 1,
+            "suites": 1,
+            "pass": 1,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 6932.5014,
+            "rawLastLine": 1650
+          },
+          "upstreamPlugins": {
+            "rawFirstLine": 1689,
+            "tests": 4,
+            "suites": 1,
+            "pass": 4,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "duration_ms": 202225.4885,
+            "rawLastLine": 1696
+          }
+        },
+        "browserTotals": {
+          "tests": 47,
+          "pass": 45,
+          "fail": 2,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "nativeConditionalSkipTexts": [
+          {
+            "rawLine": 1250,
+            "text": "﹣ Rem original downloads into an empty asset root with exact accepted bytes (0.2829ms) # set SP_ASSET_E2E=1 for live source acceptance"
+          },
+          {
+            "rawLine": 1290,
+            "text": "﹣ every shipped vanilla snapshot is byte-identical to the fixed v0.3.0 commit (83.498ms) # fixed upstream Git object unavailable in the portable package or shallow checkout"
+          }
+        ],
+        "exactLegacy3dNotRun": [
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "atlas download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          },
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "three download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          }
+        ],
+        "legacyNotRunCount": 2,
+        "runnerBrowserSkipped": 0,
+        "finite8PassLines": [
+          {
+            "rawLine": 801,
+            "text": "✔ finite instant slices yield only between complete master ticks, preserving order, events and shared-pool results (7.0176ms)"
+          },
+          {
+            "rawLine": 802,
+            "text": "✔ ordinary virtual matches retain Infinity and one-callback instant completion (64.8494ms)"
+          },
+          {
+            "rawLine": 803,
+            "text": "✔ stopping an unfinished instant runner cancels continuation and never ends or steps it again (0.6223ms)"
+          },
+          {
+            "rawLine": 804,
+            "text": "✔ forceAll between slices cancels continuation, preserves field order and calls onDone once (0.4002ms)"
+          },
+          {
+            "rawLine": 805,
+            "text": "✔ finite slices keep the exact hard tick cap and never turn a budget yield into timeout (0.3995ms)"
+          },
+          {
+            "rawLine": 806,
+            "text": "✔ a broken field remains isolated and finite slices keep the synchronous error/result trace (1.0314ms)"
+          },
+          {
+            "rawLine": 807,
+            "text": "✔ paced runners keep their interval clock and live Match retains its existing budget (57.2668ms)"
+          },
+          {
+            "rawLine": 808,
+            "text": "✔ only virtual hosts default to finite budget after composed data initialization; explicit overrides remain effective (2548.8158ms)"
+          }
+        ]
+      },
+      "failures": [
+        {
+          "group": "upstreamUi",
+          "testFile": "test/ui/rhine-profiles.e2e.test.js",
+          "declarationLine": 460,
+          "failureLine": 672,
+          "test": "Rhine and vanilla six-seat rooms: host controls, ready/loadout refresh, fixed match profile, real simulation and vanilla reload",
+          "durationMs": 138695.6415,
+          "error": "TimeoutError: Waiting failed:30000ms exceeded",
+          "stage": "Vanilla PREP/R2 after real reload, reconnect/profile/roster/context-isolation assertions; waiting for real __SP_VIEW__ and .gm canvas width>0.",
+          "actualBoard": "2d",
+          "diagnostics": [
+            {
+              "rawLine": 1504,
+              "client": "vanilla-host",
+              "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/diagnostic-line-1504.json",
+              "sha256": "8011ad0d3f67e1759a60b2a9c4f8ead0f74e18e65747ce74208d64be99828800",
+              "phase": "PREP",
+              "round": 2,
+              "profile": "vanilla",
+              "view": {
+                "kind": "fallback",
+                "app": false,
+                "renderer": false
+              },
+              "canvases": [],
+              "fieldWarnings": [
+                "[field] render engine unavailable, using the simplified view: createFieldView timed out"
+              ],
+              "pendingRequests": []
+            },
+            {
+              "rawLine": 1505,
+              "client": "vanilla-guest",
+              "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/diagnostic-line-1505.json",
+              "sha256": "44433f2b764592c8734f409aa3641d10317e33fa75ea5c3d18e53129025c8916",
+              "phase": "PREP",
+              "round": 2,
+              "profile": "vanilla",
+              "view": {
+                "kind": "engine",
+                "app": true,
+                "renderer": true,
+                "contextLost": false
+              },
+              "canvases": [
+                {
+                  "width": 1280,
+                  "height": 720,
+                  "connected": true,
+                  "display": "block",
+                  "rect": {
+                    "width": 1280,
+                    "height": 720
+                  }
+                }
+              ],
+              "fieldWarnings": [],
+              "pendingRequests": []
+            },
+            {
+              "rawLine": 1506,
+              "client": "rhine-host",
+              "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/diagnostic-line-1506.json",
+              "sha256": "40a6a666fb6214d245720a6dd306f00e9c0654b3d3b630bea891097eff5a4ae4",
+              "phase": "PREP",
+              "round": 2,
+              "profile": "rhine",
+              "view": {
+                "kind": "engine",
+                "app": true,
+                "renderer": true,
+                "contextLost": false
+              },
+              "canvases": [
+                {
+                  "width": 1280,
+                  "height": 720,
+                  "connected": true,
+                  "display": "block",
+                  "rect": {
+                    "width": 1280,
+                    "height": 720
+                  }
+                }
+              ],
+              "fieldWarnings": [],
+              "pendingRequests": [
+                {
+                  "url": "http://127.0.0.1:56460/healthz",
+                  "type": "fetch",
+                  "ageMs": 440
+                }
+              ]
+            }
+          ],
+          "controlFlowAlreadyCompleted": [
+            "All3 normal real uploads compared against exact Node replay and result.errors0.",
+            "All3 clients reachedPREP/R2 and runner.errors0.",
+            "Vanilla reload reconnected and passed profile/roster/context-isolation before Canvas wait."
+          ],
+          "notCompleted": [
+            "post-reload real Canvas screenshot",
+            "final visibility/RAF document-count checks",
+            "final all-client engine/board2d checks",
+            "final browser/server zero-problem assertions"
+          ],
+          "cause": "Unresolved; this repeat supports a reproducible full-order Canvas initialization failure, not a blanket3D-only classification."
+        },
+        {
+          "group": "sixSeatUi",
+          "testFile": "test/ui/six-player-layout.e2e.test.js",
+          "declarationLine": 11,
+          "failureLine": 101,
+          "test": "six actual room cards fit narrow screens and six prep teammates stay above the shop",
+          "durationMs": 26678.3826,
+          "error": "AssertionError [ERR_ASSERTION]:1280:sixth row694 stays above shop423.515625",
+          "actual": false,
+          "expected": true,
+          "operator": "==",
+          "viewportWidth": 1280,
+          "observedSixthRowBottom": 694,
+          "observedShopTop": 423.515625,
+          "meaning": "Original real layout geometry assertion failed; unlike M1, both six-balance cases passed. Further viewport/DOM/CSS/timing attribution requires source/diagnostic analysis."
+        }
+      ],
+      "notRun": [
+        "Dedicated packaged HTTP/WebSocket214 smoke tail",
+        "final clean-tree verifyTree",
+        "ZIP compression/extraction44993+manifest/fullCRC/source verification",
+        "new update toolkit ZIP",
+        "actual public old6-to10 upgrade/six private configs/repeat/rollback",
+        "five normal assets upload/authenticated full redownload",
+        "public release PATCH/latest10/updater selection",
+        "anonymous five full downloads/notes finalization"
+      ],
+      "publication": {
+        "checkedAt": "2026-10-18T05:27:56.354Z",
+        "release": {
+          "id": 416216947,
+          "tag_name": "v0.3.0-rhine.10",
+          "draft": true,
+          "prerelease": false,
+          "target_commitish": "c2bcb246d407e8f4c014d39c480c85358e79fdeb",
+          "html_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/untagged-a156252158b1c15d2401",
+          "assets": [
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/652574428",
+              "id": 652574428,
+              "node_id": "RA_kwDOU6Szns4m5X7c",
+              "name": "RELEASE-VALIDATION.json",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "application/json",
+              "state": "uploaded",
+              "size": 226678,
+              "digest": "sha256:5c2a73fe4179602783fee346b5016c30ce7dab4896d1dda6a00f6e76e70eee2e",
+              "download_count": 0,
+              "created_at": "2026-10-18T05:26:43Z",
+              "updated_at": "2026-10-18T05:26:43Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/untagged-a156252158b1c15d2401/RELEASE-VALIDATION.json"
+            }
+          ]
+        },
+        "latest": {
+          "id": 412688222,
+          "tag_name": "v0.2.4-rhine.6",
+          "draft": false,
+          "prerelease": false,
+          "target_commitish": "f146f38f38937ff8cba6e036aed30621c0f85a50",
+          "html_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/v0.2.4-rhine.6",
+          "assets": [
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363258",
+              "id": 640363258,
+              "node_id": "RA_kwDOU6Szns4mKyr6",
+              "name": "RELEASE-VALIDATION.json",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "application/json",
+              "state": "uploaded",
+              "size": 4679,
+              "digest": "sha256:bf06daa3eda1330c33bd532361f1099f8d701d1f7287a33e04807027b7e130f6",
+              "download_count": 5,
+              "created_at": "2026-10-14T12:47:01Z",
+              "updated_at": "2026-10-14T12:47:02Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/RELEASE-VALIDATION.json"
+            },
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363260",
+              "id": 640363260,
+              "node_id": "RA_kwDOU6Szns4mKyr8",
+              "name": "Rhine-Update-Tool-Windows.zip",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "application/zip",
+              "state": "uploaded",
+              "size": 41760,
+              "digest": "sha256:c587fc1fe6634d01f1b61c4c25ad40cfa59212584653cd47d68905d00c187fc6",
+              "download_count": 4,
+              "created_at": "2026-10-14T12:47:01Z",
+              "updated_at": "2026-10-14T12:47:02Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/Rhine-Update-Tool-Windows.zip"
+            },
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363267",
+              "id": 640363267,
+              "node_id": "RA_kwDOU6Szns4mKysD",
+              "name": "SHA256SUMS.txt",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "text/plain; charset=utf-8",
+              "state": "uploaded",
+              "size": 123,
+              "digest": "sha256:8b6c0bda55c8c9d5fffb33878f4ef574fc422452959390940b6239d170191607",
+              "download_count": 36,
+              "created_at": "2026-10-14T12:47:01Z",
+              "updated_at": "2026-10-14T12:47:02Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/SHA256SUMS.txt"
+            },
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363262",
+              "id": 640363262,
+              "node_id": "RA_kwDOU6Szns4mKyr-",
+              "name": "Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "application/zip",
+              "state": "uploaded",
+              "size": 620019699,
+              "digest": "sha256:492682907b8fc1d1b5ef4476566cbf8c764fc181076322b1d94872dd52904926",
+              "download_count": 49,
+              "created_at": "2026-10-14T12:47:01Z",
+              "updated_at": "2026-10-14T12:47:22Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/Stronghold-Protocol-Rhine-v0.2.4-rhine.6-Windows-x64.zip"
+            },
+            {
+              "url": "https://api.github.com/repos/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/assets/640363259",
+              "id": 640363259,
+              "node_id": "RA_kwDOU6Szns4mKyr7",
+              "name": "UPDATE-TOOL-SHA256.txt",
+              "label": "",
+              "uploader": {
+                "login": "github-actions[bot]",
+                "id": 41898282,
+                "node_id": "MDM6Qm90NDE4OTgyODI=",
+                "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+                "html_url": "https://github.com/apps/github-actions",
+                "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+                "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+                "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+                "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+                "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+                "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+                "type": "Bot",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "content_type": "text/plain; charset=utf-8",
+              "state": "uploaded",
+              "size": 96,
+              "digest": "sha256:c3596dd61aa383f19c163015badfa8a37342ebffc8b29024b4f4a3b5f27ea9bf",
+              "download_count": 3,
+              "created_at": "2026-10-14T12:47:01Z",
+              "updated_at": "2026-10-14T12:47:02Z",
+              "browser_download_url": "https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/download/v0.2.4-rhine.6/UPDATE-TOOL-SHA256.txt"
+            }
+          ]
+        },
+        "draft": true,
+        "stableLatestStill6": true,
+        "noMainZipAsset": true,
+        "proof": "Fresh direct numeric release416216947 and latest API after terminal; not inferred from redjob",
+        "metadataFile": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/post-failure-public-metadata.json"
+      },
+      "evidence": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/windows10-m2/windows10-m2-acceptance-evidence.json",
+        "bytes": 53721,
+        "sha256": "2565764927607c8a721e9987dfcfbb0674840ce424dd5895d754af9ae08f3de8"
+      }
+    },
+    "formalBaseline": "8a9fbd78430292c7a6ccec8726b95df4efca3196",
+    "candidate11ObservedAtPreparation": {
+      "candidateSource": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+      "acceptedSourceFrozen": false,
+      "finalFullCiGoldenI18n": "Historical initial pending state; superseded by actual8b completed CI3fail/golden288match/i18n4pass and final-source targeted correction recorded in candidate11Acceptance.",
+      "targeted": {
+        "finalCatchInitialization": {
+          "total": 7,
+          "pass": 7,
+          "fail": 0,
+          "skipped": 0,
+          "durationMs": 10053.431287
+        },
+        "pagehideLifecycle": {
+          "total": 9,
+          "pass": 9
+        },
+        "adjacentNativeDocs": {
+          "total": 67,
+          "pass": 67
+        },
+        "originalProfileIntegrated": {
+          "total": 1,
+          "pass": 1,
+          "durationSeconds": 118.613,
+          "source": "c4876bf2fe333265a63b5ecf3e146c7f7401a129",
+          "boundary": "Not rerun on8b;8b adds only explicit2D background promise rejection observation and terminology."
+        },
+        "sameFinal2dFixtureOldSource10": {
+          "total": 1,
+          "pass": 0,
+          "fail": 1
+        }
+      },
+      "rejectionProbeBoundary": "Before and after both recorded0 DOM unhandledrejection events. Old expected1 assertion failed; no event contrast was reproduced. Catch necessity follows static returned-Promise ownership review.",
+      "layoutBoundary": "Viewport/root-font measurement-coherence fixture correction; original13 assertions/650ms waits/120s unchanged. No production CSS fix or proven original Windows cause.",
+      "renderBoundary": "Explicit2D optional board art must not block ready; pagehide lifecycle cleanup and returned-Promise rejection observation. Prior renderer startup stall has no uniquely established cause; default3D limitation retained.",
+      "interruptedPriorCandidate": {
+        "source": "c4876bf2fe333265a63b5ecf3e146c7f7401a129",
+        "acceptedForRelease": false,
+        "status": "interrupted for newly identified must-fix",
+        "partialCounts": {
+          "tests": 4356,
+          "suites": 33,
+          "pass": 3696,
+          "fail": 0,
+          "cancelled": 652,
+          "skipped": 8,
+          "todo": 0,
+          "duration_ms": 112088.24639
+        },
+        "golden": "not run",
+        "i18n": "not run"
+      },
+      "evidence": [
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/ui-integrated-evidence.json",
+          "bytes": 4039,
+          "sha256": "c3cdbe44dced41b0dacda127b2c874185bc419d218ec3fb93e53aca1bdf01462"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/final-catch-evidence.json",
+          "bytes": 2265,
+          "sha256": "a161cafed22915c685290a5d70ee5a5386d6a8726c1b31512423f3b715e52d0a"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/independent-startup-review-supplement.json",
+          "bytes": 9101,
+          "sha256": "c3f6f8edc026dddefe2b8c7a347e23cac6f4846027c67b4c088c9b480b9e6794"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci/acceptance-summary.json",
+          "bytes": 3971,
+          "sha256": "894bfbd54d73a4ff9d52f20024bf303c496837072861c93ec3b75f5d25f4554f"
+        }
+      ],
+      "actualWindows11": "not run; all83native/1020expected and12browser/54expected remain mandatory",
+      "historical": true,
+      "snapshotScope": "Initial preparation snapshot before complete8b CI/golden/i18n and final8f static-fixture freeze; not the current acceptance state.",
+      "supersededBy": "sourceValidation.candidate11Acceptance: actual complete8b results and final frozen sourceCommit. Original pending/frozen flags below are historical snapshot values only."
+    },
+    "candidate11Preparation": {
+      "at": "2026-10-18T06:16:39.563576+00:00",
+      "sourceCommit": "8f6b98c2979b66ee636dbbfcf04ae6dad5b65904",
+      "sourceFrozen": true,
+      "current": true,
+      "candidateSourceAtPreparation": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+      "checkerScope": "Single read-only anonymous verify job/two files; no notes write job/script/template. Parent compares fresh new-draft body with final request notes and actual publisher anchor replacement.",
+      "native": {
+        "original82FilesRetained": true,
+        "additionalFile": "test/ui/fieldHost-lifecycle.test.js",
+        "additionalLeavesPlanned": 9,
+        "plannedFileCount": 83,
+        "expectedTotal": 1020,
+        "expectedPass": 1018,
+        "expectedSkipped": 2,
+        "fileConcurrency": 3,
+        "batchTimeoutMs": 900000,
+        "actualWindowsCounts": "not run for source11 at preparation"
+      },
+      "browser": {
+        "original47CasesRetained": true,
+        "additionalFile": "test/render/initialization.browser.test.js",
+        "additionalLeavesPlanned": 7,
+        "expectedTotal": 54,
+        "groups": 12,
+        "exactLegacy3dNotRun": [
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "atlas download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          },
+          {
+            "file": "test/render/recovery.browser.test.js",
+            "name": "three download can recover the 3D board on visibility",
+            "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
+          }
+        ],
+        "actualWindowsCounts": "not run for source11 at preparation"
+      },
+      "sourceChangeBoundary": "Frozen implementation and actual regression are recorded in the supplied acceptance/notes; no unique root-cause claim is inferred.",
+      "requiredTail": [
+        "Windowsx64 Node24.21.0",
+        "sourceAuthor27",
+        "isolatedHost9",
+        "HTTPWS214",
+        "fullZIP/source/CRC/PE",
+        "actual public6-to11 upgrade/six private bytes/repeat/rollback",
+        "five uploaded/full authenticated redownloaded assets",
+        "public stable/latest11",
+        "five independent complete anonymous downloads and final notes readback"
+      ],
+      "noRepositoryWritesOrRemoteOperations": true
+    },
+    "candidate11Acceptance": {
+      "schema": "rhine-source11-frozen-acceptance/v1",
+      "sourceCommit": "8f6b98c2979b66ee636dbbfcf04ae6dad5b65904",
+      "frozenAt": "2026-10-18T06:15:09.884335+00:00",
+      "productionByteIdentity": {
+        "base": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+        "source": "8f6b98c2979b66ee636dbbfcf04ae6dad5b65904",
+        "changedFiles": [
+          "docs/RHINE-030-VALIDATION.md",
+          "docs/history/0.3.0.md",
+          "test/ui/uiRepair3.test.js"
+        ],
+        "allOtherTrackedFilesByteIdentical": true,
+        "boundary": "Only one stale static fixture and two factual documents changed. Production implementation and game data are identical; no claim of rerunning the full local suite on the new commit."
+      },
+      "fullLocalCi": {
+        "command": [
+          "npm",
+          "run",
+          "ci",
+          "--",
+          "--keep-going"
+        ],
+        "completed": true,
+        "passed": false,
+        "exitCode": 1,
+        "startedAt": "2026-10-18T05:49:48.820341+00:00",
+        "finishedAt": "2026-10-18T06:10:44.355124+00:00",
+        "durationSeconds": 1255.5347891989986,
+        "signal": null,
+        "log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/full-ci.log",
+          "bytes": 1154107,
+          "sha256": "b328186ea3bbc3f6e10309402bc692181356c37cfa546c5c3f198c60484d04a0"
+        },
+        "counts": {
+          "tests": 8628,
+          "suites": 574,
+          "pass": 8558,
+          "fail": 3,
+          "cancelled": 0,
+          "skipped": 67,
+          "todo": 0,
+          "duration_ms": 1228606.321433
+        },
+        "stages": [
+          {
+            "name": "setup",
+            "status": "passed",
+            "exitCode": 0,
+            "displayedDuration": "255ms",
+            "rawLine": 10249,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          },
+          {
+            "name": "test",
+            "status": "failed",
+            "exitCode": 1,
+            "displayedDuration": "20m29s",
+            "rawLine": 10250,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          },
+          {
+            "name": "smoke",
+            "status": "passed",
+            "exitCode": 0,
+            "displayedDuration": "1.4s",
+            "rawLine": 10251,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          },
+          {
+            "name": "lint",
+            "status": "passed",
+            "exitCode": 0,
+            "displayedDuration": "22.7s",
+            "rawLine": 10252,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          },
+          {
+            "name": "imports",
+            "status": "passed",
+            "exitCode": 0,
+            "displayedDuration": "144ms",
+            "rawLine": 10253,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          },
+          {
+            "name": "typecheck",
+            "status": "passed",
+            "exitCode": 0,
+            "displayedDuration": "1.3s",
+            "rawLine": 10254,
+            "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+          }
+        ],
+        "failures": [
+          {
+            "test": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+            "test_location": "test/studio/review.test.js:124:61",
+            "duration_ms": 4779.856118,
+            "raw_start_line": 9779,
+            "raw_end_line": 9792,
+            "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+            "expected": null,
+            "actual": null,
+            "terminal_result_printed": null,
+            "stack": [
+              "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)",
+              "at async Test.run (node:internal/test_runner/test:1389:7)",
+              "at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {"
+            ],
+            "full_failure_block": "test at test/studio/review.test.js:124:61\n✖ a real pinned SIGTERM-ignoring probe leaves no grandson after trial close (4779.856118ms)\n  AssertionError [ERR_ASSERTION]: Missing expected exception.\n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    expected: { code: 'ESRCH' },\n    operator: 'throws',\n    diff: 'simple'\n  }",
+            "actualJs": "undefined",
+            "expectedJs": "{ code: 'ESRCH' }",
+            "operatorJs": "'throws'",
+            "codeJs": "'ERR_ASSERTION'",
+            "assertionSource": "assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });",
+            "assertionLocation": "test/studio/review.test.js:144:10",
+            "actualMeaning": "kill(grandsonPid,0) returned without throwing the expected ESRCH at this assertion.",
+            "expectedValue": {
+              "code": "ESRCH"
+            },
+            "actualValueKind": "JavaScript undefined / missing expected exception",
+            "boundary": "The failed line is the grandson assertion. The later leader assertion at line145 was not reached in these two leaves. No attributed current-run probe PID/state/group sampling was captured; old PID observations do not establish this failure cause."
+          },
+          {
+            "test": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+            "test_location": "test/studio/review.test.js:124:61",
+            "duration_ms": 8063.456232,
+            "raw_start_line": 9793,
+            "raw_end_line": 9806,
+            "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+            "expected": null,
+            "actual": null,
+            "terminal_result_printed": null,
+            "stack": [
+              "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)",
+              "at async Test.run (node:internal/test_runner/test:1389:7)",
+              "at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {"
+            ],
+            "full_failure_block": "test at test/studio/review.test.js:124:61\n✖ a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout (8063.456232ms)\n  AssertionError [ERR_ASSERTION]: Missing expected exception.\n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    expected: { code: 'ESRCH' },\n    operator: 'throws',\n    diff: 'simple'\n  }",
+            "actualJs": "undefined",
+            "expectedJs": "{ code: 'ESRCH' }",
+            "operatorJs": "'throws'",
+            "codeJs": "'ERR_ASSERTION'",
+            "assertionSource": "assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });",
+            "assertionLocation": "test/studio/review.test.js:144:10",
+            "actualMeaning": "kill(grandsonPid,0) returned without throwing the expected ESRCH at this assertion.",
+            "expectedValue": {
+              "code": "ESRCH"
+            },
+            "actualValueKind": "JavaScript undefined / missing expected exception",
+            "boundary": "The failed line is the grandson assertion. The later leader assertion at line145 was not reached in these two leaves. No attributed current-run probe PID/state/group sampling was captured; old PID observations do not establish this failure cause."
+          },
+          {
+            "test": "useFieldView clears globalThis.__SP_VIEW__ when it destroys the view",
+            "test_location": "test/ui/uiRepair3.test.js:87:3",
+            "duration_ms": 1.050722,
+            "raw_start_line": 9807,
+            "raw_end_line": 9830,
+            "error": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/. Input:",
+            "expected": null,
+            "actual": "\\n",
+            "terminal_result_printed": null,
+            "stack": [
+              "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/ui/uiRepair3.test.js:90:12)",
+              "at Test.runInAsyncScope (node:async_hooks:227:14)",
+              "at Test.run (node:internal/test_runner/test:1382:25)",
+              "at Test.start (node:internal/test_runner/test:1242:17)",
+              "at node:internal/test_runner/test:1867:71",
+              "at node:internal/per_context/primordials:504:82",
+              "at new Promise (<anonymous>)",
+              "at new SafePromise (node:internal/per_context/primordials:478:3)",
+              "at node:internal/per_context/primordials:504:9",
+              "at Array.map (<anonymous>) {"
+            ],
+            "full_failure_block": "test at test/ui/uiRepair3.test.js:87:3\n✖ useFieldView clears globalThis.__SP_VIEW__ when it destroys the view (1.050722ms)\n  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/. Input:\n  \n  '\\n'\n  \n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/ui/uiRepair3.test.js:90:12)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at node:internal/test_runner/test:1867:71\n      at node:internal/per_context/primordials:504:82\n      at new Promise (<anonymous>)\n      at new SafePromise (node:internal/per_context/primordials:478:3)\n      at node:internal/per_context/primordials:504:9\n      at Array.map (<anonymous>) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: '\\n',\n    expected: /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/,\n    operator: 'match',\n    diff: 'simple'\n  }",
+            "actualJs": "'\\n'",
+            "expectedJs": "/globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/",
+            "operatorJs": "'match'",
+            "codeJs": "'ERR_ASSERTION'",
+            "assertionLocation": "test/ui/uiRepair3.test.js:90:12",
+            "actualValue": "\n",
+            "assertionSource": "assert.match(cleanup.slice(0, 600), /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/);",
+            "boundary": "Static source-text fixture mismatch: the fixture searches the old return-arrow cleanup spelling, then checks a600-character slice. The recorded input is one newline. Parent review confirmed the fixture is stale; this remains a failed leaf and is not a runtime cleanup measurement or replaced by separate startup passes."
+          }
+        ],
+        "strictEsrch": [
+          {
+            "line": 8235,
+            "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+            "status": "failed",
+            "duration_ms": 4779.856118,
+            "skip_note": null
+          },
+          {
+            "line": 8236,
+            "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+            "status": "failed",
+            "duration_ms": 8063.456232,
+            "skip_note": null
+          },
+          {
+            "line": 8237,
+            "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial probe-timeout",
+            "status": "passed",
+            "duration_ms": 7311.12454,
+            "skip_note": null
+          }
+        ],
+        "performance": [
+          {
+            "rawLine": 7829,
+            "text": "bench wave: 3235 ticks, total 70 enemies, peak 49 alive, avg 65.5 µs/tick, reason cleared"
+          },
+          {
+            "rawLine": 7830,
+            "text": "bench worst: 1200 ticks, 40 alive at end, avg 126.6 µs/tick"
+          },
+          {
+            "rawLine": 8050,
+            "text": "bench boss field: 1800 ticks, peak 133 alive, 18 allies, avg 393.8 / 340.0 / 409.1 µs/tick (best 340.0; bar 0.5 ms)"
+          }
+        ],
+        "performanceCases": [
+          {
+            "line": 7831,
+            "title": "benchmark: 70-enemy wave (h05) + 10 operators < 0.5 ms/tick average",
+            "status": "passed",
+            "duration_ms": 819.802547,
+            "skip_note": null
+          },
+          {
+            "line": 7832,
+            "title": "benchmark: worst case — 70 enemies alive at once + 10 operators < 0.5 ms/tick",
+            "status": "passed",
+            "duration_ms": 298.706569,
+            "skip_note": null
+          },
+          {
+            "line": 8085,
+            "title": "performance: heavy 2-player boss field (18 ops, ~130 enemies alive) averages < 0.5 ms/tick (best of 3)",
+            "status": "passed",
+            "duration_ms": 2333.85172,
+            "skip_note": null
+          }
+        ],
+        "originalPerformanceLimitsMsPerTick": {
+          "wave": 0.5,
+          "worst": 0.5,
+          "bossLocalBestOfThree": 0.5,
+          "bossCiBestOfThree": 1.0,
+          "activeBossLimitInThisLocalRun": 0.5
+        },
+        "smoke": {
+          "passed": true,
+          "observations": [
+            {
+              "rawLine": 9832,
+              "text": "GET /healthz → {\"ok\":true,\"version\":1,\"app\":\"0.3.0\",\"uptimeSec\":0,\"build\":\"01a0d74c6f45\",\"content\":{\"vanilla\":\"4878a2897ee4ddfb31ef705f51fe7093528defea6ea1dad5db6679e43eac7ab5\",\"sets\":0},\"sockets\":0,\"sessions\":0,\"rooms\":0,\"matches\":0,\"humans\":0,\"bots\":0,\"spectators\":0}"
+            },
+            {
+              "rawLine": 9833,
+              "text": "GET / → 200, 4852 bytes, <html found"
+            },
+            {
+              "rawLine": 9834,
+              "text": "GET /vendor/pixi.min.js → 200"
+            }
+          ],
+          "doctorIsNonGating": true
+        },
+        "tooling": {
+          "lintExitCode": 0,
+          "lintSummary": "✖ 151 problems (0 errors, 151 warnings)",
+          "warnings": 151,
+          "errors": 0,
+          "importExitCode": 0,
+          "importIsStrict": false,
+          "importViolations": 3,
+          "allowedNotes": 3,
+          "importObservations": [
+            {
+              "rawLine": 10237,
+              "text": "3 import-boundary violation(s):"
+            },
+            {
+              "rawLine": 10238,
+              "text": "server/sim/nodeData.js:11: node:fs [sim-node]"
+            },
+            {
+              "rawLine": 10239,
+              "text": "server/sim/nodeData.js:12: node:path [sim-node]"
+            },
+            {
+              "rawLine": 10240,
+              "text": "server/sim/nodeData.js:13: node:url [sim-node]"
+            },
+            {
+              "rawLine": 10241,
+              "text": "3 allowed note(s):"
+            },
+            {
+              "rawLine": 10242,
+              "text": "note server/sim/content/support/index.js:20: ../../../data.js -> server/data.js"
+            },
+            {
+              "rawLine": 10243,
+              "text": "note server/sim/nodeData.js:23: ../data.js -> server/data.js"
+            },
+            {
+              "rawLine": 10244,
+              "text": "note server/sim/nodeData.js:33: ../data.js -> server/data.js"
+            }
+          ],
+          "typecheckExitCode": 0
+        },
+        "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+        "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+      },
+      "golden": {
+        "command": [
+          "npm",
+          "run",
+          "golden"
+        ],
+        "completed": true,
+        "passed": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-18T06:10:44.356740+00:00",
+        "finishedAt": "2026-10-18T06:12:30.413736+00:00",
+        "durationSeconds": 106.05700716799947,
+        "signal": null,
+        "log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/golden.log",
+          "bytes": 504,
+          "sha256": "dc403f06e7744f6746872edab46f63b9ba80f6bba5ce99eb968adb0b6452882e"
+        },
+        "update": false,
+        "groups": [
+          {
+            "name": "roster",
+            "scenarios": 49,
+            "status": "match"
+          },
+          {
+            "name": "bonds",
+            "scenarios": 46,
+            "status": "match"
+          },
+          {
+            "name": "fields",
+            "scenarios": 22,
+            "status": "match"
+          },
+          {
+            "name": "matches",
+            "scenarios": 21,
+            "status": "match"
+          },
+          {
+            "name": "standins",
+            "scenarios": 10,
+            "status": "match"
+          },
+          {
+            "name": "diy",
+            "scenarios": 140,
+            "status": "match"
+          }
+        ],
+        "totalScenarios": 288,
+        "printedDurationMs": 104139,
+        "jobs": 3,
+        "output": "\n> stronghold-protocol-rhine@0.3.0 golden\n> node tools/golden.mjs\n\ngolden roster: 49 scenarios match\ngolden bonds: 46 scenarios match\ngolden fields: 22 scenarios match\ngolden matches: 21 scenarios match\ngolden standins: 10 scenarios match\ngolden diy: 140 scenarios match\nok · 104139 ms (jobs 3)\nnpm notice\nnpm notice New major version of npm available! 11.9.0 -> 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice\n",
+        "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+        "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+      },
+      "i18n": {
+        "command": [
+          "node",
+          "tools/i18n.mjs",
+          "check",
+          "--all",
+          "--strict"
+        ],
+        "completed": true,
+        "passed": true,
+        "exitCode": 0,
+        "startedAt": "2026-10-18T06:12:30.414360+00:00",
+        "finishedAt": "2026-10-18T06:12:32.415809+00:00",
+        "durationSeconds": 2.0014624960003857,
+        "signal": null,
+        "log": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/i18n.log",
+          "bytes": 447,
+          "sha256": "ab898cbe64068d51769e5b8a67fd38b3db7c83fa33c4b4519013f3fd408953e9"
+        },
+        "strict": true,
+        "packCount": 4,
+        "packs": [
+          {
+            "code": "en",
+            "description": "English, en, complete",
+            "msgidsUsed": 1850,
+            "translated": 1850,
+            "coveragePercent": 100.0,
+            "missing": 0,
+            "errors": 0
+          },
+          {
+            "code": "ja",
+            "description": "日本語, ja, complete",
+            "msgidsUsed": 1850,
+            "translated": 1850,
+            "coveragePercent": 100.0,
+            "missing": 0,
+            "errors": 0
+          },
+          {
+            "code": "ko",
+            "description": "한국어, ko, complete",
+            "msgidsUsed": 1850,
+            "translated": 1850,
+            "coveragePercent": 100.0,
+            "missing": 0,
+            "errors": 0
+          },
+          {
+            "code": "zh-TW",
+            "description": "繁體中文, zh-TW, complete",
+            "msgidsUsed": 1850,
+            "translated": 1850,
+            "coveragePercent": 100.0,
+            "missing": 0,
+            "errors": 0
+          }
+        ],
+        "output": "public/i18n/en.json (English, en, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/ja.json (日本語, ja, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/ko.json (한국어, ko, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/zh-TW.json (繁體中文, zh-TW, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\n",
+        "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+        "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+      },
+      "precedingExactSourceAcceptance": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/acceptance-summary.json",
+        "bytes": 22567,
+        "sha256": "dac31740346c52ff664492d63b2f1d5cc74ddccef85d828ddeb60893ff125156"
+      },
+      "targetedAfterStaticFixtureCorrection": {
+        "at": "2026-10-18T06:14:12.943926+00:00",
+        "baseSource": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+        "sourceCommit": "8f6b98c2979b66ee636dbbfcf04ae6dad5b65904",
+        "changedFiles": [
+          "docs/RHINE-030-VALIDATION.md",
+          "docs/history/0.3.0.md",
+          "test/ui/uiRepair3.test.js"
+        ],
+        "targetedNative": {
+          "command": [
+            "node",
+            "--test",
+            "test/ui/uiRepair3.test.js",
+            "test/ui/fieldHost-lifecycle.test.js",
+            "test/docs/contracts.test.js"
+          ],
+          "exitCode": 0,
+          "counts": {
+            "total": 16,
+            "pass": 16,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0
+          },
+          "durationMs": 111.836381,
+          "evidenceBoundary": "Actual tool execution output preserved in session; no duplicate run made solely to capture a file. The third selector matched no repository file; these16 are7 uiRepair3 and9 lifecycle, not documentation tests."
+        },
+        "docs": {
+          "command": [
+            "node",
+            "--test",
+            "test/docs-consistency.test.js",
+            "test/docs-paths.test.js"
+          ],
+          "exitCode": 0,
+          "counts": {
+            "total": 32,
+            "pass": 32,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0
+          },
+          "durationMs": 1274.065313,
+          "log": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/staticfixture-docs.log",
+            "bytes": 4295,
+            "sha256": "184e9683aaac7648664ecb9327d952a580658803fa8d13b2622a458fef0af1a5"
+          }
+        },
+        "lint": {
+          "command": [
+            "node",
+            "node_modules/eslint/bin/eslint.js",
+            "test/ui/uiRepair3.test.js"
+          ],
+          "exitCode": 0,
+          "log": {
+            "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/staticfixture-lint.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "diffCheckExit": 0,
+        "patch": {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/uiRepair3-staticfixture.patch",
+          "bytes": 1653,
+          "sha256": "88a31547ecb9ec480febf4deefe174fbb7164a9392bcde50d91f940f5f8709fc"
+        },
+        "boundary": "No production change after complete8b CI/golden/i18n. Complete8b CI3 failures retained. Full local suite not repeated after static-fixture-only correction; final source will undergo complete remote main/tag matrices and mandatory Windows gates."
+      },
+      "evidence": [
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/uiRepair3-staticfixture-evidence.json",
+          "bytes": 1704,
+          "sha256": "86f35f633f5a4525a38b3c8472d2857b142a82554833d87af65649488da42e20"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/independent-startup-review-supplement.json",
+          "bytes": 9101,
+          "sha256": "c3f6f8edc026dddefe2b8c7a347e23cac6f4846027c67b4c088c9b480b9e6794"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/final-catch-evidence.json",
+          "bytes": 2265,
+          "sha256": "a161cafed22915c685290a5d70ee5a5386d6a8726c1b31512423f3b715e52d0a"
+        },
+        {
+          "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/ui-integrated-evidence.json",
+          "bytes": 4039,
+          "sha256": "c3cdbe44dced41b0dacda127b2c874185bc419d218ec3fb93e53aca1bdf01462"
+        }
+      ],
+      "limitations": [
+        "Complete local CI was run once on production-identical8b, not on final8f. Actual8628/8558pass/3fail/67skip/0cancel remains failed: two strict ESRCH leaves lack established current-run cause and one stale static-source fixture was subsequently corrected.16 targeted UI/lifecycle and32 documentation checks passed after correction; complete local CI was not repeated.",
+        "Main/tag complete remote CI and actual Windows11 mandatory acceptance were not run at source freeze; no future count is asserted as observed. Publication must retain every original gate and new native9/browser7.",
+        "Source10 M1/tag and two full Windows10 failures remain recorded; later M2 source CI success does not overwrite them.",
+        "Only the two exact previously authorized legacy3D recovery leaves are notRun. Default3D initialization limitation remains; no unique earlier renderer startup stall/ENOBUFS cause is established.",
+        "No separate real8-to11 package upgrade, manual BAT double-click or human full balance match was run; actual public6 upgrade/six-private/repeat/rollback and all five download gates remain mandatory. No user-server deployment."
+      ]
+    },
+    "localFullCi": {
+      "command": [
+        "npm",
+        "run",
+        "ci",
+        "--",
+        "--keep-going"
+      ],
+      "completed": true,
+      "passed": false,
+      "exitCode": 1,
+      "startedAt": "2026-10-18T05:49:48.820341+00:00",
+      "finishedAt": "2026-10-18T06:10:44.355124+00:00",
+      "durationSeconds": 1255.5347891989986,
+      "signal": null,
+      "log": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/full-ci.log",
+        "bytes": 1154107,
+        "sha256": "b328186ea3bbc3f6e10309402bc692181356c37cfa546c5c3f198c60484d04a0"
+      },
+      "counts": {
+        "tests": 8628,
+        "suites": 574,
+        "pass": 8558,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 67,
+        "todo": 0,
+        "duration_ms": 1228606.321433
+      },
+      "stages": [
+        {
+          "name": "setup",
+          "status": "passed",
+          "exitCode": 0,
+          "displayedDuration": "255ms",
+          "rawLine": 10249,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        },
+        {
+          "name": "test",
+          "status": "failed",
+          "exitCode": 1,
+          "displayedDuration": "20m29s",
+          "rawLine": 10250,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        },
+        {
+          "name": "smoke",
+          "status": "passed",
+          "exitCode": 0,
+          "displayedDuration": "1.4s",
+          "rawLine": 10251,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        },
+        {
+          "name": "lint",
+          "status": "passed",
+          "exitCode": 0,
+          "displayedDuration": "22.7s",
+          "rawLine": 10252,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        },
+        {
+          "name": "imports",
+          "status": "passed",
+          "exitCode": 0,
+          "displayedDuration": "144ms",
+          "rawLine": 10253,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        },
+        {
+          "name": "typecheck",
+          "status": "passed",
+          "exitCode": 0,
+          "displayedDuration": "1.3s",
+          "rawLine": 10254,
+          "durationBoundary": "tools/ci prints rounded stage durations; only unit summary and whole command duration retain exact numeric timing."
+        }
+      ],
+      "failures": [
+        {
+          "test": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+          "test_location": "test/studio/review.test.js:124:61",
+          "duration_ms": 4779.856118,
+          "raw_start_line": 9779,
+          "raw_end_line": 9792,
+          "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+          "expected": null,
+          "actual": null,
+          "terminal_result_printed": null,
+          "stack": [
+            "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)",
+            "at async Test.run (node:internal/test_runner/test:1389:7)",
+            "at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {"
+          ],
+          "full_failure_block": "test at test/studio/review.test.js:124:61\n✖ a real pinned SIGTERM-ignoring probe leaves no grandson after trial close (4779.856118ms)\n  AssertionError [ERR_ASSERTION]: Missing expected exception.\n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    expected: { code: 'ESRCH' },\n    operator: 'throws',\n    diff: 'simple'\n  }",
+          "actualJs": "undefined",
+          "expectedJs": "{ code: 'ESRCH' }",
+          "operatorJs": "'throws'",
+          "codeJs": "'ERR_ASSERTION'",
+          "assertionSource": "assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });",
+          "assertionLocation": "test/studio/review.test.js:144:10",
+          "actualMeaning": "kill(grandsonPid,0) returned without throwing the expected ESRCH at this assertion.",
+          "expectedValue": {
+            "code": "ESRCH"
+          },
+          "actualValueKind": "JavaScript undefined / missing expected exception",
+          "boundary": "The failed line is the grandson assertion. The later leader assertion at line145 was not reached in these two leaves. No attributed current-run probe PID/state/group sampling was captured; old PID observations do not establish this failure cause."
+        },
+        {
+          "test": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+          "test_location": "test/studio/review.test.js:124:61",
+          "duration_ms": 8063.456232,
+          "raw_start_line": 9793,
+          "raw_end_line": 9806,
+          "error": "AssertionError [ERR_ASSERTION]: Missing expected exception.",
+          "expected": null,
+          "actual": null,
+          "terminal_result_printed": null,
+          "stack": [
+            "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)",
+            "at async Test.run (node:internal/test_runner/test:1389:7)",
+            "at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {"
+          ],
+          "full_failure_block": "test at test/studio/review.test.js:124:61\n✖ a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout (8063.456232ms)\n  AssertionError [ERR_ASSERTION]: Missing expected exception.\n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/studio/review.test.js:144:10)\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: undefined,\n    expected: { code: 'ESRCH' },\n    operator: 'throws',\n    diff: 'simple'\n  }",
+          "actualJs": "undefined",
+          "expectedJs": "{ code: 'ESRCH' }",
+          "operatorJs": "'throws'",
+          "codeJs": "'ERR_ASSERTION'",
+          "assertionSource": "assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' });",
+          "assertionLocation": "test/studio/review.test.js:144:10",
+          "actualMeaning": "kill(grandsonPid,0) returned without throwing the expected ESRCH at this assertion.",
+          "expectedValue": {
+            "code": "ESRCH"
+          },
+          "actualValueKind": "JavaScript undefined / missing expected exception",
+          "boundary": "The failed line is the grandson assertion. The later leader assertion at line145 was not reached in these two leaves. No attributed current-run probe PID/state/group sampling was captured; old PID observations do not establish this failure cause."
+        },
+        {
+          "test": "useFieldView clears globalThis.__SP_VIEW__ when it destroys the view",
+          "test_location": "test/ui/uiRepair3.test.js:87:3",
+          "duration_ms": 1.050722,
+          "raw_start_line": 9807,
+          "raw_end_line": 9830,
+          "error": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/. Input:",
+          "expected": null,
+          "actual": "\\n",
+          "terminal_result_printed": null,
+          "stack": [
+            "at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/ui/uiRepair3.test.js:90:12)",
+            "at Test.runInAsyncScope (node:async_hooks:227:14)",
+            "at Test.run (node:internal/test_runner/test:1382:25)",
+            "at Test.start (node:internal/test_runner/test:1242:17)",
+            "at node:internal/test_runner/test:1867:71",
+            "at node:internal/per_context/primordials:504:82",
+            "at new Promise (<anonymous>)",
+            "at new SafePromise (node:internal/per_context/primordials:478:3)",
+            "at node:internal/per_context/primordials:504:9",
+            "at Array.map (<anonymous>) {"
+          ],
+          "full_failure_block": "test at test/ui/uiRepair3.test.js:87:3\n✖ useFieldView clears globalThis.__SP_VIEW__ when it destroys the view (1.050722ms)\n  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/. Input:\n  \n  '\\n'\n  \n      at TestContext.<anonymous> (file:///workspace/Stronghold-Protocol-Rhine/test/ui/uiRepair3.test.js:90:12)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at node:internal/test_runner/test:1867:71\n      at node:internal/per_context/primordials:504:82\n      at new Promise (<anonymous>)\n      at new SafePromise (node:internal/per_context/primordials:478:3)\n      at node:internal/per_context/primordials:504:9\n      at Array.map (<anonymous>) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: '\\n',\n    expected: /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/,\n    operator: 'match',\n    diff: 'simple'\n  }",
+          "actualJs": "'\\n'",
+          "expectedJs": "/globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/",
+          "operatorJs": "'match'",
+          "codeJs": "'ERR_ASSERTION'",
+          "assertionLocation": "test/ui/uiRepair3.test.js:90:12",
+          "actualValue": "\n",
+          "assertionSource": "assert.match(cleanup.slice(0, 600), /globalThis\\.__SP_VIEW__ === viewRef\\.current\\) globalThis\\.__SP_VIEW__ = null/);",
+          "boundary": "Static source-text fixture mismatch: the fixture searches the old return-arrow cleanup spelling, then checks a600-character slice. The recorded input is one newline. Parent review confirmed the fixture is stale; this remains a failed leaf and is not a runtime cleanup measurement or replaced by separate startup passes."
+        }
+      ],
+      "strictEsrch": [
+        {
+          "line": 8235,
+          "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial close",
+          "status": "failed",
+          "duration_ms": 4779.856118,
+          "skip_note": null
+        },
+        {
+          "line": 8236,
+          "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial timeout",
+          "status": "failed",
+          "duration_ms": 8063.456232,
+          "skip_note": null
+        },
+        {
+          "line": 8237,
+          "title": "a real pinned SIGTERM-ignoring probe leaves no grandson after trial probe-timeout",
+          "status": "passed",
+          "duration_ms": 7311.12454,
+          "skip_note": null
+        }
+      ],
+      "performance": [
+        {
+          "rawLine": 7829,
+          "text": "bench wave: 3235 ticks, total 70 enemies, peak 49 alive, avg 65.5 µs/tick, reason cleared"
+        },
+        {
+          "rawLine": 7830,
+          "text": "bench worst: 1200 ticks, 40 alive at end, avg 126.6 µs/tick"
+        },
+        {
+          "rawLine": 8050,
+          "text": "bench boss field: 1800 ticks, peak 133 alive, 18 allies, avg 393.8 / 340.0 / 409.1 µs/tick (best 340.0; bar 0.5 ms)"
+        }
+      ],
+      "performanceCases": [
+        {
+          "line": 7831,
+          "title": "benchmark: 70-enemy wave (h05) + 10 operators < 0.5 ms/tick average",
+          "status": "passed",
+          "duration_ms": 819.802547,
+          "skip_note": null
+        },
+        {
+          "line": 7832,
+          "title": "benchmark: worst case — 70 enemies alive at once + 10 operators < 0.5 ms/tick",
+          "status": "passed",
+          "duration_ms": 298.706569,
+          "skip_note": null
+        },
+        {
+          "line": 8085,
+          "title": "performance: heavy 2-player boss field (18 ops, ~130 enemies alive) averages < 0.5 ms/tick (best of 3)",
+          "status": "passed",
+          "duration_ms": 2333.85172,
+          "skip_note": null
+        }
+      ],
+      "originalPerformanceLimitsMsPerTick": {
+        "wave": 0.5,
+        "worst": 0.5,
+        "bossLocalBestOfThree": 0.5,
+        "bossCiBestOfThree": 1.0,
+        "activeBossLimitInThisLocalRun": 0.5
+      },
+      "smoke": {
+        "passed": true,
+        "observations": [
+          {
+            "rawLine": 9832,
+            "text": "GET /healthz → {\"ok\":true,\"version\":1,\"app\":\"0.3.0\",\"uptimeSec\":0,\"build\":\"01a0d74c6f45\",\"content\":{\"vanilla\":\"4878a2897ee4ddfb31ef705f51fe7093528defea6ea1dad5db6679e43eac7ab5\",\"sets\":0},\"sockets\":0,\"sessions\":0,\"rooms\":0,\"matches\":0,\"humans\":0,\"bots\":0,\"spectators\":0}"
+          },
+          {
+            "rawLine": 9833,
+            "text": "GET / → 200, 4852 bytes, <html found"
+          },
+          {
+            "rawLine": 9834,
+            "text": "GET /vendor/pixi.min.js → 200"
+          }
+        ],
+        "doctorIsNonGating": true
+      },
+      "tooling": {
+        "lintExitCode": 0,
+        "lintSummary": "✖ 151 problems (0 errors, 151 warnings)",
+        "warnings": 151,
+        "errors": 0,
+        "importExitCode": 0,
+        "importIsStrict": false,
+        "importViolations": 3,
+        "allowedNotes": 3,
+        "importObservations": [
+          {
+            "rawLine": 10237,
+            "text": "3 import-boundary violation(s):"
+          },
+          {
+            "rawLine": 10238,
+            "text": "server/sim/nodeData.js:11: node:fs [sim-node]"
+          },
+          {
+            "rawLine": 10239,
+            "text": "server/sim/nodeData.js:12: node:path [sim-node]"
+          },
+          {
+            "rawLine": 10240,
+            "text": "server/sim/nodeData.js:13: node:url [sim-node]"
+          },
+          {
+            "rawLine": 10241,
+            "text": "3 allowed note(s):"
+          },
+          {
+            "rawLine": 10242,
+            "text": "note server/sim/content/support/index.js:20: ../../../data.js -> server/data.js"
+          },
+          {
+            "rawLine": 10243,
+            "text": "note server/sim/nodeData.js:23: ../data.js -> server/data.js"
+          },
+          {
+            "rawLine": 10244,
+            "text": "note server/sim/nodeData.js:33: ../data.js -> server/data.js"
+          }
+        ],
+        "typecheckExitCode": 0
+      },
+      "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+      "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+    },
+    "golden": {
+      "command": [
+        "npm",
+        "run",
+        "golden"
+      ],
+      "completed": true,
+      "passed": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-18T06:10:44.356740+00:00",
+      "finishedAt": "2026-10-18T06:12:30.413736+00:00",
+      "durationSeconds": 106.05700716799947,
+      "signal": null,
+      "log": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/golden.log",
+        "bytes": 504,
+        "sha256": "dc403f06e7744f6746872edab46f63b9ba80f6bba5ce99eb968adb0b6452882e"
+      },
+      "update": false,
+      "groups": [
+        {
+          "name": "roster",
+          "scenarios": 49,
+          "status": "match"
+        },
+        {
+          "name": "bonds",
+          "scenarios": 46,
+          "status": "match"
+        },
+        {
+          "name": "fields",
+          "scenarios": 22,
+          "status": "match"
+        },
+        {
+          "name": "matches",
+          "scenarios": 21,
+          "status": "match"
+        },
+        {
+          "name": "standins",
+          "scenarios": 10,
+          "status": "match"
+        },
+        {
+          "name": "diy",
+          "scenarios": 140,
+          "status": "match"
+        }
+      ],
+      "totalScenarios": 288,
+      "printedDurationMs": 104139,
+      "jobs": 3,
+      "output": "\n> stronghold-protocol-rhine@0.3.0 golden\n> node tools/golden.mjs\n\ngolden roster: 49 scenarios match\ngolden bonds: 46 scenarios match\ngolden fields: 22 scenarios match\ngolden matches: 21 scenarios match\ngolden standins: 10 scenarios match\ngolden diy: 140 scenarios match\nok · 104139 ms (jobs 3)\nnpm notice\nnpm notice New major version of npm available! 11.9.0 -> 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice\n",
+      "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+      "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+    },
+    "i18n": {
+      "command": [
+        "node",
+        "tools/i18n.mjs",
+        "check",
+        "--all",
+        "--strict"
+      ],
+      "completed": true,
+      "passed": true,
+      "exitCode": 0,
+      "startedAt": "2026-10-18T06:12:30.414360+00:00",
+      "finishedAt": "2026-10-18T06:12:32.415809+00:00",
+      "durationSeconds": 2.0014624960003857,
+      "signal": null,
+      "log": {
+        "path": "/workspace/rhine-recovery-evidence/2026-10-18/candidate11/full-local-ci-final/i18n.log",
+        "bytes": 447,
+        "sha256": "ab898cbe64068d51769e5b8a67fd38b3db7c83fa33c4b4519013f3fd408953e9"
+      },
+      "strict": true,
+      "packCount": 4,
+      "packs": [
+        {
+          "code": "en",
+          "description": "English, en, complete",
+          "msgidsUsed": 1850,
+          "translated": 1850,
+          "coveragePercent": 100.0,
+          "missing": 0,
+          "errors": 0
+        },
+        {
+          "code": "ja",
+          "description": "日本語, ja, complete",
+          "msgidsUsed": 1850,
+          "translated": 1850,
+          "coveragePercent": 100.0,
+          "missing": 0,
+          "errors": 0
+        },
+        {
+          "code": "ko",
+          "description": "한국어, ko, complete",
+          "msgidsUsed": 1850,
+          "translated": 1850,
+          "coveragePercent": 100.0,
+          "missing": 0,
+          "errors": 0
+        },
+        {
+          "code": "zh-TW",
+          "description": "繁體中文, zh-TW, complete",
+          "msgidsUsed": 1850,
+          "translated": 1850,
+          "coveragePercent": 100.0,
+          "missing": 0,
+          "errors": 0
+        }
+      ],
+      "output": "public/i18n/en.json (English, en, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/ja.json (日本語, ja, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/ko.json (한국어, ko, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\npublic/i18n/zh-TW.json (繁體中文, zh-TW, complete): 1850 msgids used, 1850 translated (100 %), 0 missing, 0 errors\n",
+      "sourceCommit": "8b0d2b708bba616e13fcf32e98bf145ec66dca0d",
+      "finalSourceApplicability": "Final8f changes only the stated static fixture and two records; result remains attributed to exact8b."
+    },
+    "limitations": [
+      "Complete local CI was run once on production-identical8b, not on final8f. Actual8628/8558pass/3fail/67skip/0cancel remains failed: two strict ESRCH leaves lack established current-run cause and one stale static-source fixture was subsequently corrected.16 targeted UI/lifecycle and32 documentation checks passed after correction; complete local CI was not repeated.",
+      "Main/tag complete remote CI and actual Windows11 mandatory acceptance were not run at source freeze; no future count is asserted as observed. Publication must retain every original gate and new native9/browser7.",
+      "Source10 M1/tag and two full Windows10 failures remain recorded; later M2 source CI success does not overwrite them.",
+      "Only the two exact previously authorized legacy3D recovery leaves are notRun. Default3D initialization limitation remains; no unique earlier renderer startup stall/ENOBUFS cause is established.",
+      "No separate real8-to11 package upgrade, manual BAT double-click or human full balance match was run; actual public6 upgrade/six-private/repeat/rollback and all five download gates remain mandatory. No user-server deployment."
+    ]
   },
   "rendererDiagnostics": false,
   "prerelease": false,
@@ -6915,7 +8990,7 @@
         "reason": "用户明确不再要求旧3D初始化专项；保留其余2D恢复、模拟、同步、重连、动画及行为门槛。"
       }
     ],
-    "expectedExecutedCases": 47,
+    "expectedExecutedCases": 54,
     "expectedGroups": [
       "remSimulation",
       "remRenderer",
