@@ -276,12 +276,14 @@ export function useFieldView(hostRef) {
   const viewRef = useRef(null);
   useEffect(() => {
     let dead = false, retrying = false;
+    let ownedView = null;
     const host = hostRef.current;
     if (!host) return undefined;
     setState({ view: null, kind: 'loading' });
     const controller = new AbortController();
     mountFieldView(host, { signal: controller.signal }).then((view) => {
       if (dead) { view.destroy(); return; }
+      ownedView = view;
       viewRef.current = view;
       if (view.kind === 'engine') retries.current = 0;
       globalThis.__SP_VIEW__ = view; // dev / E2E introspection (view.raw.stats?.())
@@ -299,18 +301,26 @@ export function useFieldView(hostRef) {
     window.addEventListener('resize', onResize);
     window.addEventListener('online', onRetry);
     document.addEventListener('visibilitychange', onRetry);
-    return () => {
+    // A hard navigation does not run Preact's effect cleanup. Release this document's renderer before leaving;
+    // pageshow of a BFCache document already reloads in main.js, so it must not retain the old view either.
+    const dispose = () => {
+      if (dead) return;
       dead = true;
       controller.abort();
       unsub();
+      window.removeEventListener('pagehide', dispose);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('online', onRetry);
       document.removeEventListener('visibilitychange', onRetry);
       // the dev hook must not keep the destroyed view — and through its host the whole detached match screen — alive
-      if (viewRef.current && globalThis.__SP_VIEW__ === viewRef.current) globalThis.__SP_VIEW__ = null;
-      viewRef.current?.destroy();
-      viewRef.current = null;
+      const view = ownedView;
+      ownedView = null;
+      if (view && globalThis.__SP_VIEW__ === view) globalThis.__SP_VIEW__ = null;
+      if (viewRef.current === view) viewRef.current = null;
+      view?.destroy();
     };
+    window.addEventListener('pagehide', dispose);
+    return dispose;
   }, [attempt]);
   return state;
 }
