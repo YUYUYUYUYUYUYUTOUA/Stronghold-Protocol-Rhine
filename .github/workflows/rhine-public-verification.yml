@@ -1,0 +1,46 @@
+name: Rhine public download verification
+
+on:
+  push:
+    branches: [codex/rhine-030-public-verification11]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Anonymous stable11 attachments
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Check out verification automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: automation
+          persist-credentials: false
+
+      - name: Check out immutable release source
+        uses: actions/checkout@v7
+        with:
+          ref: 8f6b98c2979b66ee636dbbfcf04ae6dad5b65904
+          path: source
+          persist-credentials: false
+
+      - name: Verify five attachments without download credentials
+        run: python3 -u automation/.github/scripts/rhine-public-verify.py
+        env:
+          RHINE_VERIFY_REPOSITORY: ${{ github.workspace }}/source
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+
+      - name: Upload completed verification evidence
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rhine-r11-anonymous-verification
+          path: /tmp/rhine-r11-anonymous-*/ANONYMOUS-VERIFICATION.json
+          if-no-files-found: error
+          retention-days: 14
