@@ -66,7 +66,8 @@ test('all-bot match completes with script content and meta effects in production
  const match=hosts.create(r.set.cs,{roomCode:'BOTS',mode:'coop',difficulty:'NORMAL',modeId:'mode_multi_normal',
   seats:Array.from({length:4},(_,i)=>({seat:i,playerId:'ai_'+i,name:'Bot '+i,isBot:true,connected:true})),spectators:[],seed:7,matchNo:1,cs:r.set.cs,requireCs:true,
   broadcast(){},send(){return true;},onEnd:end});match.start();
- const summary=await Promise.race([done,timeout(100000)]);assert.equal(typeof summary.victory,'boolean');
+ // Keep the actual host failure reason in a sealed CI log before later diagnostics can be requested.
+ const summary=await Promise.race([done,timeout(100000)]);assert.equal(typeof summary.victory,'boolean',JSON.stringify(summary));
  const d=await match.diag();assert.equal(d.errorCount,0,JSON.stringify(d.errors));assert.equal(d.simErrors,0);match.dispose();
 });
 test('trusted activate routes, immutable lobby copies and health run in a child',async t=>{

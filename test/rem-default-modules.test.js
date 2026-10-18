@@ -1,7 +1,6 @@
 // Generated defaults feed the existing sparse browser/server loadout paths; no preference migration may overwrite a pick.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { REM_ADDITIONS } from '../tools/rem-data.mjs';
 import { loadoutOptions, checkLoadout, resolveLoadout } from '../shared/protocol.js';
 import { composeStats, composeTalents } from '../shared/loadoutRecord.js';
 import { atPotential } from '../shared/potential.js';
@@ -11,6 +10,10 @@ import {
 } from '../public/js/ui/loadoutModel.js';
 import { makeBattle, checkInvariants } from './helpers/battleHarness.js';
 import { makeMatch } from './match/harness.js';
+
+// Finish the battle harness's async kit registry before loading the offline generator graph.
+// A concurrent static generator import leaves Node 22's top-level kit await unsettled before any cases register.
+const { REM_ADDITIONS } = await import('../tools/rem-data.mjs');
 
 const source = getDefaultSource(), C = source.raw.chess;
 const get = id => Object.hasOwn(C, id) ? C[id] : null;

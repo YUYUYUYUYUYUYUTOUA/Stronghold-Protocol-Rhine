@@ -6,7 +6,8 @@
 //     accumulates elapsed real time × the match's game speed (forced 2×; `opts.combatSpeed` in tests/tools) and
 //     steps floor(acc / TICK) ticks, never more than maxTicksPerInterval(speed) (8 at 2×) per interval — the
 //     remainder is dropped so a stalled server never spirals.
-//   * instant (VirtualScheduler default): every field is stepped to completion synchronously.
+//   * instant (VirtualScheduler default): fields run synchronously unless the match supplies a finite wall-clock
+//     budget; then complete master ticks run in slices without advancing the virtual clock.
 //   * a solo pause (Match.paused, g.pause) skips the intervals: the field clock stands still (HeadlessPacer too).
 // Every SNAP_EVERY (3) ticks of a field its events are drained; watchers of that field get `b.ev` then `b.snap`, both
 // carrying the field's game time `gt` (`emit: false` skips the streaming: server-run fields under client-side combat).
@@ -108,6 +109,7 @@ export class FieldRunner {
     this.acc = 0;
     this.last = 0;
     this.interval = null;
+    this.instantTimer = null;
     this.done = false;
     this.stopped = false;
     this.crashes = 0;
@@ -119,8 +121,7 @@ export class FieldRunner {
   start() {
     if (this.fields.every((f) => !f.live)) { this._finish(); return; }
     if (this.m.sched.instant) {
-      // one scheduler callback: run everything now (virtual time / tools)
-      this.m.later(0, () => this._runInstant());
+      this._scheduleInstant();
       return;
     }
     this.last = this.m.sched.now();
@@ -130,13 +131,32 @@ export class FieldRunner {
   stop() {
     this.stopped = true;
     if (this.interval) { this.m.sched.clearInterval(this.interval); this.interval = null; }
+    if (this.instantTimer) { this.m.cancel(this.instantTimer); this.instantTimer = null; }
   }
 
-  _runInstant() {
+  _scheduleInstant(now = perfNow) {
+    if (this.stopped || this.done || this.instantTimer) return;
+    this.instantTimer = this.m.later(0, () => {
+      this.instantTimer = null;
+      this._runInstant(now);
+    });
+  }
+
+  // The optional internal clock lets tests prove budget boundaries without relying on machine speed.
+  _runInstant(now = perfNow) {
+    if (this.stopped || this.done) return;
     const cap = Math.ceil(HARD_CAP_SECONDS / TICK);
+    const budget = this.m.headlessSliceMs;
+    const timed = Number.isFinite(budget) && budget > 0;
+    const t0 = timed ? now() : 0;
     while (!this.stopped && !this.done && this.ticks < cap) { // loop-cap: tick cap
       this._tick();
       if (this.fields.every((f) => !f.live)) break;
+      // Keep a shared boss pool's field order intact: yield only after the entire master tick.
+      if (!this.stopped && !this.done && this.ticks < cap && timed && now() - t0 >= budget) {
+        this._scheduleInstant(now);
+        return;
+      }
     }
     if (!this.done && !this.stopped) this._forceAll('timeout');
     this._checkDone();
@@ -231,6 +251,7 @@ export class FieldRunner {
     if (this.done) return;
     this.done = true;
     if (this.interval) { this.m.sched.clearInterval(this.interval); this.interval = null; }
+    if (this.instantTimer) { this.m.cancel(this.instantTimer); this.instantTimer = null; }
     this.onDone(this);
   }
 

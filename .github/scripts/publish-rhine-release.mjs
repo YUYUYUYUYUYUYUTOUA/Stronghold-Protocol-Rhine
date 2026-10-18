@@ -372,6 +372,7 @@ async function main() {
     'test/ui/profile-plugins.test.js',
     'test/studio/trial.test.js', 'test/studio/room-settings.test.js', 'test/studio/gameplay.test.js',
     'test/golden-diy.test.js',
+    'test/match/instant-field-slices.test.js',
   ], path.join(root, 'packaged-tests.log'), {
     // This expanded acceptance batch includes real package/upgrade fixtures and plugin composition.
     // Keep individual test deadlines intact while allowing the complete Windows batch to finish.

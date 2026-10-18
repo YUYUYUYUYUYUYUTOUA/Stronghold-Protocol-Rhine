@@ -1,6 +1,6 @@
 # 卫戍协议：阵营拓展 · Stronghold Protocol: Faction Expansion
 
-本轮版本：**v0.3.0-rhine.9**。Windows x64 完整包、升级工具与实际验收结果见[本版发行页](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/v0.3.0-rhine.9)，以该页的发布状态为准。
+本轮版本：**v0.3.0-rhine.10**。Windows x64 完整包、升级工具与实际验收结果见[本版发行页](https://github.com/YUYUYUYUYUYUYUTOUA/Stronghold-Protocol-Rhine/releases/tag/v0.3.0-rhine.10)，以该页的发布状态为准。
 
 此前默认 3D 在软件渲染、多页面刷新专项中出现初始化超时，未宣称根因已修复。维护者已自行实测两局3D，并要求后续不再运行该专项、不以此阻断发行；仍可在游戏地址后加 `/?board=2d` 使用2D棋盘。本轮按正式版／latest 策略执行 Windows 发行门槛，通过后供 `联网更新.bat` 获取；已有玩家也可按[离线更新说明](docs/RHINE-UPDATE.md#命令行离线更新与回退)保留配置升级。此前 `.8` 测试版及其标签保持不变。
 

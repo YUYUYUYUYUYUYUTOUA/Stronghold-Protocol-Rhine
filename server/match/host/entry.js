@@ -68,6 +68,7 @@ const queue = [];
 let booted = false;
 let MatchClass = null;
 let VirtualScheduler = null;
+let virtualHeadlessSliceMs = null;
 /** Prep EffectRefs this content set grants to every player. Empty when the set has no data.dsl. */
 let dslGrants = [];
 /** @type {Map<string, any>} */
@@ -167,7 +168,11 @@ async function boot() {
   MatchClass = class ContentMatch extends Inner {
     constructor(opts) { super(opts); grantPrepDsl(this, dslGrants); }
   };
-  if (options.virtualTime) ({ VirtualScheduler } = await import('../scheduler.js'));
+  if (options.virtualTime) {
+    ({ VirtualScheduler } = await import('../scheduler.js'));
+    // Keep content/data initialization ahead of fields.js → spec.js → Battle/content imports.
+    ({ HEADLESS_SLICE_MS: virtualHeadlessSliceMs } = await import('../fields.js'));
+  }
 }
 
 /** A MATCH INTERFACE method a match class may lack: what the platform does then (server/lobby.js callMatch). */
@@ -200,6 +205,9 @@ function create(matchId, opts) {
   let match;
   try {
     match = new MatchClass({
+      // Virtual hosts must return to their pump between battle slices so real heartbeats can run.
+      // Direct VirtualScheduler users retain their synchronous default; explicit test options still win.
+      ...(sched ? { headlessSliceMs: virtualHeadlessSliceMs } : {}),
       ...(options.matchOptions || {}),
       ...opts,
       // the content set installed at boot (server/data.js getData)

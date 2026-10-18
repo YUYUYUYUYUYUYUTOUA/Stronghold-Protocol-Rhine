@@ -902,6 +902,12 @@ round was over. The official 1 s `broadcastBeginDelay` is not modelled.
   `toPrep(r)`, `checkInvariants(m)`, `give()/giveItem()` scenario helpers).
 * `VirtualScheduler({ instantCombat })`: `advance(ms)`, `runNext()`, `runUntil(pred)`, `runAll()`; with
   `instantCombat` (default) battles run synchronously, so a full match takes milliseconds of wall time.
+  The production child host's `virtualTime` diagnostic mode instead defaults to the existing 8 ms headless
+  slice budget, so its real heartbeat can run between scheduler pump slices. Instant `FieldRunner` combat
+  yields only between complete master ticks, retaining field order and the shared boss pool's damage order;
+  zero-delay continuations do not advance virtual time. Direct virtual-scheduler users retain their unbounded
+  default, and real-time pacing, heartbeat/watchdog deadlines and battle hard caps are unchanged. A single
+  construction or simulation step remains synchronous; the budget cannot interrupt it.
 * Suites: pool, board, economy, merge, bonds, draft, combat (FakeBattle), finalAssault, connection, meta, waves,
   results, fullmatch (fullmatch*.test.js, parallel files, runner fullmatchRun.js — REAL sim: solo × 4 difficulties, co-op
   2/3/4 incl. AI, 20 seeds each; `MATCH_SEEDS=n` to change),
