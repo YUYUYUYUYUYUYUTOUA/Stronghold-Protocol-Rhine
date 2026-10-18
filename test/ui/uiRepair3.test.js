@@ -86,7 +86,18 @@ describe('交流 pager touch hit areas (css/devices.css)', () => {
 describe('dev hook', () => {
   test('useFieldView clears globalThis.__SP_VIEW__ when it destroys the view', () => {
     const src = readFileSync(new URL('../../public/js/ui/fieldHost.js', import.meta.url), 'utf8');
-    const cleanup = src.slice(src.indexOf('return () => {', src.indexOf('export function useFieldView')));
-    assert.match(cleanup.slice(0, 600), /globalThis\.__SP_VIEW__ === viewRef\.current\) globalThis\.__SP_VIEW__ = null/);
+    const hookStart = src.indexOf('export function useFieldView');
+    assert.ok(hookStart >= 0, 'useFieldView is present');
+    const hook = src.slice(hookStart);
+    const disposeStart = hook.indexOf('const dispose = () => {');
+    const disposeEnd = hook.indexOf("window.addEventListener('pagehide', dispose);", disposeStart);
+    assert.ok(disposeStart >= 0 && disposeEnd > disposeStart, 'the shared owner cleanup is present');
+    const cleanup = hook.slice(disposeStart, disposeEnd);
+    assert.match(cleanup, /const view = ownedView;\s*ownedView = null;/, 'capture only this mount owner');
+    assert.match(cleanup, /if \(view && globalThis\.__SP_VIEW__ === view\) globalThis\.__SP_VIEW__ = null;/);
+    assert.match(cleanup, /globalThis\.__SP_VIEW__ = null;[\s\S]*view\?\.destroy\(\);/, 'clear the hook before destroying its view');
+    assert.match(cleanup, /window\.removeEventListener\('pagehide', dispose\);/);
+    assert.match(hook.slice(disposeEnd), /window\.addEventListener\('pagehide', dispose\);\s*return dispose;/,
+      'pagehide and effect cleanup share the same disposer');
   });
 });
