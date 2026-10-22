@@ -35,6 +35,53 @@ function restore() {
   catch(e){diagnosticErrors.push({stage:'restore',error:serialError(e)});}
 }
 function resultOf(r) {return {error:serialError(r?.error),status:r?.status ?? null,signal:r?.signal ?? null,pid:r?.pid ?? null,stdout:text(r?.stdout),stderr:text(r?.stderr),output:Array.isArray(r?.output)?r.output.map(text):null};}
+// These are diagnostic comparisons, never retries of plain.zip or a replacement
+// for the original test result. Exported only for an external synthetic quickcheck.
+export function controlledComparisons(originalOptions,originalTarArgs) {
+  restore();
+  if(installed||childProcess.spawnSync!==originalSpawnSync)return {notRun:'spawnSync bindings were not restored'};
+  const cwd=originalOptions?.cwd;
+  if(typeof cwd!=='string')return {notRun:'original cwd is unavailable'};
+  const maxBuffer=16*1024*1024,timeout=10000;
+  const packageUrl=new URL('../../tools/package.mjs',import.meta.url).href;
+  const updateUrl=new URL('../../tools/package-update.mjs',import.meta.url).href;
+  const cliTarget=path.join(cwd,'plain-cli-boundary.zip');
+  const pipeTarget=path.join(cwd,'plain-direct-pipe.zip');
+  const code=`import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+const {zipFolder}=await import(${JSON.stringify(packageUrl)});
+const {readBase}=await import(${JSON.stringify(updateUrl)});
+const [cwd,target]=process.argv.slice(1);
+zipFolder(cwd,target);
+const base=readBase(target);
+const digest=body=>({size:Buffer.byteLength(body),sha256:crypto.createHash('sha256').update(body).digest('hex')});
+assert.deepEqual([base.version,base.art,base.update],['0.2.0',1,false]);
+assert.deepEqual([...base.files.keys()].sort(),['package.json','public/assets/卫戍 a.png','server/empty.js']);
+assert.deepEqual(base.files.get('public/assets/卫戍 a.png'),digest(Buffer.alloc(5000,7)));
+assert.deepEqual(base.files.get('server/empty.js'),digest(''));
+console.log(JSON.stringify({validation:'passed',version:base.version,art:base.art,update:base.update,entries:[...base.files.keys()].sort(),nodeTestContext:process.env.NODE_TEST_CONTEXT??null,execArgv:process.execArgv}));`;
+  function compare(name,executable,args,options,target) {
+    const item={name,executable,args,options:{cwd:options.cwd??null,stdio:options.stdio,encoding:options.encoding,maxBuffer:options.maxBuffer,timeout:options.timeout},target,outputBefore:outputState(target)};
+    try {fs.lstatSync(target);item.notRun='separate comparison target already exists';return item;}
+    catch(e){if(e.code!=='ENOENT'){item.notRun='cannot verify that comparison target is absent';item.targetCheckError=serialError(e);return item;}}
+    try {item.result=resultOf(originalSpawnSync(executable,args,options));}
+    catch(e){item.thrown=serialError(e);}
+    finally {item.outputAfter=outputState(target);}
+    return item;
+  }
+  const standalone=compare('standalone-original-zipFolder',process.execPath,
+    ['--input-type=module','-e',code,'--',cwd,cliTarget],
+    {encoding:'utf8',stdio:'pipe',maxBuffer,timeout},cliTarget);
+  let directPipe;
+  if(!Array.isArray(originalTarArgs)||originalTarArgs.length!==8||originalTarArgs[0]!=='-c'||originalTarArgs[1]!=='--format'||originalTarArgs[2]!=='zip'||originalTarArgs[3]!=='--options'||originalTarArgs[4]!=='zip:hdrcharset=UTF-8'||originalTarArgs[5]!=='-f'||originalTarArgs[7]!=='Stronghold-Protocol'){
+    directPipe={name:'direct-original-tar-piped',target:pipeTarget,notRun:'original tar argument array was not observed',outputBefore:outputState(pipeTarget)};
+  }else{
+    const args=[...originalTarArgs];args[6]=pipeTarget;
+    directPipe=compare('direct-original-tar-piped','tar',args,
+      {...originalOptions,stdio:'pipe',encoding:'utf8',maxBuffer,timeout},pipeTarget);
+  }
+  return {diagnosticOnly:true,originalResultUnchanged:true,nodeTestContext:process.env.NODE_TEST_CONTEXT??null,standalone,directPipe};
+}
 function failureOnlyDetection() {
   const commands=[['zip',['-v']],['tar',['--version']]];
   if(process.platform==='win32')commands.push(['where.exe',['zip']],['where.exe',['tar']]);
@@ -71,7 +118,10 @@ function observedSpawnSync(...callArgs) {
     if(finished){
       // Restore before any additional detection; production call receives its original return/throw.
       restore();report.backendFailure=failed;
-      if(failed){try {report.failureOnlyDetection=failureOnlyDetection();}catch(e){diagnosticErrors.push({stage:'failure-only-detection',error:serialError(e)});}}
+      if(failed){
+        try {report.controlledComparisons=controlledComparisons(options,executable==='tar'?args:null);}catch(e){diagnosticErrors.push({stage:'controlled-comparisons',error:serialError(e)});}
+        try {report.failureOnlyDetection=failureOnlyDetection();}catch(e){diagnosticErrors.push({stage:'failure-only-detection',error:serialError(e)});}
+      }
       writeReport();
     }
   }
