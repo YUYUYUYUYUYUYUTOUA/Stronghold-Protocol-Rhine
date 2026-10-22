@@ -24,7 +24,6 @@ jobs:
       SP_REAL_E2E: '0'
       RENDER_E2E: '0'
       NO_COLOR: '1'
-      SP_ZIP_DIAG_DIR: ${{ runner.temp }}/rhine-zip-spawn-diag
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -34,11 +33,15 @@ jobs:
       - name: Install
         run: npm ci --no-audit --no-fund
       - name: Original ZIP reader test with passive spawn diagnostics
+        shell: pwsh
+        env:
+          SP_ZIP_DIAG_DIR: ${{ runner.temp }}/rhine-zip-spawn-diag
         run: node --import ./.github/scripts/ci-zip-diagnostics.mjs --test --test-name-pattern="the zip reader" test/update-package.test.js
       - name: Retain original spawn results
         if: always()
         shell: pwsh
         run: |
-          $reports = @(Get-ChildItem -Path $env:SP_ZIP_DIAG_DIR -Filter 'zip-spawn-*.json' -ErrorAction SilentlyContinue)
+          $probeDir = Join-Path $env:RUNNER_TEMP 'rhine-zip-spawn-diag'
+          $reports = @(Get-ChildItem -Path $probeDir -Filter 'zip-spawn-*.json' -ErrorAction SilentlyContinue)
           if ($reports.Count -eq 0) { throw 'No original ZIP fixture spawn was observed' }
           foreach ($report in $reports) { Get-Content -LiteralPath $report.FullName -Raw }
