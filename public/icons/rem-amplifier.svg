@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="工头的扩音器">
+  <rect x="2" y="2" width="92" height="92" rx="18" fill="#192c30" stroke="#d8b96f" stroke-width="3"/>
+  <path d="M19 39h19l30-17v52L38 57H19z" fill="#ddbd73" stroke="#f0deb4" stroke-width="3" stroke-linejoin="round"/>
+  <path d="m30 58 5 20h12l-6-19" fill="#84b6a1" stroke="#d2e3ce" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M38 39v18m30-35v52" stroke="#8c7a49" stroke-width="4"/>
+  <path d="M77 36q9 12 0 24m-2-31q15 19 0 38" fill="none" stroke="#84b6a1" stroke-width="4" stroke-linecap="round"/>
+</svg>

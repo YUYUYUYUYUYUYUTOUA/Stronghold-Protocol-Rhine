@@ -7,6 +7,8 @@
 // cost 15 — her E1 Lv55 413 / 17 plus 攻击力+22 and two 部署费用-1. These numbers reach the battle, the 干员调配 局内数值
 // and the detail card through the records (shared/loadoutRecord.js, simdata getChess).
 // With the official-data cache (.cache/gamedata) the potential steps are re-derived from the raw character_table.
+// Expansion cards keep the same raw attribute checks. Their only maintained talent exception here is
+// Rhine Mayer's ordinary/elite summon count; every other candidate blackboard remains a strict raw comparison.
 // Run: node --test test/full-potential.test.js
 
 import { test } from 'node:test';
@@ -18,6 +20,10 @@ import { resolveLoadout, loadoutRecord } from '../server/sim/simdata.js';
 import { diyRecordOf } from '../shared/diy.js';
 import { standInRecord } from '../shared/standIn.js';
 import { makeBattle } from './helpers/battleHarness.js';
+import { RHINE_ADDITIONS } from '../tools/rhine-data.mjs';
+import { KAZDEL_ADDITIONS } from '../tools/kazdel-data.mjs';
+import { REM_ADDITIONS } from '../tools/rem-data.mjs';
+import { RHINE_BALANCE } from '../shared/rhineResearch.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR || join(ROOT, 'data');
@@ -29,6 +35,17 @@ const tokens = load('tokens');
 const backups = load('backups');
 const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
 const talent = (rec, name) => rec.talents.find((t) => t.name === name);
+const vanillaChess = JSON.parse(readFileSync(join(ROOT, 'data', 'vanilla', 'chess.json'), 'utf8'));
+const nativeIds = new Set(Object.values(vanillaChess).filter(c => !c.isDiy && c.charId).map(c => c.chessId));
+const registeredExtensionIds = new Set([
+  ...RHINE_ADDITIONS.map(spec => ['rhine', spec.key]),
+  ...KAZDEL_ADDITIONS.map(spec => ['kazdel', spec.key]),
+  ...REM_ADDITIONS.map(spec => ['rem', spec.key]),
+].flatMap(([prefix, key]) => ['a', 'b'].map(grade => `chess_${prefix}_${key}_${grade}`)));
+const profileManifest = join(DATA, 'manifest.json');
+const vanillaProfile = existsSync(profileManifest) && JSON.parse(readFileSync(profileManifest, 'utf8')).profile === 'vanilla';
+const extensionIds = vanillaProfile ? new Set() : registeredExtensionIds;
+const adaptedMayerIds = new Set([...extensionIds].filter(id => /^chess_rhine_mayer_[ab]$/.test(id)));
 
 test('刺玫 at full potential: ATK 435 / cost 15 (the tournament video), 再部署 66 s, 土壤基肥改良 at its 「天赋效果增强」 step', () => {
   const v = chess.chess_char_1_06_a;
@@ -81,13 +98,23 @@ test('every chess, 自选 form and stand-in form: the raw keyframes plus every p
     for (const [k, v] of Object.entries(exp)) assert.ok(Math.abs(v - stats[k]) <= 0.5 + 1e-9, `${label}: ${k} ${stats[k]} vs official ${v}`);
   };
   let n = 0, withSteps = 0;
+  const seenNative = new Set(), seenExtension = new Set();
   for (const c of Object.values(chess)) {
     if (c.isDiy || !c.charId) continue;
     check(c.chessId, c.charId, c.status, c.statsBase ?? c.stats);
+    if (nativeIds.has(c.chessId)) seenNative.add(c.chessId);
+    else {
+      assert.ok(extensionIds.has(c.chessId), `${c.chessId}: raw-checked card must be declared by an expansion registry`);
+      seenExtension.add(c.chessId);
+    }
     n++;
     if (Object.keys(steps(c.charId)).length) withSteps++;
   }
-  assert.equal(n, 258);
+  assert.equal(nativeIds.size, 258, 'the fixed vanilla profile retains all 258 non-DIY cards');
+  assert.equal(registeredExtensionIds.size, 42, 'six Rhine, six Kazdel and nine Rem normal/elite pairs');
+  assert.deepEqual([...seenNative].sort(), [...nativeIds].sort(), 'every fixed native card receives the raw attribute check');
+  assert.deepEqual([...seenExtension].sort(), [...extensionIds].sort(), 'every declared expansion card receives the same raw attribute check');
+  assert.equal(n, 258 + extensionIds.size);
   assert.ok(withSteps >= 220, `chess with potential steps: ${withSteps}`);
   let forms = 0;
   for (const [charId, u] of Object.entries(backups.units)) {
@@ -98,7 +125,7 @@ test('every chess, 自选 form and stand-in form: the raw keyframes plus every p
   for (const id of ['char_600_cpione', 'char_602_cdfend', 'char_608_acpion', 'char_617_sharp2']) assert.equal((CT[id].potentialRanks || []).length, 0, id);
 });
 
-test('talent candidates: every chess talent is the last one unlocked at its status with requiredPotentialRank ≤ 5', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
+test('talent candidates: raw unlocked candidates at potential ≤ 5, except the maintained Rhine Mayer summon count', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {
   const CT = raw('character_table');
   const PH = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 };
   const ok = (c, phase, level) => {
@@ -107,6 +134,7 @@ test('talent candidates: every chess talent is the last one unlocked at its stat
     return (c.requiredPotentialRank || 0) <= 5 && (p < phase || (p === phase && (u?.level || 1) <= level));
   };
   let potentialTalents = 0;
+  const adaptedCounts = [];
   for (const c of Object.values(chess)) {
     if (c.isDiy || !c.charId) continue;
     const base = c.talentsBase ?? c.talents;
@@ -117,10 +145,19 @@ test('talent candidates: every chess talent is the last one unlocked at its stat
       // a fully empty placeholder (no name / text / blackboard / token) is dropped from the record (mergeTalentChanges)
       if (!best || (!best.name && !best.description && !best.blackboard.length && !best.tokenKey)) return;
       assert.ok(rec, `${c.chessId} talent ${index}`);
-      for (const b of best.blackboard) if (!(b.valueStr && b.value === 0)) assert.ok(Math.abs(rec.bb[b.key] - b.value) < 1e-9, `${c.chessId} talent ${index} ${b.key}: ${rec.bb[b.key]} vs ${b.value}`);
+      for (const b of best.blackboard) if (!(b.valueStr && b.value === 0)) {
+        if (adaptedMayerIds.has(c.chessId) && b.key === 'cnt') {
+          assert.equal(c.charId, 'char_242_otter');
+          assert.equal(index, 0, 'only the mechanical-otter talent owns the maintained summon count');
+          assert.equal(rec.bb.cnt, RHINE_BALANCE.mayerSummons[c.isGolden ? 1 : 0], `${c.chessId}: owner-maintained Rhine summon count`);
+          adaptedCounts.push(c.chessId);
+        } else assert.ok(Math.abs(rec.bb[b.key] - b.value) < 1e-9, `${c.chessId} talent ${index} ${b.key}: ${rec.bb[b.key]} vs ${b.value}`);
+      }
       if ((best.requiredPotentialRank || 0) > 0) potentialTalents++;
     });
   }
+  assert.equal(adaptedMayerIds.size, vanillaProfile ? 0 : 2, 'only the two registered Rhine Mayer forms adapt a talent field');
+  assert.deepEqual(adaptedCounts.sort(), [...adaptedMayerIds].sort(), 'each maintained count is checked exactly once; all other talent fields stay raw');
   assert.ok(potentialTalents >= 150, `chess talents at a potential step: ${potentialTalents}`);
 });
 

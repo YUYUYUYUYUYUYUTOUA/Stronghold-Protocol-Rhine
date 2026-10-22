@@ -10,6 +10,8 @@ import { offsetTile } from '../../sim/dir.js';
 import { itemKey } from '../gamedata.js';
 import { OK, fail } from './common.js';
 import { sharedItemCopies } from '../systemSupply.js';
+import { pieceBonds } from '../bondsMeta.js';
+import { REM_BOND } from '../../../shared/rem.js';
 
 export class PlayerItems {
   /**
@@ -40,6 +42,11 @@ export class PlayerItems {
     if (!tloc || tloc.piece.kind !== 'chess' || tloc.area === 'equipped') return fail(ERR.BAD_TARGET);
     const item = iloc.piece;
     const target = tloc.piece;
+    if (rec.family === 'rem' && rec.requiresBondId === REM_BOND) {
+      const own = pieceBonds(this.gd, target);
+      const member = own.includes(REM_BOND) || (own.includes('maniShip') && this.bonds.maniShip?.active && this.bonds[REM_BOND]?.active);
+      if (!member) return fail(ERR.BAD_TARGET);
+    }
     if (replaceUid != null && !(Number.isInteger(replaceUid) && (target.items || []).some((x) => x.uid === replaceUid))) return fail(ERR.BAD_TARGET, 'replace: not equipped on the target');
     const consume = typeof rec.kind === 'string' && rec.kind.startsWith('consume_on_equip');
     if (consume) {

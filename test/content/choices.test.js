@@ -93,9 +93,9 @@ test('coverage: every 悬赏 / 战术决策 effect and every 道具补给 / 机�
   const ids = choiceCardIds(DATA);
   assert.equal(ids.bounty.length, 129, '129 ENEMY_GAIN effects');
   assert.equal(ids.tactic.length, 43, '43 BUFF_GAIN effects');
-  // 60 normal EQUIP items (including two Rhine and two Kazdel additions) − the 5 effect-only ones.
-  assert.equal(ids.items.length, 55, '55 shop items');
-  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a', 'chess_item_kazdel_sigil_a', 'chess_item_kazdel_blade_a']) {
+  // 62 normal EQUIP items (including two each from Rhine, Kazdel and Rem) − the 5 effect-only ones.
+  assert.equal(ids.items.length, 57, '57 shop items');
+  for (const id of ['chess_item_rhine_terminal_a', 'chess_item_rhine_mainframe_a', 'chess_item_kazdel_sigil_a', 'chess_item_kazdel_blade_a', 'chess_item_rem_armor_a', 'chess_item_rem_amplifier_a']) {
     assert.ok(ids.items.includes(id), `${id} is an equipment supply card`);
     const effectId = DATA.items[id].effectId;
     assert.equal(DATA.effects[effectId].effectType, 'EQUIP');

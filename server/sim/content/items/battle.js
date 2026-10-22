@@ -49,6 +49,8 @@ import {
 import { mitigate, hasHp, periodicDamage, isHpLoss } from '../../damage.js';
 import { RHINE_BOND, RHINE_EQUIPMENT } from '../../../../shared/rhineResearch.js';
 import { KAZDEL_BOND, KAZDEL_EQUIPMENT } from '../../../../shared/kazdel.js';
+import { REM_BOND, REM_EQUIPMENT } from '../../../../shared/rem.js';
+import { isRemMobile } from '../../remMobile.js';
 import { hypot } from '../../detmath.js';
 
 // =====================================================================================================================
@@ -200,6 +202,65 @@ export function rhineEquipmentAttack(battle, ownerId, layers) {
     }
   }
   return best;
+}
+
+/** Strongest live nine-cell equipment effects for one actual, same-owner Rem reinforcement. */
+export function remEquipmentBonus(battle, reinforcement) {
+  const result = { damageReduction: 0, defIgnorePct: 0 };
+  if (!isRemMobile(reinforcement) || !onField(reinforcement) || reinforcement.removed || reinforcement.hidden) return result;
+  for (const [holder, grants] of runtime(battle).grants) {
+    if (holder.ownerId !== reinforcement.ownerId || !onField(holder) || holder.removed || holder.hidden
+      || !memberOf(battle, holder, REM_BOND)
+      || Math.abs(holder.x - reinforcement.x) > 1 + 1e-9 || Math.abs(holder.y - reinforcement.y) > 1 + 1e-9) continue;
+    const active = [...grants.values()].filter(grant => !grant.scope.disposed);
+    const combo = active.some(grant => grant.key === REM_EQUIPMENT.armor.key);
+    for (const grant of active) {
+      const armor = grant.key === REM_EQUIPMENT.armor.key, amplifier = grant.key === REM_EQUIPMENT.amplifier.key;
+      if (!armor && !amplifier) continue;
+      const p = bp(itemRecord(grant.id), armor ? 'rem_armor' : 'rem_amplifier');
+      if (armor) result.damageReduction = Math.max(result.damageReduction, num(p?.damage_reduction));
+      else result.defIgnorePct = Math.max(result.defIgnorePct, num(combo ? p?.combo_def_ignore : p?.def_ignore));
+    }
+  }
+  return result;
+}
+
+/** One strongest bonus per new Rem family, including ordinary/elite and temporary grants. */
+function refreshRemCarrierStats(battle, u) {
+  const key = 'item:rem_equipment:stat:carrier';
+  let hpPct = 0, atkPct = 0;
+  if (memberOf(battle, u, REM_BOND)) for (const grant of runtime(battle).grants.get(u)?.values() ?? []) {
+    if (grant.scope.disposed) continue;
+    if (grant.key === REM_EQUIPMENT.armor.key) hpPct = Math.max(hpPct, num(bp(itemRecord(grant.id), 'rem_armor')?.max_hp));
+    if (grant.key === REM_EQUIPMENT.amplifier.key) atkPct = Math.max(atkPct, num(bp(itemRecord(grant.id), 'rem_amplifier')?.atk));
+  }
+  const old = u.findBuff(key);
+  if (hpPct || atkPct) {
+    if (old?.mods?.hpPct !== hpPct || old?.mods?.atkPct !== atkPct) passiveBuff(battle, u, key, { hpPct, atkPct });
+  } else if (old) battle.removeBuff(u, key);
+}
+function remEquipmentRuntime(battle) {
+  const rt = runtime(battle);
+  if (rt.remEquipment) return;
+  rt.remEquipment = true;
+  const update = () => { for (const u of rt.grants.keys()) refreshRemCarrierStats(battle, u); };
+  battle.on('battleStart', update); battle.on('deploy', update); battle.on('tick', update);
+  // Resolve each reinforcement hit once. Live coordinates include vehicles and delayed pizza hits.
+  battle.on('hit', ({ source, target, dmg }) => {
+    if (isHpLoss(dmg) || dmg.type === 'element') return;
+    const reduction = remEquipmentBonus(battle, target).damageReduction;
+    if (reduction > 0) dmg.mul *= 1 - reduction;
+    if (dmg.type === 'phys' && target?.side === 'enemy') {
+      const ignore = remEquipmentBonus(battle, source).defIgnorePct;
+      if (ignore > 0) dmg.defIgnorePct += ignore;
+    }
+  }, { priority: -5 });
+}
+/** Only new Rem items use this guarded, strongest-family stat pipeline. */
+function remCarrierStats(battle, u, _p, S) {
+  remEquipmentRuntime(battle);
+  S.onDispose(() => refreshRemCarrierStats(battle, u));
+  refreshRemCarrierStats(battle, u);
 }
 
 // =====================================================================================================================
@@ -454,6 +515,8 @@ const BY_BUFF = {
   rhine_mainframe() {},
   // Resolved once per soul hit by kazdelEquipmentDamage; no per-copy hook or self damage.
   kazdel_blade() {},
+  rem_armor: remCarrierStats,
+  rem_amplifier: remCarrierStats,
   // 源石溶剂: the text's "每秒流失 damage 点生命值" is officially 每秒受到 damage 点真实伤害 (PRTS 盟约记录 修正 "并非流失", 备注
   // "造成无来源真实持续环境伤害"; the `periodic_damage` template — also 狂暴宿主 "自身每秒受到N无来源真实伤害"): a damage instance,
   // not a 流失 — shields, damage-taken modifiers and the target-side `hit` effects apply, and it is a "受到伤害" for 受击回复

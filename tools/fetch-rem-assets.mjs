@@ -8,7 +8,7 @@ import { indexAudio } from './assets/audio.mjs';
 import { processModels } from './assets/spine.mjs';
 import { cachedJson } from './assets/cache.mjs';
 import { RAW } from './assets/sources.mjs';
-import { remArtInput, REM_ENEMY_ART, addRemArtPlan } from './assets/rem-plan.mjs';
+import { remArtInput, REM_ENEMY_ART, addRemArtPlan, addRemArt } from './assets/rem-plan.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, contentHash } from './assets/manifest.mjs';
 import { isCompletePng } from './assets/formats.mjs';
 import { Downloader } from './assets/downloader.mjs';
@@ -44,6 +44,7 @@ async function main() {
   if (resolved.value.prof) manifest.prof.sub = {...manifest.prof.sub,...resolved.value.prof.sub};
   if (manifest.stats) for (const key of ['chars','enemies','skills']) manifest.stats[key] = Object.keys(manifest[key]||{}).length;
   if (manifest.stats) manifest.stats.bonds = Object.keys(manifest.bonds).length;
+  addRemArt(manifest);
   const { hash: _hash, ...body } = manifest;
   manifest.hash = contentHash(body);
   await writeFile(path, JSON.stringify(manifest) + '\n');

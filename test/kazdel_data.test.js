@@ -56,13 +56,20 @@ test('Kazdel data: ten ordinary/elite trait blackboards match the approved effec
     mudrock: [{ block_cnt: 3, hp_per_layer: 5 }, { block_cnt: 3, hp_per_layer: 10 }],
     logos: [{ atk_per_layer: 1, target_count: 2 }, { atk_per_layer: 2, target_count: 3 }],
     wisdel: [{ damage_bonus: .2, next_attack_bonus: .5, cannon_attack_ratio: .5 },
-      { damage_bonus: .4, next_attack_bonus: 1, cannon_attack_ratio: .5 }],
+      { damage_bonus: .4, next_attack_bonus: 1, cannon_attack_ratio: .8 }],
   };
   for (const [key, pair] of Object.entries(expect)) for (const grade of [0, 1]) {
     const g = files.garrisons[kazdelGarrison(key, Boolean(grade)).garrisonId];
     assert.deepEqual(g.bb, pair[grade]);
     assert.equal(g.owners.length, 1, g.garrisonId);
     assert.deepEqual(files.chess[g.owners[0]].garrisonIds, [g.garrisonId]);
+    if (key === 'logos') {
+      assert.match(g.desc, /本体在场时与自身亡魂/);
+      assert.match(g.desc, new RegExp(`每层众魂额外获得${pair[grade].atk_per_layer}攻击力`));
+      assert.match(g.desc, new RegExp(`普通攻击基础目标数为${pair[grade].target_count}`));
+      assert.match(g.desc, /保留原生技能目标规则/);
+      assert.match(g.desc, /该项加攻不重复继承/);
+    }
   }
 });
 

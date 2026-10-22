@@ -22,7 +22,7 @@ const m = load('assets.json');
 const chess = load('chess.json');
 
 function manifestUrls(obj, out = new Set()) {
-  if (typeof obj === 'string' && (obj.startsWith('/assets/') || obj.startsWith('/art/'))) out.add(obj);
+  if (typeof obj === 'string' && (obj.startsWith('/assets/') || obj.startsWith('/art/') || obj.startsWith('/icons/'))) out.add(obj);
   else if (obj && typeof obj === 'object') for (const v of Object.values(obj)) manifestUrls(v, out);
   return out;
 }
@@ -92,6 +92,16 @@ describe('assetUrls', () => {
       assert.ok(image.length > 100, `${url} must contain image data`);
     }
     assert.equal(inManifest('/art/rhine/not-in-manifest.png'), false, 'art prefix alone does not make an URL valid');
+  });
+  test('Rem equipment icons resolve exact manifest entries backed by bundled SVGs', () => {
+    const items = load('items.json');
+    for (const key of ['armor', 'amplifier']) {
+      const url = `/icons/rem-${key}.svg`;
+      for (const grade of ['a', 'b']) assert.equal(itemIconUrl(m, items[`chess_item_rem_${key}_${grade}`]), url);
+      assert.ok(inManifest(url));
+      assert.match(readFileSync(path.join(ROOT, 'public', url.slice(1)), 'utf8'), /<svg\s/);
+    }
+    assert.equal(inManifest('/icons/not-in-manifest.svg'), false, 'icon prefix alone does not make an URL valid');
   });
   test('Kazdel covenant resolves the supplied PNG with original pixels, aspect and transparent edges', () => {
     const url = '/art/kazdel/bond.png';

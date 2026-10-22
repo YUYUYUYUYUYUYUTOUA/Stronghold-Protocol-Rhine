@@ -8,6 +8,15 @@ export function addRemArtPlan(template) {
   return template;
 }
 
+/** Original bundled equipment glyphs, independent of downloaded game art. */
+export function addRemArt(manifest) {
+  manifest.items ||= {};
+  manifest.items.trap_rem_armor = '/icons/rem-armor.svg';
+  manifest.items.trap_rem_amplifier = '/icons/rem-amplifier.svg';
+  if (manifest.stats) manifest.stats.items = Object.keys(manifest.items).length;
+  return manifest;
+}
+
 // Actual operator-side reinforcement appearances are enemy models; the renderer resolves enemy keys directly.
 export const REM_ENEMY_ART = Object.freeze({
   child: 'enemy_10221_agporc', miner: 'enemy_10222_agtski', combined: 'enemy_10223_agtrac',

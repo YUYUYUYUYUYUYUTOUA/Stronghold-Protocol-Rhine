@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="矿业护具">
+  <rect x="2" y="2" width="92" height="92" rx="18" fill="#192c30" stroke="#7ab6a0" stroke-width="3"/>
+  <path d="M29 20h12v13h14V20h12l10 17-9 8v29l-20 9-20-9V45l-9-8z" fill="#b7c9a5" stroke="#e2edce" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M29 48h38v12H29z" fill="#42695e"/>
+  <path d="m32 48 9 12m2-12 9 12m2-12 9 12" stroke="#dfbb6c" stroke-width="5"/>
+  <path d="M48 65v10m-5-5h10" stroke="#42695e" stroke-width="4" stroke-linecap="round"/>
+</svg>

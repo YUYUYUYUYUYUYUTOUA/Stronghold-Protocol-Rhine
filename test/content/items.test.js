@@ -100,6 +100,24 @@ test('stat equipment: percentages are 直接乘算 — additive with each other 
   checkInvariants(h2.b);
 });
 
+test('Rem equipment: both grades grant their base stats only to a Rem carrier', () => {
+  const cases = [
+    ['chess_item_rem_armor_a', 2400, 500], ['chess_item_rem_armor_b', 2700, 500],
+    ['chess_item_rem_amplifier_a', 2000, 625], ['chess_item_rem_amplifier_b', 2000, 700],
+  ];
+  for (const [id, hp, atk] of cases) {
+    for (const member of [false, true]) {
+      const h = fight({ ops: { t_op: op('t_op', { bonds: member ? ['remShip'] : [] }) },
+        units: [{ chessId: 't_op', row: 10, col: 4, items: [id] }] });
+      h.step();
+      close(h.unit('t_op').s.maxHp, member ? hp : 2000, `${id} membership-gated HP`);
+      close(h.unit('t_op').s.atk, member ? atk : 500, `${id} membership-gated ATK`);
+      assert.deepEqual(h.b.errors, []); checkInvariants(h.b);
+    }
+    cover(id);
+  }
+});
+
 test('源石溶剂: −60 HP per second on the field (无来源真实伤害, not 流失 — feedback1d-solvent.test.js), ATK +40 %', () => {
   for (const id of [A('1_05'), B('1_05')]) {
     const h = fight({ units: [{ chessId: 't_op', row: 10, col: 4, items: [id] }] });
@@ -1302,5 +1320,5 @@ test('coverage: every equipment (normal + golden) and every Art is exercised by 
   // items whose numbers are asserted in the stat table, the proc tests or the meta tests
   const missing = Object.keys(DATA.items).filter((id) => !COVER.has(id)).sort();
   assert.deepEqual(missing, []);
-  assert.equal(Object.keys(DATA.items).length, 123);
+  assert.equal(Object.keys(DATA.items).length, 123 + 4); // Existing records plus the two Rem equipment grade pairs.
 });

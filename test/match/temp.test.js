@@ -11,9 +11,9 @@ import { registerBuiltins } from '../../server/match/builtinMeta.js';
 import { attachAudit } from '../../server/match/audit.js';
 import { DATA, makeMatch, give, giveItem, checkInvariants, chessOfTier, legalTileFor } from './harness.js';
 
-/** Plain equipment (no equip / merge side effects): fillers for the hand and the pieces granted by the tests. */
+/** Unrestricted plain equipment: fillers and grants usable by this fixture's generic carrier. */
 const PLAIN = Object.values(DATA.items)
-  .filter((i) => i.itemType === 'EQUIP' && !i.isGolden && i.kind === 'passive')
+  .filter((i) => i.itemType === 'EQUIP' && !i.isGolden && i.kind === 'passive' && !i.requiresBondId && !i.giveBondId)
   .map((i) => i.itemId ?? i.id).filter(Boolean);
 const GRANTS = PLAIN.slice(-3);
 const FILL = PLAIN.slice(0, 10);

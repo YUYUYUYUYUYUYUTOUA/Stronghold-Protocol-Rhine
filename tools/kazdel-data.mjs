@@ -78,11 +78,11 @@ export function kazdelGarrison(key, gold) {
       break;
     case 'logos':
       bb = { atk_per_layer: [1, 2][grade], target_count: [2, 3][grade] };
-      desc = `战斗中，每层众魂额外使自身亡魂攻击力+${bb.atk_per_layer}，自身亡魂普通攻击可攻击${bb.target_count}个目标`;
+      desc = `战斗中，本体在场时与自身亡魂均每层众魂额外获得${bb.atk_per_layer}攻击力，普通攻击基础目标数为${bb.target_count}；保留原生技能目标规则，转为亡魂时该项加攻不重复继承`;
       break;
     case 'wisdel':
-      bb = { damage_bonus: [0.2, 0.4][grade], next_attack_bonus: [0.5, 1][grade], cannon_attack_ratio: 0.5 };
-      desc = `战斗中，本体或亡魂在场时，所有己方亡魂造成的伤害提高${bb.damage_bonus * 100}%；每次众魂炮击后，各己方亡魂的下一次普通攻击伤害提高${bb.next_attack_bonus * 100}%，再次炮击刷新而不储存次数；同名光环只取最高值；自身本体在场时，获得当前众魂炮击伤害50%的基础攻击力加成，随众魂层数更新，普通攻击与技能均生效`;
+      bb = { damage_bonus: [0.2, 0.4][grade], next_attack_bonus: [0.5, 1][grade], cannon_attack_ratio: [0.5, 0.8][grade] };
+      desc = `战斗中，本体或亡魂在场时，所有己方亡魂造成的伤害提高${bb.damage_bonus * 100}%；每次众魂炮击后，各己方亡魂的下一次普通攻击伤害提高${bb.next_attack_bonus * 100}%，再次炮击刷新而不储存次数；同名光环只取最高值；自身获得当前众魂炮击伤害${bb.cannon_attack_ratio * 100}%的基础攻击力加成，本体在场时生效，并计入自身亡魂80%攻击继承的基底，随众魂层数更新，普通攻击与技能均生效`;
       break;
     default: throw new Error(`Unknown Kazdel trait ${key}`);
   }

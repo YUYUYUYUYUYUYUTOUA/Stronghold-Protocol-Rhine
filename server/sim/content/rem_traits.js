@@ -111,6 +111,7 @@ export function install(battle) {
   });
   battle.on('beforeAttack', ctx => {
     const unit = ctx.attacker, marked = unit.mem.remGuidedTarget;
+    if (battle.remBossTarget?.(unit)) return;
     if (!reinforcements.has(unit) || !up(marked) || !ctx.targets.length || battle.blockedTargets(unit, ctx.profile).length) return;
     if (battle.enemiesInKeys(unit.rangeKeys, unit, ctx.profile).includes(marked)) ctx.targets = [marked];
   }, { priority: -30 });

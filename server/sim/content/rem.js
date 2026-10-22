@@ -1,11 +1,12 @@
 // Rim Billiton allies. Player-local generation, deterministic tile marching and finite vehicle routes.
-import { REM_BOND, REM_LIMITS, REM_INTERVALS, REM_BATCHES, REM_OPENING, remStage, remPick } from '../../../shared/rem.js';
+import { REM_BOND, REM_LIMITS, REM_INTERVALS, REM_BATCHES, REM_OPENING, REM_TIER_STATS, remStage, remPick } from '../../../shared/rem.js';
 import { COLS, TICK } from '../constants.js';
 import { hypot } from '../detmath.js';
 import { isMember } from './support/index.js';
 import { absoluteRangeKeys, canTargetEnemy } from '../targeting.js';
 import { bodyInRange, bodyDist } from '../body.js';
 import { effectiveProfile } from '../ai.js';
+import { isRemMobile } from '../remMobile.js';
 
 const present = u => u.alive && u.deployed && !u.removed;
 const key = (r, c) => r * COLS + c;
@@ -18,6 +19,41 @@ const living = s => s.units.filter(present);
 const counted = s => living(s).filter(u => u.remCounted).length;
 const chefs = s => living(s).filter(u => u.remType === 'chef').length;
 const bosses = s => living(s).filter(u => u.remType === 'boss').length;
+const bossField = b => b.kind === 'boss' || b.kind === 'hidden';
+
+/** Keep one living leader from this Battle, including during its unselectable phases. */
+function lockBoss(b, u) {
+  const old = u.mem.remBossTarget;
+  let target = b.enemies.find(e => e.id === old && e.isBoss && present(e));
+  if (!target) target = b.enemies.filter(e => e.isBoss && present(e))
+    .sort((a, c) => bodyDist(a, u.x, u.y) - bodyDist(c, u.x, u.y) || a.spawnSeq - c.spawnSeq || a.id - c.id)[0] ?? null;
+  if (old !== target?.id) {
+    delete u.mem.remTarget;
+    delete u.mem.remSearchKey;
+    delete u.mem.remSearchAt;
+    // Changing a chase never cuts a corner from a fractional position. Cancel the
+    // old destination and return along its actual edge before planning another.
+    const leg = u.mem.remLeg;
+    if (leg) { leg.to = leg.from; leg.intent = 'bossReturn'; leg.target = null; }
+    if (target) u.mem.remBossTarget = target.id;
+    else delete u.mem.remBossTarget;
+  }
+  return target;
+}
+
+function troopBoss(b, u) {
+  return bossField(b) && isRemMobile(u) && present(u) && !special(u.remType) ? lockBoss(b, u) : null;
+}
+
+/** null preserves ordinary AI; [] means a locked leader currently offers no shot. */
+function bossTargets(b, u, profile) {
+  const target = troopBoss(b, u);
+  if (!target) return null;
+  if (canTargetEnemy(u, target, profile) && bodyInRange(target, u.rangeKeys)) return [target];
+  // Actual contact blocking remains authoritative: clear a blocking escort, then
+  // resume the same leader pursuit. Do not drag it or redirect the leader lock.
+  return b.blockedTargets(u, profile).slice(0, 1);
+}
 
 /** Tile occupancy is authoritative; never force a summon onto a body, ally or obstacle. */
 function free(b, r, c, u = null, fly = false) {
@@ -69,20 +105,28 @@ function refreshSurvival(b, s) {
     b.addBuff(u, { key: 'rem:survival', mods: { atkPct: pct, hpPct: pct }, persist: true, allowDead: true });
   }
 }
-function record(type, S) {
+function record(type, S, stage) {
   const miner = type === 'miner' || type === 'combined';
   const chef = type === 'chef', boss = type === 'boss', vehicle = type === 'food' || type === 'bus';
   const atk = boss ? 1000 + 2 * S : type === 'food' ? 1500 + 5 * S : type === 'bus' ? 0 : miner ? 500 + S + (type === 'combined' ? 600 : 0) : chef ? 200 + .5 * S : 450 + .75 * S;
-  return { name: names[type], spine: art[type], avatar: art[type], stats: { maxHp: miner || type === 'enthusiast' ? 1800 + 5 * S : chef ? 1600 + 4 * S : 1200 + 3 * S,
+  const stats = { maxHp: miner || type === 'enthusiast' ? 1800 + 5 * S : chef ? 1600 + 4 * S : 1200 + 3 * S,
     atk, def: miner || type === 'enthusiast' ? 200 + (type === 'combined' ? 800 : 0) : chef ? 150 : 100, res: miner || type === 'enthusiast' ? 10 : chef ? 20 : 0,
     bat: miner || chef || type === 'enthusiast' ? 2.5 : 2.4, aspd: 100, blockCnt: chef || boss || vehicle ? 0 : 1,
-    moveSpeed: 1, respawnTime: 0, cost: 0, hpRecoveryPerSec: 0, spRecovery: 0 },
+    moveSpeed: 1, respawnTime: 0, cost: 0, hpRecoveryPerSec: 0, spRecovery: 0 };
+  const tier = REM_TIER_STATS[stage - 1];
+  stats.atk *= tier?.atk ?? 1;
+  if (!vehicle) {
+    stats.maxHp *= tier?.hp ?? 1;
+    stats.def *= tier?.def ?? 1;
+    stats.res += tier?.res ?? 0;
+  }
+  return { name: names[type], spine: art[type], avatar: art[type], stats,
   rangeGrid: [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]], dmgType: chef ? 'arts' : 'phys', attackKind: 'melee', canHitFly: false,
   };
 }
 function spawn(b, s, type, source, point = s.gate) {
   if (!free(b, ...point, null, type === 'boss')) return null;
-  const u = b.spawnToken(s.ps.playerId, `token_rem_${type}`, ...point, { def: record(type, layers(s)), kit: { trait: { noAttack: special(type) }, install(_battle, unit) { unit.remMobile = true; if (type === 'boss') unit.motion = 'FLY'; } } });
+  const u = b.spawnToken(s.ps.playerId, `token_rem_${type}`, ...point, { def: record(type, layers(s), s.stage), kit: { trait: { noAttack: special(type) }, install(_battle, unit) { unit.remMobile = true; if (type === 'boss') unit.motion = 'FLY'; } } });
   if (!u) return null;
   u.remType = type; u.remCounted = !special(type) && source !== 'jacinta'; u.remSource = source;
   u.mem.remBomb = 0; u.mem.remStun = 0; u.mem.remHit = new Set();
@@ -134,7 +178,11 @@ function advanceMarch(b, u, dt) {
   // An obstacle/body can appear while crossing. Return along the same segment rather than clipping it.
   if (!b.grid.groundPassable(...leg.to) || b.downOn(...leg.to)) {
     if (!b.grid.groundPassable(...leg.from) || b.downOn(...leg.from)) { u.moving = false; return; }
-    leg.to = leg.from;
+    if (leg.coverageTransit) [leg.from, leg.to] = [leg.to, leg.from];
+    else {
+      if (leg.coverage != null) leg.returnFrom ??= leg.to;
+      leg.to = leg.from;
+    }
   }
   const [r,c] = leg.to, dx = c-u.x, dy = r-u.y, d = hypot(dx,dy);
   const step = dt; // Preserve the approved one tile per game second; only the motion cadence changes.
@@ -156,7 +204,7 @@ const steps = [[0, 1], [1, 0], [-1, 0], [0, -1]];
 /** The live attack ranges of allied operators on this field, including cooperating players. */
 function fireCoverage(b) {
   if (b._remCoverageTick === b.tickCount) return b._remCoverage;
-  const keys = new Set();
+  const keys = new Set(), remKeys = new Map();
   for (const op of b.allyUnits) {
     if (!present(op) || op.hidden || op.kind !== 'op' || op.kazdelSoul || op.remType) continue;
     const profile = effectiveProfile(op);
@@ -164,10 +212,18 @@ function fireCoverage(b) {
       || (profile.noAttackUnlessSkill && !op.skill?.active)) continue;
     if (b.rangeChanged(op)) b._refreshRange(op);
     for (const k of op.rangeKeys) keys.add(k);
+    if (b.kind === 'unite' && isMember(b, op, REM_BOND)) {
+      let owned = remKeys.get(op.ownerId);
+      if (!owned) remKeys.set(op.ownerId, owned = new Set());
+      for (const k of op.rangeKeys) owned.add(k);
+    }
   }
   const signature = [...keys].sort((a, c) => a - c).join(',');
+  const preferredByOwner = new Map([...remKeys].map(([owner, owned]) => [owner, {
+    keys: owned, signature: `rem:${owner}:${[...owned].sort((a, c) => a - c).join(',')}`, preferred: true,
+  }]));
   b._remCoverageTick = b.tickCount;
-  return b._remCoverage = { keys, signature, enemies: new Map(b.enemies.map(e => [e.id, e])) };
+  return b._remCoverage = { keys, signature, preferredByOwner, enemies: new Map(b.enemies.map(e => [e.id, e])) };
 }
 
 /** Rem may cross living allies; terrain and knocked-out bodies remain impassable. */
@@ -177,14 +233,22 @@ function walkable(b, r, c) {
 }
 
 /** A fresh bounded BFS: no shared failed-path cache can stop a later batch or a changed target. */
-function mobilePath(b, start, accept, within = null) {
+function mobilePath(b, start, accept, within = null, distanceTo = null) {
   const queue = [start], prev = new Map([[key(...start), null]]);
+  let nearest = null, nearestDistance = Infinity;
+  const pathTo = at => {
+    const path = [at];
+    for (let p = prev.get(key(...at)); p; p = prev.get(key(...p))) path.push(p);
+    return path.reverse();
+  };
   for (let i = 0; i < queue.length; i++) {
-    const at = queue[i], k = key(...at);
-    if ((!within || within(...at)) && free(b, ...at) && accept(...at)) {
-      const path = [at];
-      for (let p = prev.get(k); p; p = prev.get(key(...p))) path.push(p);
-      return path.reverse();
+    const at = queue[i];
+    if ((!within || within(...at)) && free(b, ...at)) {
+      if (accept(...at)) return pathTo(at);
+      if (distanceTo) {
+        const d = distanceTo(...at);
+        if (d < nearestDistance) { nearest = at; nearestDistance = d; }
+      }
     }
     for (const [dr, dc] of steps) {
       const next = [at[0] + dr, at[1] + dc], nk = key(...next);
@@ -193,7 +257,23 @@ function mobilePath(b, start, accept, within = null) {
       }
     }
   }
-  return null;
+  return nearest ? pathTo(nearest) : null;
+}
+
+/** Unite uses this owner's already mapped Rem ranges, not the nearest teammate's half. */
+function troopCoverage(b, s, u) {
+  const allied = fireCoverage(b), preferred = allied.preferredByOwner.get(s.ps.playerId);
+  if (!preferred?.keys.size) return allied;
+  const at = [u.tileR, u.tileC], within = (r, c) => preferred.keys.has(key(r, c));
+  if (within(...at)) return { ...preferred, enemies: allied.enemies };
+  const signature = `${preferred.signature};${b.grid.version};${key(...at)}`;
+  let reach = u.mem.remCoverageReach;
+  if (reach?.signature !== signature || reach.until <= b.time) {
+    // The destination must be covered; the route may cross ordinary walkable tiles.
+    // Retry temporary body/occupancy failures rather than caching a fallback forever.
+    reach = u.mem.remCoverageReach = { signature, until: b.time + .5, path: mobilePath(b, at, within) };
+  }
+  return reach.path ? { ...preferred, enemies: allied.enemies, entryPath: reach.path } : allied;
 }
 
 /** Use the same facing, active range override and extension rules as Battle._refreshRange. */
@@ -206,30 +286,69 @@ function attackRangeAt(u, r, c) {
   return new Set(keys);
 }
 
-function startMarch(b, u, path, dt, intent, target = null) {
+function startMarch(b, u, path, dt, intent, target = null, coverage = null) {
   if (!path || path.length < 2) return false;
   u.mem.remLeg = { from: path[0], to: path[1], intent, target: target?.id ?? null };
+  if (coverage) {
+    u.mem.remLeg.coverage = coverage.signature;
+    u.mem.remLeg.coverageTransit = !!coverage.preferred;
+  }
   if (target) u.mem.remTarget = target.id;
   else delete u.mem.remTarget;
   advanceMarch(b, u, dt);
   return true;
 }
 
+function moveBossTroop(b, u, target, dt) {
+  u.mem.remTarget = target.id;
+  if (u.mem.remLeg?.intent === 'bossReturn') { advanceMarch(b, u, dt); return; }
+  // Range is geometric here: an unselectable leader is still approached and
+  // waited for. Only the attack selector applies canTargetEnemy's phase rules.
+  if (bodyInRange(target, u.rangeKeys)) return;
+  if (u.mem.remLeg) { advanceMarch(b, u, dt); return; }
+  const search = `boss:${target.id}:${target.x}:${target.y}:${b.grid.version}`;
+  if (u.mem.remSearchKey === search && u.mem.remSearchAt > b.time) return;
+  u.mem.remSearchKey = search;
+  const path = mobilePath(b, [u.tileR, u.tileC],
+    (r, c) => bodyInRange(target, attackRangeAt(u, r, c)), null,
+    (r, c) => bodyDist(target, c, r));
+  if (!startMarch(b, u, path, dt, 'bossChase', target)) u.mem.remSearchAt = b.time + .5;
+}
+
 function moveTroop(b, s, u, dt) {
-  const coverage = fireCoverage(b), within = (r, c) => coverage.keys.has(key(r, c));
+  const coverage = troopCoverage(b, s, u), within = (r, c) => coverage.keys.has(key(r, c));
   const profile = effectiveProfile(u), at = [u.tileR, u.tileC];
   const coveredTarget = e => e && !e.isFlying && canTargetEnemy(u, e, profile) && bodyInRange(e, coverage.keys);
   // The ordinary attack loop retains its blocked-target priority. Contact never drags an enemy along.
-  if (b.enemiesInKeys(u.rangeKeys, u, profile).length) return;
+  if ((!coverage.preferred || within(...at)) && b.enemiesInKeys(u.rangeKeys, u, profile).length) return;
   const leg = u.mem.remLeg;
   if (leg) {
+    // A fallback may already be returning when owner coverage recovers. Keep its
+    // original opposite endpoint available without changing ordinary-field returns.
+    if (coverage.preferred && leg.returnFrom) {
+      leg.from = leg.returnFrom; delete leg.returnFrom;
+      leg.coverageTransit = true;
+    }
     const invalidTarget = leg.intent === 'chase' && !coveredTarget(coverage.enemies.get(leg.target));
-    const outside = (leg.intent === 'chase' || leg.intent === 'wander') && !within(...leg.to);
-    if (invalidTarget || outside) {
+    const outside = (leg.intent === 'chase' || leg.intent === 'wander') && !leg.coverageTransit && !within(...leg.to);
+    const changed = (leg.coverageTransit || coverage.preferred) && leg.coverage != null
+      && leg.coverage !== coverage.signature && leg.intent !== 'return';
+    if (invalidTarget || outside || changed) {
       // Reverse the actual segment, rather than teleporting from a rounded tile or following a dead target.
       delete u.mem.remTarget;
-      if (!walkable(b, ...leg.from)) return;
-      leg.to = leg.from;
+      const preferredTransit = leg.coverageTransit || coverage.preferred;
+      if (preferredTransit) leg.coverageTransit = true;
+      if (!walkable(b, ...leg.from)) {
+        // A body can close the traversed endpoint while preferred coverage changes.
+        // Finish only this existing edge when its forward endpoint is still legal.
+        if (preferredTransit && walkable(b, ...leg.to)) {
+          leg.intent = 'return'; leg.target = null;
+          advanceMarch(b, u, dt);
+        }
+        return;
+      }
+      if (preferredTransit) [leg.from, leg.to] = [leg.to, leg.from];
+      else { leg.returnFrom ??= leg.to; leg.to = leg.from; }
       leg.intent = 'return';
     }
     advanceMarch(b, u, dt); return;
@@ -239,18 +358,24 @@ function moveTroop(b, s, u, dt) {
   const searchKey = `${coverage.signature};${b.grid.version};${foes.map(e => `${e.id}:${e.x}:${e.y}`).join(',')}`;
   if (u.mem.remSearchKey === searchKey && u.mem.remSearchAt > b.time) return;
   u.mem.remSearchKey = searchKey;
-  // A new batch enters the nearest reachable coverage component; pursuit itself never leaves it.
-  if (coverage.keys.size && !within(...at)) {
-    const path = mobilePath(b, at, within);
-    if (startMarch(b, u, path, dt, 'enter')) return;
-  } else if (within(...at)) {
+  const chase = () => {
     let target = null;
     const path = foes.length ? mobilePath(b, at, (r, c) => {
       const keys = attackRangeAt(u, r, c);
-      target = foes.find(e => bodyInRange(e, keys)) ?? null;
+      target = within(r, c) ? foes.find(e => bodyInRange(e, keys)) ?? null : null;
       return !!target;
-    }, within) : null;
-    if (startMarch(b, u, path, dt, 'chase', target)) return;
+    }, coverage.preferred ? null : within) : null;
+    return startMarch(b, u, path, dt, 'chase', target, coverage);
+  };
+  // Continue toward covered enemies across gaps instead of re-entering the
+  // nearest component behind this unit at every completed one-tile leg.
+  if (coverage.preferred && chase()) return;
+  // Preferred Rem destinations can be across an uncovered bridge from the entry gate.
+  if (coverage.keys.size && !within(...at)) {
+    const path = coverage.entryPath ?? mobilePath(b, at, within);
+    if (startMarch(b, u, path, dt, 'enter', null, coverage)) return;
+  } else if (within(...at)) {
+    if (!coverage.preferred && chase()) return;
     // A per-unit rotating cardinal choice produces continuous local wandering, without a fixed rendezvous.
     const turn = u.mem.remWanderTurn ?? u.id % steps.length;
     for (let i = 0; i < steps.length; i++) {
@@ -258,16 +383,16 @@ function moveTroop(b, s, u, dt) {
       const next = [at[0] + dr, at[1] + dc];
       if (!within(...next) || !free(b, ...next)) continue;
       u.mem.remWanderTurn = (index + 1) % steps.length;
-      if (startMarch(b, u, [at, next], dt, 'wander')) return;
+      if (startMarch(b, u, [at, next], dt, 'wander', null, coverage)) return;
     }
     const wander = mobilePath(b, at, (r, c) => r !== at[0] || c !== at[1], within);
-    if (startMarch(b, u, wander, dt, 'wander')) return;
+    if (startMarch(b, u, wander, dt, 'wander', null, coverage)) return;
   }
   // With no reachable coverage, clear an entry gate once and wait safely. No new rally or empty-field patrol.
   const gates = new Set([...b.remState.values()].map(owner => key(...owner.gate)));
   if (gates.has(key(...at))) {
     const clear = mobilePath(b, at, (r, c) => !gates.has(key(r, c)));
-    if (startMarch(b, u, clear, dt, 'clear')) return;
+    if (startMarch(b, u, clear, dt, 'clear', null, coverage)) return;
   }
   delete u.mem.remTarget;
   u.mem.remSearchAt = b.time + .5;
@@ -275,9 +400,14 @@ function moveTroop(b, s, u, dt) {
 
 function move(b, s, u, dt) {
   u.moving = false;
+  const target = troopBoss(b, u);
   if (!u.canAct || u.s.flags.noMove || u.blocking.length) return;
   const type = u.remType, fly = type === 'boss';
-  if (!special(type)) { moveTroop(b, s, u, dt); return; }
+  if (!special(type)) {
+    if (target) moveBossTroop(b, u, target, dt);
+    else moveTroop(b, s, u, dt);
+    return;
+  }
   // Preserve the boss's existing air route and actual world position without occupying or blocking its corridor.
   if (fly) {
     const route = s.airRoute;
@@ -329,7 +459,8 @@ function specials(b, s, u, dt) {
     u.mem.remBomb += dt;
     if (u.mem.remBomb >= 1 - 1e-9) {
       u.mem.remBomb = 0;
-      const x = u.x, y = u.y, amount = 2 * u.s.atk;
+      const target = bossField(b) ? lockBoss(b, u) : null;
+      const x = target?.x ?? u.x, y = target?.y ?? u.y, amount = 2 * u.s.atk;
       b.fx('remPizza', { x, y, src: u.id, ownerId: u.ownerId, r: .45, t: 1 });
       b.after(1, () => {
         if (b.finished) return;
@@ -350,12 +481,16 @@ function aura(b, s) {
   }
 }
 export function install(b) {
+  b.remBossTarget = u => troopBoss(b, u);
+  b.remBossTargets = (u, profile) => bossTargets(b, u, profile);
   b.remTransit = new Set();
   b.remTroops = new Set();
   b.on('death', ({unit}) => {
     if (unit.remMobile) {
       delete unit.mem.remLeg; delete unit.mem.remTarget;
+      delete unit.mem.remBossTarget;
       delete unit.mem.remSearchKey; delete unit.mem.remSearchAt;
+      delete unit.mem.remCoverageReach;
       unit.moving = false;
     }
     if (!unit.remTransitAnchor) return;
@@ -412,8 +547,8 @@ export function install(b) {
         }
       }
       for (const u of living(s)) {
-        const next = record(u.remType, layers(s)).stats;
-        if (u.base.atk !== next.atk || u.base.maxHp !== next.maxHp) { Object.assign(u.base, next); u.markDirty(); void u.s; }
+        const next = record(u.remType, layers(s), s.stage).stats;
+        if (u.base.atk !== next.atk || u.base.maxHp !== next.maxHp || u.base.def !== next.def || u.base.res !== next.res) { Object.assign(u.base, next); u.markDirty(); void u.s; }
         specials(b, s, u, dt); move(b, s, u, dt); }
       drain(b, s);
       s.aura += dt; if (s.aura >= .2 - 1e-9) { s.aura = 0; aura(b, s); }

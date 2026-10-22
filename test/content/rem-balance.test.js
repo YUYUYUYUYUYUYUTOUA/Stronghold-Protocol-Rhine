@@ -144,8 +144,8 @@ function bossField(S) {
   enemy.base.def = 1200; enemy.markDirty(); enemy.profile.noAttack = true;
   return { h, boss, enemy };
 }
-test('boss ATK is 1000+2S and its one-second bomb deals 200% physical damage after the original fuse', () => {
-  for (const [S, atk, damage] of [[0, 1000, 800], [300, 1600, 2000], [600, 2200, 3200], [999, 2998, 4796]]) {
+test('nine-Rem boss scales its full 1000+2S ATK once, then bombs for 200% physical damage after the original fuse', () => {
+  for (const [S, atk, damage] of [[0, 2500, 3800], [300, 4000, 6800], [600, 5500, 9800], [999, 7495, 13790]]) {
     const { h, boss, enemy } = bossField(S), hp = enemy.hp;
     assert.equal(boss.s.atk, atk);
     h.run(1.05); assert.equal(enemy.hp, hp, 'the launched bomb still waits its one-second fuse');
@@ -158,8 +158,8 @@ test('boss bombs cache launch ATK and stay at one per game second despite attack
   const { h, boss, enemy } = bossField(300), hp = enemy.hp;
   h.run(1.05);
   h.b.addBuff(boss, { key: 'test:boss-atk', mods: { atkFlat: 1000, aspd: 500 }, persist: true });
-  h.run(1.05); assert.equal(hp - enemy.hp, 2000);
-  h.run(1.05); assert.equal(hp - enemy.hp, 6000);
+  h.run(1.05); assert.equal(hp - enemy.hp, 6800);
+  h.run(1.05); assert.equal(hp - enemy.hp, 15600);
   assert.equal(h.eventsOf('fx').filter(e => e[1] === 'remPizza').length, 3);
   assert.deepEqual(h.b.errors, []);
 });

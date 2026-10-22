@@ -1,14 +1,15 @@
-// Kazdel souls: fresh native skill/talent runtimes on the unchanged soul stat baseline.
-import { KAZDEL_BALANCE as B } from '../../../../shared/kazdel.js';
+// Kazdel souls: fresh native skill/talent runtimes on a passive-only inherited baseline.
+import { KAZDEL_BALANCE as B, KAZDEL_CANNON as C } from '../../../../shared/kazdel.js';
 import { Unit } from '../../units.js';
 import { installOwnerSummons } from '../tokens.js';
 
 const NON_SOUL_MODS = new Set(['hpRegen', 'hpRegenRatio', 'spRecoveryFlat', 'spRecoveryMul', 'spCostFlat', 'redeployMul']);
 const purePassive = (buff) => buff.persist && !buff.status && (buff.key.startsWith('bond:') || /^item:.*:stat:/.test(buff.key));
 
-/** No active skills, triggered talents, statuses, Kazdel layers or regeneration enter H0/A0. */
-export function soulBaseline(owner) {
-  const clone = new Unit({ id: 0, side: 'ally', kind: 'token', base: { ...owner.base, hpRecoveryPerSec: 0 } });
+/** Only permanent stats and the explicit Wisdel flat bonus enter H0/A0, never active body skills. */
+export function soulBaseline(owner, atkFlat = 0) {
+  const clone = new Unit({ id: 0, side: 'ally', kind: 'token',
+    base: { ...owner.base, atk: owner.base.atk + atkFlat, hpRecoveryPerSec: 0 } });
   clone.cultMul = owner.cultMul;
   clone.alive = false;
   clone.buffs = owner.buffs.filter(purePassive).map(b => ({ ...b, flags: {}, shield: 0,
@@ -17,7 +18,11 @@ export function soulBaseline(owner) {
 }
 
 export function refreshSoul(battle, soul, layers, trait) {
-  const owner = soul.ownerUnit, s = soulBaseline(owner);
+  const owner = soul.ownerUnit, wisdel = trait(owner, 'wisdel');
+  // Recompute from the trait, not the dead body's expired buff. The bonus passes through
+  // permanent stat modifiers before 80% inheritance; native soul skills then apply once.
+  const wisdelAttack = wisdel ? (C.damageBase + C.damagePerLayer * layers) * wisdel.cannon_attack_ratio : 0;
+  const s = soulBaseline(owner, wisdelAttack);
   const mud = trait(owner, 'mudrock'), logos = trait(owner, 'logos'), paprika = trait(owner, 'paprika');
   const maxHp = B.soulHpRatio * s.maxHp + (B.soulHpPerLayer + (mud?.hp_per_layer ?? 0)) * layers;
   const atk = B.soulAttackRatio * s.atk + (B.soulAttackPerLayer + (logos?.atk_per_layer ?? 0)) * layers;

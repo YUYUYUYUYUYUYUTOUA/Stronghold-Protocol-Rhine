@@ -398,3 +398,109 @@ clear the blue gate then wait without coverage. Rem units can overlap one anothe
 deployment tiles. Vehicle/boss routes remain; boss ATK is `1000+2S` and pizza deals 200% ATK physical ground damage.
 Asbestos gains Solo without Steadfast. Nine added elite cards gain supported 002 module defaults while saved choices
 remain valid. See [REM](../REM.md) for ownership, timing, modules and lifecycle rules.
+
+### Kazdel local unreleased revision: Logos living-body trait (2026-10-20)
+
+Only an original operator carrying `garrison_kazdel_logos_a/b` receives this extension; the corresponding preset
+cards are `chess_kazdel_logos_a/b`, character `char_4133_logos`. While the body is living and on field, its current
+effective souls layers S supply `atkFlat = S` for normal or `2S` for elite and set its base attack profile target count to
+2/3. The flat attack uses the ordinary stat pipeline, including native skill scaling. This is a base-profile count,
+not an additive target-count buff: native S2 still locks one target and S3 retains its native three-target override.
+Layer updates replace the same bonus rather than accumulating it. Leaving the field clears the live bonus;
+redeployment restores the current value.
+
+The living-body bonus is excluded from `soulBaseline`. The existing soul ATK remains normal `0.8 × A0 + 4S` or
+elite `0.8 × A0 + 5S`, with A0 excluding the new body-only bonus; its independent native skills and 2/3 base targets remain.
+Transformation, repeated refreshes and redeployment do not add a second copy. Do not grant the trait by character
+ID to untraited DIY or stand-in Logos, teammates, summons or other units. This maintainer-approved local change
+is not submitted, pushed, packaged or published and preserves the earlier Wis’adel, Rem and Unite changes.
+
+### Kazdel local unreleased revision: Wis’adel ATK and soul inheritance (2026-10-18)
+
+This maintainer-approved local change is not part of the published `v0.3.0-rhine.11` assets and has not been pushed,
+published or deployed. With souls layers S and unchanged cannon damage `800 + 15S`, Wis’adel's own flat base ATK
+bonus B is normal `0.5 × (800 + 15S) = 400 + 7.5S`, elite `0.8 × (800 + 15S) = 640 + 12S`. Her soul's inherited
+base now includes B. Add this `atkFlat` to the cloned body base pipeline before the existing permanent equipment /
+bond ATK percentages and training conversion, applying each once; then apply the soul inheritance ratio and add
+`3S`. Without other permanent multipliers or additional training conversion, the simplified formula is
+`soul ATK = 0.8 × (A0 + B) + 3S`, where A0 excludes B. At S=300, inheriting B adds 2120/3392 to that normal/elite
+soul base under those assumptions, not a fixed final-panel or skill-damage increase under every loadout.
+
+Each soul still installs its own native skill, SP and talent runtime rather than copying active body state. The
+20%/40% soul damage aura, 50%/100% next soul normal-attack bonus after a cannon shot, strongest-source and
+refresh-without-storing rules are unchanged. Native summons and the cannon do not receive an additional B buff.
+See [KAZDEL](../KAZDEL.md) for the local rule and its release-status boundary.
+
+### Rem local unreleased revision: tier stats and Boss targeting (2026-10-18)
+
+This maintainer-approved local change is not in published `.11` assets; it has not been pushed, published or
+deployed. First compute each reinforcement's complete original layer-scaled stats, including the combined miner's
+flat +600 ATK / +800 DEF. Apply exactly one locked 3/6/9-member tier: HP ×1.5/2.2/3.2, ATK ×1.3/1.8/2.5,
+DEF ×1.2/1.5/1.8 and RES +5/10/15. Higher tiers replace rather than multiply lower tiers. These four stats apply
+to child/miner/combined/chef/enthusiast and the flying boss. Only the food/bus vehicles receive just the ATK
+multiplier while keeping their original layer-scaled HP/DEF/RES. Aura magnitudes, stun and attack/bomb cadence do not scale.
+Food collision and boss pizza read the scaled ATK once; the bus retains 0 ATK. Survival growth still affects only
+Rem operators, not reinforcements. At nine members and S=300 without other auras or skill modifiers, the flying
+boss has HP 6720 / ATK 4000 / DEF 180 / RES 15; pizza has an 8000 physical damage base before mitigation.
+
+In boss/hidden fields, ordinary reinforcements pursue a living same-field Boss through legal paths without allied
+operator coverage. Wait nearby when it is temporarily unselectable; after death switch to another living Boss, or
+clear the lock if none remains. A legally attackable Boss already in range takes priority over Click's mark. If the
+Boss is out of range and a mob actually blocks the reinforcement, clear that real blocker before resuming pursuit.
+Keep blocking/contact and never drag enemies. Vehicle and flying-boss routes remain unchanged. Boss pizza in these
+fields caches the Boss's position at launch, keeps one bomb per second / one-second delay and does not track the
+target after launch. Exact formulas and release-status boundary: [REM](../REM.md).
+
+### Rem local unreleased fix: owner coverage in Unite (2026-10-20)
+
+Only ordinary Rem reinforcement tokens change their Unite coverage choice. Prefer the current world-space ranges
+of living deployed attacking Rem operators with the troop's owner, using resolved membership and `ownerId` rather
+than side/seat/column guesses. Missing or individually unreachable preferred coverage falls back to the existing
+shared allied attacker coverage; with no reachable coverage, clear the entry gate and wait. The existing spawn
+points and Unite coordinate mapping are unchanged.
+
+Entry and pursuit between disconnected preferred regions can cross uncovered legal ground. The pursuit target
+and final attack tile still belong to preferred coverage; idle roaming remains inside selected coverage. A nearer
+teammate's coverage and an unblocked nearby enemy do not pin a troop there while its own preferred region is
+reachable. Real blocking still stops movement and is cleared without dragging. Re-evaluate changed ownership-range
+signatures; retry transient reachability failures within 0.5 game seconds and migrate out of fallback when the
+preferred region becomes available. Keep cardinal paths, terrain/body/occupancy checks and safe segment reversal.
+
+Normal-field coverage, Boss/hidden priority locks, cached boss-pizza aim, vehicles/flying-boss routes, tier stats and
+operator-body movement are unchanged. This is a local unpublished fix; the later 2026-10-22 local equipment
+authorization is specified below. Character strategies remain under discussion. Full rules and fallback behavior: [REM](../REM.md).
+
+### Rem local package revision: faction equipment (2026-10-22)
+
+The maintainer approved two Rem-only equipment families for the local Windows package, without a remote push,
+public release or deployment. III-tier mining armor costs 2 and gives its normal/elite holder HP +20%/+35%;
+nearby same-owner Rem reinforcements take 10%/15% less damage. VI-tier foreman's megaphone costs 4 and gives
+its normal/elite holder ATK +25%/+40%; nearby same-owner Rem reinforcement physical damage ignores 15%/25%
+of the target's DEF, replaced by 25%/35% when that same holder also has mining armor. Another holder's armor
+does not activate the combo. These items do not grant membership and cannot be equipped by non-Rem operators;
+simulation guards also withhold their base attributes and effects from non-Rem holders.
+
+For these two new Rem families only, holder base attributes also take the strongest grade per family before entering
+the ordinary additive percentage pipeline: armor HP caps at +35% and megaphone ATK at +40%, not +55%/+65%
+when normal and elite coexist. Other equipment stacking rules are unchanged. The reinforcement effects use the strongest eligible
+source per family across grades and holders, without accumulating or multiplying copies; armor reduction and
+megaphone penetration select their own strongest values. A source is a living deployed visible nonremoved Rem
+operator. A recipient is a living deployed same-owner Rem reinforcement on this Battle, including all five ordinary
+types, food, bus and flying boss; other operators, summons and teammate reinforcements do not qualify.
+
+The own tile plus eight neighbours uses authoritative continuous world positions: absolute x and y differences
+are each at most 1, inclusive. Do not round positions, use circular radius or cache spawn tiles. Re-evaluate current
+grants and positions for damage, so leaving range, source death/retreat/hiding or grant expiry stops that source.
+Armor reduces physical, arts, true and elemental HP damage, not HP loss or elemental gauge accumulation.
+Megaphone changes physical-hit DEF resolution only, including food collisions and pizza; it does not lower the
+target's DEF stat or change arts/true damage. Native skills, tier/survival rules, blocking, routes and cached pizza
+launch positions remain unchanged; the bus retains zero ATK. Character strategies are excluded from this work.
+Full numerical rules and local/public status: [REM](../REM.md).
+
+### Release-status addendum (2026-10-22)
+
+The maintainer subsequently authorized the confirmed changes above for the `v0.3.0-rhine.12` prerelease,
+without replacing stable latest `.11`. Earlier dated unpublished/unauthorized status paragraphs remain history;
+character strategies remain excluded. Authorization is not evidence that a release, Windows workflow or host
+deployment completed. Actual validation and subsequent workflow results belong in the
+[2026-10-22 validation record](../RHINE-20261022-VALIDATION.md), with the source commit resolved from the actual new tag.

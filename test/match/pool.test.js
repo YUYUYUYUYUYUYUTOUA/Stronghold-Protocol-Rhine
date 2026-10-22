@@ -107,7 +107,8 @@ test('effect-only items are never shop items: not in shopItemsByTier, never in t
   assert.equal(DATA.items.chess_item_1_01_e_a.shopExcluded, false, 'the plain 维式重锤 is sold');
   const gd = gdOf();
   const listed = new Set(Object.values(gd.shopItemsByTier).flat());
-  assert.equal(listed.size, 55, '60 normal equipment including Rhine and Kazdel − 5 effect-only');
+  assert.equal(listed.size, 57, '62 normal equipment including Rhine, Kazdel and Rem − 5 effect-only');
+  for (const id of ['chess_item_rem_armor_a', 'chess_item_rem_amplifier_a']) assert.ok(listed.has(id), `${id} is shop eligible`);
   for (const id of EFFECT_ONLY) assert.ok(!listed.has(id), `${id} not a shop item`);
   assert.ok(listed.has('chess_item_1_01_e_a'));
   // the shop item slot at every level

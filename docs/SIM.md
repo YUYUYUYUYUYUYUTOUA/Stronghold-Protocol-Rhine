@@ -1720,10 +1720,17 @@ Rem reinforcements may cross living allies, including teammates, and overlap oth
 and at rest, including vehicles and bosses. They do not reserve an exclusive `_occ` tile or occupy an operator's
 deployment slot. Actual `tileR/tileC`, `x/y` and refreshed range keys drive contact, blocking and snapshots;
 `remTroops` supplies the live actual-position candidates. Terrain, downed bodies and non-Rem occupancy rules still
-apply. Ordinary troops seek legal reachable enemies within living deployed allied attacking operators' shared-field
-coverage, including co-op teammates; they roam through cardinal coverage tiles without targets and clear the blue
-gate then wait without coverage. Vehicle/boss route arrival effects remain separate. General pathfinding and other
-summons retain their existing occupancy behavior. See [REM](REM.md) for the full movement and ownership rules.
+apply. Normal fields use living deployed allied attacking operators' shared-field coverage, including co-op
+teammates. In Unite, ordinary Rem troops first use the current world-space ranges of living deployed attacking Rem
+operators with the same `ownerId`; side/seat/column labels do not select that coverage. Reachability is tested per
+troop. Entry and pursuit between disconnected preferred coverage regions may cross uncovered legal ground, while
+the pursuit target and final attack tile must remain in the preferred coverage. Idle roaming stays in selected
+coverage. Missing/unreachable owned Rem coverage falls back to shared allied coverage; with no reachable coverage,
+troops clear the blue gate and wait. Changed coverage invalidates the old selection; temporary reachability failures
+are retried at most 0.5 game seconds later, including after fallback. A merely nearby unblocked enemy outside the
+preferred region does not stop entry, but actual blocking still stops movement without dragging enemies. Only Rem
+reinforcement tokens use this movement; operator bodies do not become mobile. Boss/hidden locks and vehicle/boss
+routes remain separate and unchanged. See [REM](REM.md) for the full movement and ownership rules.
 
 Rem walking advances authoritative `x/y` every tick at the unchanged one tile per game second, follows
 four-neighbour route segments and derives current tile/range from that position. Fractional motion does not reserve

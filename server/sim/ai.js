@@ -184,6 +184,8 @@ export function noteAttackCommit(b, dt) {
 
 /** The pre-move snapshot for `u`, dropping anyone who died or became unselectable. Empty for a re-selecting AoE. */
 function committedAttackTargets(b, u, prof) {
+  const rem = b.remBossTargets?.(u, prof);
+  if (rem != null) return rem;
   if (!prof || prof.rangeAoe || prof.allInRange || (prof.heal && prof.dmgType === 'heal')) return [];
   const raw = b._attackCommit && b._attackCommit.get(u.id);
   if (!raw || !raw.length) return [];
@@ -194,6 +196,8 @@ function committedAttackTargets(b, u, prof) {
 
 /** Collect targets for an ally with profile `prof`. */
 export function acquireTargets(b, u, prof) {
+  const rem = b.remBossTargets?.(u, prof);
+  if (rem != null) return rem;
   // a heal attack (医师 / 群愈师 / 疗养师 / 链愈师 / 行医, a skill attack turned into a heal) selects injured allies only,
   // never the enemies its unit blocks — a blocking healer keeps healing: PRTS 卫戍协议/帮助 "对于医疗干员（咒愈师分支除外），
   // 攻击目标为需要治疗的单位" (the blocked-first rule below is for attackers of enemies; community feedback after 0.1.0, E2)

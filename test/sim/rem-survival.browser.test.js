@@ -160,7 +160,7 @@ export function exerciseSurvival(api, raw) {
     check(state(capped).survivalTicks === capTicks, 'empty field continued cap accounting'); bonus(capped, count === 6 ? 200 : 300);
     out.caps.push({ count, sample: sample(capped), result: finish(capped) });
   }
-  for (const [layers, expectedAtk, expectedDamage] of [[0, 1000, 800], [300, 1600, 2000], [600, 2200, 3200], [999, 2998, 4796]]) {
+  for (const [layers, expectedAtk, expectedDamage] of [[0, 2500, 3800], [300, 4000, 6800], [600, 5500, 9800], [999, 7495, 13790]]) {
     const b = field(9); state(b).ps.bonds.remShip.layers = layers;
     const boss = add(b, 'boss'), enemy = b.spawnEnemy('survival_dummy', { pos: [Math.round(boss.y), Math.round(boss.x)] });
     check(!!enemy, 'boss damage target is actually spawned'); enemy.profile.noAttack = true;
@@ -173,11 +173,11 @@ export function exerciseSurvival(api, raw) {
   const boss = add(cached, 'boss'), enemy = cached.spawnEnemy('survival_dummy', { pos: [Math.round(boss.y), Math.round(boss.x)] }), hp = enemy.hp;
   enemy.profile.noAttack = true; tick(cached, 32);
   cached.addBuff(boss, { key: 'acceptance:boss-atk', mods: { atkFlat: 1000, aspd: 500 }, persist: true });
-  tick(cached, 32); near(hp - enemy.hp, 2000, 'first bomb changed its cached launch ATK');
-  tick(cached, 32); near(hp - enemy.hp, 6000, 'second bomb did not use the later launch ATK');
+  tick(cached, 32); near(hp - enemy.hp, 6800, 'first bomb changed its cached launch ATK');
+  tick(cached, 32); near(hp - enemy.hp, 15600, 'second bomb did not use the later launch ATK');
   const launches = cached.drainEvents().filter(e => e[0] === 'fx' && e[1] === 'remPizza').length;
   check(launches === 3, 'attack speed changed the one-second bombing cadence');
-  out.bosses.push({ cachedLaunchDamage: 2000, accumulatedDamage: hp - enemy.hp, launches, result: finish(cached) });
+  out.bosses.push({ cachedLaunchDamage: 6800, accumulatedDamage: hp - enemy.hp, launches, result: finish(cached) });
   return { checks, ...out };
 }
 

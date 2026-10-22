@@ -247,13 +247,13 @@ test('marching contact blocks and attacks in place without rear coverage or drag
   assert.ok(checkInvariants(h.b));
 });
 
-test('reinforcement stats use only player layers, with a flat combination bonus and no difficulty multiplier', () => {
+test('reinforcement stats scale the full player-layer panel and combination bonus by the owner tier only', () => {
   for (const S of [0, 100, 200, 300]) {
     const h = fixture(); h.step(); const s = state(h); s.stage = 1; s.ps.bonds.remShip.layers = S;
     const miner = direct(h, 'miner', [10, 5]), combo = direct(h, 'combined', [11, 5]);
-    assert.equal(miner.s.atk, 500 + S); assert.equal(combo.s.atk - miner.s.atk, 600);
-    assert.equal(miner.s.def, 200); assert.equal(combo.s.def - miner.s.def, 800);
-    assert.equal(miner.s.maxHp, 1800 + 5 * S); assert.equal(combo.s.maxHp, miner.s.maxHp);
+    assert.equal(miner.s.atk, (500 + S) * 1.3); assert.equal(combo.s.atk - miner.s.atk, 780);
+    assert.equal(miner.s.def, 240); assert.equal(combo.s.def - miner.s.def, 960);
+    assert.equal(miner.s.maxHp, (1800 + 5 * S) * 1.5); assert.equal(combo.s.maxHp, miner.s.maxHp);
   }
 });
 

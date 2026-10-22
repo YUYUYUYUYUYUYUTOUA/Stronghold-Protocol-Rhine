@@ -373,6 +373,9 @@ async function main() {
     'test/studio/trial.test.js', 'test/studio/room-settings.test.js', 'test/studio/gameplay.test.js',
     'test/golden-diy.test.js',
     'test/match/instant-field-slices.test.js',
+    'test/content/kazdel-logos-live.test.js', 'test/content/rem-boss.test.js',
+    'test/content/rem-equipment.test.js', 'test/content/rem-tier-stats.test.js',
+    'test/content/rem-unite-coverage.test.js',
   ], path.join(root, 'packaged-tests.log'), {
     // This expanded acceptance batch includes real package/upgrade fixtures and plugin composition.
     // Keep individual test deadlines intact while allowing the complete Windows batch to finish.
@@ -412,7 +415,8 @@ async function main() {
     browserTests = {
       remSimulation: runBrowserTests('remSimulation', node, built.destination, ['test/sim/rem.browser.test.js', 'test/sim/rhine.browser.test.js'],
         path.join(root, 'browser-rem-sim.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
-      newSync: runBrowserTests('newSync', node, built.destination, ['test/sim/rem-survival.browser.test.js'],
+      newSync: runBrowserTests('newSync', node, built.destination, ['test/sim/rem-survival.browser.test.js',
+        'test/sim/rem-equipment.browser.test.js', 'test/sim/rem-unite-coverage.browser.test.js'],
         path.join(root, 'browser-rem-survival.log'), { concurrency: 1, env: { SIM_E2E: '1', CHROME_PATH: edge } }),
       remRenderer: runBrowserTests('remRenderer', node, built.destination, ['test/render/rem-art.browser.test.js', 'test/render/rem-movement.browser.test.js'],
         path.join(root, 'browser-rem-render.log'), { concurrency: 1, env: { RENDER_E2E: '1', CHROME_PATH: edge } }),

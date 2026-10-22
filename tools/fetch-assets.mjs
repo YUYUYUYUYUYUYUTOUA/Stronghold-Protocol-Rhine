@@ -69,7 +69,7 @@ import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
 import { rhineArtInput, addRhineArt } from './assets/rhine-plan.mjs';
-import { addRemArtPlan, REM_ENEMY_ART, remArtInput } from './assets/rem-plan.mjs';
+import { addRemArtPlan, addRemArt, REM_ENEMY_ART, remArtInput } from './assets/rem-plan.mjs';
 import { kazdelArtInput, addKazdelArt } from './assets/kazdel-plan.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
@@ -505,7 +505,7 @@ async function main() {
     root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url,
     ...(verifier ? { available: (rel) => dl.accepted.has(rel) } : null),
   });
-  const body = addKazdelArt(addRhineArt(resolved.value));
+  const body = addRemArt(addKazdelArt(addRhineArt(resolved.value)));
   tidyManifest(body);
   tidyVoiceTrees(body);
   const fontFaces = {};

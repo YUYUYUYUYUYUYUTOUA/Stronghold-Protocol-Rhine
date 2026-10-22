@@ -163,9 +163,9 @@ test('garrisons: all referenced exist; 67 distinct effect keys including Rim tra
   }
 });
 
-test('items: 123 item chess including Rhine and Kazdel equipment pairs with valid references', () => {
-  assert.equal(Object.keys(items).length, 123);
-  assert.equal(Object.values(items).filter((i) => i.itemType === 'EQUIP' && !i.isGolden).length, 60);
+test('items: 127 item chess including Rhine, Kazdel and Rem equipment pairs with valid references', () => {
+  assert.equal(Object.keys(items).length, 127);
+  assert.equal(Object.values(items).filter((i) => i.itemType === 'EQUIP' && !i.isGolden).length, 62);
   assert.equal(Object.values(items).filter((i) => i.itemType === 'MAGIC').length, 3);
   for (const it of Object.values(items)) {
     assert.ok(effects[it.effectId], `${it.id}: effect ${it.effectId}`);

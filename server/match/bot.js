@@ -2008,8 +2008,14 @@ export function itemTarget(m, ps, item, ctx = context(m, ps)) {
     if (carrier) return carrier;
   }
   if (rec.requiresBondId) {
-    const member = list.find((p) => free(p) && (chessRec(m, p.id, ps)?.bonds || []).includes(rec.requiresBondId));
+    const member = list.find((p) => {
+      if (!free(p)) return false;
+      const bonds = rec.family === 'rem' ? pieceBonds(gd, p) : chessRec(m, p.id, ps)?.bonds || [];
+      return bonds.includes(rec.requiresBondId) || (rec.family === 'rem' && bonds.includes('maniShip')
+        && ps.bonds.maniShip?.active && ps.bonds[rec.requiresBondId]?.active);
+    });
     if (member) return member;
+    if (rec.family === 'rem') return null;
   }
   // damage dealers carry equipment first (healers / non-attackers last); survival items on blockers first
   const dealer = (p) => { const c = chessRec(m, p.id, ps); return c && !isHealer(c) && c.attackKind !== 'none'; };

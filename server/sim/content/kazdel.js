@@ -53,6 +53,23 @@ function updateWisdelAttack(battle, s, u) {
     if (old?.mods?.atkFlat !== atkFlat) battle.addBuff(u, { key, mods: { atkFlat } });
   } else if (old) battle.removeBuff(u, key);
 }
+function updateLogos(battle, s, u) {
+  const l = kazdelTrait(u, 'logos'), active = l && present(u), key = 'kazdel:logosAttack';
+  const atkFlat = active ? layersOf(s) * l.atk_per_layer : 0, old = u.findBuff(key);
+  // This body-only flat bonus is deliberately outside soulBaseline's permanent
+  // bond/item inheritance. The soul keeps its existing per-layer addition once.
+  if (atkFlat > 0) {
+    if (old?.mods?.atkFlat !== atkFlat) battle.addBuff(u, { key, mods: { atkFlat } });
+  } else if (old) battle.removeBuff(u, key);
+  if (active) {
+    if (!Object.hasOwn(u.mem, 'kazdelLogosBaseTargets')) u.mem.kazdelLogosBaseTargets = u.profile.maxTargets;
+    // Set the ordinary base count, so native S2 lock/S3 targeting still override it.
+    u.profile.maxTargets = l.target_count;
+  } else if (Object.hasOwn(u.mem, 'kazdelLogosBaseTargets')) {
+    u.profile.maxTargets = u.mem.kazdelLogosBaseTargets;
+    delete u.mem.kazdelLogosBaseTargets;
+  }
+}
 function updatePassives(battle, s, states) {
   const layers = layersOf(s);
   for (const u of s.originals) if (member(battle, u)) {
@@ -61,7 +78,10 @@ function updatePassives(battle, s, states) {
       key: 'kazdel:body', persist: true, allowDead: true, mods: { hpFinal: B.bodyHpPerLayer * layers },
     });
   }
-  for (const u of s.originals) updateWisdelAttack(battle, s, u);
+  for (const u of s.originals) {
+    updateWisdelAttack(battle, s, u);
+    updateLogos(battle, s, u);
+  }
   for (const soul of s.souls) if (present(soul)) {
     refreshSoul(battle, soul, layers, kazdelTrait);
     let aspd = 0;
@@ -102,7 +122,10 @@ export function install(battle) {
   }, { priority: -100 });
   battle.on('deploy', ({ unit }) => {
     const s = byOwner.get(unit.ownerId);
-    if (s && unit.kind === 'op') updateWisdelAttack(battle, s, unit);
+    if (s && unit.kind === 'op') {
+      updateWisdelAttack(battle, s, unit);
+      if (s.originals.includes(unit)) updateLogos(battle, s, unit);
+    }
   }, { priority: -100 });
   battle.on('tick', ({ dt }) => {
     for (const s of states) { updatePassives(battle, s, states); tickCannon(battle, s, dt, layersOf(s), onFire); }
@@ -120,6 +143,8 @@ export function install(battle) {
       battle.fx('kazdelSoulEnd', { x: u.x, y: u.y, id: u.id, soulOf: u.ownerUnit?.id, reason });
       return;
     }
+    const s = byOwner.get(u.ownerId);
+    if (s?.originals.includes(u)) updateLogos(battle, s, u);
     if (reason !== 'killed' || u.alive || battle.finished) return;
     if (u.side === 'enemy') {
       for (const owner of u.mem.kazdelContributors ?? []) {
@@ -131,7 +156,6 @@ export function install(battle) {
       }
       return;
     }
-    const s = byOwner.get(u.ownerId);
     if (!s || !s.originals.includes(u) || u.kind !== 'op') return;
     if (member(battle, u) && !dmg?.tags?.includes('kazdelCannon')) qualifiedDeath(battle, s, u);
     if (soulEligible(battle, s, u)) {
