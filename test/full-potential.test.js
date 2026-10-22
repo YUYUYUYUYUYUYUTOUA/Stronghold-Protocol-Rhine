@@ -20,10 +20,12 @@ import { resolveLoadout, loadoutRecord } from '../server/sim/simdata.js';
 import { diyRecordOf } from '../shared/diy.js';
 import { standInRecord } from '../shared/standIn.js';
 import { makeBattle } from './helpers/battleHarness.js';
-import { RHINE_ADDITIONS } from '../tools/rhine-data.mjs';
-import { KAZDEL_ADDITIONS } from '../tools/kazdel-data.mjs';
-import { REM_ADDITIONS } from '../tools/rem-data.mjs';
 import { RHINE_BALANCE } from '../shared/rhineResearch.js';
+
+// Finish the battle harness's async kit registry before loading the offline generator graph.
+const { RHINE_ADDITIONS } = await import('../tools/rhine-data.mjs');
+const { KAZDEL_ADDITIONS } = await import('../tools/kazdel-data.mjs');
+const { REM_ADDITIONS } = await import('../tools/rem-data.mjs');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR || join(ROOT, 'data');
